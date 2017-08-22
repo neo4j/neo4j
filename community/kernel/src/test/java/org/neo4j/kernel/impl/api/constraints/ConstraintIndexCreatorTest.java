@@ -205,10 +205,10 @@ public class ConstraintIndexCreatorTest
 
         // then
         verify( state.locks() )
-                .explicitReleaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .pessimisticReleaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
 
         verify( state.locks() )
-                .explicitAcquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+                .pessimisticAcquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
     }
 
     @Test

@@ -49,6 +49,19 @@ class TwoPhaseNodeForRelationshipLocking
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
+        state.locks().entityIterateAcquireShared( NODE, nodeId );
+        try
+        {
+            innerLockAllNodesAndConsumeRelationships( nodeId, state );
+        }
+        finally
+        {
+            state.locks().entityIterateReleaseShared( NODE, nodeId );
+        }
+    }
+
+    private void innerLockAllNodesAndConsumeRelationships( long nodeId, KernelStatement state ) throws KernelException
+    {
         boolean retry;
         do
         {
@@ -88,7 +101,7 @@ class TwoPhaseNodeForRelationshipLocking
         PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
         while ( nodeIdIterator.hasNext() )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), NODE, nodeIdIterator.next() );
+            state.locks().entityModifyAcquireExclusive( NODE, nodeIdIterator.next() );
         }
     }
 
@@ -97,7 +110,7 @@ class TwoPhaseNodeForRelationshipLocking
         PrimitiveLongIterator iterator = nodeIds.iterator();
         while ( iterator.hasNext() )
         {
-            state.locks().optimistic().releaseExclusive( NODE, iterator.next() );
+            state.locks().entityModifyReleaseExclusive( NODE, iterator.next() );
         }
         nodeIds.clear();
     }

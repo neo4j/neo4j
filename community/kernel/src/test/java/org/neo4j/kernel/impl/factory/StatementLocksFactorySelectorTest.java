@@ -62,9 +62,10 @@ public class StatementLocksFactorySelectorTest
         assertThat( factory, instanceOf( SimpleStatementLocksFactory.class ) );
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
 
-        assertSame( locksClient, statementLocks.optimistic() );
-        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.pessimisticAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
         verify( locksClient ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
+        verify( locksClient ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
     }
 
     @Test

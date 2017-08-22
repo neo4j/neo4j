@@ -27,60 +27,53 @@ import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Component used by {@link KernelStatement} to acquire explicit (also known as "pessimistic") and
- * {@link #optimistic() optimistic} locks.
+ * Component used by {@link KernelStatement} to acquire pessimistic locks, and
+ * optimistic locks, which may be deferred until commit time. Optimistic locks might also not be taken or released at
+ * all, depending on the isolation level.
  */
 public interface StatementLocks extends AutoCloseable
 {
     Supplier<LockTracer> DEFAULT_LOCK_TRACER_SUPPLIER = () -> LockTracer.NONE;
 
-    // ====[ Explicit locking ]====
+    // ====[ Pessimistic locking ]====
 
     /**
-     * Explicitly acquire an exclusive lock of the given resource type, on the given resources.
+     * Pessimistically acquire an exclusive lock of the given resource type, on the given resources.
      * <p>
      * These locks are always taken, and held until explicitly released, or until the transaction ends.
      *
      * @param type The type of resource to lock on.
      * @param resourceId The resources to lock.
      */
-    void explicitAcquireExclusive( ResourceType type, long... resourceId );
+    void pessimisticAcquireExclusive( ResourceType type, long... resourceId );
 
     /**
-     * Release the exclusive lock that was explicitly taken on the given resource, of the given type.
+     * Release the exclusive lock that was pessimistically taken on the given resource, of the given type.
      *
      * @param type The type of resource that was locked.
      * @param resourceId The resources to unlock.
      */
-    void explicitReleaseExclusive( ResourceType type, long resourceId );
+    void pessimisticReleaseExclusive( ResourceType type, long resourceId );
 
     /**
-     * Explicitly acquire an shared lock of the given resource type, on the given resources.
+     * Pessimistically acquire an shared lock of the given resource type, on the given resources.
      * <p>
      * These locks are always taken, and held until explicitly released, or until the transaction ends.
      *
      * @param type The type of resource to lock on.
      * @param resourceId The resources to lock.
      */
-    void explicitAcquireShared( ResourceType type, long... resourceId );
+    void pessimisticAcquireShared( ResourceType type, long... resourceId );
 
     /**
-     * Release the shared lock that was explicitly taken on the given resource, of the given type.
+     * Release the shared lock that was pessimistically taken on the given resource, of the given type.
      *
      * @param type The type of resource that was locked.
      * @param resourceId The resources to unlock.
      */
-    void explicitReleaseShared( ResourceType type, long resourceId );
+    void pessimisticReleaseShared( ResourceType type, long resourceId );
 
     // ====[ Optimistic constraint locks ]====
-
-    /**
-     * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
-     * commit time.
-     *
-     * @return the locks client to serve optimistic locks.
-     */
-    Locks.Client optimistic();
 
     /**
      * Acquire an <strong>optimistic</strong> (may be deferred) exclusive lock on the index entry given by the specified
@@ -118,9 +111,36 @@ public interface StatementLocks extends AutoCloseable
      */
     void schemaModifyAcquireShared( ResourceType type, long resource );
 
+    // ====[ Optimistic locks for reading and modifying entities ]====
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) exclusive lock on the given entity resource with the
+     * given entity type, e.g. node, relationship or graph property.
+     */
+    void entityModifyAcquireExclusive( ResourceType type, long resource );
+
+    /**
+     * Release the optimistic exclusive lock that was acquired on the given entity resource of the given type.
+     */
+    void entityModifyReleaseExclusive( ResourceType type, long resource );
+
+//    void entityModifyAcquireShared( ResourceType type, long resource );
+//    void entityModifyReleaseShared( ResourceType type, long resource );
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) shared lock for iterating the given entity resource of
+     * the given entity type, e.g. node, relationship or graph property.
+     */
+    void entityIterateAcquireShared( ResourceType type, long resource );
+
+    /**
+     * Release the optimistic shared lock used for iterating the given entity resource of the given entity type.
+     */
+    void entityIterateReleaseShared( ResourceType type, long resource );
+
     /**
      * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
-     * previously been taken {@link #optimistic() optimistically}.
+     * previously been taken optimistically.
      */
     void prepareForCommit();
 
@@ -168,6 +188,7 @@ public interface StatementLocks extends AutoCloseable
 
     /**
      * An id that uniquely identifies the current lock session at this point in time.
+     *
      * @return The current lock session id used by this instance of {@link StatementLocks}.
      */
     int getLockSessionId();

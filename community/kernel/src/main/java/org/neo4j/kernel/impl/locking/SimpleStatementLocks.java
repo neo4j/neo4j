@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
- * {@link #optimistic() optimistic} and explicit locks.
+ * optimistic and pessimistic locks.
  */
 public class SimpleStatementLocks implements StatementLocks
 {
@@ -41,7 +41,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void explicitAcquireExclusive( ResourceType type, long... resourceId )
+    public void pessimisticAcquireExclusive( ResourceType type, long... resourceId )
     {
         client.acquireExclusive( getTracer(), type, resourceId );
     }
@@ -52,19 +52,19 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void explicitReleaseExclusive( ResourceType type, long resourceId )
+    public void pessimisticReleaseExclusive( ResourceType type, long resourceId )
     {
         client.releaseExclusive( type, resourceId );
     }
 
     @Override
-    public void explicitAcquireShared( ResourceType type, long... resourceId )
+    public void pessimisticAcquireShared( ResourceType type, long... resourceId )
     {
         client.acquireShared( getTracer(), type, resourceId );
     }
 
     @Override
-    public void explicitReleaseShared( ResourceType type, long resourceId )
+    public void pessimisticReleaseShared( ResourceType type, long resourceId )
     {
         client.releaseShared( type, resourceId );
     }
@@ -73,12 +73,6 @@ public class SimpleStatementLocks implements StatementLocks
     public int getLockSessionId()
     {
         return client.getLockSessionId();
-    }
-
-    @Override
-    public Locks.Client optimistic()
-    {
-        return client;
     }
 
     @Override
@@ -115,6 +109,30 @@ public class SimpleStatementLocks implements StatementLocks
     public void schemaModifyAcquireShared( ResourceType type, long resource )
     {
         client.acquireShared( getTracer(), type, resource  );
+    }
+
+    @Override
+    public void entityModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        client.acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void entityModifyReleaseExclusive( ResourceType type, long resource )
+    {
+        client.releaseExclusive( type, resource );
+    }
+
+    @Override
+    public void entityIterateAcquireShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
+    }
+
+    @Override
+    public void entityIterateReleaseShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
     }
 
     @Override

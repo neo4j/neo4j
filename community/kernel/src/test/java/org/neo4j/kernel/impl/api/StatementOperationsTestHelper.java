@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -75,7 +74,6 @@ public abstract class StatementOperationsTestHelper
     {
         KernelStatement state = mock( KernelStatement.class );
         StatementLocks locks = mock( StatementLocks.class );
-        when( locks.optimistic() ).thenReturn( mock( Locks.Client.class ) );
         try
         {
             IndexReader indexReader = mock( IndexReader.class );

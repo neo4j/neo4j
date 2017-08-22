@@ -166,7 +166,7 @@ public class ConstraintIndexCreator
     {
         if ( releaseSchemaLockWhenCreatingConstraint )
         {
-            statementLocks.explicitAcquireExclusive( SCHEMA, schemaResource() );
+            statementLocks.pessimisticAcquireExclusive( SCHEMA, schemaResource() );
         }
     }
 
@@ -174,7 +174,7 @@ public class ConstraintIndexCreator
     {
         if ( releaseSchemaLockWhenCreatingConstraint )
         {
-            statementLocks.explicitReleaseExclusive( SCHEMA, schemaResource() );
+            statementLocks.pessimisticReleaseExclusive( SCHEMA, schemaResource() );
         }
     }
 

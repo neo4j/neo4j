@@ -469,7 +469,7 @@ public class LockingStatementOperations implements
     @Override
     public Property graphSetProperty( KernelStatement state, DefinedProperty property )
     {
-        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        state.locks().entityModifyAcquireExclusive( ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();
         return entityWriteDelegate.graphSetProperty( state, property );
     }
@@ -477,7 +477,7 @@ public class LockingStatementOperations implements
     @Override
     public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
-        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        state.locks().entityModifyAcquireExclusive( ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();
         return entityWriteDelegate.graphRemoveProperty( state, propertyKeyId );
     }
@@ -485,28 +485,28 @@ public class LockingStatementOperations implements
     @Override
     public void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().explicitAcquireExclusive( resourceType, resourceId );
+        state.locks().pessimisticAcquireExclusive( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().explicitAcquireShared( resourceType, resourceId );
+        state.locks().pessimisticAcquireShared( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseExclusive( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().explicitReleaseExclusive( type, resourceId );
+        state.locks().pessimisticReleaseExclusive( type, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseShared( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().explicitReleaseShared( type, resourceId );
+        state.locks().pessimisticReleaseShared( type, resourceId );
         state.assertOpen();
     }
 
@@ -522,7 +522,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
+            state.locks().entityModifyAcquireExclusive( ResourceTypes.NODE, nodeId );
         }
     }
 
@@ -530,7 +530,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            state.locks().entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 

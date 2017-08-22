@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.storageengine.api.lock.ResourceType;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
@@ -43,10 +41,11 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // WHEN
-        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.pessimisticAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
         // THEN
         verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
-        assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
+        verify( client, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
     }
 
     @Test
@@ -71,8 +70,8 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // WHEN
-        statementLocks.optimistic().acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 1 );
-        statementLocks.optimistic().acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 42 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.NODE, 1 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 42 );
         verify( client, never() ).acquireExclusive( eq( LockTracer.NONE ), any( ResourceType.class ), anyLong() );
         statementLocks.prepareForCommit();
 

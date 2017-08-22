@@ -547,7 +547,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit();
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
-                ResourceLocker commitLocks = statementLocks::explicitAcquireExclusive;
+                ResourceLocker commitLocks = statementLocks::pessimisticAcquireExclusive;
 
                 // Gather up commands from the various sources
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();

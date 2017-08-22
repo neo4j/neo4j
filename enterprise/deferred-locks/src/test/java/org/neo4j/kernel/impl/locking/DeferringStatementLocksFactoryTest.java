@@ -25,10 +25,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -94,11 +94,12 @@ public class DeferringStatementLocksFactoryTest
         factory.initialize( locks, config );
 
         StatementLocks statementLocks = factory.newInstance();
-        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.pessimisticAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
 
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
-        assertSame( client, statementLocks.optimistic() );
         verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
     }
 
     @Test
@@ -114,10 +115,11 @@ public class DeferringStatementLocksFactoryTest
         factory.initialize( locks, config );
 
         StatementLocks statementLocks = factory.newInstance();
-        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.pessimisticAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
 
         assertThat( statementLocks, instanceOf( DeferringStatementLocks.class ) );
-        assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
         verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
+        verify( client, never() ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
     }
 }

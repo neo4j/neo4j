@@ -28,8 +28,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 
 /**
- * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
- * locks using {@link DeferringLockClient}.
+ * A {@link StatementLocks} implementation that defers optimistic locks using {@link DeferringLockClient}.
  */
 public class DeferringStatementLocks implements StatementLocks
 {
@@ -45,7 +44,7 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public void explicitAcquireExclusive( ResourceType type, long... resourceId )
+    public void pessimisticAcquireExclusive( ResourceType type, long... resourceId )
     {
         explicit.acquireExclusive( getTracer(), type, resourceId );
     }
@@ -56,19 +55,19 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public void explicitReleaseExclusive( ResourceType type, long resourceId )
+    public void pessimisticReleaseExclusive( ResourceType type, long resourceId )
     {
         explicit.releaseExclusive( type, resourceId );
     }
 
     @Override
-    public void explicitAcquireShared( ResourceType type, long... resourceId )
+    public void pessimisticAcquireShared( ResourceType type, long... resourceId )
     {
         explicit.acquireShared( getTracer(), type, resourceId );
     }
 
     @Override
-    public void explicitReleaseShared( ResourceType type, long resourceId )
+    public void pessimisticReleaseShared( ResourceType type, long resourceId )
     {
         explicit.releaseShared( type, resourceId );
     }
@@ -79,8 +78,7 @@ public class DeferringStatementLocks implements StatementLocks
         return explicit.getLockSessionId();
     }
 
-    @Override
-    public Locks.Client optimistic()
+    private Locks.Client optimistic()
     {
         return implicit;
     }
@@ -119,6 +117,30 @@ public class DeferringStatementLocks implements StatementLocks
     public void schemaModifyAcquireShared( ResourceType type, long resource )
     {
         optimistic().acquireShared( getTracer(), type, resource );
+    }
+
+    @Override
+    public void entityModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void entityModifyReleaseExclusive( ResourceType type, long resource )
+    {
+        optimistic().releaseExclusive( type, resource );
+    }
+
+    @Override
+    public void entityIterateAcquireShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
+    }
+
+    @Override
+    public void entityIterateReleaseShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
     }
 
     @Override
