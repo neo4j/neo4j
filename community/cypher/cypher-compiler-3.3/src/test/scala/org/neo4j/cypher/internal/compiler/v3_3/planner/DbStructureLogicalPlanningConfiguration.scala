@@ -21,10 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
-import org.neo4j.helpers.collection.{Pair, Visitable}
-import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.StatisticsCompletingGraphStatistics
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.helpers.collection.Pair
+import org.neo4j.helpers.collection.Visitable
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureCollector
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -40,30 +47,36 @@ object DbStructureLogicalPlanningConfiguration {
 
   def apply(lookup: DbStructureLookup, underlyingStatistics: GraphStatistics): LogicalPlanningConfiguration = {
     val resolvedLabels: mutable.Map[String, LabelId] = resolveTokens(lookup.labels())(LabelId)
-    val resolvedPropertyKeys = resolveTokens(lookup.properties())(PropertyKeyId)
-    val resolvedRelTypeNames = resolveTokens(lookup.relationshipTypes())(RelTypeId)
+    val resolvedPropertyKeys                         = resolveTokens(lookup.properties())(PropertyKeyId)
+    val resolvedRelTypeNames                         = resolveTokens(lookup.relationshipTypes())(RelTypeId)
 
     new RealLogicalPlanningConfiguration {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
-        resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
-        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
-        resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
+        resolvedPropertyKeys.foreach {
+          case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId))
+        }
+        resolvedLabels.foreach { case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
+        resolvedRelTypeNames.foreach {
+          case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))
+        }
         table
       }
 
       override val graphStatistics: GraphStatistics =
         new StatisticsCompletingGraphStatistics(underlyingStatistics)
 
-      override val indexes: Set[(String, Seq[String])] = indexSet(lookup.knownIndices())
-      override val knownLabels: Set[String] = resolvedLabels.keys.toSet
-      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap
+      override val indexes: Set[(String, Seq[String])]       = indexSet(lookup.knownIndices())
+      override val knownLabels: Set[String]                  = resolvedLabels.keys.toSet
+      override val labelsById: Map[Int, String]              = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap
       override val uniqueIndexes: Set[(String, Seq[String])] = indexSet(lookup.knownUniqueIndices())
     }
   }
 
   private def indexSet(indices: util.Iterator[Pair[String, Array[String]]]): Set[(String, Seq[String])] =
-    indices.asScala.map { pair => pair.first() -> pair.other().to[Seq] }.toSet
+    indices.asScala.map { pair =>
+      pair.first() -> pair.other().to[Seq]
+    }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

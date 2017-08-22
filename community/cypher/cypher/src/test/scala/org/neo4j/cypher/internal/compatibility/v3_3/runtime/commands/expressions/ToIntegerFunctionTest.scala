@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, ParameterWrongTypeException}
-import org.neo4j.values.storable.Values.{NO_VALUE, longValue}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.longValue
 
 class ToIntegerFunctionTest extends CypherFunSuite {
 

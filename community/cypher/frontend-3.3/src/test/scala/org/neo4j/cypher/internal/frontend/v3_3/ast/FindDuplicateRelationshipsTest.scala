@@ -17,11 +17,12 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
-  val pos = DummyPosition(0)
+  val pos  = DummyPosition(0)
   val node = NodePattern(None, Seq.empty, None)(pos)
   val relR = Variable("r")(pos)
   val relS = Variable("s")(pos)
@@ -41,9 +42,9 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
   }
 
   test("does not find duplicate relationships across pattern parts if there is none") {
-    val relPath = EveryPath(RelationshipChain(node, relPattern(relR), node)(pos))
+    val relPath      = EveryPath(RelationshipChain(node, relPattern(relR), node)(pos))
     val otherRelPath = EveryPath(RelationshipChain(node, relPattern(relS), node)(pos))
-    val pattern = Pattern(Seq(relPath, otherRelPath))(pos)
+    val pattern      = Pattern(Seq(relPath, otherRelPath))(pos)
 
     Pattern.findDuplicateRelationships(pattern) should equal(Set.empty)
   }
@@ -56,8 +57,8 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
   }
 
   private def relChain(ids: Variable*) =
-    ids.foldRight(node.asInstanceOf[PatternElement]) {
-      (id, n) => RelationshipChain(n, relPattern(id), node)(pos)
+    ids.foldRight(node.asInstanceOf[PatternElement]) { (id, n) =>
+      RelationshipChain(n, relPattern(id), node)(pos)
     }
 
   private def relPattern(id: Variable) =

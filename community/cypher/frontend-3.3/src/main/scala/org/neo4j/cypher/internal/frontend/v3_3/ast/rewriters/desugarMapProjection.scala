@@ -16,10 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.{SemanticCheckableExpressionTraversable, SemanticContext}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticCheckableExpressionTraversable
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTMap
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Rewriter, SemanticState, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
@@ -34,13 +38,12 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case e@MapProjection(id, items, scope) =>
-
+    case e @ MapProjection(id, items, scope) =>
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
-        val key = PropertyKeyName(name)(propertyPosition)
-        val idPos = scope.symbolTable(id.name).definition.position
+        val key           = PropertyKeyName(name)(propertyPosition)
+        val idPos         = scope.symbolTable(id.name).definition.position
         val newIdentifier = Variable(id.name)(idPos)
-        val value = Property(newIdentifier, key)(propertyPosition)
+        val value         = Property(newIdentifier, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)
       }
 
@@ -50,9 +53,9 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
       var includeAllProps = false
 
       val mapExpressionItems = items.flatMap {
-        case x: LiteralEntry => Some(x)
-        case x: AllPropertiesSelector => includeAllProps = true; None
-        case PropertySelector(property: Variable) => Some(propertySelect(property.position, property.name))
+        case x: LiteralEntry                        => Some(x)
+        case x: AllPropertiesSelector               => includeAllProps = true; None
+        case PropertySelector(property: Variable)   => Some(propertySelect(property.position, property.name))
         case VariableSelector(identifier: Variable) => Some(identifierSelect(identifier))
       }
 
@@ -60,8 +63,10 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   }
 }
 
-case class DesugaredMapProjection(name: Variable, items: Seq[LiteralEntry], includeAllProps: Boolean)(val position: InputPosition)
-  extends Expression with SimpleTyping {
+case class DesugaredMapProjection(name: Variable, items: Seq[LiteralEntry], includeAllProps: Boolean)(
+    val position: InputPosition)
+    extends Expression
+    with SimpleTyping {
   protected def possibleTypes = CTMap
 
   override def semanticCheck(ctx: SemanticContext) =

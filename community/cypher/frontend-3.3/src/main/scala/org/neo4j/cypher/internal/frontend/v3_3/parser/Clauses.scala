@@ -19,12 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
-trait Clauses extends Parser
-  with StartPoints
-  with Patterns
-  with Expressions
-  with Base
-  with ProcedureCalls {
+trait Clauses extends Parser with StartPoints with Patterns with Expressions with Base with ProcedureCalls {
 
   def Clause: Rule1[ast.Clause]
 
@@ -68,9 +63,10 @@ trait Clauses extends Parser
   }
 
   def Match: Rule1[ast.Match] = rule("MATCH") {
-    group((
-      keyword("OPTIONAL MATCH") ~ push(true)
-        | keyword("MATCH") ~ push(false)
+    group(
+      (
+        keyword("OPTIONAL MATCH") ~ push(true)
+          | keyword("MATCH") ~ push(false)
       ) ~~ Pattern ~~ zeroOrMore(Hint, separator = WS) ~~ optional(Where)) ~~>> (ast.Match(_, _, _, _))
   }
 
@@ -124,7 +120,7 @@ trait Clauses extends Parser
         keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(
           Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
         | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
-      )
+    )
   }
 
   private def Where: Rule1[ast.Where] = rule("WHERE") {
@@ -136,7 +132,9 @@ trait Clauses extends Parser
   )
 
   private def Hint: Rule1[ast.UsingHint] = rule("USING")(
-    group(keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast.UsingIndexHint(_, _, _))
+    group(
+      keyword("USING INDEX") ~~ Variable ~~ NodeLabel ~~ "(" ~~ oneOrMore(PropertyKeyName, separator = CommaSep) ~~ ")") ~~>> (ast
+      .UsingIndexHint(_, _, _))
       | group(keyword("USING JOIN ON") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.UsingJoinHint(_))
       | group(keyword("USING SCAN") ~~ Variable ~~ NodeLabel) ~~>> (ast.UsingScanHint(_, _))
   )
@@ -192,4 +190,3 @@ trait Clauses extends Parser
     group(keyword("LIMIT") ~~ Expression) ~~>> (ast.Limit(_))
   }
 }
-

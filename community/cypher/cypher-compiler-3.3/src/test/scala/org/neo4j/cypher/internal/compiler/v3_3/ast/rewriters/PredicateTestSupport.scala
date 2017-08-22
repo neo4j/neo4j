@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 
 trait PredicateTestSupport extends CypherTestSupport {
   self: CypherFunSuite =>
@@ -44,13 +46,13 @@ trait PredicateTestSupport extends CypherTestSupport {
     }
   }
 
-  def anExp(s: String) = StringLiteral(s)(pos)
+  def anExp(s: String)                    = StringLiteral(s)(pos)
   def and(p1: Expression, p2: Expression) = And(p1, p2)(pos)
-  def ands(predicates: Expression*) = Ands(predicates.toSet)(pos)
-  def or(p1: Expression, p2: Expression) = Or(p1, p2)(pos)
-  def ors(predicates: Expression*) = Ors(predicates.toSet)(pos)
+  def ands(predicates: Expression*)       = Ands(predicates.toSet)(pos)
+  def or(p1: Expression, p2: Expression)  = Or(p1, p2)(pos)
+  def ors(predicates: Expression*)        = Ors(predicates.toSet)(pos)
   def xor(p1: Expression, p2: Expression) = Xor(p1, p2)(pos)
-  def not(e: Expression) = Not(e)(pos)
-  def TRUE: Expression = True()(pos)
-  def FALSE: Expression = False()(pos)
+  def not(e: Expression)                  = Not(e)(pos)
+  def TRUE: Expression                    = True()(pos)
+  def FALSE: Expression                   = False()(pos)
 }

@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{LengthFunction, PathImpl, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.LengthFunction
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values.intValue
 
@@ -32,8 +35,8 @@ class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
     //given
-    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
+    val p              = PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val m              = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
     //when
@@ -44,8 +47,8 @@ class LengthFunctionTest extends CypherFunSuite {
   }
   test("length can still be used on collections") {
     //given
-    val l = Seq("it", "was", "the")
-    val m = ExecutionContext.from("l" -> l)
+    val l              = Seq("it", "was", "the")
+    val m              = ExecutionContext.from("l" -> l)
     val lengthFunction = LengthFunction(Variable("l"))
 
     //when
@@ -57,8 +60,8 @@ class LengthFunctionTest extends CypherFunSuite {
 
   test("length can still be used on strings") {
     //given
-    val s = "it was the"
-    val m = ExecutionContext.from("s" -> s)
+    val s              = "it was the"
+    val m              = ExecutionContext.from("s" -> s)
     val lengthFunction = LengthFunction(Variable("s"))
 
     //when

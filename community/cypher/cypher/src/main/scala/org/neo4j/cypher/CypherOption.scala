@@ -41,8 +41,9 @@ trait CypherOptionCompanion[O <: CypherOption] {
     throw new SyntaxException(s"Supported ${self.productPrefix} values are: ${all.map(_.name).mkString(", ")}")
   }
 
-  private def findByExactName(name: String) = if (CypherOption.DEFAULT == name)
-    Some(default)
-  else
-    all.find( _.name == name )
+  private def findByExactName(name: String) =
+    if (CypherOption.DEFAULT == name)
+      Some(default)
+    else
+      all.find(_.name == name)
 }

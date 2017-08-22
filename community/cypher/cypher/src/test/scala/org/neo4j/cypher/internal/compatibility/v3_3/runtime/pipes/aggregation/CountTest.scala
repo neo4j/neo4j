@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.LongValue
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue, stringValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
 
 class CountTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new CountFunction(inner)
@@ -31,6 +33,6 @@ class CountTest extends CypherFunSuite with AggregateTest {
     val result = aggregateOn(intValue(1), NO_VALUE, stringValue("foo"))
 
     result should equal(intValue(2))
-    result shouldBe a [LongValue]
+    result shouldBe a[LongValue]
   }
 }

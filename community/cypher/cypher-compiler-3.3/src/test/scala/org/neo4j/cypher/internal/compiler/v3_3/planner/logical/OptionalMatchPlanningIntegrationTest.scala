@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter.unnestOptional
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit, _}
-import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Limit
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.SimplePatternLength
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -35,55 +37,72 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build plans containing joins") {
     (new given {
       cost = {
-        case (_: AllNodesScan, _) => 2000000.0
-        case (_: NodeByLabelScan, _) => 20.0
+        case (_: AllNodesScan, _)                                          => 2000000.0
+        case (_: NodeByLabelScan, _)                                       => 20.0
         case (p: Expand, _) if p.findByAllClass[CartesianProduct].nonEmpty => Double.MaxValue
-        case (_: Expand, _) => 10.0
-        case (_: OuterHashJoin, _) => 20.0
-        case (_: SingleRow, _) => 1.0
-        case _ => Double.MaxValue
+        case (_: Expand, _)                                                => 10.0
+        case (_: OuterHashJoin, _)                                         => 20.0
+        case (_: SingleRow, _)                                             => 1.0
+        case _                                                             => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
-        OuterHashJoin(Set("b"),
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")(solved),
-          Expand(NodeByLabelScan("c", lblName("Y"), Set.empty)(solved), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")(solved)
-        )(solved)
+      OuterHashJoin(
+        Set("b"),
+        Expand(NodeByLabelScan("a", lblName("X"), Set.empty)(solved),
+               "a",
+               SemanticDirection.OUTGOING,
+               Seq(),
+               "b",
+               "r1")(solved),
+        Expand(NodeByLabelScan("c", lblName("Y"), Set.empty)(solved),
+               "c",
+               SemanticDirection.INCOMING,
+               Seq(),
+               "b",
+               "r2")(solved)
+      )(solved)
     )
   }
 
   test("should build simple optional match plans") { // This should be built using plan rewriting
-    planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(
-      Optional(AllNodesScan("a", Set.empty)(solved))(solved))
+    planFor("OPTIONAL MATCH (a) RETURN a")._2 should equal(Optional(AllNodesScan("a", Set.empty)(solved))(solved))
   }
 
   test("should build simple optional expand") {
     planFor("MATCH (n) OPTIONAL MATCH (n)-[:NOT_EXIST]->(x) RETURN n")._2.endoRewrite(unnestOptional) match {
       case OptionalExpand(
-      AllNodesScan(IdName("n"), _),
-      IdName("n"),
-      SemanticDirection.OUTGOING,
-      _,
-      IdName("x"),
-      _,
-      _,
-      _
-      ) => ()
+          AllNodesScan(IdName("n"), _),
+          IdName("n"),
+          SemanticDirection.OUTGOING,
+          _,
+          IdName("x"),
+          _,
+          _,
+          _
+          ) =>
+        ()
     }
   }
 
   test("should build optional ProjectEndpoints") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._2 match {
-      case
-        Apply(
-        Limit(
-        Expand(
-        AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
-        Optional(
-        ProjectEndpoints(
-        Argument(args), IdName("r"), IdName("b2"), false, IdName("a1"), true, None, true, SimplePatternLength
-        ), _
-        )
-        ) =>
+      case Apply(
+          Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
+          Optional(
+            ProjectEndpoints(
+              Argument(args),
+              IdName("r"),
+              IdName("b2"),
+              false,
+              IdName("a1"),
+              true,
+              None,
+              true,
+              SimplePatternLength
+            ),
+            _
+          )
+          ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
     }
   }
@@ -91,56 +110,86 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   test("should build optional ProjectEndpoints with extra predicates") {
     planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
-      Optional(
-      Selection(
-      predicates,
-      ProjectEndpoints(
-      Argument(args),
-      IdName("r"), IdName("b2"), false, IdName("a2"), false, None, true, SimplePatternLength
-      )
-      ), _
-      )
-      ) =>
+          Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
+          Optional(
+            Selection(
+              predicates,
+              ProjectEndpoints(
+                Argument(args),
+                IdName("r"),
+                IdName("b2"),
+                false,
+                IdName("a2"),
+                false,
+                None,
+                true,
+                SimplePatternLength
+              )
+            ),
+            _
+          )
+          ) =>
         args should equal(Set(IdName("r"), IdName("a1")))
-        val predicate: Expression = Equals(Variable("a1")_, Variable("a2")_)_
+        val predicate: Expression = Equals(Variable("a1") _, Variable("a2") _) _
         predicates should equal(Seq(predicate))
     }
   }
 
   test("should build optional ProjectEndpoints with extra predicates 2") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2  match {
+    planFor("MATCH (a1)-[r]->(b1) WITH r LIMIT 1 OPTIONAL MATCH (a2)-[r]->(b2) RETURN a2, r, b2")._2 match {
       case Apply(
-      Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
-      Optional(
-      ProjectEndpoints(
-      Argument(args),
-      IdName("r"), IdName("a2"), false, IdName("b2"), false, None, true, SimplePatternLength
-      ), _
-      )
-      ) =>
+          Limit(Expand(AllNodesScan(IdName("b1"), _), _, _, _, _, _, _), _, _),
+          Optional(
+            ProjectEndpoints(
+              Argument(args),
+              IdName("r"),
+              IdName("a2"),
+              false,
+              IdName("b2"),
+              false,
+              None,
+              true,
+              SimplePatternLength
+            ),
+            _
+          )
+          ) =>
         args should equal(Set(IdName("r")))
     }
   }
 
   test("should solve multiple optional matches") {
-    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2")._2.endoRewrite(unnestOptional)
+    val plan = planFor("MATCH (a) OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2")._2
+      .endoRewrite(unnestOptional)
     plan should equal(
       OptionalExpand(
         OptionalExpand(
           AllNodesScan(IdName("a"), Set.empty)(solved),
-          IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R1") _), IdName("x1"), IdName("  UNNAMED29"), ExpandAll, Seq.empty)(solved),
-        IdName("a"), SemanticDirection.OUTGOING, List(RelTypeName("R2") _), IdName("x2"), IdName("  UNNAMED60"), ExpandAll, Seq.empty)(solved)
+          IdName("a"),
+          SemanticDirection.OUTGOING,
+          List(RelTypeName("R1") _),
+          IdName("x1"),
+          IdName("  UNNAMED29"),
+          ExpandAll,
+          Seq.empty
+        )(solved),
+        IdName("a"),
+        SemanticDirection.OUTGOING,
+        List(RelTypeName("R2") _),
+        IdName("x2"),
+        IdName("  UNNAMED60"),
+        ExpandAll,
+        Seq.empty
+      )(solved)
     )
   }
 
   test("should solve optional matches with arguments and predicates") {
-    val plan = planFor(
-      """MATCH (n:X)
+    val plan                   = planFor("""MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
-    val s = solved
+    val s                      = solved
     val allNodesN: LogicalPlan = NodeByLabelScan(IdName("n"), LabelName("X") _, Set.empty)(solved)
     val propEquality: Expression =
       In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
@@ -149,13 +198,18 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       HasLabels(varFor("m"), List(LabelName("Y") _)) _
 
     plan should equal(
-      OptionalExpand(allNodesN, IdName("n"), SemanticDirection.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
-        Seq(propEquality, labelCheck))(s)
+      OptionalExpand(allNodesN,
+                     IdName("n"),
+                     SemanticDirection.BOTH,
+                     Seq.empty,
+                     IdName("m"),
+                     IdName("r"),
+                     ExpandAll,
+                     Seq(propEquality, labelCheck))(s)
     )
   }
 
-  test(
-    "should plan for large number of optional matches without numerical overflow in estimatedRows") {
+  test("should plan for large number of optional matches without numerical overflow in estimatedRows") {
 
     val lom: LogicalPlanningEnvironment[_] = new fromDbStructure(DbStructureLargeOptionalMatchStructure.INSTANCE)
     val query =
@@ -201,8 +255,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
                   |RETURN *
                 """.stripMargin
 
-   lom.getLogicalPlanFor(query)._2.treeExists {
-      case plan:LogicalPlan =>
+    lom.getLogicalPlanFor(query)._2.treeExists {
+      case plan: LogicalPlan =>
         plan.solved.estimatedCardinality match {
           case Cardinality(amount) =>
             withClue("We should not get a NaN cardinality.") {

@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.values.virtual.VirtualValues.fromNodeProxy

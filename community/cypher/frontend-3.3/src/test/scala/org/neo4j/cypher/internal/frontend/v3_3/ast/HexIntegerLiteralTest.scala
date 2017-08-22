@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class HexIntegerLiteralTest extends CypherFunSuite {
   test("correctly parses hexadecimal numbers") {
@@ -41,7 +43,7 @@ class HexIntegerLiteralTest extends CypherFunSuite {
 
   private def assertSemanticError(stringValue: String, errorMessage: String) {
     val literal = SignedHexIntegerLiteral(stringValue)(DummyPosition(4))
-    val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
+    val result  = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }
 }

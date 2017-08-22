@@ -23,51 +23,59 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Bound, ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.frontend.v3_3.Bound
+import org.neo4j.cypher.internal.frontend.v3_3.ExclusiveBound
+import org.neo4j.cypher.internal.frontend.v3_3.InclusiveBound
 
 class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val variable = varFor("n")
-  val propertyKeyName: PropertyKeyName = PropertyKeyName("prop")_
-  val property: Property = Property(variable, propertyKeyName)_
+  val variable                         = varFor("n")
+  val propertyKeyName: PropertyKeyName = PropertyKeyName("prop") _
+  val property: Property               = Property(variable, propertyKeyName) _
 
   test("Constructs RangeLessThan") {
     valueRangeSeekable(lessThan(1)).range should equal(RangeLessThan(NonEmptyList(exclusive(1))))
     valueRangeSeekable(lessThanOrEqual(3)).range should equal(RangeLessThan(NonEmptyList(inclusive(3))))
-    valueRangeSeekable(lessThan(1), lessThan(2), lessThanOrEqual(3)).range should equal(RangeLessThan(NonEmptyList(exclusive(1), exclusive(2), inclusive(3))))
+    valueRangeSeekable(lessThan(1), lessThan(2), lessThanOrEqual(3)).range should equal(
+      RangeLessThan(NonEmptyList(exclusive(1), exclusive(2), inclusive(3))))
   }
 
   test("Constructs RangeGreaterThan") {
     valueRangeSeekable(greaterThan(1)).range should equal(RangeGreaterThan(NonEmptyList(exclusive(1))))
     valueRangeSeekable(greaterThanOrEqual(3)).range should equal(RangeGreaterThan(NonEmptyList(inclusive(3))))
-    valueRangeSeekable(greaterThan(1), greaterThan(2), greaterThanOrEqual(3)).range should equal(RangeGreaterThan(NonEmptyList(exclusive(1), exclusive(2), inclusive(3))))
+    valueRangeSeekable(greaterThan(1), greaterThan(2), greaterThanOrEqual(3)).range should equal(
+      RangeGreaterThan(NonEmptyList(exclusive(1), exclusive(2), inclusive(3))))
   }
 
   test("Constructs RangeBetween") {
-    valueRangeSeekable(lessThan(1), greaterThan(1)).range should equal(RangeBetween(RangeGreaterThan(NonEmptyList(exclusive(1))), RangeLessThan(NonEmptyList(exclusive(1)))))
-    valueRangeSeekable(greaterThan(1), lessThan(1)).range should equal(RangeBetween(RangeGreaterThan(NonEmptyList(exclusive(1))), RangeLessThan(NonEmptyList(exclusive(1)))))
+    valueRangeSeekable(lessThan(1), greaterThan(1)).range should equal(
+      RangeBetween(RangeGreaterThan(NonEmptyList(exclusive(1))), RangeLessThan(NonEmptyList(exclusive(1)))))
+    valueRangeSeekable(greaterThan(1), lessThan(1)).range should equal(
+      RangeBetween(RangeGreaterThan(NonEmptyList(exclusive(1))), RangeLessThan(NonEmptyList(exclusive(1)))))
 
-    valueRangeSeekable(lessThanOrEqual(1), greaterThanOrEqual(1)).range should equal(RangeBetween(RangeGreaterThan(NonEmptyList(inclusive(1))), RangeLessThan(NonEmptyList(inclusive(1)))))
-    valueRangeSeekable(greaterThanOrEqual(1), lessThanOrEqual(1)).range should equal(RangeBetween(RangeGreaterThan(NonEmptyList(inclusive(1))), RangeLessThan(NonEmptyList(inclusive(1)))))
+    valueRangeSeekable(lessThanOrEqual(1), greaterThanOrEqual(1)).range should equal(
+      RangeBetween(RangeGreaterThan(NonEmptyList(inclusive(1))), RangeLessThan(NonEmptyList(inclusive(1)))))
+    valueRangeSeekable(greaterThanOrEqual(1), lessThanOrEqual(1)).range should equal(
+      RangeBetween(RangeGreaterThan(NonEmptyList(inclusive(1))), RangeLessThan(NonEmptyList(inclusive(1)))))
   }
 
   private def inclusive(v: Int): Bound[Expression] =
-    InclusiveBound(SignedDecimalIntegerLiteral(v.toString)_)
+    InclusiveBound(SignedDecimalIntegerLiteral(v.toString) _)
 
   private def exclusive(v: Int): Bound[Expression] =
-    ExclusiveBound(SignedDecimalIntegerLiteral(v.toString)_)
+    ExclusiveBound(SignedDecimalIntegerLiteral(v.toString) _)
 
   private def lessThan(v: Int): InequalityExpression =
-    LessThan(property, SignedDecimalIntegerLiteral(v.toString)_)(pos)
+    LessThan(property, SignedDecimalIntegerLiteral(v.toString) _)(pos)
 
   private def lessThanOrEqual(v: Int): InequalityExpression =
-    LessThanOrEqual(property, SignedDecimalIntegerLiteral(v.toString)_)(pos)
+    LessThanOrEqual(property, SignedDecimalIntegerLiteral(v.toString) _)(pos)
 
   private def greaterThan(v: Int): InequalityExpression =
-    GreaterThan(property, SignedDecimalIntegerLiteral(v.toString)_)(pos)
+    GreaterThan(property, SignedDecimalIntegerLiteral(v.toString) _)(pos)
 
   private def greaterThanOrEqual(v: Int): InequalityExpression =
-    GreaterThanOrEqual(property, SignedDecimalIntegerLiteral(v.toString)_)(pos)
+    GreaterThanOrEqual(property, SignedDecimalIntegerLiteral(v.toString) _)(pos)
 
   private def valueRangeSeekable(first: InequalityExpression, others: InequalityExpression*) = {
     val inequalities = NonEmptyList(first, others: _*)

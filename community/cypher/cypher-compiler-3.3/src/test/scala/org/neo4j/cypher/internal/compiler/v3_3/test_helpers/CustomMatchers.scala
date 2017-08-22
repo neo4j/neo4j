@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.test_helpers
 
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.reflect.ClassTag
 
 trait CustomMatchers {
   class IsTypeOf(clazz: Class[_]) extends Matcher[Any] {
 
-    def apply(left: Any) = MatchResult(
-      clazz.isAssignableFrom(left.getClass),
-      s"expected $left to have type $clazz but it was ${left.getClass}",
-      s"$left has type $clazz")
+    def apply(left: Any) =
+      MatchResult(clazz.isAssignableFrom(left.getClass),
+                  s"expected $left to have type $clazz but it was ${left.getClass}",
+                  s"$left has type $clazz")
   }
 
   def haveType[T](implicit manifest: ClassTag[T]) = new IsTypeOf(manifest.runtimeClass)

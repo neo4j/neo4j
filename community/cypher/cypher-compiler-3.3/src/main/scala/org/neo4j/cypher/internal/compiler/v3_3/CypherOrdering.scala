@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.kernel.impl.api.PropertyValueComparison
 
 object CypherOrdering {
-  val DEFAULT = Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]).withNullsLast
+  val DEFAULT =
+    Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]).withNullsLast
 }
 
 case class MinMaxOrdering[T](ordering: Ordering[T]) {
@@ -34,7 +35,8 @@ case class MinMaxOrdering[T](ordering: Ordering[T]) {
 }
 
 object MinMaxOrdering {
-  val BY_VALUE = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]))
+  val BY_VALUE = MinMaxOrdering(
+    Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_VALUES.asInstanceOf[Comparator[Any]]))
   val BY_NUMBER = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_NUMBERS))
   val BY_STRING = MinMaxOrdering(Ordering.comparatorToOrdering(PropertyValueComparison.COMPARE_STRINGS))
 
@@ -64,4 +66,3 @@ object MinMaxOrdering {
     }
   }
 }
-

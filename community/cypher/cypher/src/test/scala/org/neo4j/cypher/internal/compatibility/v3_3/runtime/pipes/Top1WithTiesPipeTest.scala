@@ -26,18 +26,19 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class Top1WithTiesPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
-    val source = new FakePipe(List(), "x" -> CTAny)
+    val source   = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization) should be(empty)
   }
 
   test("simple sorting works as expected") {
-    val list = List(Map("x" -> "B"), Map("x" -> "A")).iterator
-    val source = new FakePipe(list, "x" -> CTString)
+    val list     = List(Map("x" -> "B"), Map("x" -> "A")).iterator
+    val source   = new FakePipe(list, "x" -> CTString)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A")))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> "A")))
   }
 
   test("three ties for the first place are all returned") {
@@ -48,68 +49,68 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map("x" -> 2, "y" -> 4)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source   = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> 1, "y" -> 1),
-      Map("x" -> 1, "y" -> 2)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> 1, "y" -> 1), Map("x" -> 1, "y" -> 2)))
   }
 
   test("if only null is present, it should be returned") {
     val input = List(
-      Map[String,Any]("x" -> null, "y" -> 1),
-      Map[String,Any]("x" -> null, "y" -> 2)
+      Map[String, Any]("x" -> null, "y" -> 1),
+      Map[String, Any]("x" -> null, "y" -> 2)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source   = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> null, "y" -> 1),
-      Map("x" -> null, "y" -> 2)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> null, "y" -> 1), Map("x" -> null, "y" -> 2)))
   }
 
   test("null should not be returned if other values are present") {
     val input = List(
-      Map[String,Any]("x" -> 1, "y" -> 1),
-      Map[String,Any]("x" -> null, "y" -> 2),
-      Map[String,Any]("x" -> 2, "y" -> 3)
+      Map[String, Any]("x" -> 1, "y"    -> 1),
+      Map[String, Any]("x" -> null, "y" -> 2),
+      Map[String, Any]("x" -> 2, "y"    -> 3)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source   = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> 1, "y" -> 1)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> 1, "y" -> 1)))
   }
 
   test("comparing arrays") {
     val smaller = Array(1, 2)
     val input = List(
-      Map[String,Any]("x" -> Array(3,4), "y" -> 2),
-      Map[String,Any]("x" -> smaller, "y" -> 1)
+      Map[String, Any]("x" -> Array(3, 4), "y" -> 2),
+      Map[String, Any]("x" -> smaller, "y"     -> 1)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source   = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> smaller, "y" -> 1)
-    ))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(
+        Map("x" -> smaller, "y" -> 1)
+      ))
   }
 
   test("comparing numbers and strings") {
     val input = List(
-      Map[String,Any]("x" -> 1, "y" -> 1),
-      Map[String,Any]("x" -> "A", "y" -> 2)
+      Map[String, Any]("x" -> 1, "y"   -> 1),
+      Map[String, Any]("x" -> "A", "y" -> 2)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source   = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> "A", "y" -> 2)
-    ))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(
+        Map("x" -> "A", "y" -> 2)
+      ))
   }
 }

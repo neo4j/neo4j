@@ -17,8 +17,10 @@
 package org.neo4j.cypher.internal.frontend.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticState.ScopeLocation
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, Variable}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.{TreeElem, TreeZipper}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.TreeElem
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.TreeZipper
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
 
@@ -29,7 +31,7 @@ import scala.language.postfixOps
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def asVariable = Variable(name)(position)
+  def asVariable       = Variable(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -46,21 +48,23 @@ case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec) 
   if (positions.isEmpty)
     throw new InternalException(s"Cannot create empty symbol with name '$name'")
 
-  def uses = positions.map { pos => SymbolUse(name, pos) }
+  def uses = positions.map { pos =>
+    SymbolUse(name, pos)
+  }
 
   val definition = SymbolUse(name, positions.toSeq.min(InputPosition.byOffset))
 
-  override def toString = s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
+  override def toString =
+    s"${definition.nameWithPosition}(${positions.map(_.offset).mkString(",")}): ${types.toShortString}"
 }
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
-  lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
+  lazy val actualUnCoerced  = expected.fold(specified)(specified intersect)
   lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
-  lazy val wasCoerced = actualUnCoerced != actual
+  lazy val wasCoerced       = actualUnCoerced != actual
 
   def expect(types: TypeSpec) = copy(expected = Some(types))
 }
-
 
 object Scope {
   val empty = Scope(symbolTable = HashMap.empty, children = Vector())
@@ -87,7 +91,8 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
 
   def mergePositions(variable: String, positions: Set[InputPosition]) = symbolTable.get(variable) match {
-    case Some(symbol) => copy(symbolTable = symbolTable.updated(variable, symbol.copy(positions = positions ++ symbol.positions)))
+    case Some(symbol) =>
+      copy(symbolTable = symbolTable.updated(variable, symbol.copy(positions = positions ++ symbol.positions)))
     case None => self
   }
 
@@ -112,9 +117,11 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def variableDefinitions: Map[SymbolUse, SymbolUse] =
     symbolTable.values.flatMap { symbol =>
-      val name = symbol.name
+      val name       = symbol.name
       val definition = symbol.definition
-      symbol.positions.map { pos => SymbolUse(name, pos) -> definition }
+      symbol.positions.map { pos =>
+        SymbolUse(name, pos) -> definition
+      }
     }.toMap
 
   def allScopes: Seq[Scope] =
@@ -137,14 +144,15 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
-      val symbol = symbolTable(key)
+      val symbol     = symbolTable(key)
       val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$key: $symbolText$EOL")
     }
-    children.foreach { child => child.dumpSingle(indent, builder) }
+    children.foreach { child =>
+      child.dumpSingle(indent, builder)
+    }
   }
 }
-
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
@@ -152,26 +160,28 @@ object SemanticState {
   val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
-    def scope: Scope = location.elem
-    def rootScope: Scope = location.root.elem
+    def scope: Scope                  = location.elem
+    def rootScope: Scope              = location.root.elem
     def parent: Option[ScopeLocation] = location.up.map(ScopeLocation)
 
-    def newChildScope: ScopeLocation = location.insertChild(Scope.empty)
+    def newChildScope: ScopeLocation   = location.insertChild(Scope.empty)
     def newSiblingScope: ScopeLocation = location.insertRight(Scope.empty).get
 
     def isEmpty: Boolean = scope.isEmpty
 
     def localSymbol(name: String): Option[Symbol] = scope.symbol(name)
-    def symbol(name: String): Option[Symbol] = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
+    def symbol(name: String): Option[Symbol]      = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
 
     def symbolNames: Set[String] = scope.symbolNames
 
-    def importScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = location.replace(scope.importScope(other, exclude))
+    def importScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
+      location.replace(scope.importScope(other, exclude))
 
-    def mergeScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = other.symbolTable.values.foldLeft(location) {
-      case (loc, sym) if exclude(sym.name) => loc
-      case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
-    }
+    def mergeScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
+      other.symbolTable.values.foldLeft(location) {
+        case (loc, sym) if exclude(sym.name) => loc
+        case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
+      }
 
     def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateVariable(variable, types, positions))
@@ -187,12 +197,12 @@ case class SemanticState(currentScope: ScopeLocation,
                          notifications: Set[InternalNotification] = Set.empty) {
   def scopeTree = currentScope.rootScope
 
-  def newChildScope = copy(currentScope = currentScope.newChildScope)
+  def newChildScope   = copy(currentScope = currentScope.newChildScope)
   def newSiblingScope = copy(currentScope = currentScope.newSiblingScope)
-  def popScope = copy(currentScope = currentScope.parent.get)
+  def popScope        = copy(currentScope = currentScope.parent.get)
 
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
-  def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
+  def symbolTypes(name: String)            = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
   def importScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.importScope(scope, exclude))
@@ -200,19 +210,22 @@ case class SemanticState(currentScope: ScopeLocation,
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
 
-  def declareVariable(variable: ast.Variable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
+  def declareVariable(variable: ast.Variable,
+                      possibleTypes: TypeSpec,
+                      positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case None =>
         Right(updateVariable(variable, possibleTypes, positions + variable.position))
       case Some(symbol) =>
-        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
+        Left(
+          SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
     }
 
   def addNotification(notification: InternalNotification) = copy(notifications = notifications + notification)
 
   def implicitVariable(variable: ast.Variable, possibleTypes: TypeSpec): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
-      case None         =>
+      case None =>
         Right(updateVariable(variable, possibleTypes, Set(variable.position)))
       case Some(symbol) =>
         val inferredTypes = symbol.types intersect possibleTypes
@@ -221,15 +234,18 @@ case class SemanticState(currentScope: ScopeLocation,
         } else {
           val existingTypes = symbol.types.mkString(", ", " or ")
           val expectedTypes = possibleTypes.mkString(", ", " or ")
-          Left(SemanticError(
-            s"Type mismatch: ${variable.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
-            variable.position, symbol.positions.toSeq: _*))
+          Left(
+            SemanticError(
+              s"Type mismatch: ${variable.name} already defined with conflicting type $existingTypes (expected $expectedTypes)",
+              variable.position,
+              symbol.positions.toSeq: _*
+            ))
         }
     }
 
   def ensureVariableDefined(variable: ast.Variable): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
-      case None         =>
+      case None =>
         Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
       case Some(symbol) =>
         Right(updateVariable(variable, symbol.types, symbol.positions + variable.position))
@@ -239,7 +255,7 @@ case class SemanticState(currentScope: ScopeLocation,
     expression match {
       case variable: ast.Variable =>
         implicitVariable(variable, possibleTypes)
-      case _                          =>
+      case _ =>
         Right(copy(typeTable = typeTable.updated(expression, ExpressionTypeInfo(possibleTypes))))
     }
 
@@ -249,7 +265,8 @@ case class SemanticState(currentScope: ScopeLocation,
     (copy(typeTable = typeTable.updated(expression, updated)), updated.actual)
   }
 
-  def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
+  def expressionType(expression: ast.Expression): ExpressionTypeInfo =
+    typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
   private def updateVariable(variable: ast.Variable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(

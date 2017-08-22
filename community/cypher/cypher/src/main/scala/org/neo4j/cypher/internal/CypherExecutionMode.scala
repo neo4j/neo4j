@@ -19,16 +19,17 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherOptionCompanion, CypherOption}
+import org.neo4j.cypher.CypherOptionCompanion
+import org.neo4j.cypher.CypherOption
 
 sealed abstract class CypherExecutionMode(modeName: String) extends CypherOption(modeName)
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode] {
 
-  case object normal extends CypherExecutionMode("normal")
+  case object normal  extends CypherExecutionMode("normal")
   case object profile extends CypherExecutionMode("profile")
   case object explain extends CypherExecutionMode("explain")
 
-  val default = normal
+  val default                       = normal
   val all: Set[CypherExecutionMode] = Set(profile, explain, normal)
 }

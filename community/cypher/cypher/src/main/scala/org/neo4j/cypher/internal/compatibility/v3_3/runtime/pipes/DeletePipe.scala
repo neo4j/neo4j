@@ -25,14 +25,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElemen
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.PathValue
 
 import scala.collection.JavaConverters._
 
-case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
-                     (val id: Id = new Id)
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
-
+case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(src)
+    with GraphElementPropertyFunctions {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
@@ -46,16 +47,18 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
         case p: PathValue =>
           deletePath(p)(state)
         case other =>
-          throw new CypherTypeException(s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
+          throw new CypherTypeException(
+            s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
       }
       row
     }
   }
 
-  private def deleteNode(n: NodeValue)(implicit state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n.id())) {
-    if (forced) state.query.detachDeleteNode(n.id())
-    else state.query.nodeOps.delete(n.id())
-  }
+  private def deleteNode(n: NodeValue)(implicit state: QueryState) =
+    if (!state.query.nodeOps.isDeletedInThisTx(n.id())) {
+      if (forced) state.query.detachDeleteNode(n.id())
+      else state.query.nodeOps.delete(n.id())
+    }
 
   private def deleteRelationship(r: EdgeValue)(implicit state: QueryState) =
     if (!state.query.relationshipOps.isDeletedInThisTx(r.id())) state.query.relationshipOps.delete(r.id())

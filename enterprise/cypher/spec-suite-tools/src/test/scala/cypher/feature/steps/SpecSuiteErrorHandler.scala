@@ -19,33 +19,43 @@
  */
 package cypher.feature.steps
 
-import org.neo4j.graphdb.{ConstraintViolationException, QueryExecutionException, Result, Transaction}
+import org.neo4j.graphdb.ConstraintViolationException
+import org.neo4j.graphdb.QueryExecutionException
+import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.Transaction
 import org.opencypher.tools.tck.constants.TCKErrorDetails._
-import org.opencypher.tools.tck.constants.{TCKErrorPhases, TCKErrorTypes}
-import org.scalatest.{Assertions, Matchers}
+import org.opencypher.tools.tck.constants.TCKErrorPhases
+import org.opencypher.tools.tck.constants.TCKErrorTypes
+import org.scalatest.Assertions
+import org.scalatest.Matchers
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) extends Matchers with Assertions {
 
   def check(result: Try[Result], tx: Transaction) = {
     phase match {
       case TCKErrorPhases.COMPILE_TIME => checkError(result, compileTimeError)
-      case TCKErrorPhases.RUNTIME => result match {
-        case Success(triedResult) =>
-          // might need to exhaust result to provoke error
-          val consumedResult = Try {
-            while (triedResult.hasNext) {
-              triedResult.next()
+      case TCKErrorPhases.RUNTIME =>
+        result match {
+          case Success(triedResult) =>
+            // might need to exhaust result to provoke error
+            val consumedResult = Try {
+              while (triedResult.hasNext) {
+                triedResult.next()
+              }
+              tx.success()
+              tx.close()
+              triedResult
             }
-            tx.success()
-            tx.close()
-            triedResult
-          }
-          checkError(consumedResult, runtimeError)
-        case x => checkError(x, runtimeError)
-      }
-      case _ => fail(s"Unknown phase $phase specified. Supported values are '${TCKErrorPhases.COMPILE_TIME}' and '${TCKErrorPhases.RUNTIME}'.")
+            checkError(consumedResult, runtimeError)
+          case x => checkError(x, runtimeError)
+        }
+      case _ =>
+        fail(
+          s"Unknown phase $phase specified. Supported values are '${TCKErrorPhases.COMPILE_TIME}' and '${TCKErrorPhases.RUNTIME}'.")
     }
   }
 
@@ -93,11 +103,14 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(INVALID_ARGUMENT_TYPE)
     else if (msg.matches("Can't use aggregate functions inside of aggregate functions\\."))
       detail should equal(NESTED_AGGREGATION)
-    else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
+    else if (msg.matches(
+               "Can't create node `(\\w+)` with labels or properties here. The variable is already declared in this context"))
       detail should equal(VARIABLE_ALREADY_BOUND)
-    else if (msg.matches("Can't create node `(\\w+)` with labels or properties here. It already exists in this context"))
+    else if (msg.matches(
+               "Can't create node `(\\w+)` with labels or properties here. It already exists in this context"))
       detail should equal(VARIABLE_ALREADY_BOUND)
-    else if (msg.matches("Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
+    else if (msg.matches(
+               "Can't create `\\w+` with properties or labels here. The variable is already declared in this context"))
       detail should equal(VARIABLE_ALREADY_BOUND)
     else if (msg.matches("Can't create `\\w+` with properties or labels here. It already exists in this context"))
       detail should equal(VARIABLE_ALREADY_BOUND)
@@ -121,11 +134,13 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(RELATIONSHIP_UNIQUENESS_VIOLATION)
     else if (msg.matches(semanticError("Variable length relationships cannot be used in ((CREATE)|(MERGE))")))
       detail should equal(CREATING_VAR_LENGTH)
-    else if (msg.matches(semanticError("Parameter maps cannot be used in ((MATCH)|(MERGE)) patterns \\(use a literal map instead, eg. \"\\{id: \\{param\\}\\.id\\}\"\\)")))
+    else if (msg.matches(semanticError(
+               "Parameter maps cannot be used in ((MATCH)|(MERGE)) patterns \\(use a literal map instead, eg. \"\\{id: \\{param\\}\\.id\\}\"\\)")))
       detail should equal(INVALID_PARAMETER_USE)
     else if (msg.matches(semanticError("Variable `.+` already declared")))
       detail should equal(VARIABLE_ALREADY_BOUND)
-    else if (msg.matches(semanticError("MATCH cannot follow OPTIONAL MATCH \\(perhaps use a WITH clause between them\\)")))
+    else if (msg.matches(
+               semanticError("MATCH cannot follow OPTIONAL MATCH \\(perhaps use a WITH clause between them\\)")))
       detail should equal(INVALID_CLAUSE_COMPOSITION)
     else if (msg.matches(semanticError("Invalid combination of UNION and UNION ALL")))
       detail should equal(INVALID_CLAUSE_COMPOSITION)
@@ -137,7 +152,8 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(INVALID_UNICODE_CHARACTER)
     else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over lists")))
       detail should equal(INVALID_AGGREGATION)
-    else if (msg.matches(semanticError("Can't use aggregating expressions inside of expressions executing over collections")))
+    else if (msg.matches(
+               semanticError("Can't use aggregating expressions inside of expressions executing over collections")))
       detail should equal(INVALID_AGGREGATION)
     else if (msg.matches(semanticError("It is not allowed to refer to variables in ((SKIP)|(LIMIT))")))
       detail should equal(NON_CONSTANT_EXPRESSION)
@@ -147,21 +163,25 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal(NON_CONSTANT_EXPRESSION)
     else if (msg.matches(semanticError("A single relationship type must be specified for ((CREATE)|(MERGE))")))
       detail should equal(NO_SINGLE_RELATIONSHIP_TYPE)
-    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+    else if (msg.matches(
+               s"${DOTALL}Invalid input '.*': expected an identifier character, whitespace, '\\|', a length specification, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       detail should equal(INVALID_RELATIONSHIP_PATTERN)
-    else if (msg.matches(s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
+    else if (msg.matches(
+               s"${DOTALL}Invalid input '.*': expected whitespace, RangeLiteral, a property map or '\\]' \\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*"))
       detail should equal(INVALID_RELATIONSHIP_PATTERN)
     else if (msg.matches(semanticError("invalid literal number")))
       detail should equal(INVALID_NUMBER_LITERAL)
     else if (msg.matches(semanticError("Unknown function '.+'")))
       detail should equal(UNKNOWN_FUNCTION)
-    else if (msg.matches(semanticError("Invalid input '.+': expected four hexadecimal digits specifying a unicode character")))
+    else if (msg.matches(
+               semanticError("Invalid input '.+': expected four hexadecimal digits specifying a unicode character")))
       detail should equal(INVALID_UNICODE_LITERAL)
     else if (msg.matches("Cannot merge ((relationship)|(node)) using null property value for .+"))
       detail should equal(MERGE_READ_OWN_WRITES)
     else if (msg.matches(semanticError("Invalid use of aggregating function count\\(\\.\\.\\.\\) in this context")))
       detail should equal(INVALID_AGGREGATION)
-    else if (msg.matches(semanticError("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding ((RETURN)|(WITH))")))
+    else if (msg.matches(semanticError(
+               "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding ((RETURN)|(WITH))")))
       detail should equal(INVALID_AGGREGATION)
     else if (msg.matches(semanticError("Expression in WITH must be aliased \\(use AS\\)")))
       detail should equal(NO_EXPRESSION_ALIAS)
@@ -181,11 +201,14 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
       detail should equal("InvalidNumberOfArguments")
     else if (msg.matches("Expected a parameter named .+"))
       detail should equal("MissingParameter")
-    else if (msg.startsWith("Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
+    else if (msg.startsWith(
+               "Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement."))
       detail should equal("InvalidAggregation")
-    else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)"))
+    else if (msg.startsWith(
+               "Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)"))
       detail should equal("InvalidArgumentPassingMode")
-    else if (msg.matches("There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
+    else if (msg.matches(
+               "There is no procedure with the name `.+` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."))
       detail should equal("ProcedureNotFound")
     else r = false
 
@@ -197,19 +220,25 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
 
     if (msg.matches("Type mismatch: expected a map but was .+"))
       detail should equal(PROPERTY_ACCESS_ON_NON_MAP)
-    else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
+    else if (msg.matches(
+               "Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
       detail should equal(MAP_ELEMENT_ACCESS_BY_NON_STRING)
-    else if (msg.matches("Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
+    else if (msg.matches(
+               "Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
       detail should equal(LIST_ELEMENT_ACCESS_BY_NON_INTEGER)
-    else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
+    else if (msg.matches(
+               ".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
       detail should equal(INVALID_ELEMENT_ACCESS)
-    else if (msg.matches(s"\nElement access is only possible by performing a collection lookup using an integer index,\nor by performing a map lookup using a string key .+"))
+    else if (msg.matches(
+               s"\nElement access is only possible by performing a collection lookup using an integer index,\nor by performing a map lookup using a string key .+"))
       detail should equal(INVALID_ELEMENT_ACCESS)
-    else if (msg.matches(".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
+    else if (msg.matches(
+               ".+ can not create a new node due to conflicts with( both)? existing( and missing)? unique nodes.*"))
       detail should equal("CreateBlockedByConstraint")
     else if (msg.matches("Node\\([0-9]+\\) already exists with label `.+` and property `.+` = .+"))
       detail should equal("CreateBlockedByConstraint")
-    else if (msg.matches("Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
+    else if (msg.matches(
+               "Cannot delete node\\<\\d+\\>, because it still has relationships. To delete this node, you must first delete its relationships."))
       detail should equal(DELETE_CONNECTED_NODE)
     else if (msg.matches("Don't know how to compare that\\..+"))
       detail should equal("IncomparableValues")

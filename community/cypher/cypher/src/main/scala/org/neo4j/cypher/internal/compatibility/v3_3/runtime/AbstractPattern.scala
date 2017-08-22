@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{AstNode, SingleNode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.AstNode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SingleNode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 import scala.collection.Map
 
@@ -33,31 +36,34 @@ abstract sealed class AbstractPattern extends AstNode[AbstractPattern] {
 
   def parsedEntities: Seq[ParsedEntity]
 
-  def possibleStartPoints:Seq[(String,CypherType)]
+  def possibleStartPoints: Seq[(String, CypherType)]
 
-  def name:String
+  def name: String
 
-  def start:AbstractPattern
+  def start: AbstractPattern
 }
 
-
 object PatternWithEnds {
-  def unapply(p: AbstractPattern): Option[(ParsedEntity, ParsedEntity, Seq[String], SemanticDirection, Boolean, Option[Int], Option[String])] = p match {
-    case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, None, maxHops, relIterator) => Some((start, end, typ, dir, optional, maxHops, relIterator))
-    case ParsedVarLengthRelation(_, _, _, _, _, _, _, Some(x), _, _)                                  => throw new SyntaxException("Shortest path does not support a minimal length")
-    case ParsedRelation(name, _, start, end, typ, dir, optional)                                      => Some((start, end, typ, dir, optional, Some(1), Some(name)))
-    case _                                                                                            => None
-  }
+  def unapply(p: AbstractPattern)
+    : Option[(ParsedEntity, ParsedEntity, Seq[String], SemanticDirection, Boolean, Option[Int], Option[String])] =
+    p match {
+      case ParsedVarLengthRelation(name, _, start, end, typ, dir, optional, None, maxHops, relIterator) =>
+        Some((start, end, typ, dir, optional, maxHops, relIterator))
+      case ParsedVarLengthRelation(_, _, _, _, _, _, _, Some(x), _, _) =>
+        throw new SyntaxException("Shortest path does not support a minimal length")
+      case ParsedRelation(name, _, start, end, typ, dir, optional) =>
+        Some((start, end, typ, dir, optional, Some(1), Some(name)))
+      case _ => None
+    }
 }
 
 object ParsedEntity {
-  def apply(name:String) = new ParsedEntity(name, Variable(name), Map.empty, Seq.empty)
+  def apply(name: String) = new ParsedEntity(name, Variable(name), Map.empty, Seq.empty)
 }
 
-case class ParsedEntity(name: String,
-                        expression: Expression,
-                        props: Map[String, Expression],
-                        labels: Seq[KeyToken]) extends AbstractPattern with GraphElementPropertyFunctions {
+case class ParsedEntity(name: String, expression: Expression, props: Map[String, Expression], labels: Seq[KeyToken])
+    extends AbstractPattern
+    with GraphElementPropertyFunctions {
   def makeOutgoing = this
 
   def parsedEntities = Seq(this)
@@ -91,9 +97,10 @@ case class ParsedRelation(name: String,
                           end: ParsedEntity,
                           typ: Seq[String],
                           dir: SemanticDirection,
-                          optional: Boolean) extends PatternWithPathName(name)
-with Turnable
-with GraphElementPropertyFunctions {
+                          optional: Boolean)
+    extends PatternWithPathName(name)
+    with Turnable
+    with GraphElementPropertyFunctions {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: SemanticDirection): AbstractPattern =
@@ -125,16 +132,16 @@ trait Turnable {
     dir match {
       case SemanticDirection.INCOMING => turn(start = end, end = start, dir = SemanticDirection.OUTGOING)
       case SemanticDirection.OUTGOING => this.asInstanceOf[AbstractPattern]
-      case SemanticDirection.BOTH     => (start.expression, end.expression) match {
-        case (Variable(a), Variable(b)) if a < b  => this.asInstanceOf[AbstractPattern]
-        case (Variable(a), Variable(b)) if a >= b => turn(start = end, end = start, dir = dir)
-        case _                                        => this.asInstanceOf[AbstractPattern]
-      }
+      case SemanticDirection.BOTH =>
+        (start.expression, end.expression) match {
+          case (Variable(a), Variable(b)) if a < b  => this.asInstanceOf[AbstractPattern]
+          case (Variable(a), Variable(b)) if a >= b => turn(start = end, end = start, dir = dir)
+          case _                                    => this.asInstanceOf[AbstractPattern]
+        }
     }
   }
 
 }
-
 
 case class ParsedVarLengthRelation(name: String,
                                    props: Map[String, Expression],
@@ -146,9 +153,9 @@ case class ParsedVarLengthRelation(name: String,
                                    minHops: Option[Int],
                                    maxHops: Option[Int],
                                    relIterator: Option[String])
-  extends PatternWithPathName(name)
-  with Turnable
-  with GraphElementPropertyFunctions {
+    extends PatternWithPathName(name)
+    with Turnable
+    with GraphElementPropertyFunctions {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def turn(start: ParsedEntity, end: ParsedEntity, dir: SemanticDirection): AbstractPattern =
@@ -175,7 +182,8 @@ case class ParsedShortestPath(name: String,
                               maxDepth: Option[Int],
                               single: Boolean,
                               relIterator: Option[String])
-  extends PatternWithPathName(name) with GraphElementPropertyFunctions {
+    extends PatternWithPathName(name)
+    with GraphElementPropertyFunctions {
   def rename(newName: String): PatternWithPathName = copy(name = newName)
 
   def makeOutgoing = this
@@ -211,4 +219,3 @@ case class ParsedNamedPath(name: String, pieces: Seq[AbstractPattern]) extends P
 
   def end: AbstractPattern = pieces.last
 }
-

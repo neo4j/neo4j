@@ -20,10 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
-  with CreateTempFileTestSupport {
+class CreateAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with CypherComparisonSupport
+    with CreateTempFileTestSupport {
 
   //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {
@@ -68,8 +72,8 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   }
 
   test("should allow create, delete and return in one go (relationship)") {
-    val typ = "ThisIsTheRelationshipType"
-    val query = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
+    val typ    = "ThisIsTheRelationshipType"
+    val query  = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
     val result = succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
     result.toList should equal(List(Map("type(r)" -> typ)))
   }

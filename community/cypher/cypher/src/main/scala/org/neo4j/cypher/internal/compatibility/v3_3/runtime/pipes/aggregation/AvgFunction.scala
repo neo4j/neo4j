@@ -27,17 +27,17 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.storable._
 
 /**
- * AVG computation is calculated using cumulative moving average approach:
- * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
- */
+  * AVG computation is calculated using cumulative moving average approach:
+  * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
+  */
 class AvgFunction(val value: Expression)
-  extends AggregationFunction
-  with TypeSafeMathSupport
-  with NumericExpressionOnly {
+    extends AggregationFunction
+    with TypeSafeMathSupport
+    with NumericExpressionOnly {
 
   def name = "AVG"
 
-  private var count: Long = 0L
+  private var count: Long              = 0L
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
 
   def result(implicit state: QueryState) =
@@ -48,17 +48,20 @@ class AvgFunction(val value: Expression)
     }
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
-      count += 1
-      val diff = minus(number, asNumberValue(sum.value)) match {
-        case v: NumberValue => v
-        case _ => throw new InternalException("cannot average non-numbers")
+    actOnNumber(
+      value(data),
+      (number) => {
+        count += 1
+        val diff = minus(number, asNumberValue(sum.value)) match {
+          case v: NumberValue => v
+          case _              => throw new InternalException("cannot average non-numbers")
+        }
+        val next = divide(diff, Values.doubleValue(count.toDouble)) match {
+          case v: NumberValue => v
+          case _              => throw new InternalException("cannot average non-numbers")
+        }
+        sum = sum.add(next)
       }
-      val next = divide(diff, Values.doubleValue(count.toDouble)) match {
-        case v: NumberValue => v
-        case _ => throw new InternalException("cannot average non-numbers")
-      }
-      sum = sum.add(next)
-    })
+    )
   }
 }

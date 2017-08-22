@@ -21,19 +21,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{PathImpl, SizeFunction, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.SizeFunction
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values.longValue
 
 class SizeFunctionTest extends CypherFunSuite {
 
   test("size can be used on collections") {
     //given
-    val l = Seq("it", "was", "the")
-    val m = ExecutionContext.from("l" -> l)
+    val l            = Seq("it", "was", "the")
+    val m            = ExecutionContext.from("l" -> l)
     val sizeFunction = SizeFunction(Variable("l"))
 
     //when
@@ -45,8 +48,8 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size can be used on strings") {
     //given
-    val s = "it was the"
-    val m = ExecutionContext.from("s" -> s)
+    val s            = "it was the"
+    val m            = ExecutionContext.from("s" -> s)
     val sizeFunction = SizeFunction(Variable("s"))
 
     //when
@@ -58,8 +61,8 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size cannot be used on paths") {
     //given
-    val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> p)
+    val p            = new PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val m            = ExecutionContext.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then

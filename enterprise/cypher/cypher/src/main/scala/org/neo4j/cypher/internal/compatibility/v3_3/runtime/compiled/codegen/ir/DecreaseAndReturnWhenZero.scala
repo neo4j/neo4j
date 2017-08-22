@@ -21,10 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{LessThanEqual, MethodStructure}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.LessThanEqual
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
-case class DecreaseAndReturnWhenZero(opName: String, variableName: String, action: Instruction, startValue: CodeGenExpression)
-  extends Instruction {
+case class DecreaseAndReturnWhenZero(opName: String,
+                                     variableName: String,
+                                     action: Instruction,
+                                     startValue: CodeGenExpression)
+    extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     startValue.init(generator)

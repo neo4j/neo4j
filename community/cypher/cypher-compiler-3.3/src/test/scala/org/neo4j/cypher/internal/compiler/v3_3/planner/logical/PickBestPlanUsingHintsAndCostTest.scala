@@ -21,11 +21,16 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{LogicalPlanProducer, pickBestPlanUsingHintsAndCost}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, PropertyKeyName, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.pickBestPlanUsingHintsAndCost
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.UsingIndexHint
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, Cost, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.Cost
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -35,9 +40,9 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
     }
   }
 
-  val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("name")_))_
-  val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("age")_))_
-  val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("income")_))_
+  val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person") _, Seq(PropertyKeyName("name") _)) _
+  val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person") _, Seq(PropertyKeyName("age") _)) _
+  val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person") _, Seq(PropertyKeyName("income") _)) _
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")
@@ -53,12 +58,12 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
-    val b = fakeLogicalPlanFor("b")
+    val b  = fakeLogicalPlanFor("b")
 
     val GIVEN = new given {
       cost = {
         case (p, _) if p == ab => Cost(100)
-        case (p, _) if p == b => Cost(50)
+        case (p, _) if p == b  => Cost(50)
       }
     }
 
@@ -67,47 +72,53 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("picks the right plan by cost and secondly by the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
-    val c = fakeLogicalPlanFor("c")
+    val c  = fakeLogicalPlanFor("c")
 
     assertTopPlan(winner = ab, ab, c)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solves a hint over plan that solves no hint") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a = fakeLogicalPlanFor("a").updateSolved(f)
-    val b = fakeLogicalPlanFor("a")
+    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
+    val b                               = fakeLogicalPlanFor("a")
 
     assertTopPlan(winner = a, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a = fakeLogicalPlanFor("a").updateSolved(f)
+    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
     val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Seq(hint1, hint2)))
-    val b = fakeLogicalPlanFor("a").updateSolved(g)
+    val b                               = fakeLogicalPlanFor("a").updateSolved(g)
 
     assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a = fakeLogicalPlanFor("a").updateSolved(f)
-    val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
+    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
+    val g: PlannerQuery => PlannerQuery =
+      (query: PlannerQuery) => query.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
     val b = fakeLogicalPlanFor("a").updateSolved(g)
 
     assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
   }
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
-    val environment = LogicalPlanningEnvironment(GIVEN)
+    val environment      = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, GIVEN.expressionEvaluator)
-    implicit val context = LogicalPlanningContext(null, LogicalPlanProducer(metrics.cardinality), metrics, null, null, notificationLogger = devNullLogger)
+    implicit val context = LogicalPlanningContext(null,
+                                                  LogicalPlanProducer(metrics.cardinality),
+                                                  metrics,
+                                                  null,
+                                                  null,
+                                                  notificationLogger = devNullLogger)
     pickBestPlanUsingHintsAndCost(context)(candidates) should equal(Some(winner))
     pickBestPlanUsingHintsAndCost(context)(candidates.reverse) should equal(Some(winner))
   }
 
-  private implicit def lift(f: PlannerQuery => PlannerQuery): PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation =
-    (solved: PlannerQuery with CardinalityEstimation) => CardinalityEstimation.lift(f(solved), solved.estimatedCardinality)
+  private implicit def lift(f: PlannerQuery => PlannerQuery)
+    : PlannerQuery with CardinalityEstimation => PlannerQuery with CardinalityEstimation =
+    (solved: PlannerQuery with CardinalityEstimation) =>
+      CardinalityEstimation.lift(f(solved), solved.estimatedCardinality)
 }
-
-

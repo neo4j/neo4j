@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.AbstractPattern
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 
-case class NamedPath(pathName: String, pathPattern: AbstractPattern*) extends Traversable[AbstractPattern]  {
+case class NamedPath(pathName: String, pathPattern: AbstractPattern*) extends Traversable[AbstractPattern] {
   def foreach[U](f: (AbstractPattern) => U) {
     pathPattern.foreach(f)
   }
@@ -31,4 +31,3 @@ case class NamedPath(pathName: String, pathPattern: AbstractPattern*) extends Tr
 
   override def toString() = "NamedPath(%s = %s)".format(pathName, pathPattern.mkString(","))
 }
-

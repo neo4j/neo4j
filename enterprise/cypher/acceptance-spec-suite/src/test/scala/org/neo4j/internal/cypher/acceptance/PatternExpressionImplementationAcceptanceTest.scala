@@ -20,13 +20,18 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.ExpandExpression
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.Node
 import org.scalatest.Matchers
 
-class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
+class PatternExpressionImplementationAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with Matchers
+    with NewPlannerTestSupport {
 
   // TESTS WITH CASE EXPRESSION
 
@@ -35,7 +40,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
 
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
     result shouldNot use("Expand(All)")
@@ -46,35 +52,39 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
 
     result.toList.head("p").asInstanceOf[Long] should equal(42)
     result shouldNot use("Expand(All)")
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
-    val start = createLabeledNode("A")
-    val c = createLabeledNode("C")
-    val rel1 = relate(start, c)
-    val rel2 = relate(start, c)
+    val start  = createLabeledNode("A")
+    val c      = createLabeledNode("C")
+    val rel1   = relate(start, c)
+    val rel2   = relate(start, c)
     val start2 = createLabeledNode("B")
-    val d = createLabeledNode("D")
-    val rel3 = relate(start2, d)
-    val rel4 = relate(start2, d)
+    val d      = createLabeledNode("D")
+    val rel3   = relate(start2, d)
+    val rel4   = relate(start2, d)
 
     graph.inTx {
-      val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
+      val result = executeWithAllPlannersAndCompatibilityMode(
+        "match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
         .map(_.mapValues {
           case l: Seq[Any] => l.toSet
-          case x => x
-        }).toList
+          case x           => x
+        })
+        .toList
 
-      result should equal(List(
-        Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-        Map("p" -> 42),
-        Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-        Map("p" -> 42)
-      ))
+      result should equal(
+        List(
+          Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+          Map("p" -> 42),
+          Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+          Map("p" -> 42)
+        ))
     }
   }
 
@@ -83,14 +93,12 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """match (n)
+    val result = executeWithAllPlannersAndCompatibilityMode("""match (n)
         |with case
         |       when id(n) >= 0 then (n)-->()
         |       else 42
         |     end as p, count(n) as c
-        |return p, c order by c""".stripMargin)
-      .toList.head("p").asInstanceOf[Seq[_]]
+        |return p, c order by c""".stripMargin).toList.head("p").asInstanceOf[Seq[_]]
 
     result should have size 2
   }
@@ -100,34 +108,40 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) with case when id(n) < 0 then (n)-->() else 42 end as p, count(n) as c return p, c")
-      .toList.head("p").asInstanceOf[Long]
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) with case when id(n) < 0 then (n)-->() else 42 end as p, count(n) as c return p, c").toList
+      .head("p")
+      .asInstanceOf[Long]
 
     result should equal(42)
   }
 
-  test("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c") {
-    val start = createLabeledNode("A")
-    val c = createLabeledNode("C")
-    val rel1 = relate(start, c)
-    val rel2 = relate(start, c)
+  test(
+    "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c") {
+    val start  = createLabeledNode("A")
+    val c      = createLabeledNode("C")
+    val rel1   = relate(start, c)
+    val rel2   = relate(start, c)
     val start2 = createLabeledNode("B")
-    val d = createLabeledNode("D")
-    val rel3 = relate(start2, d)
-    val rel4 = relate(start2, d)
+    val d      = createLabeledNode("D")
+    val rel3   = relate(start2, d)
+    val rel4   = relate(start2, d)
 
     graph.inTx {
-      val result = executeWithAllPlannersAndCompatibilityMode("match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
+      val result = executeWithAllPlannersAndCompatibilityMode(
+        "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
         .map(_.mapValues {
           case l: Seq[Any] => l.toSet
-          case x => x
-        }).toSet
+          case x           => x
+        })
+        .toSet
 
-      result should equal(Set(
-        Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-        Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-        Map("c" -> 2, "p" -> 42)
-      ))
+      result should equal(
+        Set(
+          Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+          Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+          Map("c" -> 2, "p" -> 42)
+        ))
     }
   }
 
@@ -136,11 +150,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n")
 
-    result.toList should equal(List(
-      Map("n" -> start)
-    ))
+    result.toList should equal(
+      List(
+        Map("n" -> start)
+      ))
     result shouldNot use("RollUpApply")
   }
 
@@ -149,7 +165,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where (case when id(n) < 0 then length((n)-->()) else 42 end) > 0 return n")
 
     result should have size 3
   }
@@ -159,7 +176,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n")
+    val result =
+      executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-[:X]->()) else 42 end) > 0 return n")
 
     result should have size 3
   }
@@ -169,13 +187,15 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n")
+    val result =
+      executeWithAllPlanners("match (n) where (case when id(n) < 0 then length((n)-->(:X)) else 42 end) > 0 return n")
 
     result should have size 3
     result shouldNot use("RollUpApply")
   }
 
-  test("match (n) where (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n") {
+  test(
+    "match (n) where (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n") {
     val start = createLabeledNode("A")
     relate(start, createLabeledNode("C"))
     relate(start, createLabeledNode("C"))
@@ -185,17 +205,20 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start3, createNode())
 
     graph.inTx {
-      val result = executeWithAllPlannersAndCompatibilityMode("match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n")
+      val result = executeWithAllPlannersAndCompatibilityMode(
+        "match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n")
 
-      result.toList should equal(List(
-        Map("n" -> start),
-        Map("n" -> start3)
-      ))
+      result.toList should equal(
+        List(
+          Map("n" -> start),
+          Map("n" -> start3)
+        ))
       result shouldNot use("RollUpApply")
     }
   }
 
-  test("MATCH (n:FOO) WITH n, COLLECT(DISTINCT { res:CASE WHEN EXISTS ((n)-[:BAR*]->()) THEN 42 END }) as x RETURN n, x") {
+  test(
+    "MATCH (n:FOO) WITH n, COLLECT(DISTINCT { res:CASE WHEN EXISTS ((n)-[:BAR*]->()) THEN 42 END }) as x RETURN n, x") {
     val node1 = createLabeledNode("FOO")
     val node2 = createNode()
     relate(node1, node2, "BAR")
@@ -218,8 +241,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(n1, createNode())
     relate(n1, createNode())
 
-    val result = executeWithAllPlanners(
-      """match (a:A)
+    val result = executeWithAllPlanners("""match (a:A)
         |return case
         |         WHEN a.prop = 42 THEN []
         |         ELSE (a)-->()
@@ -236,7 +258,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p")
 
     result shouldNot use("Expand(All)")
   }
@@ -246,7 +269,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n) return case when id(n) < 0 then (n)-->() else 42 end as p")
 
     result shouldNot use("Expand(All)")
   }
@@ -258,7 +282,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n) return extract(x IN (n)-->() | head(nodes(x)) )  as p")
 
     result.toList.head("p").asInstanceOf[Seq[_]] should equal(List(start, start))
   }
@@ -268,8 +293,10 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c")
-      .toList.head("p").asInstanceOf[Seq[_]]
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n:A) with extract(x IN (n)-->() | head(nodes(x)) ) as p, count(n) as c return p, c").toList
+      .head("p")
+      .asInstanceOf[Seq[_]]
 
     result should equal(List(start, start))
   }
@@ -279,12 +306,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n")
-      .toList
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where n IN extract(x IN (n)-->() | head(nodes(x)) ) return n").toList
 
-    result should equal(List(
-      Map("n" -> start)
-    ))
+    result should equal(
+      List(
+        Map("n" -> start)
+      ))
   }
 
   // TESTS WITH PLANNING ASSERTIONS
@@ -294,7 +322,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (n)-->(b) with (n)-->() as p, count(b) as c return p, c")
 
     result should use("Expand(All)")
   }
@@ -304,7 +333,8 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val b = createLabeledNode("End")
     relate(a, b)
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c")
 
     result should use("VarLengthExpand(Into)")
   }
@@ -332,7 +362,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) WHERE (n)-[:HAS]->() RETURN n")
 
-    val argumentPLan = result.executionPlanDescription().cd("NodeByLabelScan")
+    val argumentPLan  = result.executionPlanDescription().cd("NodeByLabelScan")
     val estimatedRows = argumentPLan.arguments.collect { case n: EstimatedRows => n }.head
     estimatedRows should equal(EstimatedRows(3.0))
   }
@@ -343,17 +373,18 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     createLabeledNode("A")
     createLabeledNode("A")
     val endNode = createNode()
-    val rel = relate(node, endNode, "HAS")
+    val rel     = relate(node, endNode, "HAS")
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) RETURN (n)-[:HAS]->() as p")
 
     val executionPlanDescription = result.executionPlanDescription()
 
     executionPlanDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
-    executionPlanDescription.cd("Expand(All)").arguments.toSet should equal(Set(
-      ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
-      EstimatedRows(0.25)
-    ))
+    executionPlanDescription.cd("Expand(All)").arguments.toSet should equal(
+      Set(
+        ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
+        EstimatedRows(0.25)
+      ))
   }
 
   test("should be able to execute aggregating-functions on pattern expressions") {

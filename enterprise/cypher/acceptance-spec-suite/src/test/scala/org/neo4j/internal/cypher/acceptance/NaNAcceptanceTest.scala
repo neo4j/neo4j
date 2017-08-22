@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
 class NaNAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
   // This should probably be moved to the TCK
@@ -50,7 +51,8 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode(Map("x" -> Double.NaN))
 
     // When
-    val result = execute("PROFILE MATCH (n) RETURN n.x > n.x AS gt, n.x < n.x AS lt, n.x <= n.x AS le, n.x >= n.x AS ge")
+    val result =
+      execute("PROFILE MATCH (n) RETURN n.x > n.x AS gt, n.x < n.x AS lt, n.x <= n.x AS le, n.x >= n.x AS ge")
 
     // Then
     result.toList should equal(List(Map("gt" -> null, "lt" -> null, "le" -> null, "ge" -> null)))

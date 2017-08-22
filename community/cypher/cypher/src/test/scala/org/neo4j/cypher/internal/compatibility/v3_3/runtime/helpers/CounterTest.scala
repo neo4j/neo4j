@@ -57,8 +57,13 @@ class CounterTest extends CypherFunSuite {
   }
 
   test("limits tracked iterators") {
-    an [Exception] should be thrownBy {
-      Counter().track(1.to(5).iterator).limit(2) { counted => counted shouldBe 3; fail("Limit reached") }.toList
+    an[Exception] should be thrownBy {
+      Counter()
+        .track(1.to(5).iterator)
+        .limit(2) { counted =>
+          counted shouldBe 3; fail("Limit reached")
+        }
+        .toList
     }
   }
 }

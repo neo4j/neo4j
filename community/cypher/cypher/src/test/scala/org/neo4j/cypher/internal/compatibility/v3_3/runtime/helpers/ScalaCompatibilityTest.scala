@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import java.util
 import java.util.Arrays.asList
-import java.util.Collections.{emptyList, emptyMap, singletonMap, singleton => singletonSet}
+import java.util.Collections.emptyList
+import java.util.Collections.emptyMap
+import java.util.Collections.singletonMap
+import java.util.Collections.{singleton => singletonSet}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ScalaCompatibility.asScalaCompatible
-
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -57,7 +59,6 @@ class ScalaCompatibilityTest extends CypherFunSuite {
     asScalaCompatible(it) should equal(Map("k1" -> Map("a" -> 2), "k2" -> 15))
   }
 
-
   test("should convert linked list") {
     val it = new util.LinkedList[Any]()
     it.add(12)
@@ -65,7 +66,6 @@ class ScalaCompatibilityTest extends CypherFunSuite {
 
     asScalaCompatible(it) should equal(List(12, 14))
   }
-
 
   test("should convert array list") {
     val it = new util.ArrayList[Any]()
@@ -103,6 +103,6 @@ class ScalaCompatibilityTest extends CypherFunSuite {
   test("should convert traversable to Iterable") {
     val it = Stream[Any](1, 2, 3)
 
-    it shouldBe an [Iterable[_]]
+    it shouldBe an[Iterable[_]]
   }
 }

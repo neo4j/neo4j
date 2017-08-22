@@ -23,7 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_3.{IdentityMap, Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 /*
@@ -52,23 +55,24 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
     IdentityMap(exprScopes: _*)
   }
 
-  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[IdName]], that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
+  private def computeReplacements(scopeMap: IdentityMap[Expression, Set[IdName]],
+                                  that: AnyRef): IdentityMap[AnyRef, AnyRef] = {
     that.treeFold(IdentityMap.empty[AnyRef, AnyRef]) {
 
       // replace pattern expressions with their plan and also register
       // the contained pattern expression for no further processing
       // by this tree fold
-      case expr@PatternExpression(pattern: RelationshipsPattern) =>
+      case expr @ PatternExpression(pattern: RelationshipsPattern) =>
         acc =>
           // only process pattern expressions that were not contained in previously seen nested plans
           val newAcc = if (acc.contains(expr)) {
             acc
           } else {
-            val arguments = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
-            val uniqueNamedExpr = namedExpr.copy()
-            val path = ast.EveryPath(namedExpr.pattern.element)
-            val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
+            val arguments                      = planArguments ++ scopeMap(expr)
+            val (plan, namedExpr)              = context.strategy.planPatternExpression(arguments, expr)(context)
+            val uniqueNamedExpr                = namedExpr.copy()
+            val path                           = ast.EveryPath(namedExpr.pattern.element)
+            val step: PathStep                 = projectNamedPaths.patternPartPathExpression(path)
             val pathExpression: PathExpression = ast.PathExpression(step)(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, pathExpression)(uniqueNamedExpr.position)
@@ -77,17 +81,17 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
 
           (newAcc, Some(identity))
 
-      // replace pattern comprehension
-      case expr@PatternComprehension(namedPath, pattern, predicate, projection, _) =>
+        // replace pattern comprehension
+      case expr @ PatternComprehension(namedPath, pattern, predicate, projection, _) =>
         acc =>
           assert(namedPath.isEmpty, "Named paths in pattern comprehensions should have been rewritten away already")
           // only process pattern expressions that were not contained in previously seen nested plans
           val newAcc = if (acc.contains(expr)) {
             acc
           } else {
-            val arguments = planArguments ++ scopeMap(expr)
+            val arguments         = planArguments ++ scopeMap(expr)
             val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr)(context)
-            val uniqueNamedExpr = namedExpr.copy()(expr.position)
+            val uniqueNamedExpr   = namedExpr.copy()(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)
@@ -97,7 +101,8 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
 
       // Never ever replace pattern expressions in nested plan expressions in the original expression
       case NestedPlanExpression(_, pattern) =>
-        acc => (acc.updated(pattern, pattern), Some(identity))
+        acc =>
+          (acc.updated(pattern, pattern), Some(identity))
     }
   }
 

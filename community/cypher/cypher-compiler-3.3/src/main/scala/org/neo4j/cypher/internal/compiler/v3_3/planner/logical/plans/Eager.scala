@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-case class Eager(inner: LogicalPlan)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with EagerLogicalPlan {
+case class Eager(inner: LogicalPlan)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with EagerLogicalPlan {
 
   override def availableSymbols: Set[IdName] = inner.availableSymbols
 

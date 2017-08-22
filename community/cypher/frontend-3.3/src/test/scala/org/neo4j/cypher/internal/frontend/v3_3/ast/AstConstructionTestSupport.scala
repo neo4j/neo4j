@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)

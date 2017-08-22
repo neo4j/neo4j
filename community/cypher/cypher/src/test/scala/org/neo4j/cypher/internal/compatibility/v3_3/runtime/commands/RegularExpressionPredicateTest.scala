@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Null}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{LiteralRegularExpression, RegularExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Null
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.LiteralRegularExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.RegularExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -35,12 +37,12 @@ class RegularExpressionPredicateTest extends CypherFunSuite {
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 
-  test("RegEx: should not match if the lhs expression evaluates to something that is not a string"){
+  test("RegEx: should not match if the lhs expression evaluates to something that is not a string") {
     val expression = RegularExpression(Literal(5), Literal(".*"))
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 
-  test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string"){
+  test("LiteralRegEx: should not match if the lhs expression evaluates to something that is not a string") {
     val expression = LiteralRegularExpression(Literal(5), Literal(".*"))
     expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }

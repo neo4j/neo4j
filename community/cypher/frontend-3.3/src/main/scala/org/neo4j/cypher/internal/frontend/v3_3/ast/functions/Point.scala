@@ -17,9 +17,13 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Function, SimpleTypedFunction, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SimpleTypedFunction
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheck, SemanticCheckResult, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
 
 case object Point extends Function with SimpleTypedFunction {
 
@@ -39,10 +43,13 @@ case object Point extends Function with SimpleTypedFunction {
     case map: MapExpression if map.items.exists(withKey("longitude")) && map.items.exists(withKey("latitude")) =>
       SemanticCheckResult.success
 
-    case map: MapExpression => SemanticError(
-      s"A map with keys ${map.items.map((a) => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
-        s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
-        s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.", map.position)
+    case map: MapExpression =>
+      SemanticError(
+        s"A map with keys ${map.items.map((a) => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
+          s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
+          s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.",
+        map.position
+      )
 
     //if using variable or parameter we can't introspect the map here
     case _ => SemanticCheckResult.success

@@ -32,7 +32,7 @@ trait ResultIterator extends Iterator[immutable.Map[String, AnyValue]] {
 
 class EagerResultIterator(result: ResultIterator) extends ResultIterator {
   override val toList = result.toList
-  private val inner = toList.iterator
+  private val inner   = toList.iterator
 
   override def toEager: EagerResultIterator = this
 
@@ -47,7 +47,8 @@ class EagerResultIterator(result: ResultIterator) extends ResultIterator {
 
 class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
                       closer: TaskCloser,
-                      exceptionDecorator: CypherException => CypherException) extends ResultIterator {
+                      exceptionDecorator: CypherException => CypherException)
+    extends ResultIterator {
 
   override def toEager = new EagerResultIterator(this)
 
@@ -75,24 +76,27 @@ class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
     close(success = true)
   }
 
-  private def close(success: Boolean) = decoratedCypherException({
-    closer.close(success)
-  })
+  private def close(success: Boolean) =
+    decoratedCypherException({
+      closer.close(success)
+    })
 
-  private def failIfThrows[U](f: => U): U = decoratedCypherException({
+  private def failIfThrows[U](f: => U): U =
+    decoratedCypherException({
+      try {
+        f
+      } catch {
+        case t: Throwable =>
+          close(success = false)
+          throw t
+      }
+    })
+
+  private def decoratedCypherException[U](f: => U): U =
     try {
       f
     } catch {
-      case t: Throwable =>
-        close(success = false)
-        throw t
+      case e: CypherException =>
+        throw exceptionDecorator(e)
     }
-  })
-
-  private def decoratedCypherException[U](f: => U): U = try {
-    f
-  } catch {
-    case e: CypherException =>
-      throw exceptionDecorator(e)
-  }
 }

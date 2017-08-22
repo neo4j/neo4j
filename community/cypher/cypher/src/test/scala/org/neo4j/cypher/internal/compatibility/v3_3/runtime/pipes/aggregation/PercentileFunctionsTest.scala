@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, NumericHelper, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.doubleValue
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 trait PercentileTest {
   implicit val state = QueryStateHelper.empty
@@ -41,7 +45,7 @@ trait PercentileTest {
 }
 
 class PercentileDiscTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc:Expression) = new PercentileDiscFunction(inner, perc)
+  def createAggregator(inner: Expression, perc: Expression) = new PercentileDiscFunction(inner, perc)
 
   test("singleOne") {
     val values = List(1.0)
@@ -121,7 +125,7 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
 }
 
 class PercentileContTest extends CypherFunSuite with PercentileTest with NumericHelper {
-  def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc)
+  def createAggregator(inner: Expression, perc: Expression) = new PercentileContFunction(inner, perc)
 
   test("singleOne") {
     val values = List(1.0)

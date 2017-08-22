@@ -22,10 +22,12 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 import org.scalacheck.Gen
 
 import scala.util.Random
@@ -33,16 +35,15 @@ import scala.util.Random
 class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen with LogicalPlanningTestSupport2 {
 
   test("NodeHashJoin is planned in IDP planner") {
-    val monitor = mock[IDPQueryGraphSolverMonitor]
+    val monitor  = mock[IDPQueryGraphSolverMonitor]
     val planner1 = SingleComponentPlanner(monitor, solverConfig = DefaultIDPSolverConfig)
-    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
+    val solver   = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
 
     testPlanner(solver)
   }
 
   def testPlanner(solver: QueryGraphSolver) = {
     forAll(patterns) { pattern =>
-
       // reset naming sequence number
       nameSeq.set(0)
 
@@ -77,10 +78,11 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     semanticPlan._2
   }
 
-
   def joinSymbolsIn(plan: LogicalPlan) = {
     val flattenedPlan = plan.treeFold(Seq.empty[LogicalPlan]) {
-      case plan: LogicalPlan => acc => (acc :+ plan, Some(identity))
+      case plan: LogicalPlan =>
+        acc =>
+          (acc :+ plan, Some(identity))
     }
 
     flattenedPlan.collect {
@@ -94,7 +96,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     }
 
     val firstNodeName = findFirstNodeName(elements).getOrElse(return None)
-    val lastNodeName = findFirstNodeName(elements.reverse).getOrElse(return None)
+    val lastNodeName  = findFirstNodeName(elements.reverse).getOrElse(return None)
 
     var joinNodeName: String = null
     do {
@@ -104,8 +106,15 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     Some(joinNodeName)
   }
 
-  def relGen = Gen.oneOf(emptyRelGen, emptyRelWithLengthGen, namedRelGen, namedRelWithLengthGen, typedRelGen,
-    typedRelWithLengthGen, namedTypedRelGen, namedTypedRelWithLengthGen)
+  def relGen =
+    Gen.oneOf(emptyRelGen,
+              emptyRelWithLengthGen,
+              namedRelGen,
+              namedRelWithLengthGen,
+              typedRelGen,
+              typedRelWithLengthGen,
+              namedTypedRelGen,
+              namedTypedRelWithLengthGen)
 
   def nodeGen = Gen.oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen)
 

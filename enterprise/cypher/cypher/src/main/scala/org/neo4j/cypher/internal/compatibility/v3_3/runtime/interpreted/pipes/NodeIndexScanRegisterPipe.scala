@@ -23,17 +23,17 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
 
 case class NodeIndexScanRegisterPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
-                                     pipelineInformation: PipelineInformation)
-                                    (val id: Id = new Id)
-  extends Pipe {
+                                     pipelineInformation: PipelineInformation)(val id: Id = new Id)
+    extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 

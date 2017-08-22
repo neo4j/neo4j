@@ -24,25 +24,36 @@ import java.util.function.BiConsumer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidSemanticsException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
-abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
+abstract class BaseRelationshipPipe(src: Pipe,
+                                    key: String,
+                                    startNode: String,
+                                    typ: LazyType,
+                                    endNode: String,
                                     properties: Option[Expression])
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
+    extends PipeWithSource(src)
+    with GraphElementPropertyFunctions {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
     input.map(createRelationship(_, state))
 
   private def createRelationship(context: ExecutionContext, state: QueryState): ExecutionContext = {
-    val start = getNode(context, startNode)
-    val end = getNode(context, endNode)
-    val typeId = typ.typ(state.query)
+    val start        = getNode(context, startNode)
+    val end          = getNode(context, endNode)
+    val typeId       = typ.typ(state.query)
     val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
     relationship.getType // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.getId)
@@ -52,7 +63,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
   private def getNode(row: ExecutionContext, name: String): NodeValue =
     row.get(name) match {
       case Some(n: NodeValue) => n
-      case x => throw new InternalException(s"Expected to find a node at $name but found nothing $x")
+      case x                  => throw new InternalException(s"Expected to find a node at $name but found nothing $x")
     }
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
@@ -84,19 +95,24 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
 }
 
 case class CreateRelationshipPipe(src: Pipe,
-                                  key: String, startNode: String, typ: LazyType, endNode: String,
-                                  properties: Option[Expression])
-                                 (val id: Id = new Id)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
+                                  key: String,
+                                  startNode: String,
+                                  typ: LazyType,
+                                  endNode: String,
+                                  properties: Option[Expression])(val id: Id = new Id)
+    extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
   override protected def handleNull(key: String) {
     //do nothing
   }
 }
 
-case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
-                                       properties: Option[Expression])
-                                      (val id: Id = new Id)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
+case class MergeCreateRelationshipPipe(src: Pipe,
+                                       key: String,
+                                       startNode: String,
+                                       typ: LazyType,
+                                       endNode: String,
+                                       properties: Option[Expression])(val id: Id = new Id)
+    extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

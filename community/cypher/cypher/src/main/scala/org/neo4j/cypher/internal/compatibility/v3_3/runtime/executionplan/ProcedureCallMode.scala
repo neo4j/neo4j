@@ -27,10 +27,10 @@ import scala.collection.mutable.ArrayBuffer
 
 object ProcedureCallMode {
   def fromAccessMode(mode: ProcedureAccessMode): ProcedureCallMode = mode match {
-    case ProcedureReadOnlyAccess(overrides) => LazyReadOnlyCallMode(overrides)
-    case ProcedureReadWriteAccess(overrides) => EagerReadWriteCallMode(overrides)
+    case ProcedureReadOnlyAccess(overrides)    => LazyReadOnlyCallMode(overrides)
+    case ProcedureReadWriteAccess(overrides)   => EagerReadWriteCallMode(overrides)
     case ProcedureSchemaWriteAccess(overrides) => SchemaWriteCallMode(overrides)
-    case ProcedureDbmsAccess(overrides) => DbmsCallMode(overrides)
+    case ProcedureDbmsAccess(overrides)        => DbmsCallMode(overrides)
   }
 }
 sealed trait ProcedureCallMode {
@@ -52,7 +52,7 @@ case class EagerReadWriteCallMode(allowed: Array[String]) extends ProcedureCallM
   override val queryType: InternalQueryType = READ_WRITE
 
   override def callProcedure(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
+    val builder  = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callReadWriteProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()
@@ -65,7 +65,7 @@ case class SchemaWriteCallMode(allowed: Array[String]) extends ProcedureCallMode
   override val queryType: InternalQueryType = SCHEMA_WRITE
 
   override def callProcedure(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
+    val builder  = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callSchemaWriteProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()
@@ -78,7 +78,7 @@ case class DbmsCallMode(allowed: Array[String]) extends ProcedureCallMode {
   override val queryType: InternalQueryType = DBMS
 
   override def callProcedure(ctx: QueryContext, name: QualifiedName, args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val builder = ArrayBuffer.newBuilder[Array[AnyRef]]
+    val builder  = ArrayBuffer.newBuilder[Array[AnyRef]]
     val iterator = ctx.callDbmsProcedure(name, args, allowed)
     while (iterator.hasNext) {
       builder += iterator.next()

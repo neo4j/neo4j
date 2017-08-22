@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeWithSource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 
-case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
-                                  pipelineInformation: PipelineInformation)
-                                 (val id: Id = new Id)
-  extends PipeWithSource(source) with Pipe {
+case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int], pipelineInformation: PipelineInformation)(
+    val id: Id = new Id)
+    extends PipeWithSource(source)
+    with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
     val context = PrimitiveExecutionContext(pipelineInformation)
@@ -37,7 +40,8 @@ case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
     context
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) {
       Iterator(notFoundExecutionContext(state))
     } else {

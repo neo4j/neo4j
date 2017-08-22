@@ -26,27 +26,39 @@ import cucumber.api.DataTable
 import cypher.SpecSuiteResources
 import cypher.cucumber.CypherOptionPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
-import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
+import cypher.cucumber.db.GraphArchive
+import cypher.cucumber.db.GraphArchiveImporter
+import cypher.cucumber.db.GraphArchiveLibrary
+import cypher.cucumber.db.GraphFileRepository
 import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
-import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseSettings}
-import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.proc.Neo4jTypes
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.opencypher.tools.tck.TCKCucumberTemplate
 import org.opencypher.tools.tck.constants.TCKStepDefinitions._
-import org.scalatest.{FunSuiteLike, Matchers}
+import org.scalatest.FunSuiteLike
+import org.scalatest.Matchers
 
 import scala.collection.JavaConverters._
 import scala.reflect.io.Path
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate with MatcherMatchingSupport {
 
@@ -54,8 +66,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   def specSuiteClass: Class[_]
 
-  lazy val graphArchiveLibrary = new GraphArchiveLibrary(new GraphFileRepository(Path(SpecSuiteResources.targetDirectory(specSuiteClass, "graphs"))))
-  lazy val requiredScenarioName = specSuiteClass.getField( "SCENARIO_NAME_REQUIRED" ).get( null ).toString.trim.toLowerCase
+  lazy val graphArchiveLibrary = new GraphArchiveLibrary(
+    new GraphFileRepository(Path(SpecSuiteResources.targetDirectory(specSuiteClass, "graphs"))))
+  lazy val requiredScenarioName = specSuiteClass.getField("SCENARIO_NAME_REQUIRED").get(null).toString.trim.toLowerCase
 
   var scenarioBuilder: ScenarioExecutionBuilder = _
 
@@ -63,7 +76,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Before() { scenario =>
     val currentScenarioName = scenario.getName.toLowerCase
-    val skip = requiredScenarioName.nonEmpty && !currentScenarioName.contains(requiredScenarioName)
+    val skip                = requiredScenarioName.nonEmpty && !currentScenarioName.contains(requiredScenarioName)
     scenarioBuilder = new ScenarioExecutionBuilder
     scenarioBuilder.register(scenario.getName, skip)
   }
@@ -110,7 +123,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private val INSTALLED_PROCEDURE = """^there exists a procedure (.+):$"""
-  And(INSTALLED_PROCEDURE){ (signatureText: String, values: DataTable) =>
+  And(INSTALLED_PROCEDURE) { (signatureText: String, values: DataTable) =>
     scenarioBuilder.procedureRegistration { g: GraphDatabaseAPI =>
       val parsedSignature = ProcedureSignature.parse(signatureText)
       val kernelProcedure = buildProcedure(parsedSignature, values)
@@ -142,7 +155,6 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
       matcher should accept(new ResultWrapper(r))
     }
   }
-
 
   Then(EXPECT_ERROR) { (typ: String, phase: String, detail: String) =>
     scenarioBuilder.expectError { (r: Try[Result], tx: Transaction) =>
@@ -185,13 +197,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def lendForReadOnlyUse(recipeName: String) = {
-    val recipe = graphArchiveLibrary.recipe(recipeName)
+    val recipe            = graphArchiveLibrary.recipe(recipeName)
     val recommendedPcSize = recipe.recommendedPageCacheSize
-    val pcSize = (recommendedPcSize/MB(32)+1)*MB(32)
-    val config = currentDatabaseConfig(pcSize.toString)
-    val archiveUse = GraphArchive(recipe, config).readOnlyUse
-    val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
-    val builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
+    val pcSize            = (recommendedPcSize / MB(32) + 1) * MB(32)
+    val config            = currentDatabaseConfig(pcSize.toString)
+    val archiveUse        = GraphArchive(recipe, config).readOnlyUse
+    val path              = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
+    val builder           = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(archiveUse.dbConfig.asJava)
     builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
@@ -200,25 +212,32 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   private def currentDatabaseConfig(sizeHint: String) = {
     val builder = Map.newBuilder[String, String]
-    builder += GraphDatabaseSettings.pagecache_memory.name() -> sizeHint
+    builder += GraphDatabaseSettings.pagecache_memory.name()   -> sizeHint
     builder += GraphDatabaseSettings.cypher_hints_error.name() -> "true"
     cypherConfig().foreach { case (s, v) => builder += s.name() -> v }
     builder.result()
   }
 
   private def buildProcedure(parsedSignature: ProcedureSignature, values: DataTable) = {
-    val signatureFields = parsedSignature.fields
+    val signatureFields             = parsedSignature.fields
     val (tableColumns, tableValues) = parseValueTable(values)
     if (tableColumns != signatureFields)
       throw new scala.IllegalArgumentException(
-        s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: ${formatColumns(tableColumns)} Expected: ${formatColumns(signatureFields)})"
+        s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: ${formatColumns(
+          tableColumns)} Expected: ${formatColumns(signatureFields)})"
       )
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
       override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
         val scalaIterator = tableValues
-          .filter { row => input.indices.forall { index => row(index) == input(index) } }
-          .map { row => row.drop(input.length).clone() }
+          .filter { row =>
+            input.indices.forall { index =>
+              row(index) == input(index)
+            }
+          }
+          .map { row =>
+            row.drop(input.length).clone()
+          }
           .toIterator
 
         val rawIterator = RawIterator.wrap[Array[AnyRef], ProcedureException](scalaIterator.asJava)
@@ -231,27 +250,28 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   private def formatColumns(columns: List[String]) = columns.map(column => s"'${column.replace("'", "\\'")}'")
 
   private def asKernelSignature(parsedSignature: ProcedureSignature): org.neo4j.kernel.api.proc.ProcedureSignature = {
-    val builder = org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
+    val builder = org.neo4j.kernel.api.proc.ProcedureSignature
+      .procedureSignature(parsedSignature.namespace.toArray, parsedSignature.name)
     builder.mode(Mode.READ)
     parsedSignature.inputs.foreach { case (name, tpe) => builder.in(name, asKernelType(tpe)) }
     parsedSignature.outputs match {
       case Some(fields) => fields.foreach { case (name, tpe) => builder.out(name, asKernelType(tpe)) }
-      case None => builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
+      case None         => builder.out(org.neo4j.kernel.api.proc.ProcedureSignature.VOID)
     }
     builder.build()
   }
 
-  private def asKernelType(tpe: CypherType):  Neo4jTypes.AnyType = tpe match {
-    case CTMap => Neo4jTypes.NTMap
-    case CTNode => Neo4jTypes.NTNode
-    case CTRelationship => Neo4jTypes.NTRelationship
-    case CTPath => Neo4jTypes.NTPath
+  private def asKernelType(tpe: CypherType): Neo4jTypes.AnyType = tpe match {
+    case CTMap              => Neo4jTypes.NTMap
+    case CTNode             => Neo4jTypes.NTNode
+    case CTRelationship     => Neo4jTypes.NTRelationship
+    case CTPath             => Neo4jTypes.NTPath
     case ListType(innerTpe) => Neo4jTypes.NTList(asKernelType(innerTpe))
-    case CTString => Neo4jTypes.NTString
-    case CTBoolean => Neo4jTypes.NTBoolean
-    case CTNumber => Neo4jTypes.NTNumber
-    case CTInteger => Neo4jTypes.NTInteger
-    case CTFloat => Neo4jTypes.NTFloat
+    case CTString           => Neo4jTypes.NTString
+    case CTBoolean          => Neo4jTypes.NTBoolean
+    case CTNumber           => Neo4jTypes.NTNumber
+    case CTInteger          => Neo4jTypes.NTInteger
+    case CTFloat            => Neo4jTypes.NTFloat
   }
 
   object graphImporter extends GraphArchiveImporter {
@@ -265,9 +285,9 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
 object DbBuilder {
   def initEmpty(config: Map[String, String]): GraphDatabaseAPI = {
-      val builder = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-      builder.setConfig(config.asJava)
-      builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
+    val builder = new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+    builder.setConfig(config.asJava)
+    builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
 
   /**

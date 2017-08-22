@@ -23,7 +23,8 @@ import java.io.File
 import javax.imageio.ImageIO
 
 import cypher.feature.parser.reporting.CombinationChartWriter.UPPER_BOUND
-import org.neo4j.cypher.internal.compiler.v3_3.ast.{QueryTag, QueryTags}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.QueryTag
+import org.neo4j.cypher.internal.compiler.v3_3.ast.QueryTags
 import org.scalatest.FunSuite
 import org.scalatest.Matchers._
 

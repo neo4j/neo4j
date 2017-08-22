@@ -27,11 +27,13 @@ import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherExecutionException, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherExecutionException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType
-import org.neo4j.kernel.api.proc.{Neo4jTypes, QualifiedName => KernelQualifiedName}
+import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.impl.proc.Neo4jValue
@@ -40,10 +42,15 @@ import org.neo4j.procedure.Mode
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with IndexDescriptorCompatibility {
+    extends TransactionBoundTokenContext(tc.statement)
+    with PlanContext
+    with IndexDescriptorCompatibility {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    tc.statement
+      .readOperations()
+      .indexesGetForLabel(labelId)
+      .asScala
       .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
       .flatMap(getOnlineIndex)
   }
@@ -56,7 +63,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   def indexExistsForLabel(labelName: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+      val onlineIndexDescriptors = tc.statement
+        .readOperations()
+        .indexesGetForLabel(labelId)
+        .asScala
         .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
         .flatMap(getOnlineIndex)
 
@@ -67,7 +77,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
-    tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    tc.statement
+      .readOperations()
+      .indexesGetForLabel(labelId)
+      .asScala
       .filter(_.`type`() == KernelIndexDescriptor.Type.UNIQUE)
       .flatMap(getOnlineIndex)
   }
@@ -86,16 +99,20 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   private def getOnlineIndex(descriptor: KernelIndexDescriptor): Option[IndexDescriptor] =
     tc.statement.readOperations().indexGetState(descriptor) match {
-      case InternalIndexState.ONLINE => Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds))
+      case InternalIndexState.ONLINE =>
+        Some(IndexDescriptor(descriptor.schema().getLabelId, descriptor.schema().getPropertyIds))
       case _ => None
     }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-   try {
-      val labelId = getLabelId(labelName)
+    try {
+      val labelId       = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
-      tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+      tc.statement
+        .readOperations()
+        .constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+        .hasNext
     } catch {
       case _: KernelException => false
     }
@@ -129,31 +146,42 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def procedureSignature(name: QualifiedName) = {
     val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val ks = tc.statement.readOperations().procedureGet(kn)
-    val input = ks.inputSignature().asScala
+    val input = ks
+      .inputSignature()
+      .asScala
       .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
       .toIndexedSeq
-    val output = if (ks.isVoid) None else Some(
-      ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated)).toIndexedSeq)
+    val output =
+      if (ks.isVoid) None
+      else
+        Some(
+          ks.outputSignature()
+            .asScala
+            .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated))
+            .toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
-    val mode = asCypherProcMode(ks.mode(), ks.allowed())
-    val description = asOption(ks.description())
-    val warning = asOption(ks.warning())
+    val mode            = asCypherProcMode(ks.mode(), ks.allowed())
+    val description     = asOption(ks.description())
+    val warning         = asOption(ks.warning())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn            = new KernelQualifiedName(name.namespace.asJava, name.name)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
-    val (fcn, aggregation) = if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
-    else (asOption(tc.statement.readOperations().aggregationFunctionGet(kn)), true)
+    val (fcn, aggregation) =
+      if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
+      else (asOption(tc.statement.readOperations().aggregationFunctionGet(kn)), true)
     fcn.map(f => {
-      val input = f.inputSignature().asScala
+      val input = f
+        .inputSignature()
+        .asScala
         .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
         .toIndexedSeq
-      val output = asCypherType(f.outputType())
+      val output          = asCypherType(f.outputType())
       val deprecationInfo = asOption(f.deprecated())
-      val description = asOption(f.description())
+      val description     = asOption(f.description())
 
       UserFunctionSignature(name, input, output, deprecationInfo, f.allowed(), description, isAggregate = aggregation)
     })
@@ -162,33 +190,35 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 
   private def asCypherProcMode(mode: Mode, allowed: Array[String]): ProcedureAccessMode = mode match {
-    case Mode.READ => ProcedureReadOnlyAccess(allowed)
+    case Mode.READ    => ProcedureReadOnlyAccess(allowed)
     case Mode.DEFAULT => ProcedureReadOnlyAccess(allowed)
-    case Mode.WRITE => ProcedureReadWriteAccess(allowed)
-    case Mode.SCHEMA => ProcedureSchemaWriteAccess(allowed)
-    case Mode.DBMS => ProcedureDbmsAccess(allowed)
+    case Mode.WRITE   => ProcedureReadWriteAccess(allowed)
+    case Mode.SCHEMA  => ProcedureSchemaWriteAccess(allowed)
+    case Mode.DBMS    => ProcedureDbmsAccess(allowed)
 
-    case _ => throw new CypherExecutionException(
-      "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(), null)
+    case _ =>
+      throw new CypherExecutionException(
+        "Unable to execute procedure, because it requires an unrecognized execution mode: " + mode.name(),
+        null)
   }
 
-  private def asCypherValue(neo4jValue: Neo4jValue) = CypherValue(neo4jValue.value,
-                                                                  asCypherType(neo4jValue.neo4jType()))
+  private def asCypherValue(neo4jValue: Neo4jValue) =
+    CypherValue(neo4jValue.value, asCypherType(neo4jValue.neo4jType()))
 
   private def asCypherType(neoType: AnyType): CypherType = neoType match {
-    case Neo4jTypes.NTString => symbols.CTString
-    case Neo4jTypes.NTInteger => symbols.CTInteger
-    case Neo4jTypes.NTFloat => symbols.CTFloat
-    case Neo4jTypes.NTNumber => symbols.CTNumber
-    case Neo4jTypes.NTBoolean => symbols.CTBoolean
-    case l: Neo4jTypes.ListType => symbols.CTList(asCypherType(l.innerType()))
-    case Neo4jTypes.NTPoint => symbols.CTPoint
-    case Neo4jTypes.NTNode => symbols.CTNode
+    case Neo4jTypes.NTString       => symbols.CTString
+    case Neo4jTypes.NTInteger      => symbols.CTInteger
+    case Neo4jTypes.NTFloat        => symbols.CTFloat
+    case Neo4jTypes.NTNumber       => symbols.CTNumber
+    case Neo4jTypes.NTBoolean      => symbols.CTBoolean
+    case l: Neo4jTypes.ListType    => symbols.CTList(asCypherType(l.innerType()))
+    case Neo4jTypes.NTPoint        => symbols.CTPoint
+    case Neo4jTypes.NTNode         => symbols.CTNode
     case Neo4jTypes.NTRelationship => symbols.CTRelationship
-    case Neo4jTypes.NTPath => symbols.CTPath
-    case Neo4jTypes.NTGeometry => symbols.CTGeometry
-    case Neo4jTypes.NTMap => symbols.CTMap
-    case Neo4jTypes.NTAny => symbols.CTAny
+    case Neo4jTypes.NTPath         => symbols.CTPath
+    case Neo4jTypes.NTGeometry     => symbols.CTGeometry
+    case Neo4jTypes.NTMap          => symbols.CTMap
+    case Neo4jTypes.NTAny          => symbols.CTAny
   }
 
   override def notificationLogger(): InternalNotificationLogger = logger

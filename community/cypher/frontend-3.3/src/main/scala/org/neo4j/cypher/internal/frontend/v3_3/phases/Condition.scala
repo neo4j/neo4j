@@ -36,9 +36,9 @@ case class BaseContains[T: ClassTag](implicit manifest: Manifest[T]) extends Con
   override def check(in: AnyRef): Seq[String] = in match {
     case state: BaseState =>
       manifest.runtimeClass match {
-        case x if classOf[Statement] == x && state.maybeStatement.isEmpty => Seq("Statement missing")
+        case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
-        case _ => Seq.empty
+        case _                                                                => Seq.empty
       }
     case x => throw new IllegalArgumentException(s"Unknown state: $x")
   }

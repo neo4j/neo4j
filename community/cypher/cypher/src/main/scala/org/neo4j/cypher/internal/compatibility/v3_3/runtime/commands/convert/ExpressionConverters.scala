@@ -20,16 +20,25 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ProjectedPath, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ProjectedPath
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{Many, One, Zero, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ManySeekArgs
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.SeekArgs
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.SingleSeekArg
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.Many
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.One
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.Zero
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ZeroOneOrMany
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ManySeekableArgs
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SeekableArgs
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.graphdb.Direction
-
 
 trait ExpressionConverter {
   def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
@@ -41,10 +50,10 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toCommandExpression(expression: ast.Expression): CommandExpression = {
     converters foreach { c: ExpressionConverter =>
-        c.toCommandExpression(expression, this) match {
-          case Some(x) => return x
-          case None =>
-        }
+      c.toCommandExpression(expression, this) match {
+        case Some(x) => return x
+        case None    =>
+      }
     }
 
     throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
@@ -52,13 +61,14 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toCommandPredicate(in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(e))
-    case e: ast.FilterExpression => predicates.NonEmpty(toCommandExpression(e))
+    case e: ast.FilterExpression  => predicates.NonEmpty(toCommandExpression(e))
     case e: ast.ExtractExpression => predicates.NonEmpty(toCommandExpression(e))
     case e: ast.ListComprehension => predicates.NonEmpty(toCommandExpression(e))
-    case e => toCommandExpression(e) match {
-      case c: Predicate => c
-      case c => predicates.CoercedPredicate(c)
-    }
+    case e =>
+      toCommandExpression(e) match {
+        case c: Predicate => c
+        case c            => predicates.CoercedPredicate(c)
+      }
   }
 
   def toCommandPredicate(e: Option[ast.Expression]): Predicate =
@@ -66,17 +76,18 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
   def toCommandSeekArgs(seek: SeekableArgs): SeekArgs = seek match {
     case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(expr))
-    case ManySeekableArgs(expr) => expr match {
-      case coll: ListLiteral =>
-        ZeroOneOrMany(coll.expressions) match {
-          case Zero => SeekArgs.empty
-          case One(value) => SingleSeekArg(toCommandExpression(value))
-          case Many(_) => ManySeekArgs(toCommandExpression(coll))
-        }
+    case ManySeekableArgs(expr) =>
+      expr match {
+        case coll: ListLiteral =>
+          ZeroOneOrMany(coll.expressions) match {
+            case Zero       => SeekArgs.empty
+            case One(value) => SingleSeekArg(toCommandExpression(value))
+            case Many(_)    => ManySeekArgs(toCommandExpression(coll))
+          }
 
-      case _ =>
-        ManySeekArgs(toCommandExpression(expr))
-    }
+        case _ =>
+          ManySeekArgs(toCommandExpression(expr))
+      }
   }
 
   def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath = {
@@ -107,7 +118,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
         nilProjector
     }
 
-    val projector = project(e.step)
+    val projector    = project(e.step)
     val dependencies = e.step.dependencies.map(_.name)
 
     ProjectedPath(dependencies, projector)
@@ -118,6 +129,6 @@ object DirectionConverter {
   def toGraphDb(dir: SemanticDirection): Direction = dir match {
     case SemanticDirection.INCOMING => Direction.INCOMING
     case SemanticDirection.OUTGOING => Direction.OUTGOING
-    case SemanticDirection.BOTH => Direction.BOTH
+    case SemanticDirection.BOTH     => Direction.BOTH
   }
 }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class GetMatchesFromProbeTable(keys: Set[Variable], code: JoinData, action: Instruction) extends Instruction {
 

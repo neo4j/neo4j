@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext, SortDescription}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Ascending
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.SortDescription
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Projection
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AscSortItem
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -29,9 +32,9 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
-  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
+  val x: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("110") _
+  val y: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("10") _
+  val variableSortItem: AscSortItem    = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   test("should add projection for expressions not already covered") {
@@ -51,7 +54,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("does not add projection when not needed") {
     // given
     val projections: Map[String, ast.Expression] = Map("n" -> ast.Variable("n") _)
-    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
+    implicit val (context, startPlan)            = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections)
@@ -64,7 +67,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("does projection when renaming columns") {
     // given
     val projections: Map[String, ast.Expression] = Map("  n@34" -> ast.Variable("n") _)
-    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
+    implicit val (context, startPlan)            = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections)
@@ -77,7 +80,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos))): (LogicalPlanningContext, LogicalPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos)))
+    : (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
@@ -85,7 +89,10 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val ids = projectionsMap.keys.map(IdName(_)).toSet
 
     val plan =
-      newMockedLogicalPlanWithSolved(ids, CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)), Cardinality(0)))
+      newMockedLogicalPlanWithSolved(
+        ids,
+        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
+                                   Cardinality(0)))
 
     (context, plan)
   }

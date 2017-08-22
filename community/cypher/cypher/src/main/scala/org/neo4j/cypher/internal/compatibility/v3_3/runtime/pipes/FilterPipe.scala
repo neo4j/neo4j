@@ -23,11 +23,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (val id: Id = new Id) extends PipeWithSource(source) {
+case class FilterPipe(source: Pipe, predicate: Predicate)(val id: Id = new Id) extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.filter(ctx => predicate.isTrue(ctx)(state))
 }

@@ -21,40 +21,55 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{
+  Limit => LimitPlan,
+  LoadCSV => LoadCSVPlan,
+  Skip => SkipPlan,
+  _
+}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
 /**
- * Responsible for turning a logical plan with argument pipes into a new pipe.
- * When adding new Pipes and LogicalPlans, this is where you should be looking.
- */
-case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-                                idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters,
-                                rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
-                               (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
-
+  * Responsible for turning a logical plan with argument pipes into a new pipe.
+  * When adding new Pipes and LogicalPlans, this is where you should be looking.
+  */
+case class CommunityPipeBuilder(monitors: Monitors,
+                                recurse: LogicalPlan => Pipe,
+                                readOnly: Boolean,
+                                idMap: Map[LogicalPlan, Id],
+                                expressionConverters: ExpressionConverters,
+                                rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)(
+    implicit context: PipeExecutionBuilderContext,
+    planContext: PlanContext)
+    extends PipeBuilder {
 
   private val buildExpression =
     rewriteAstExpression andThen
       expressionConverters.toCommandExpression andThen
       (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, planContext)))
-
 
   def build(plan: LogicalPlan): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
@@ -72,7 +87,10 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         NodeCountFromCountStorePipe(ident, labels.map(l => l.map(LazyLabel.apply)))(id = id)
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
-        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply), LazyTypes(typeNames.map(_.name)), endLabel.map(LazyLabel.apply))(id = id)
+        RelationshipCountFromCountStorePipe(ident,
+                                            startLabel.map(LazyLabel.apply),
+                                            LazyTypes(typeNames.map(_.name)),
+                                            endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(IdName(ident), label, _) =>
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
@@ -81,10 +99,12 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(nodeIdExpr))(id = id)
 
       case DirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        DirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
+        DirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(
+          id = id)
 
       case UndirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
+        UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(
+          id = id)
 
       case NodeIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -112,10 +132,15 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         ProjectionPipe(source, Eagerly.immutableMapValues(expressions, buildExpression))(id = id)
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
-        ProjectEndpointsPipe(source, rel.name,
-          start.name, startInScope,
-          end.name, endInScope,
-          types.map(LazyTypes.apply), directed, length.isSimple)()
+        ProjectEndpointsPipe(source,
+                             rel.name,
+                             start.name,
+                             startInScope,
+                             end.name,
+                             endInScope,
+                             types.map(LazyTypes.apply),
+                             directed,
+                             length.isSimple)()
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -140,16 +165,34 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
 
-      case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
+      case VarExpand(_,
+                     IdName(fromName),
+                     dir,
+                     projectedDir,
+                     types,
+                     IdName(toName),
+                     IdName(relName),
+                     VarPatternLength(min, max),
+                     expansionMode,
+                     predicates) =>
         val predicate = varLengthPredicate(predicates)
 
         val nodeInScope = expansionMode match {
-          case ExpandAll => false
+          case ExpandAll  => false
           case ExpandInto => true
         }
 
-        VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-          LazyTypes(types), min, max, nodeInScope, predicate)(id = id)
+        VarLengthExpandPipe(source,
+                            fromName,
+                            relName,
+                            toName,
+                            dir,
+                            projectedDir,
+                            LazyTypes(types),
+                            min,
+                            max,
+                            nodeInScope,
+                            predicate)(id = id)
 
       case Optional(inner, protectedSymbols) =>
         OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)(id = id)
@@ -198,26 +241,41 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         EagerAggregationPipe(
           source,
           groupingExpressions.keySet,
-          Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
+          Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](
+            aggregatingExpressions,
+            buildExpression(_).asInstanceOf[AggregationExpression])
         )(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
-        val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name), expressionConverters).head
-        ShortestPathPipe(source, legacyShortestPath, predicates.map(p => buildPredicate(p)), withFallBack, disallowSameNode)(id = id)
+        val legacyShortestPath =
+          shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name), expressionConverters).head
+        ShortestPathPipe(source,
+                         legacyShortestPath,
+                         predicates.map(p => buildPredicate(p)),
+                         withFallBack,
+                         disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
         UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
 
-      case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _)) =>
+      case ProcedureCall(_, call @ ResolvedCall(signature, callArguments, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-        val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default.map(_.value)), None, None).map {
-          case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
-        }
+        val callArgumentCommands =
+          callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default.map(_.value)), None, None).map {
+            case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
+          }
         val rowProcessing = ProcedureCallRowProcessing(signature)
-        ProcedureCallPipe(source, signature, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
+        ProcedureCallPipe(source,
+                          signature,
+                          callMode,
+                          callArgumentCommands,
+                          rowProcessing,
+                          call.callResultTypes,
+                          call.callResultIndices)(id = id)
 
       case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
-        LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
+        LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(
+          id = id)
 
       case ProduceResult(columns, _) =>
         ProduceResultsPipe(source, columns)(id = id)
@@ -229,33 +287,45 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
+        CreateRelationshipPipe(source,
+                               idName.name,
+                               startNode.name,
+                               LazyType(typ)(context.semanticTable),
+                               endNode.name,
+                               props.map(buildExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
+        MergeCreateRelationshipPipe(source,
+                                    idName.name,
+                                    startNode.name,
+                                    LazyType(typ)(context.semanticTable),
+                                    endNode.name,
+                                    props.map(buildExpression))(id = id)
 
       case SetLabels(_, IdName(name), labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
-        SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
-          buildExpression(expression)))(id = id)
+        SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression)))(
+          id = id)
 
       case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
-        SetPipe(source,
-          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
+        SetPipe(source, SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
 
       case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
-        SetPipe(source,
+        SetPipe(
+          source,
           SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
 
       case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
-        SetPipe(source,
-          SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
+        SetPipe(source, SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(
+          id = id)
 
       case SetProperty(_, entityExpr, propertyKey, expression) =>
-        SetPipe(source, SetPropertyOperation(
-          buildExpression(entityExpr), LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
+        SetPipe(source,
+                SetPropertyOperation(buildExpression(entityExpr),
+                                     LazyPropertyKey(propertyKey),
+                                     buildExpression(expression)))(id = id)
 
       case RemoveLabels(_, IdName(name), labels) =>
         RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))(id = id)
@@ -292,31 +362,35 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private def varLengthPredicate(predicates: Seq[(Variable, Expression)]): VarLengthPredicate  = {
+  private def varLengthPredicate(predicates: Seq[(Variable, Expression)]): VarLengthPredicate = {
     //Creates commands out of the predicates
     def asCommand(predicates: Seq[(Variable, Expression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate)
-      (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-        keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
-          context(variable.name) = entity
-          val result = expr.isTrue(context)(state)
-          context.remove(variable.name)
-          result
+      (context: ExecutionContext, state: QueryState, entity: AnyValue) =>
+        {
+          keys.zip(commands).forall {
+            case (variable: Variable, expr: Predicate) =>
+              context(variable.name) = entity
+              val result = expr.isTrue(context)(state)
+              context.remove(variable.name)
+              result
+          }
         }
-      }
     }
 
     //partition predicates on whether they deal with nodes or rels
     val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
-    val nodeCommand = asCommand(nodePreds)
-    val relCommand = asCommand(relPreds)
+    val nodeCommand           = asCommand(nodePreds)
+    val relCommand            = asCommand(relPreds)
 
     new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
+      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean =
+        nodeCommand(row, state, node)
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = relCommand(row, state, rel)
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean =
+        relCommand(row, state, rel)
     }
   }
 
@@ -330,7 +404,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         NodeHashJoinPipe(nodes.map(_.name), lhs, rhs)(id = id)
 
       case OuterHashJoin(nodes, l, r) =>
-        NodeOuterHashJoinPipe(nodes.map(_.name), lhs, rhs, (r.availableSymbols -- l.availableSymbols).map(_.name))(id = id)
+        NodeOuterHashJoinPipe(nodes.map(_.name), lhs, rhs, (r.availableSymbols -- l.availableSymbols).map(_.name))(
+          id = id)
 
       case Apply(_, _) => ApplyPipe(lhs, rhs)(id = id)
 
@@ -387,17 +462,21 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private val resolver = new KeyTokenResolver
+  private val resolver              = new KeyTokenResolver
   implicit val table: SemanticTable = context.semanticTable
 
-  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext,
+                                                           planContext: PlanContext): Predicate = {
     val rewrittenExpr: Expression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters
+      .toCommandPredicate(rewrittenExpr)
+      .rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
+      .asInstanceOf[Predicate]
   }
 
   private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
-    case logical.Ascending(IdName(name)) => pipes.Ascending(name)
+    case logical.Ascending(IdName(name))  => pipes.Ascending(name)
     case logical.Descending(IdName(name)) => pipes.Descending(name)
   }
 }

@@ -21,7 +21,8 @@ package cypher.feature.reporting
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_3.ast.{QueryTagger, QueryTags}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.QueryTagger
+import org.neo4j.cypher.internal.compiler.v3_3.ast.QueryTags
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.ListMap
@@ -70,7 +71,7 @@ class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
   private def sortByValue(map: Map[String, Integer]) = ListMap(map.toList.sortBy(_._2): _*)
 
   override def dumpTagCombinationStats: (java.util.List[java.util.List[java.lang.Integer]], java.util.List[String]) = {
-    val tags = QueryTags.all.toList.map(_.toString)
+    val tags     = QueryTags.all.toList.map(_.toString)
     val indexMap = tags.zipWithIndex.toMap
 
     val innerList = tags.indices.map(_ => Int.box(0))

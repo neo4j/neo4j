@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Expressions
+import org.neo4j.cypher.internal.frontend.v3_3.parser.ParserTest
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
   implicit val parserToTest = ListComprehension ~ EOI
 
   test("tests") {
-    val filterCommand = legacy.FilterFunction(
-      legacy.Variable("p"),
-      "a",
-      GreaterThan(legacy.Property(legacy.Variable("a"), PropertyKey("foo")), legacy.Literal(123)))
+    val filterCommand =
+      legacy.FilterFunction(legacy.Variable("p"),
+                            "a",
+                            GreaterThan(legacy.Property(legacy.Variable("a"), PropertyKey("foo")), legacy.Literal(123)))
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
 
@@ -45,6 +47,6 @@ class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Exp
       legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
   }
 
-  private val converters = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters                                         = new ExpressionConverters(CommunityExpressionConverter)
   def convert(astNode: ast.ListComprehension): legacy.Expression = converters.toCommandExpression(astNode)
 }

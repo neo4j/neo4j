@@ -27,13 +27,10 @@ import org.neo4j.values.storable.Values
 
 case class CoalesceFunction(arguments: Expression*) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
-    arguments.
-      view.
-      map(expression => expression(ctx)).
-      find(value => value != Values.NO_VALUE) match {
-        case None    => Values.NO_VALUE
-        case Some(x) => x
-      }
+    arguments.view.map(expression => expression(ctx)).find(value => value != Values.NO_VALUE) match {
+      case None    => Values.NO_VALUE
+      case Some(x) => x
+    }
 
   def innerExpectedType: Option[CypherType] = None
 

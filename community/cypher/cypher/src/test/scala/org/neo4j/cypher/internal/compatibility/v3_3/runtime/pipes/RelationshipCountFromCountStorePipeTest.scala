@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_3.NameId._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, LabelName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.storable.Values.longValue
 
@@ -33,7 +37,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None)()
 
     val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
+      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD))
+        .thenReturn(42L)
+        .getMock[QueryContext]
     )
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
@@ -45,7 +51,9 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq(RelTypeName("X")(pos))), None)()
 
     val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
+      query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD))
+        .thenReturn(42L)
+        .getMock[QueryContext]
     )
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
@@ -55,10 +63,14 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
     table.resolvedLabelIds.put("A", LabelId(12))
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None)()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)",
+                                                   Some(LazyLabel(LabelName("A") _)),
+                                                   LazyTypes(Seq(RelTypeName("X")(pos))),
+                                                   None)()
 
     val queryState = QueryStateHelper.emptyWith(
-      query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
+      query =
+        when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
     pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
@@ -66,7 +78,8 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
   test("should return zero if rel-type is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)))()
+    val pipe =
+      RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Seq("X")), Some(LazyLabel(LabelName("A") _)))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     // try to guarantee that the mock won't be the reason for the exception

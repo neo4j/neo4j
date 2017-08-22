@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.LazyTypes
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeWithSource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -42,8 +47,8 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
                                        maxDepth: Option[Int],
                                        shouldExpandAll: Boolean,
                                        filteringStep: VarLengthRegisterPredicate,
-                                       pipeline: PipelineInformation)
-                                      (val id: Id = new Id) extends PipeWithSource(source) {
+                                       pipeline: PipelineInformation)(val id: Id = new Id)
+    extends PipeWithSource(source) {
   /*  Since Long is used for both edges and nodes, the "why" of these aliases is to make the code a easier to read.*/
 
   type LNode = Long
@@ -58,7 +63,8 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
       override def next(): (LNode, Seq[Relationship]) = {
         val (fromNode, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(fromNode)) {
-          val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
+          val relationships: RelationshipIterator =
+            state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
 
           var relationship: Relationship = null
 
@@ -80,15 +86,17 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
             }
           }
         }
-        val needsFlipping = if (dir == SemanticDirection.BOTH)
-          projectedDir == SemanticDirection.INCOMING
-        else
-          dir != projectedDir
+        val needsFlipping =
+          if (dir == SemanticDirection.BOTH)
+            projectedDir == SemanticDirection.INCOMING
+          else
+            dir != projectedDir
 
-        val projectedRels = if (needsFlipping)
-          rels.reverse
-        else
-          rels
+        val projectedRels =
+          if (needsFlipping)
+            rels.reverse
+          else
+            rels
 
         (fromNode, projectedRels)
       }
@@ -97,20 +105,20 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
     }
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap {
-      inputRowWithFromNode =>
-        val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
-        val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
-        paths collect {
-          case (toNode: LNode, rels: Seq[Relationship])
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
+    input.flatMap { inputRowWithFromNode =>
+      val fromNode                                    = inputRowWithFromNode.getLongAt(fromOffset)
+      val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
+      paths collect {
+        case (toNode: LNode, rels: Seq[Relationship])
             if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
-            val resultRow = PrimitiveExecutionContext(pipeline)
-            resultRow.copyFrom(inputRowWithFromNode)
-            resultRow.setLongAt(toOffset, toNode)
-            resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
-            resultRow
-        }
+          val resultRow = PrimitiveExecutionContext(pipeline)
+          resultRow.copyFrom(inputRowWithFromNode)
+          resultRow.setLongAt(toOffset, toNode)
+          resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
+          resultRow
+      }
     }
   }
 

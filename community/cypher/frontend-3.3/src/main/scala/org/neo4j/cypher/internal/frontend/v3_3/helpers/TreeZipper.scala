@@ -27,12 +27,12 @@ trait TreeElem[E <: TreeElem[E]] {
   def location(implicit zipper: TreeZipper[E]) = zipper(self)
 }
 
-abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
+abstract class TreeZipper[E <: TreeElem[E]: ClassTag] {
 
   def apply(treeElem: E) = Location(treeElem, Top)
 
   sealed trait Context
-  case object Top extends Context
+  case object Top                                                         extends Context
   case class TreeContext(left: List[E], parent: Location, right: List[E]) extends Context
 
   object Children {
@@ -46,7 +46,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
     def isLeaf = self match {
       case Location(Children(Nil), _) => true
-      case _ => false
+      case _                          => false
     }
 
     @tailrec
@@ -60,8 +60,8 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
     def isLeftMost = context match {
       case TreeContext(Nil, _, _) => true
-      case Top => true
-      case _ => false
+      case Top                    => true
+      case _                      => false
     }
 
     def left: Option[Location] = context match {
@@ -88,8 +88,8 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
     def isRightMost = context match {
       case TreeContext(_, _, Nil) => true
-      case Top => true
-      case _ => false
+      case Top                    => true
+      case _                      => false
     }
 
     def right: Option[Location] = context match {
@@ -162,19 +162,19 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def root = location.map(_.root)
 
     def isLeftMost = location.map(_.isLeftMost)
-    def left = location.flatMap(_.left)
-    def leftMost = location.map(_.leftMost)
+    def left       = location.flatMap(_.left)
+    def leftMost   = location.map(_.leftMost)
 
     def isRightMost = location.map(_.isLeftMost)
-    def right = location.flatMap(_.right)
-    def rightMost = location.map(_.rightMost)
+    def right       = location.flatMap(_.right)
+    def rightMost   = location.map(_.rightMost)
 
     def down = location.flatMap(_.down)
-    def up = location.flatMap(_.up)
+    def up   = location.flatMap(_.up)
 
     def replace(replacementElem: E) = location.map(_.replace(replacementElem))
-    def insertLeft(newElem: E) = location.flatMap(_.insertLeft(newElem))
-    def insertRight(newElem: E) = location.flatMap(_.insertRight(newElem))
-    def insertChild(newElem: E) = location.map(_.insertChild(newElem))
+    def insertLeft(newElem: E)      = location.flatMap(_.insertLeft(newElem))
+    def insertRight(newElem: E)     = location.flatMap(_.insertRight(newElem))
+    def insertChild(newElem: E)     = location.map(_.insertChild(newElem))
   }
 }

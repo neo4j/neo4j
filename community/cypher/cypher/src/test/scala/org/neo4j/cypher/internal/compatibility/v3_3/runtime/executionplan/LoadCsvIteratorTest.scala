@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LoadCsvIteratorTest extends CypherFunSuite {
 
-  val url = new URL("file://uselessinfo.csv")
+  val url   = new URL("file://uselessinfo.csv")
   val inner = Seq(Array[String]("1"), Array[String]("2"))
 
   test("should provide information about the current row") {
@@ -53,7 +53,7 @@ class LoadCsvIteratorTest extends CypherFunSuite {
 
   test("should call onNext when next is called") {
     var called = false
-    val it = new LoadCsvIterator(url, inner.iterator)({ called = true })
+    val it     = new LoadCsvIterator(url, inner.iterator)({ called = true })
     called should equal(false)
     it.next()
     called should equal(true)
@@ -64,7 +64,7 @@ class LoadCsvIteratorTest extends CypherFunSuite {
     val inner = new Iterator[Array[String]] {
       def next() = Array("yea")
 
-      def hasNext =  {
+      def hasNext = {
         called = true
         true
       }

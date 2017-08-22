@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.kernel.api.exceptions.Status
 
 class PropertyExistenceConstraintAcceptanceTest
-  extends ExecutionEngineFunSuite
+    extends ExecutionEngineFunSuite
     with QueryStatisticsTestSupport
     with ListSupport
     with EnterpriseGraphDatabaseTestSupport {
@@ -160,7 +160,8 @@ class PropertyExistenceConstraintAcceptanceTest
     execute("create (p1:Person)-[:KNOWS]->(p2:Person)")
 
     // WHEN
-    val e = intercept[CypherExecutionException](execute("create constraint on ()-[rel:KNOWS]-() assert exists(rel.since)"))
+    val e =
+      intercept[CypherExecutionException](execute("create constraint on ()-[rel:KNOWS]-() assert exists(rel.since)"))
 
     //THEN
     e.status should equal(Status.Schema.ConstraintCreationFailed)
@@ -214,5 +215,3 @@ class PropertyExistenceConstraintAcceptanceTest
 
   private def numberOfRelationships = executeScalar[Long]("match ()-[r]->() return count(r)")
 }
-
-

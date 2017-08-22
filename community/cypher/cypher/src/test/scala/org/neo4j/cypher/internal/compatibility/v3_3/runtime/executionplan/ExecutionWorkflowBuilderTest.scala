@@ -23,17 +23,21 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.FakeIdMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.EagerResultIterator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val solved      = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   val logicalPlan = SingleRow()(solved)
 
   test("produces eager results for updating queries") {
@@ -43,7 +47,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
 
-    val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
+    val pipeInfo       = PipeInfo(pipe, updating = true, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
@@ -52,7 +56,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [PipeExecutionResult]
+    result shouldBe a[PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
@@ -60,8 +64,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
-    val context = mock[QueryContext]
-    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val context        = mock[QueryContext]
+    val pipeInfo       = PipeInfo(pipe, updating = false, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
@@ -70,7 +74,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [PipeExecutionResult]
+    result shouldBe a[PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
 
@@ -80,7 +84,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val pipeInfo       = PipeInfo(pipe, updating = false, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
@@ -89,6 +93,6 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", ExplainMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [ExplainExecutionResult]
+    result shouldBe a[ExplainExecutionResult]
   }
 }

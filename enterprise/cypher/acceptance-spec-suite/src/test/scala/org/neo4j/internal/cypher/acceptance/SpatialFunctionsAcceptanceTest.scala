@@ -19,8 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, InvalidArgumentException, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CartesianPoint
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.GeographicPoint
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.InvalidArgumentException
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.SyntaxException
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -43,13 +48,13 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("point function should not work with literal map and incorrect cartesian CRS") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'cart'}) as point")
     )
   }
 
   test("point function should not work with literal map and incorrect geographic CRS") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({x: 2.3, y: 4.5, crs: 'WGS84'}) as point")
     )
   }
@@ -61,26 +66,27 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("should fail properly if missing cartesian coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("y" -> 1.0, "crs" -> "cartesian"))
     )
   }
 
   test("should fail properly if missing geographic longitude") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("latitude" -> 1.0, "crs" -> "WGS-84"))
     )
   }
 
   test("should fail properly if missing geographic latitude") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("longitude" -> 1.0, "crs" -> "WGS-84"))
     )
   }
 
   test("should fail properly if unknown coordinate system") {
-    an [InvalidArgumentException] shouldBe thrownBy(
-      executeWithAllPlanners("RETURN point({params}) as point", "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
+    an[InvalidArgumentException] shouldBe thrownBy(
+      executeWithAllPlanners("RETURN point({params}) as point",
+                             "params" -> Map("x" -> 1, "y" -> 2, "crs" -> "WGS-1337"))
     )
   }
 
@@ -103,7 +109,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("should not allow Cartesian CRS with latitude/longitude coordinates") {
-    an [InvalidArgumentException] shouldBe thrownBy(
+    an[InvalidArgumentException] shouldBe thrownBy(
       executeWithAllPlanners("RETURN point({longitude: 2.3, latitude: 4.5, crs: 'cartesian'}) as point")
     )
   }
@@ -115,7 +121,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("distance function should work on co-located points") {
-    val result = executeWithAllPlanners("WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist")
+    val result = executeWithAllPlanners(
+      "WITH point({latitude: 12.78, longitude: 56.7}) as point RETURN distance(point,point) as dist")
     result should useProjectionWith("point", "distance")
     result.toList should equal(List(Map("dist" -> 0.0)))
   }
@@ -151,8 +158,9 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("distance function should fail if provided with points from different CRS") {
-    val error = intercept[IllegalArgumentException](executeWithAllPlanners(
-      """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
+    val error = intercept[IllegalArgumentException](
+      executeWithAllPlanners(
+        """WITH point({x: 2.3, y: 4.5, crs: 'cartesian'}) as p1, point({longitude: 1.1, latitude: 5.4, crs: 'WGS-84'}) as p2
         |RETURN distance(p1,p2) as dist""".stripMargin))
 
     assert(error.getMessage.contains("Invalid points passed to distance(p1, p2)"))
@@ -194,12 +202,12 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
       "RETURN distance(point({latitude:3,longitude:null}),point({latitude:7, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
+    result =
+      executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
+    result =
+      executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
   }
 
@@ -213,7 +221,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     createLabeledNode(Map("latitude" -> 12.78, "longitude" -> 56.7), "Place")
 
     // When
-    val result = executeWithAllPlanners("MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point")
+    val result =
+      executeWithAllPlanners("MATCH (p:Place) RETURN point({latitude: p.latitude, longitude: p.longitude}) as point")
 
     // Then
     result should useProjectionWith("point")
@@ -225,7 +234,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val r = relate(createNode(), createNode(), "PASS_THROUGH", Map("latitude" -> 12.78, "longitude" -> 56.7))
 
     // When
-    val result = executeWithAllPlanners("MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point")
+    val result = executeWithAllPlanners(
+      "MATCH ()-[r:PASS_THROUGH]->() RETURN point({latitude: r.latitude, longitude: r.longitude}) as point")
 
     // Then
     result should useProjectionWith("point")
@@ -250,20 +260,16 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("point function should return null if the map that backs it up contains a null") {
-    var result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN point({latitude:null, longitude:3}) as pt;")
+    var result = executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN point({latitude:null, longitude:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN point({latitude:3, longitude:null}) as pt;")
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN point({latitude:3, longitude:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN point({x:null, y:3}) as pt;")
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN point({x:null, y:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "RETURN point({x:3, y:null}) as pt;")
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly("RETURN point({x:3, y:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
   }
 
@@ -277,7 +283,8 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     createLabeledNode("Place")
 
     // When
-    val result = executeWithAllPlanners("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location")
+    val result = executeWithAllPlanners(
+      "MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78}) RETURN p.location")
 
     // Then
     result should useProjectionWith("point")

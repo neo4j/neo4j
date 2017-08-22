@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
@@ -32,54 +35,66 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
   val m_prop2: Property = Property(Variable("m"), PropertyKey("prop2"))
 
   test("Should handle single predicate") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(lessThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(lessThanOrEqual(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, lessThanOrEqual(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThan(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThan(n_prop1, 1))).toSet)
-    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThanOrEqual(n_prop1, 1))).toSet should equal(NonEmptyList(anded(n_prop1, greaterThanOrEqual(n_prop1, 1))).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(lessThan(n_prop1, 1))).toSet should equal(
+      NonEmptyList(anded(n_prop1, lessThan(n_prop1, 1))).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(lessThanOrEqual(n_prop1, 1))).toSet should equal(
+      NonEmptyList(anded(n_prop1, lessThanOrEqual(n_prop1, 1))).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThan(n_prop1, 1))).toSet should equal(
+      NonEmptyList(anded(n_prop1, greaterThan(n_prop1, 1))).toSet)
+    groupInequalityPredicatesForLegacy(NonEmptyList(greaterThanOrEqual(n_prop1, 1))).toSet should equal(
+      NonEmptyList(anded(n_prop1, greaterThanOrEqual(n_prop1, 1))).toSet)
   }
 
   test("Should group by lhs property") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(
-      lessThan(n_prop1, 1),
-      lessThanOrEqual(n_prop1, 2),
-      lessThan(m_prop1, 3),
-      greaterThan(m_prop1, 4),
-      greaterThanOrEqual(m_prop2, 5)
-    )).toSet should equal(NonEmptyList(
-      anded(n_prop1, lessThan(n_prop1, 1), lessThanOrEqual(n_prop1, 2)),
-      anded(m_prop1, lessThan(m_prop1, 3), greaterThan(m_prop1, 4)),
-      anded(m_prop2, greaterThanOrEqual(m_prop2, 5))
-    ).toSet)
+    groupInequalityPredicatesForLegacy(
+      NonEmptyList(
+        lessThan(n_prop1, 1),
+        lessThanOrEqual(n_prop1, 2),
+        lessThan(m_prop1, 3),
+        greaterThan(m_prop1, 4),
+        greaterThanOrEqual(m_prop2, 5)
+      )).toSet should equal(
+      NonEmptyList(
+        anded(n_prop1, lessThan(n_prop1, 1), lessThanOrEqual(n_prop1, 2)),
+        anded(m_prop1, lessThan(m_prop1, 3), greaterThan(m_prop1, 4)),
+        anded(m_prop2, greaterThanOrEqual(m_prop2, 5))
+      ).toSet)
   }
 
   test("Should keep other predicates when encountering both inequality and other predicates") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(
-      lessThan(n_prop1, 1),
-      equals(n_prop1, 1)
-    )).toSet should equal(NonEmptyList(
-      anded(n_prop1, lessThan(n_prop1, 1)),
-      equals(n_prop1, 1)
-    ).toSet)
+    groupInequalityPredicatesForLegacy(
+      NonEmptyList(
+        lessThan(n_prop1, 1),
+        equals(n_prop1, 1)
+      )).toSet should equal(
+      NonEmptyList(
+        anded(n_prop1, lessThan(n_prop1, 1)),
+        equals(n_prop1, 1)
+      ).toSet)
   }
 
   test("Should keep other predicates when encountering only other predicates") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(
-      equals(n_prop1, 1),
-      equals(m_prop2, 2)
-    )).toSet should equal(NonEmptyList(
-      equals(n_prop1, 1),
-      equals(m_prop2, 2)
-    ).toSet)
+    groupInequalityPredicatesForLegacy(
+      NonEmptyList(
+        equals(n_prop1, 1),
+        equals(m_prop2, 2)
+      )).toSet should equal(
+      NonEmptyList(
+        equals(n_prop1, 1),
+        equals(m_prop2, 2)
+      ).toSet)
   }
 
   test("Should not group inequalities on non-property lookups") {
-    groupInequalityPredicatesForLegacy(NonEmptyList(
-      lessThan(Variable("x"), 1),
-      greaterThanOrEqual(Variable("x"), 1)
-    )).toSet should equal(NonEmptyList(
-      lessThan(Variable("x"), 1),
-      greaterThanOrEqual(Variable("x"), 1)
-    ).toSet)
+    groupInequalityPredicatesForLegacy(
+      NonEmptyList(
+        lessThan(Variable("x"), 1),
+        greaterThanOrEqual(Variable("x"), 1)
+      )).toSet should equal(
+      NonEmptyList(
+        lessThan(Variable("x"), 1),
+        greaterThanOrEqual(Variable("x"), 1)
+      ).toSet)
   }
 
   private def equals(lhs: Expression, v: Int) =
@@ -98,7 +113,7 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
     GreaterThanOrEqual(lhs, Literal(v))
 
   private def anded(property: Property, first: ComparablePredicate, others: ComparablePredicate*) = {
-    val variable = property.mapExpr.asInstanceOf[Variable]
+    val variable     = property.mapExpr.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
     AndedPropertyComparablePredicates(variable, property, inequalities)
   }

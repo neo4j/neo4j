@@ -24,25 +24,36 @@ import java.util.Collections.emptyList
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v2_3
-import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, ExecutionPlan => ExecutionPlan_v2_3}
-import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.EntityAccessor
+import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutionPlan => ExecutionPlan_v2_3}
+import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_3.spi.QueryContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
-import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
+import org.neo4j.cypher.internal.compiler.v2_3.{
+  InfoLogger,
+  ExplainMode => ExplainModev2_3,
+  NormalMode => NormalModev2_3,
+  ProfileMode => ProfileModev2_3,
+  _
+}
 import org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundGraphStatistics
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
+import org.neo4j.kernel.api.query.IndexUsage
+import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 import scala.util.Try
-
 
 trait Compatibility {
 
@@ -62,45 +73,55 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery,
+                         tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
     val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3: Try[PreparedQuery] =
-      Try(compiler.prepareQuery(preParsedQuery.statement,
-                                preParsedQuery.rawStatement,
-                                notificationLogger,
-                                preParsedQuery.planner.name,
-                                Some(as2_3(preParsedQuery.offset)), tracer))
+      Try(
+        compiler.prepareQuery(preParsedQuery.statement,
+                              preParsedQuery.rawStatement,
+                              notificationLogger,
+                              preParsedQuery.planner.name,
+                              Some(as2_3(preParsedQuery.offset)),
+                              tracer))
     new ParsedQuery {
-      def plan(transactionalContext: TransactionalContextWrapper,
-               tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler
-        .runSafely {
-          val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
-          val (planImpl, extractedParameters) = compiler
-            .planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
+      def plan(
+          transactionalContext: TransactionalContextWrapper,
+          tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) =
+        exceptionHandler
+          .runSafely {
+            val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
+            val (planImpl, extractedParameters) = compiler
+              .planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
-          // Log notifications/warnings from planning
-          planImpl.notifications(planContext).foreach(notificationLogger += _)
+            // Log notifications/warnings from planning
+            planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
-        }
+            (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)),
+             extractedParameters)
+          }
 
       override protected val trier = preparedQueryForV_2_3
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v2_3.InputPosition)
-    extends org.neo4j.cypher.internal.ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3,
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                             offSet: frontend.v2_3.InputPosition)
+      extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    def run(transactionalContext: TransactionalContextWrapper,
+            executionMode: CypherExecutionMode,
+            params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
         case CypherExecutionMode.profile => ProfileModev2_3
-        case CypherExecutionMode.normal => NormalModev2_3
+        case CypherExecutionMode.normal  => NormalModev2_3
       }
 
       val query = transactionalContext.tc.executingQuery()
@@ -110,10 +131,13 @@ trait Compatibility {
           .run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
 
         new ExecutionResult(
-          new ClosingExecutionResult(
-            query,
-            new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
-            exceptionHandler.runSafely)
+          new ClosingExecutionResult(query,
+                                     new ExecutionResultWrapper(innerResult,
+                                                                inner.plannerUsed,
+                                                                inner.runtimeUsed,
+                                                                preParsingNotifications,
+                                                                Some(offSet)),
+                                     exceptionHandler.runSafely)
         )
       }
     }

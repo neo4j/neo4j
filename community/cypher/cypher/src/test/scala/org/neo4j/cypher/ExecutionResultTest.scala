@@ -29,17 +29,18 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
     columns.foreach(createNode)
 
-    val q="match (zero), (one), (two), (three), (four), (five), (six), (seven), (eight), (nine) " +
+    val q = "match (zero), (one), (two), (three), (four), (five), (six), (seven), (eight), (nine) " +
       "where id(zero) = 0 AND id(one) = 1 AND id(two) = 2 AND id(three) = 3 AND id(four) = 4 AND id(five) = 5 AND id(six) = 6 AND id(seven) = 7 AND id(eight) = 8 AND id(nine) = 9 " +
       "return zero, one, two, three, four, five, six, seven, eight, nine"
 
     val result = execute(q)
 
-    assert( result.columns === columns )
-    val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
+    assert(result.columns === columns)
+    val regex   = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
-    assertTrue( "Columns did not appear in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() )
+    assertTrue("Columns did not appear in the expected order: \n" + result.dumpToString(),
+               pattern.matcher(result.dumpToString()).find())
   }
 
   test("correctLabelStatisticsForCreate") {
@@ -60,7 +61,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
   }
 
   test("correctLabelStatisticsForRemove") {
-    val n      = createNode()
+    val n = createNode()
     execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} remove n:foo:bar")
     val stats  = result.queryStatistics()
@@ -77,7 +78,6 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     assert(stats.labelsAdded === 1)
     assert(stats.labelsRemoved === 2)
   }
-
 
   test("correctLabelStatisticsForLabelAddedTwice") {
     val n      = createLabeledNode("foo", "bar")

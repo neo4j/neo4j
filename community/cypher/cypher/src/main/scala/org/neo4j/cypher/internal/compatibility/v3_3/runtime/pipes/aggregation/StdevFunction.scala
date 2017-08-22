@@ -20,35 +20,36 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-class StdevFunction(val value: Expression, val population:Boolean)
-  extends AggregationFunction
-  with NumericExpressionOnly
-  with NumericHelper {
+class StdevFunction(val value: Expression, val population: Boolean)
+    extends AggregationFunction
+    with NumericExpressionOnly
+    with NumericHelper {
 
   def name = if (population) "STDEVP" else "STDEV"
 
   // would be cool to not have to keep a temporary list to do multiple passes
   // this will blow up RAM over a big data set (not lazy!)
   // but I don't think it's currently possible with the way aggregation works
-  private var temp = Vector[Double]()
-  private var count:Int = 0
-  private var total:Double = 0
+  private var temp          = Vector[Double]()
+  private var count: Int    = 0
+  private var total: Double = 0
 
   def result(implicit state: QueryState): AnyValue = {
-    if(count < 2) {
+    if (count < 2) {
       Values.ZERO_FLOAT
     } else {
-      val avg = total/count
-      val variance = if(population) {
-        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => {val delta = e - avg; acc + (delta * delta) })
+      val avg = total / count
+      val variance = if (population) {
+        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => { val delta = e - avg; acc + (delta * delta) })
         sumOfDeltas / count
       } else {
-        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => {val delta = e - avg; acc + (delta * delta) })
+        val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => { val delta = e - avg; acc + (delta * delta) })
         sumOfDeltas / (count - 1)
       }
       Values.doubleValue(math.sqrt(variance))

@@ -26,21 +26,23 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.NodeByLabel
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.LabelId
 import org.neo4j.cypher.internal.frontend.v3_3.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, HasHeaders}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.HasHeaders
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
-  private val THRESHOLD = 100
-  private val labelOverThreshold = "A"
+  private val THRESHOLD           = 100
+  private val labelOverThreshold  = "A"
   private val labelUnderThrehsold = "B"
-  private val indexFor= Map(labelOverThreshold -> 1, labelUnderThrehsold -> 2)
-  private val planContext = mock[PlanContext]
+  private val indexFor            = Map(labelOverThreshold -> 1, labelUnderThrehsold -> 2)
+  private val planContext         = mock[PlanContext]
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {
-     val label = invocationOnMock.getArguments()(0).asInstanceOf[String]
+      val label = invocationOnMock.getArguments()(0).asInstanceOf[String]
       indexFor.get(label)
     }
   })
@@ -52,22 +54,29 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
 
   test("should notify when doing LoadCsv on top of large label scan") {
     val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
-    val pipe = NodeStartPipe(loadCsvPipe, "foo",
-      NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
+    val pipe =
+      NodeStartPipe(loadCsvPipe,
+                    "foo",
+                    NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
 
     checker(pipe) should equal(Some(LargeLabelWithLoadCsvNotification))
   }
 
   test("should not notify when doing LoadCsv on top of a large label scan") {
     val loadCsvPipe = LoadCSVPipe(SingleRowPipe()(), HasHeaders, Literal("foo"), "bar", None, false)()
-    val pipe = NodeStartPipe(loadCsvPipe, "foo",
-      NodeByLabelEntityProducer(NodeByLabel("bar", labelUnderThrehsold), indexFor(labelUnderThrehsold)))()
+    val pipe =
+      NodeStartPipe(loadCsvPipe,
+                    "foo",
+                    NodeByLabelEntityProducer(NodeByLabel("bar", labelUnderThrehsold), indexFor(labelUnderThrehsold)))()
 
     checker(pipe) should equal(None)
   }
 
   test("should not notify when doing LoadCsv on top of large label scan") {
-    val startPipe = NodeStartPipe(SingleRowPipe()(), "foo", NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
+    val startPipe =
+      NodeStartPipe(SingleRowPipe()(),
+                    "foo",
+                    NodeByLabelEntityProducer(NodeByLabel("bar", labelOverThreshold), indexFor(labelOverThreshold)))()
     val pipe = LoadCSVPipe(startPipe, HasHeaders, Literal("foo"), "bar", None, false)()
 
     checker(pipe) should equal(None)

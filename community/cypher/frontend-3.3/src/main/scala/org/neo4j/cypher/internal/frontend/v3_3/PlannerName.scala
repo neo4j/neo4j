@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3
 
 /**
- * This class defines the query planners used by cyphers.
+  * This class defines the query planners used by cyphers.
  **/
 trait PlannerName {
   def name: String

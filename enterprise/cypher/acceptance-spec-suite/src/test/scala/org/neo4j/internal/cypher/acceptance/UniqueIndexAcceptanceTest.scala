@@ -19,9 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
+import org.neo4j.cypher.internal.helpers.NodeKeyConstraintCreator
+import org.neo4j.cypher.internal.helpers.UniquenessConstraintCreator
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
@@ -30,16 +32,16 @@ import scala.collection.JavaConverters._
 
 class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(
+      config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
-
     test(s"$constraintCreator: should be able to use unique index hints on IN expressions") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -48,7 +50,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+      val result = succeedWithAndExpectPlansToBeSimilar(
+        Configs.All,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
     }
@@ -56,7 +60,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use unique index on IN collections with duplicates") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -65,7 +69,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+      val result = succeedWithAndExpectPlansToBeSimilar(
+        Configs.All,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
@@ -74,7 +80,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use unique index on IN a null value") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -83,7 +89,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+      val result = succeedWithAndExpectPlansToBeSimilar(
+        Configs.All,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
       //THEN
       result.toList should equal(List())
@@ -92,7 +100,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use index unique index on IN a collection parameter") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -101,7 +109,10 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
+      val result = succeedWithAndExpectPlansToBeSimilar(
+        Configs.All,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
+        "coll" -> List("Jacob"))
 
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
@@ -110,7 +121,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should not use locking index for read only query") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -119,7 +130,10 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
+      val result = succeedWithAndExpectPlansToBeSimilar(
+        Configs.All,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
+        "coll" -> List("Jacob"))
 
       //THEN
       result should use("NodeUniqueIndexSeek")
@@ -134,7 +148,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.EnterpriseInterpreted, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+      val result =
+        updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.EnterpriseInterpreted,
+                                            "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")
@@ -149,7 +165,9 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
+      val result = updateWith(
+        Configs.CommunityInterpreted - Configs.Cost2_3,
+        "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")
@@ -165,7 +183,11 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithAndExpectPlansToBeSimilar(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name", "coll" -> List("Jacob"))
+      val result = updateWithAndExpectPlansToBeSimilar(
+        Configs.CommunityInterpreted - Configs.Cost2_3,
+        "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name",
+        "coll" -> List("Jacob")
+      )
 
       //THEN
       result shouldNot use("NodeIndexSeek")

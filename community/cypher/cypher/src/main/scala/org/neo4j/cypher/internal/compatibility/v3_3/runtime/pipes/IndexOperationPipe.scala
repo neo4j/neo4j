@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{CreateIndex, DropIndex, IndexOperation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.CreateIndex
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.DropIndex
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.IndexOperation
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
@@ -33,11 +35,11 @@ case class IndexOperationPipe(indexOp: IndexOperation)(val id: Id = new Id) exte
 
     indexOp match {
       case CreateIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map(queryContext.getOrCreatePropertyKeyId)
         queryContext.addIndexRule(IndexDescriptor(labelId, propertyKeyIds))
 
       case DropIndex(_, propertyKeys, _) =>
-        val propertyKeyIds: Seq[Int] = propertyKeys.map( queryContext.getOrCreatePropertyKeyId )
+        val propertyKeyIds: Seq[Int] = propertyKeys.map(queryContext.getOrCreatePropertyKeyId)
         queryContext.dropIndexRule(IndexDescriptor(labelId, propertyKeyIds))
 
       case _ =>

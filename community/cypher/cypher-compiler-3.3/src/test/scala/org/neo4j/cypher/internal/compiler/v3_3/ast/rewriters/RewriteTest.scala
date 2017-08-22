@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticChecker}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticChecker
 
 trait RewriteTest {
   self: CypherFunSuite =>
@@ -49,7 +50,7 @@ trait RewriteTest {
 
   protected def assertIsNotRewritten(query: String) {
     val original = parser.parse(query)
-    val result = original.rewrite(rewriterUnderTest)
+    val result   = original.rewrite(rewriterUnderTest)
     assert(result === original, "\n" + query)
   }
 }

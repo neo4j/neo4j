@@ -24,39 +24,43 @@ import java.util.concurrent.atomic.AtomicInteger
 import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Value
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
-  private val nodesCreated = new Counter
-  private val relationshipsCreated = new Counter
-  private val propertiesSet = new Counter
-  private val nodesDeleted = new Counter
-  private val relationshipsDeleted = new Counter
-  private val labelsAdded = new Counter
-  private val labelsRemoved = new Counter
-  private val indexesAdded = new Counter
-  private val indexesRemoved = new Counter
-  private val uniqueConstraintsAdded = new Counter
-  private val uniqueConstraintsRemoved = new Counter
-  private val propertyExistenceConstraintsAdded = new Counter
+  private val nodesCreated                        = new Counter
+  private val relationshipsCreated                = new Counter
+  private val propertiesSet                       = new Counter
+  private val nodesDeleted                        = new Counter
+  private val relationshipsDeleted                = new Counter
+  private val labelsAdded                         = new Counter
+  private val labelsRemoved                       = new Counter
+  private val indexesAdded                        = new Counter
+  private val indexesRemoved                      = new Counter
+  private val uniqueConstraintsAdded              = new Counter
+  private val uniqueConstraintsRemoved            = new Counter
+  private val propertyExistenceConstraintsAdded   = new Counter
   private val propertyExistenceConstraintsRemoved = new Counter
 
-  def getStatistics = QueryStatistics(
-    nodesCreated = nodesCreated.count,
-    relationshipsCreated = relationshipsCreated.count,
-    propertiesSet = propertiesSet.count,
-    nodesDeleted = nodesDeleted.count,
-    labelsAdded = labelsAdded.count,
-    labelsRemoved = labelsRemoved.count,
-    relationshipsDeleted = relationshipsDeleted.count,
-    indexesAdded = indexesAdded.count,
-    indexesRemoved = indexesRemoved.count,
-    uniqueConstraintsAdded = uniqueConstraintsAdded.count,
-    uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
-    existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
-    existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count)
+  def getStatistics =
+    QueryStatistics(
+      nodesCreated = nodesCreated.count,
+      relationshipsCreated = relationshipsCreated.count,
+      propertiesSet = propertiesSet.count,
+      nodesDeleted = nodesDeleted.count,
+      labelsAdded = labelsAdded.count,
+      labelsRemoved = labelsRemoved.count,
+      relationshipsDeleted = relationshipsDeleted.count,
+      indexesAdded = indexesAdded.count,
+      indexesRemoved = indexesRemoved.count,
+      uniqueConstraintsAdded = uniqueConstraintsAdded.count,
+      uniqueConstraintsRemoved = uniqueConstraintsRemoved.count,
+      existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
+      existenceConstraintsRemoved = propertyExistenceConstraintsRemoved.count
+    )
 
   override def getOptStatistics = Some(getStatistics)
 
@@ -111,7 +115,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
     val result = inner.createUniqueConstraint(descriptor)
-    if ( result ) uniqueConstraintsAdded.increase()
+    if (result) uniqueConstraintsAdded.increase()
     result
   }
 
@@ -122,7 +126,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = {
     val result = inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId)
-    if ( result ) propertyExistenceConstraintsAdded.increase()
+    if (result) propertyExistenceConstraintsAdded.increase()
     result
   }
 
@@ -133,7 +137,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = {
     val result = inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId)
-    if ( result ) propertyExistenceConstraintsAdded.increase()
+    if (result) propertyExistenceConstraintsAdded.increase()
     result
   }
 
@@ -162,7 +166,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   }
 
   private class CountingOps[T <: PropertyContainer](inner: Operations[T], deletes: Counter)
-    extends DelegatingOperations[T](inner) {
+      extends DelegatingOperations[T](inner) {
 
     override def delete(id: Long) {
       deletes.increase()

@@ -20,11 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.notification._
-import org.neo4j.cypher.{ChangedResults, ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ChangedResults
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCode._
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory._
-import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.procedure.Procedure
 
@@ -83,8 +86,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("explain CALL oldProc()")
 
     result.notifications.toList should equal(
-      List(
-        DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(8, 1, 9), deprecatedName("oldProc", "newProc"))))
+      List(DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(8, 1, 9), deprecatedName("oldProc", "newProc"))))
   }
 
   test("Warn on deprecated in-query procedure calls") {
@@ -98,31 +100,34 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("explain CALL changedProc() YIELD oldField RETURN oldField")
 
     result.notifications.toList should equal(
-      List(
-        DEPRECATED_PROCEDURE_RETURN_FIELD.notification(new graphdb.InputPosition(33, 1, 34),
-                                                       deprecatedField("changedProc", "oldField"))))
+      List(DEPRECATED_PROCEDURE_RETURN_FIELD.notification(new graphdb.InputPosition(33, 1, 34),
+                                                          deprecatedField("changedProc", "oldField"))))
   }
 
   test("Warn for cartesian product") {
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava))))
+    result.notifications.toList should equal(
+      List(
+        CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
     val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)")
 
-    result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava)),
-      RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
+    result.notifications.toList should equal(
+      List(
+        CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava)),
+        RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
+      ))
   }
 
   test("Warn for cartesian product with runtime=interpreted") {
     val result = innerExecute("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
-    result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(35, 1, 36), cartesianProduct(Set("c", "d").asJava))))
+    result.notifications.toList should equal(
+      List(
+        CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(35, 1, 36), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Don't warn for cartesian product when not using explain") {
@@ -134,8 +139,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn when using length on collection") {
     val result = innerExecute("explain return length([1, 2, 3])")
 
-    result.notifications should equal(Set(
-      LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(22, 1, 23))))
+    result.notifications should equal(Set(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(22, 1, 23))))
   }
 
   test("do not warn when using length on a path") {
@@ -145,8 +149,8 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("do warn when using length on a pattern expression") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      "explain match (a) where a.name='Alice' return length((a)-->()-->())")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
     result.notifications should contain(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(77, 1, 78)))
   }
@@ -199,8 +203,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("warn for each unfulfillable index hint") {
-    val result = innerExecute(
-      """EXPLAIN MATCH (n:Person), (m:Party), (k:Animal)
+    val result = innerExecute("""EXPLAIN MATCH (n:Person), (m:Party), (k:Animal)
         |USING INDEX n:Person(name)
         |USING INDEX m:Party(city)
         |USING INDEX k:Animal(species)
@@ -216,26 +219,27 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should not warn when join hint is used with COST planner") {
-    val result = innerExecute( """CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
+    val result = innerExecute("""CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b""")
 
     result.notifications should not contain "Neo.Status.Statement.JoinHintUnsupportedWarning"
   }
 
   test("should not warn when join hint is used with COST planner with EXPLAIN") {
-    val result = innerExecute( """CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b""")
+    val result = innerExecute("""CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b""")
 
     result.notifications.map(_.getCode) should not contain "Neo.Status.Statement.JoinHintUnsupportedWarning"
   }
 
   test("Warnings should work on potentially cached queries") {
-    val resultWithoutExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      "match (a)-->(b), (c)-->(d) return *")
-    val resultWithExplain = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      "explain match (a)-->(b), (c)-->(d) return *")
+    val resultWithoutExplain =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a)-->(b), (c)-->(d) return *")
+    val resultWithExplain =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
     resultWithoutExplain shouldBe empty
     resultWithExplain.notifications.toList should equal(
-      List(CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(24, 1, 25), cartesianProduct(Set("c", "d").asJava))))
+      List(
+        CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(24, 1, 25), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label") {
@@ -243,9 +247,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with explicit label check") {
@@ -253,10 +257,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' AND (n:Person) RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))
-    ))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test(
@@ -273,9 +276,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] > 10 RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with range seek (reverse)") {
@@ -283,21 +286,20 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE 10 > n['key-' + n.name] RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test(
-    "warn for unfulfillable index seek when using dynamic property lookup with a single label and property existence check with exists")
-  {
+    "warn for unfulfillable index seek when using dynamic property lookup with a single label and property existence check with exists") {
     graph.createIndex("Person", "name")
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE exists(n['na' + 'me']) RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and starts with") {
@@ -305,9 +307,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] STARTS WITH 'Foo' RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and regex") {
@@ -315,9 +317,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] =~ 'Foo*' RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label and IN") {
@@ -325,9 +327,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with multiple labels") {
@@ -335,9 +337,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should contain(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                       indexSeekOrScan(
-                                                                                         Set("Person").asJava)))
+    result.notifications should contain(
+      INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                     indexSeekOrScan(Set("Person").asJava)))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with multiple indexed labels") {
@@ -346,9 +348,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = innerExecute("EXPLAIN MATCH (n:Person:Jedi) WHERE n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person", "Jedi").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person", "Jedi").asJava))))
   }
 
   test("should not warn when using dynamic property lookup with no labels") {
@@ -362,12 +364,12 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should warn when using dynamic property lookup with both a static and a dynamic property") {
     graph.createIndex("Person", "name")
 
-    val result = innerExecute(
-      "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n")
+    val result =
+      innerExecute("EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n")
 
-    result.notifications should equal(Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
-                                                                                         indexSeekOrScan(
-                                                                                           Set("Person").asJava))))
+    result.notifications should equal(
+      Set(INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty,
+                                                         indexSeekOrScan(Set("Person").asJava))))
   }
 
   test("should not warn when using dynamic property lookup with a label having no index") {
@@ -396,8 +398,8 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should not warn for load csv without eager") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line")
+    val result =
+      innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line")
 
     result should use("LoadCSV")
     result.notifications.map(_.getCode) should not contain "Neo.ClientNotification.Statement.EagerOperatorWarning"
@@ -419,14 +421,18 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should warn for large label scans combined with load csv") {
-    1 to 11 foreach { _ => createLabeledNode("A") }
+    1 to 11 foreach { _ =>
+      createLabeledNode("A")
+    }
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *")
     result should use("LoadCSV", "NodeByLabelScan")
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.NoApplicableIndexWarning")
   }
 
   test("should warn for large label scans with merge combined with load csv") {
-    1 to 11 foreach { _ => createLabeledNode("A") }
+    1 to 11 foreach { _ =>
+      createLabeledNode("A")
+    }
     val result = innerExecute("EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *")
     result should use("LoadCSV", "AntiConditionalApply")
     result.notifications.map(_.getCode) should contain("Neo.ClientNotification.Statement.NoApplicableIndexWarning")
@@ -451,7 +457,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     createLabeledNode("Person")
 
     //when
-    val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN *")
+    val resultMisspelled       = innerExecute("EXPLAIN MATCH (n:Preson) RETURN *")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN *")
 
     //then
@@ -475,7 +481,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(createNode(), createNode(), "R")
 
     //when
-    val resultMisspelled = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN *")
+    val resultMisspelled       = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN *")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH ()-[r:R]->() RETURN *")
 
     resultMisspelled.notifications should contain(
@@ -489,7 +495,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     //given
     createNode(Map("prop" -> 42))
     //when
-    val resultMisspelled = innerExecute("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n")
+    val resultMisspelled       = innerExecute("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n")
 
     resultMisspelled.notifications should contain(
@@ -507,8 +513,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("should warn about unbounded shortest path") {
     val res = innerExecute("EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m")
 
-    res.notifications should contain(
-      UNBOUNDED_SHORTEST_PATH.notification(new graphdb.InputPosition(34, 1, 35)))
+    res.notifications should contain(UNBOUNDED_SHORTEST_PATH.notification(new graphdb.InputPosition(34, 1, 35)))
   }
 
   test("2.3 can warn about bare nodes") {
@@ -524,50 +529,44 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("do not warn when creating a node with non-existent label when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n:Category)")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n:Category)")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when merging a node with non-existent label when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n:Category)")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n:Category)")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when setting on a node a non-existent label when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n:Category")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n:Category")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when creating a rel with non-existent type when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when merging a rel with non-existent type when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE ()-[:T]->()")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE ()-[:T]->()")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when creating a node with non-existent prop key id when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n.p = 'a'")
+    val result = innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n.p = 'a'")
 
     result.notifications shouldBe empty
   }
 
   test("do not warn when merging a node with non-existent prop key id when using load csv") {
-    val result = innerExecute(
-      "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n) ON CREATE SET n.p = 'a'")
+    val result =
+      innerExecute("EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row MERGE (n) ON CREATE SET n.p = 'a'")
 
     result.notifications shouldBe empty
   }
@@ -575,31 +574,29 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn for use of deprecated toInt") {
     val result = innerExecute("EXPLAIN RETURN toInt('1') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
-                                                                         deprecatedName("toInt", "toInteger"))
-    )
+    result.notifications should contain(
+      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16), deprecatedName("toInt", "toInteger")))
   }
 
   test("warn for use of deprecated upper") {
     val result = innerExecute("EXPLAIN RETURN upper('foo') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
-                                                                          deprecatedName("upper", "toUpper")))
+    result.notifications should contain(
+      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16), deprecatedName("upper", "toUpper")))
   }
 
   test("warn for use of deprecated lower") {
     val result = innerExecute("EXPLAIN RETURN lower('BAR') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
-                                                                         deprecatedName("lower", "toLower")))
+    result.notifications should contain(
+      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16), deprecatedName("lower", "toLower")))
   }
 
   test("warn for use of deprecated rels") {
     val result = innerExecute("EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r")
 
     result.notifications should contain(
-      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(33, 1, 34),
-                                       deprecatedName("rels", "relationships")))
+      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(33, 1, 34), deprecatedName("rels", "relationships")))
   }
 }
 

@@ -17,26 +17,27 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 case object normalizeComparisons extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val instance: Rewriter = topDown(Rewriter.lift {
-    case c@NotEquals(lhs, rhs) =>
+    case c @ NotEquals(lhs, rhs) =>
       NotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@Equals(lhs, rhs) =>
+    case c @ Equals(lhs, rhs) =>
       Equals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@LessThan(lhs, rhs) =>
+    case c @ LessThan(lhs, rhs) =>
       LessThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@LessThanOrEqual(lhs, rhs) =>
+    case c @ LessThanOrEqual(lhs, rhs) =>
       LessThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@GreaterThan(lhs, rhs) =>
+    case c @ GreaterThan(lhs, rhs) =>
       GreaterThan(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@GreaterThanOrEqual(lhs, rhs) =>
+    case c @ GreaterThanOrEqual(lhs, rhs) =>
       GreaterThanOrEqual(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
-    case c@InvalidNotEquals(lhs, rhs) =>
+    case c @ InvalidNotEquals(lhs, rhs) =>
       InvalidNotEquals(lhs.endoRewrite(copyVariables), rhs.endoRewrite(copyVariables))(c.position)
   })
 }

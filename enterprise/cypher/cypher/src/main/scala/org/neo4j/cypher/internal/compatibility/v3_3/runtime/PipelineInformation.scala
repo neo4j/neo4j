@@ -23,7 +23,6 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
-
 object PipelineInformation {
   def empty = new PipelineInformation(Map.empty, 0, 0)
 
@@ -39,7 +38,7 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
 
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
     case LongSlot(_, nullable, typ, key) => newLong(key, nullable, typ)
-    case RefSlot(_, nullable, typ, key) => newReference(key, nullable, typ)
+    case RefSlot(_, nullable, typ, key)  => newReference(key, nullable, typ)
   }
 
   def deepClone(): PipelineInformation = {
@@ -64,17 +63,17 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
 
   def getReferenceOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: RefSlot) => s.offset
-    case Some(s) => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
-    case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
+    case Some(s)          => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
+    case _                => throw new InternalException("Uh oh... There was no slot for `$name`")
   }
 
   def getLongOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: LongSlot) => s.offset
-    case Some(s) => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
-    case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
+    case Some(s)           => throw new InternalException(s"Uh oh... There was no long slot for `$name`. It was a $s")
+    case _                 => throw new InternalException("Uh oh... There was no slot for `$name`")
   }
 
-  def foreachSlot[U](f: ((String,Slot)) => U): Unit =
+  def foreachSlot[U](f: ((String, Slot)) => U): Unit =
     slots.foreach(f)
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]

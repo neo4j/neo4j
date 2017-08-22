@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class GetSortedResult(opName: String,
                            variablesToKeep: Map[String, Variable],
                            sortTableInfo: SortTableInfo,
-                           action: Instruction) extends Instruction {
+                           action: Instruction)
+    extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     action.init(generator)
@@ -34,7 +36,8 @@ case class GetSortedResult(opName: String,
     generator.trace(opName, Some(this.getClass.getSimpleName)) { l1 =>
       val variablesToGetFromFields = sortTableInfo.outgoingVariableNameToVariableInfo.collect {
         case (_, FieldAndVariableInfo(fieldName, queryVariableName, incoming, outgoing))
-          if variablesToKeep.isDefinedAt(queryVariableName) => (outgoing.name, fieldName)
+            if variablesToKeep.isDefinedAt(queryVariableName) =>
+          (outgoing.name, fieldName)
       }
       l1.sortTableIterate(sortTableInfo.tableName, sortTableInfo.tableDescriptor, variablesToGetFromFields) { l2 =>
         l2.incrementRows()

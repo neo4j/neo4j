@@ -25,14 +25,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConvers
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
-import org.neo4j.graphdb.{Relationship, RelationshipType}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.values.storable.Values.stringValue
 
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
   private val mockedContext = mock[QueryContext]
-  private val operations = mock[Operations[Relationship]]
+  private val operations    = mock[Operations[Relationship]]
   doReturn(operations).when(mockedContext).relationshipOps
 
   private implicit val state = QueryStateHelper.emptyWith(query = mockedContext)
@@ -54,6 +56,6 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should throw if encountering anything other than a relationship") {
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
-    a [ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute(1337L, null)
+    a[ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute(1337L, null)
   }
 }

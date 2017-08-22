@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_3.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.PatternRelationship
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 sealed trait Solvable {
   def solvables: Set[SolvableLeaf]
@@ -42,6 +43,3 @@ final case class SolvableRelationship(relationship: PatternRelationship) extends
 object Solvables {
   def apply(qg: QueryGraph): Set[Solvable] = qg.patternRelationships.map(SolvableRelationship)
 }
-
-
-

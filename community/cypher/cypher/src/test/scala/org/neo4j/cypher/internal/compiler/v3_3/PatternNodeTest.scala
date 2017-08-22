@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.{MatchingPair, PatternNode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.MatchingPair
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 class PatternNodeTest extends GraphDatabaseFunSuite {
@@ -36,8 +37,8 @@ class PatternNodeTest extends GraphDatabaseFunSuite {
   }
 
   test("does not return rels already visited") {
-    val a = createNode()
-    val b = createNode()
+    val a   = createNode()
+    val b   = createNode()
     val rel = relate(a, b, "r")
 
     val pA = new PatternNode("a")

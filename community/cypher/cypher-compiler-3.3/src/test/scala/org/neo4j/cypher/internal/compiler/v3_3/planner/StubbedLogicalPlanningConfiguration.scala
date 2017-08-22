@@ -20,25 +20,30 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, HasLabels}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
-  extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
+    extends LogicalPlanningConfiguration
+    with LogicalPlanningConfigurationAdHocSemanticTable {
 
   self =>
 
-  var knownLabels: Set[String] = Set.empty
-  var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
+  var knownLabels: Set[String]                                          = Set.empty
+  var cardinality: PartialFunction[PlannerQuery, Cardinality]           = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = PartialFunction.empty
-  var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
-  var labelCardinality: Map[String, Cardinality] = Map.empty
-  var statistics = null
-  var qg: QueryGraph = null
+  var selectivity: PartialFunction[Expression, Selectivity]             = PartialFunction.empty
+  var labelCardinality: Map[String, Cardinality]                        = Map.empty
+  var statistics                                                        = null
+  var qg: QueryGraph                                                    = null
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???
 
@@ -47,7 +52,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
     override def hasParameters(expr: Expression): Boolean = ???
   }
 
-  var indexes: Set[(String, Seq[String])] = Set.empty
+  var indexes: Set[(String, Seq[String])]       = Set.empty
   var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
@@ -62,27 +67,32 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   def costModel() = cost.orElse(parent.costModel())
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evalutor: ExpressionEvaluator): CardinalityModel = {
-    (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
-      val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
-        case (name: String, cardinality: Cardinality) =>
-          semanticTable.resolvedLabelIds(name) -> cardinality
-      }
-      val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 &&
-          computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
-          computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
-      }
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                       evalutor: ExpressionEvaluator): CardinalityModel = {
+    (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) =>
+      {
+        val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
+          case (name: String, cardinality: Cardinality) =>
+            semanticTable.resolvedLabelIds(name) -> cardinality
+        }
+        val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
+          case RegularPlannerQuery(queryGraph, _, _)
+              if queryGraph.patternNodes.size == 1 &&
+                computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
+            computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
+        }
 
-      val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
-      if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, evalutor)(pq, input, semanticTable)
-    }
+        val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
+        if (r.isDefinedAt(pq)) r.apply(pq)
+        else parent.cardinalityModel(queryGraphCardinalityModel, evalutor)(pq, input, semanticTable)
+      }
   }
 
-  private def computeOptionCardinality(queryGraph: QueryGraph, semanticTable: SemanticTable,
+  private def computeOptionCardinality(queryGraph: QueryGraph,
+                                       semanticTable: SemanticTable,
                                        labelIdCardinality: Map[LabelId, Cardinality]) = {
     val labelMap: Map[IdName, Set[HasLabels]] = queryGraph.selections.labelPredicates
-    val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
+    val labels                                = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
       case label if label.id(semanticTable).isDefined && labelIdCardinality.contains(label.id(semanticTable).get) =>
         labelIdCardinality(label.id(semanticTable).get)

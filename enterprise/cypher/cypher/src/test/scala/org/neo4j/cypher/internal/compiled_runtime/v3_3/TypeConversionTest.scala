@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite}
+import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
 class TypeConversionTest extends ExecutionEngineFunSuite {
   test("should not allow adding node and number") {
     val x = createNode()
     val failure = intercept[CypherTypeException] {
-      val result = execute("debug=generate_java_source debug=show_java_source profile match (n) return n + {x} as res", "x" -> 5)
+      val result =
+        execute("debug=generate_java_source debug=show_java_source profile match (n) return n + {x} as res", "x" -> 5)
       // should not get here, if we do, this is for debugging:
       println(result.executionPlanDescription())
     }
@@ -43,5 +45,5 @@ class TypeConversionTest extends ExecutionEngineFunSuite {
   }
 
   override def execute(q: String, params: (String, Any)*): InternalExecutionResult =
-    super.execute(s"cypher runtime=compiled $q", params:_*)
+    super.execute(s"cypher runtime=compiled $q", params: _*)
 }

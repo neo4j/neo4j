@@ -23,7 +23,8 @@ import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
 
-import gherkin.formatter.model.{Match, Result}
+import gherkin.formatter.model.Match
+import gherkin.formatter.model.Result
 
 import scala.io.Source
 

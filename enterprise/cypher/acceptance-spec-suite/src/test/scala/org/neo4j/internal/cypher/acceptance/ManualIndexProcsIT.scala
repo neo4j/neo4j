@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite}
+import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
 class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
@@ -29,13 +30,13 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forNodes("index").add(node, "key", "value")
     }
 
-    val result = execute( """CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""").toList
+    val result = execute("""CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
   }
 
   test("should fail if index doesn't exist for node seek") {
-    a [CypherExecutionException] should be thrownBy
+    a[CypherExecutionException] should be thrownBy
       execute("""CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""")
   }
 
@@ -45,18 +46,18 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forNodes("index").add(node, "key", "value")
     }
 
-    val result = execute( """CALL db.nodeManualIndexSearch("index", "key:value") YIELD node as n RETURN n""").toList
+    val result = execute("""CALL db.nodeManualIndexSearch("index", "key:value") YIELD node as n RETURN n""").toList
 
     result should equal(List(Map("n" -> node)))
   }
 
   test("should fail if index doesn't exist for node search") {
-    a [CypherExecutionException] should be thrownBy
+    a[CypherExecutionException] should be thrownBy
       execute("""CALL db.nodeManualIndexSearch('index', 'key:value') YIELD node AS n RETURN n""")
   }
 
   test("legacy index + where") {
-    val node = createNode(Map("prop" -> 42))
+    val node      = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
 
     graph.inTx {
@@ -71,8 +72,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("Relationship legacy index seek ") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -80,20 +81,20 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
+    val query  = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
     val result = execute(query)
 
-    result.toList should equal(List(Map("r"-> relationship)))
+    result.toList should equal(List(Map("r" -> relationship)))
   }
 
   test("should fail if index doesn't exist for relationship") {
-    a [CypherExecutionException] should be thrownBy
+    a[CypherExecutionException] should be thrownBy
       execute("""CALL db.relationshipManualIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
 
   test("Relationship legacy index search plus MATCH") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -101,18 +102,20 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]-(b) RETURN r"
+    val query =
+      "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]-(b) RETURN r"
     val result = execute(query)
 
-    result.toList should equal(List(
-      Map("r"-> relationship),
-      Map("r"-> relationship)
-    ))
+    result.toList should equal(
+      List(
+        Map("r" -> relationship),
+        Map("r" -> relationship)
+      ))
   }
 
   test("Relationship legacy index search plus MATCH directed") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -120,18 +123,20 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]->(b) RETURN r"
+    val query =
+      "CALL db.relationshipManualIndexSearch('relIndex','key:*') YIELD relationship AS r MATCH (a)-[r]->(b) RETURN r"
     val result = execute(query)
 
-    result.toList should equal(List(
-      Map("r"-> relationship)
-    ))
+    result.toList should equal(
+      List(
+        Map("r" -> relationship)
+      ))
   }
 
   test("should return correct results on combined node and relationship index starts") {
-    val node = createNode()
+    val node       = createNode()
     val resultNode = createNode()
-    val rel = relate(node, resultNode)
+    val rel        = relate(node, resultNode)
     relate(node, createNode())
 
     graph.inTx {
@@ -139,9 +144,10 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       graph.index().forRelationships("rels").add(rel, "key", "B")
     }
 
-    val result = execute("CALL db.nodeManualIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
-                           "CALL db.relationshipManualIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
-                           "MATCH (n)-[r]->(b) RETURN b")
+    val result = execute(
+      "CALL db.nodeManualIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
+        "CALL db.relationshipManualIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
+        "MATCH (n)-[r]->(b) RETURN b")
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 

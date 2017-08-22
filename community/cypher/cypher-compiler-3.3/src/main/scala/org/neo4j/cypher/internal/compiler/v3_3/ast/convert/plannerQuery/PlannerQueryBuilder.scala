@@ -22,11 +22,14 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 
-case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
-  extends ListSupport {
+case class PlannerQueryBuilder(private val q: PlannerQuery,
+                               semanticTable: SemanticTable,
+                               returns: Seq[IdName] = Seq.empty)
+    extends ListSupport {
 
   def withReturns(returns: Seq[IdName]): PlannerQueryBuilder = copy(returns = returns)
 
@@ -37,7 +40,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     copy(q = q.updateTailOrSelf(_.withHorizon(horizon)))
 
   def withTail(newTail: PlannerQuery): PlannerQueryBuilder = {
-    copy(q = q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
+    copy(
+      q =
+        q.updateTailOrSelf(_.withTail(newTail.amendQueryGraph(_.addArgumentIds(currentlyExposedSymbols.toIndexedSeq)))))
   }
 
   private def currentlyExposedSymbols: Set[IdName] = {
@@ -62,7 +67,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     val previousPatternNodes = if (allPlannerQueries.length > 1) {
       val current = allPlannerQueries(allPlannerQueries.length - 2)
       val projectedNodes = current.horizon.exposedSymbols(current.queryGraph.allCoveredIds).collect {
-        case id@IdName(n) if semanticTable.containsNode(n) => id
+        case id @ IdName(n) if semanticTable.containsNode(n) => id
       }
       projectedNodes ++ current.queryGraph.allPatternNodes
     } else Set.empty
@@ -75,8 +80,9 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
     def fixArgumentIdsOnOptionalMatch(plannerQuery: PlannerQuery): PlannerQuery = {
       val optionalMatches = plannerQuery.queryGraph.optionalMatches
-      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.coveredIds) { case (args, qg) =>
-        (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
+      val (_, newOptionalMatches) = optionalMatches.foldMap(plannerQuery.queryGraph.coveredIds) {
+        case (args, qg) =>
+          (args ++ qg.allCoveredIds, qg.withArgumentIds(args intersect qg.allCoveredIds))
       }
       plannerQuery
         .amendQueryGraph(_.withOptionalMatches(newOptionalMatches.toIndexedSeq))
@@ -85,12 +91,13 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
     def fixArgumentIdsOnMerge(plannerQuery: PlannerQuery): PlannerQuery = {
       val mergeMatchGraph = plannerQuery.queryGraph.mergeQueryGraph
-      val newMergeMatchGraph = mergeMatchGraph.map {
-        qg =>
-          val requiredArguments = qg.coveredIdsExceptArguments intersect qg.argumentIds
-          qg.withArgumentIds(requiredArguments)
+      val newMergeMatchGraph = mergeMatchGraph.map { qg =>
+        val requiredArguments = qg.coveredIdsExceptArguments intersect qg.argumentIds
+        qg.withArgumentIds(requiredArguments)
       }
-      plannerQuery.amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg)).updateTail(fixArgumentIdsOnMerge)
+      plannerQuery
+        .amendQueryGraph(qg => newMergeMatchGraph.map(qg.withMergeMatch).getOrElse(qg))
+        .updateTail(fixArgumentIdsOnMerge)
     }
 
     def fixQueriesWithOnlyRelationshipIndex(plannerQuery: PlannerQuery): PlannerQuery = {
@@ -100,18 +107,22 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
           val lNode = UnNamedNameGenerator.name(r.position)
           val rNode = UnNamedNameGenerator.name(r.position.bumped())
 
-          PatternRelationship(IdName(r.name), (IdName(lNode), IdName(rNode)), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+          PatternRelationship(IdName(r.name),
+                              (IdName(lNode), IdName(rNode)),
+                              SemanticDirection.OUTGOING,
+                              Seq.empty,
+                              SimplePatternLength)
       }
 
       val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))
       plannerQuery
-        .amendQueryGraph(_.addPatternRelationships(patternRelationships.toSeq).addPatternNodes(patternNodes.toSeq:_*))
+        .amendQueryGraph(_.addPatternRelationships(patternRelationships.toSeq).addPatternNodes(patternNodes.toSeq: _*))
         .updateTail(fixQueriesWithOnlyRelationshipIndex)
     }
 
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
-        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
+        val symbols      = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
         val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
         tail.withQueryGraph(newTailGraph)
     }
@@ -123,17 +134,19 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
         .amendQueryGraph(_.mapSelections {
           case Selections(predicates) =>
             val optPredicates = predicates.toNonEmptyListOption
-            val newPredicates: Set[Predicate] = optPredicates.map { predicates =>
-              groupInequalityPredicates(predicates).toSet
-            }.getOrElse(predicates)
+            val newPredicates: Set[Predicate] = optPredicates
+              .map { predicates =>
+                groupInequalityPredicates(predicates).toSet
+              }
+              .getOrElse(predicates)
             Selections(newPredicates)
         })
-      .updateTail(groupInequalities)
+        .updateTail(groupInequalities)
     }
 
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
-    val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
+    val withFixedMergeArgumentIds         = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
+    val groupedInequalities               = groupInequalities(withFixedMergeArgumentIds)
     fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
   }
 }

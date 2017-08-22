@@ -36,29 +36,33 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
-  extends TransactionBoundTokenContext(tc.statement) with PlanContext with SchemaDescriptorTranslation {
+    extends TransactionBoundTokenContext(tc.statement)
+    with PlanContext
+    with SchemaDescriptorTranslation {
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
-    val labelId = getLabelId(labelName)
+    val labelId       = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    getOnlineIndex(tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    getOnlineIndex(
+      tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
   }
 
   def hasIndexRule(labelName: String): Boolean = {
     val labelId = getLabelId(labelName)
 
-    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors       = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
-    val labelId = getLabelId(labelName)
+    val labelId       = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
-    val schema = tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+    val schema =
+      tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
 
     if (schema.`type`() == KernelIndexDescriptor.Type.UNIQUE) getOnlineIndex(schema)
     else None
@@ -73,18 +77,23 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
       case _                         => None
     }
 
-  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[SchemaTypes.UniquenessConstraint] = evalOrNone {
-    val labelId = getLabelId(labelName)
-    val propertyKeyId = getPropertyKeyId(propertyKey)
+  def getUniquenessConstraint(labelName: String, propertyKey: String): Option[SchemaTypes.UniquenessConstraint] =
+    evalOrNone {
+      val labelId       = getLabelId(labelName)
+      val propertyKeyId = getPropertyKeyId(propertyKey)
 
-    import scala.collection.JavaConverters._
-    tc.statement.readOperations().constraintsGetForSchema(
-      SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
-    ).asScala.collectFirst {
-      case constraint: ConstraintDescriptor if constraint.enforcesUniqueness() =>
-        SchemaTypes.UniquenessConstraint(labelId, propertyKeyId)
+      import scala.collection.JavaConverters._
+      tc.statement
+        .readOperations()
+        .constraintsGetForSchema(
+          SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+        )
+        .asScala
+        .collectFirst {
+          case constraint: ConstraintDescriptor if constraint.enforcesUniqueness() =>
+            SchemaTypes.UniquenessConstraint(labelId, propertyKeyId)
+        }
     }
-  }
 
   def checkNodeIndex(idxName: String) {
     if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
@@ -92,7 +101,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     }
   }
 
-  def checkRelIndex(idxName: String)  {
+  def checkRelIndex(idxName: String) {
     if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
@@ -105,7 +114,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-
   // Legacy traversal matchers (pre-Ronja) (These were moved out to remove the dependency on the kernel)
   override def monoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node]) =
     new MonoDirectionalTraversalMatcher(steps, start)
@@ -116,10 +124,10 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
     new BidirectionalTraversalMatcher(steps, start, end)
 
   val statistics: GraphStatistics =
-    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations), new MutableGraphStatisticsSnapshot())
+    InstrumentedGraphStatistics(TransactionBoundGraphStatistics(tc.readOperations),
+                                new MutableGraphStatisticsSnapshot())
 
-  val txIdProvider: () => Long = tc.graph
-    .getDependencyResolver
+  val txIdProvider: () => Long = tc.graph.getDependencyResolver
     .resolveDependency(classOf[TransactionIdStore])
     .getLastCommittedTransactionId
 }

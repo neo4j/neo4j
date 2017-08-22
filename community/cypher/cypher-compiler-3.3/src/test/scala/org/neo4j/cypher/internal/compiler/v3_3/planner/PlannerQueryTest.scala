@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, SortItem, UnsignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SortItem
+import org.neo4j.cypher.internal.frontend.v3_3.ast.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
@@ -63,10 +65,10 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap plannerQuery with tail should change when reverseMapped") {
 
-    val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
-    val firstQueryGraph = QueryGraph.empty
+    val tail             = RegularPlannerQuery(queryGraph = QueryGraph.empty)
+    val firstQueryGraph  = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
-    val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
+    val input            = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
@@ -82,24 +84,28 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
-    val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val shuffleWithLimit =
+      QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
     val hasLimit = RegularPlannerQuery(horizon = shuffleWithLimit)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
-    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(
+      QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
     val hasLimitAndSort = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
   test("should consider planner query tails when computing lazyness preference") {
-    val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val shuffleWithLimit =
+      QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(
+      QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
     val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
-    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
-    val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
+    val pqWithLimit                      = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
+    val pq                               = RegularPlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))
     pqWithLimit.preferredStrictness should equal(Some(LazyMode))

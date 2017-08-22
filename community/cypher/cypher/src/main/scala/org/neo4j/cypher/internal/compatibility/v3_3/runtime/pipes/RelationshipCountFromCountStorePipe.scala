@@ -24,13 +24,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.NameId
 import org.neo4j.values.storable.Values
 
-case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
-                                               typeNames: LazyTypes, endLabel: Option[LazyLabel])
-                                              (val id: Id = new Id) extends Pipe {
+case class RelationshipCountFromCountStorePipe(ident: String,
+                                               startLabel: Option[LazyLabel],
+                                               typeNames: LazyTypes,
+                                               endLabel: Option[LazyLabel])(val id: Id = new Id)
+    extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val maybeStartLabelId = getLabelId(startLabel, state)
-    val maybeEndLabelId = getLabelId(endLabel, state)
+    val maybeEndLabelId   = getLabelId(endLabel, state)
 
     val count = (maybeStartLabelId, maybeEndLabelId) match {
       case (Some(startLabelId), Some(endLabelId)) =>
@@ -46,15 +48,16 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {
-      case Some(label) => label.getOptId(state.query).map(_.id)
-      case _ => Some(NameId.WILDCARD)
-    }
+    case Some(label) => label.getOptId(state.query).map(_.id)
+    case _           => Some(NameId.WILDCARD)
+  }
 
   private def countOneDirection(state: QueryState, typeNames: LazyTypes, startLabelId: Int, endLabelId: Int) =
     typeNames.types(state.query) match {
       case None => state.query.relationshipCountByCountStore(startLabelId, NameId.WILDCARD, endLabelId)
-      case Some(types) => types.foldLeft(0L) { (count, typeId) =>
-        count + state.query.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
-      }
+      case Some(types) =>
+        types.foldLeft(0L) { (count, typeId) =>
+          count + state.query.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
+        }
     }
 }

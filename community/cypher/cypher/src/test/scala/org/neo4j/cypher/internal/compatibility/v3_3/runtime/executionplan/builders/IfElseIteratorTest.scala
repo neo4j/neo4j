@@ -23,13 +23,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
-
 class IfElseIteratorTest extends CypherFunSuite {
   val a1 = ExecutionContext.from("a" -> 1)
   val a2 = ExecutionContext.from("a" -> 2)
 
   test("should_pass_through_if_ifClause_returns_values") {
-    val ifClause = (_: ExecutionContext) => Iterator(a1)
+    val ifClause   = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
@@ -37,7 +36,7 @@ class IfElseIteratorTest extends CypherFunSuite {
   }
 
   test("should_return_elseClause_value_if_ifClause_is_empty") {
-    val ifClause = (_: ExecutionContext) => Iterator()
+    val ifClause   = (_: ExecutionContext) => Iterator()
     val elseClause = (_: ExecutionContext) => Iterator(a2)
 
     val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
@@ -45,7 +44,7 @@ class IfElseIteratorTest extends CypherFunSuite {
   }
 
   test("should_return_all_values_produces_by_ifClause") {
-    val ifClause = (_: ExecutionContext) => Iterator(a1, a2)
+    val ifClause   = (_: ExecutionContext) => Iterator(a1, a2)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
@@ -53,7 +52,7 @@ class IfElseIteratorTest extends CypherFunSuite {
   }
 
   test("should_be_empty_when_the_input_is_empty") {
-    val ifClause = (_: ExecutionContext) => fail("should not have run")
+    val ifClause   = (_: ExecutionContext) => fail("should not have run")
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator.empty, ifClause, elseClause, () => {})
@@ -61,8 +60,8 @@ class IfElseIteratorTest extends CypherFunSuite {
   }
 
   test("should_run_finally_block_when_if_succeeds") {
-    var touched = false
-    val ifClause = (_: ExecutionContext) => Iterator(a1)
+    var touched    = false
+    val ifClause   = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => touched = true)
@@ -71,8 +70,8 @@ class IfElseIteratorTest extends CypherFunSuite {
   }
 
   test("should_run_finally_block_when_if_fails") {
-    var touched = false
-    val ifClause = (_: ExecutionContext) => Iterator(a1)
+    var touched    = false
+    val ifClause   = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => touched = true)

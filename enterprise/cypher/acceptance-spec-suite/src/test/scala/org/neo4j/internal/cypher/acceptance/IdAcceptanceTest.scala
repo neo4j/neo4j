@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Relationship
 
 class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  test("id on a node should work in both runtimes")  {
+  test("id on a node should work in both runtimes") {
     // GIVEN
     val expected = createNode().getId
 
@@ -35,7 +35,7 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupp
     result.toList should equal(List(Map("id(n)" -> expected)))
   }
 
-  test("id on a rel should work in both runtimes")  {
+  test("id on a rel should work in both runtimes") {
     // GIVEN
     val expected = relate(createNode(), createNode()).getId
 
@@ -52,6 +52,8 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupp
     succeedWith(Configs.CommunityInterpreted, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
     succeedWith(Configs.CommunityInterpreted, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
     succeedWith(Configs.CommunityInterpreted, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
-    succeedWith(Configs.CommunityInterpreted, "MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
+    succeedWith(Configs.CommunityInterpreted, "MATCH p = ()-->() RETURN rels(p) AS r")
+      .columnAs[List[Relationship]]("r")
+      .next should equal(List(r))
   }
 }

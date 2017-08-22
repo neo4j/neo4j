@@ -19,10 +19,23 @@
  */
 package org.neo4j.cypher.internal.ir.v3_3.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalizerChain, PropertyPredicateNormalizer, addUniquenessPredicates}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.LabelPredicateNormalizer
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.MatchPredicateNormalizerChain
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.PropertyPredicateNormalizer
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.addUniquenessPredicates
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Ands
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Not
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Ors
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternComprehension
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Range
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipChain
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.ir.v3_3.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
@@ -32,12 +45,14 @@ object ExpressionConverters {
 
   implicit class PatternExpressionConverter(val exp: PatternExpression) extends AnyVal {
     def asQueryGraph: QueryGraph = {
-      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+      val uniqueRels                  = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates            = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
       val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) =>
+          acc =>
+            acc ++ normalizer.extract(pattern)
+        case _ => identity
       }
 
       val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
@@ -53,12 +68,14 @@ object ExpressionConverters {
 
   implicit class PatternComprehensionConverter(val exp: PatternComprehension) extends AnyVal {
     def asQueryGraph: QueryGraph = {
-      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+      val uniqueRels                  = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates            = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
       val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) =>
+          acc =>
+            acc ++ normalizer.extract(pattern)
+        case _ => identity
       } ++ exp.predicate
 
       val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
@@ -74,51 +91,59 @@ object ExpressionConverters {
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
     def asPredicates: Set[Predicate] = {
-      predicate.treeFold(Set.empty[Predicate]) {
-        // n:Label
-        case p@HasLabels(Variable(name), labels) =>
-          acc => val newAcc = acc ++ labels.map { label =>
+      predicate
+        .treeFold(Set.empty[Predicate]) {
+          // n:Label
+          case p @ HasLabels(Variable(name), labels) =>
+            acc =>
+              val newAcc = acc ++ labels.map { label =>
                 Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
-            }
-            (newAcc, None)
-        // and
-        case _: Ands =>
-          acc => (acc, Some(identity))
-        case p: Expression =>
-          acc => (acc + Predicate(p.idNames, p), None)
-      }.map(filterUnnamed)
+              }
+              (newAcc, None)
+          // and
+          case _: Ands =>
+            acc =>
+              (acc, Some(identity))
+          case p: Expression =>
+            acc =>
+              (acc + Predicate(p.idNames, p), None)
+        }
+        .map(filterUnnamed)
     }
 
     private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
       case Predicate(deps, e: PatternExpression) =>
         Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, e@Not(_: PatternExpression)) =>
+      case Predicate(deps, e @ Not(_: PatternExpression)) =>
         Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, ors@Ors(exprs)) =>
+      case Predicate(deps, ors @ Ors(exprs)) =>
         val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
           exp match {
             case e: PatternExpression =>
               acc ++ e.idNames.filter(x => isNamed(x.name))
-            case e@Not(_: PatternExpression) =>
+            case e @ Not(_: PatternExpression) =>
               acc ++ e.idNames.filter(x => isNamed(x.name))
-            case e if e.treeExists { case _: PatternExpression => true} =>
+            case e if e.treeExists { case _: PatternExpression => true } =>
               acc ++ (e.idNames -- unnamedIdNamesInNestedPatternExpressions(e))
             case e =>
               acc ++ e.idNames
           }
         }
         Predicate(newDeps, ors)
-      case Predicate(deps, expr) if expr.treeExists { case _: PatternExpression => true} =>
+      case Predicate(deps, expr) if expr.treeExists { case _: PatternExpression => true } =>
         Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
       case p => p
     }
 
     private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
       val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
-        case p: PatternExpression => acc => (acc :+ p, None)
+        case p: PatternExpression =>
+          acc =>
+            (acc :+ p, None)
       }
 
-      val unnamedIdsInPatternExprs = patternExpressions.flatMap(_.idNames)
+      val unnamedIdsInPatternExprs = patternExpressions
+        .flatMap(_.idNames)
         .filterNot(x => isNamed(x.name))
         .toSet
 
@@ -134,11 +159,11 @@ object ExpressionConverters {
   implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {
     def asPatternLength: PatternLength = length match {
       case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
-      case Some(Some(Range(Some(left), None))) => VarPatternLength(left.value.toInt, None)
-      case Some(Some(Range(None, Some(right)))) => VarPatternLength(1, Some(right.value.toInt))
-      case Some(Some(Range(None, None))) => VarPatternLength.unlimited
-      case Some(None) => VarPatternLength.unlimited
-      case None => SimplePatternLength
+      case Some(Some(Range(Some(left), None)))        => VarPatternLength(left.value.toInt, None)
+      case Some(Some(Range(None, Some(right))))       => VarPatternLength(1, Some(right.value.toInt))
+      case Some(Some(Range(None, None)))              => VarPatternLength.unlimited
+      case Some(None)                                 => VarPatternLength.unlimited
+      case None                                       => SimplePatternLength
     }
   }
 

@@ -19,8 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, RelatedTo, VarLengthRelatedTo}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.{PatternGraph, PatternNode, PatternRelationship}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.Pattern
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.VarLengthRelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternGraph
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternRelationship
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
@@ -29,10 +33,10 @@ import scala.collection.mutable
 trait PatternGraphBuilder {
   def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
 
-    if(patterns.isEmpty)
+    if (patterns.isEmpty)
       return new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
 
-    val patternNodeMap: mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
+    val patternNodeMap: mutable.Map[String, PatternNode]             = scala.collection.mutable.Map()
     val patternRelMap: mutable.Map[String, Seq[PatternRelationship]] = scala.collection.mutable.Map()
 
     def takeOnPattern(x: Pattern): Boolean = {
@@ -44,13 +48,13 @@ trait PatternGraphBuilder {
     }
 
     def takeOnRelatedTo(r: RelatedTo) = {
-      val left = r.left
-      val right = r.right
-      val relName = r.relName
-      val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
+      val left                   = r.left
+      val right                  = r.right
+      val relName                = r.relName
+      val leftNode: PatternNode  = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
       val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right.name, new PatternNode(right))
-      val maybeSetOfPatternRel =  patternRelMap.get(relName)
-      val newPatternRel = leftNode.relateTo(relName, rightNode, r)
+      val maybeSetOfPatternRel   = patternRelMap.get(relName)
+      val newPatternRel          = leftNode.relateTo(relName, rightNode, r)
       if (maybeSetOfPatternRel.isDefined)
         patternRelMap(relName) = maybeSetOfPatternRel.get :+ newPatternRel
       else
@@ -60,9 +64,16 @@ trait PatternGraphBuilder {
 
     def takeOnVarLengthRel(r: VarLengthRelatedTo) = {
       val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left))
-      val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
-      val maybeSetOfPatternRel =  patternRelMap.get(r.pathName)
-      val newPatternRel = startNode.relateViaVariableLengthPathTo(r.pathName, endNode, r.minHops, r.maxHops, r.relTypes, r.direction, r.relIterator, r.properties)
+      val endNode: PatternNode   = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
+      val maybeSetOfPatternRel   = patternRelMap.get(r.pathName)
+      val newPatternRel = startNode.relateViaVariableLengthPathTo(r.pathName,
+                                                                  endNode,
+                                                                  r.minHops,
+                                                                  r.maxHops,
+                                                                  r.relTypes,
+                                                                  r.direction,
+                                                                  r.relIterator,
+                                                                  r.properties)
       if (maybeSetOfPatternRel.isDefined)
         patternRelMap(r.pathName) = maybeSetOfPatternRel.get :+ newPatternRel
       else
@@ -73,11 +84,16 @@ trait PatternGraphBuilder {
     // Start from a pattern that is connected to something already bound
     val s = patterns.find(pattern => pattern.possibleStartPoints.exists(tuple => symbols.hasVariableNamed(tuple._1)))
 
-
-    val startPoint = s.getOrElse(throw new SyntaxException("All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " + patterns.flatMap(_.possibleStartPoints.map(_._1)).distinct.sorted.mkString(", ")))
+    val startPoint = s.getOrElse(
+      throw new SyntaxException(
+        "All parts of the pattern must either directly or indirectly be connected to at least one bound entity. These variables were found to be disconnected: " + patterns
+          .flatMap(_.possibleStartPoints.map(_._1))
+          .distinct
+          .sorted
+          .mkString(", ")))
 
     val patternsLeft = mutable.Set[Pattern](patterns: _*)
-    val boundPoints = mutable.Set[String](startPoint.possibleStartPoints.map(_._1): _*)
+    val boundPoints  = mutable.Set[String](startPoint.possibleStartPoints.map(_._1): _*)
     patternsLeft -= startPoint
     takeOnPattern(startPoint)
 

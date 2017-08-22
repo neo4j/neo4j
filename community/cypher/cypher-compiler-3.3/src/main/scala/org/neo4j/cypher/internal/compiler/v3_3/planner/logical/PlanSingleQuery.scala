@@ -20,26 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{countStorePlanner, verifyBestPlan}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.countStorePlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
 QueryGraphs and EventHorizons
  */
-case class PlanSingleQuery(planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                           planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                           planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
-                           planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates) extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
+case class PlanSingleQuery(
+    planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
+    planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
+    planWithTail: LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] = PlanWithTail(),
+    planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
+    extends LogicalPlanningFunction1[PlannerQuery, LogicalPlan] {
 
   override def apply(in: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val (completePlan, ctx) = countStorePlanner(in) match {
       case Some(plan) =>
         (plan, context.recurse(plan))
       case None =>
-        val partPlan = planPart(in, context)
-        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/)(context)
-        val projectedPlan = planEventHorizon(in, planWithUpdates)
+        val partPlan         = planPart(in, context)
+        val planWithUpdates  = planUpdates(in, partPlan, true /*first QG*/ )(context)
+        val projectedPlan    = planEventHorizon(in, planWithUpdates)
         val projectedContext = context.recurse(projectedPlan)
         (projectedPlan, projectedContext)
     }

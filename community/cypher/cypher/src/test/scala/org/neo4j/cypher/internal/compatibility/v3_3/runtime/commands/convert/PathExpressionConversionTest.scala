@@ -21,9 +21,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Variable, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
@@ -33,9 +36,8 @@ class PathExpressionConversionTest extends CypherFunSuite {
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
-
   test("p = (a)") {
-    val expr = PathExpression(NodePathStep(Variable("a")_, NilPathStep))_
+    val expr = PathExpression(NodePathStep(Variable("a") _, NilPathStep)) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -46,93 +48,91 @@ class PathExpressionConversionTest extends CypherFunSuite {
   }
 
   test("p = (b)<-[r]-(a)") {
-    val expr = PathExpression(NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep)))_
+    val expr = PathExpression(
+      NodePathStep(Variable("b") _,
+                   SingleRelationshipPathStep(Variable("r") _, SemanticDirection.INCOMING, NilPathStep))) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "b"),
-        singleNodeProjector("b",
-          singleIncomingRelationshipProjector("r", nilProjector)
-        )
+        singleNodeProjector("b", singleIncomingRelationshipProjector("r", nilProjector))
       )
     )
   }
 
   test("p = (a)-[r]->(b)") {
-    val expr = PathExpression(NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val expr = PathExpression(
+      NodePathStep(Variable("a") _,
+                   SingleRelationshipPathStep(Variable("r") _, SemanticDirection.OUTGOING, NilPathStep))) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "a"),
-        singleNodeProjector("a",
-          singleOutgoingRelationshipProjector("r", nilProjector)
-        )
+        singleNodeProjector("a", singleOutgoingRelationshipProjector("r", nilProjector))
       )
     )
   }
 
   test("p = (b)<-[r*1..]-(a)") {
-    val expr = PathExpression(NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep)))_
+    val expr = PathExpression(
+      NodePathStep(Variable("b") _,
+                   MultiRelationshipPathStep(Variable("r") _, SemanticDirection.INCOMING, NilPathStep))) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "b"),
-        singleNodeProjector("b",
-          multiIncomingRelationshipProjector("r", nilProjector)
-        )
+        singleNodeProjector("b", multiIncomingRelationshipProjector("r", nilProjector))
       )
     )
   }
 
   test("p = (a)-[r*1..]->(b)") {
-    val expr = PathExpression(NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val expr = PathExpression(
+      NodePathStep(Variable("a") _,
+                   MultiRelationshipPathStep(Variable("r") _, SemanticDirection.OUTGOING, NilPathStep))) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("r", "a"),
-        singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r", nilProjector)
-        )
+        singleNodeProjector("a", multiOutgoingRelationshipProjector("r", nilProjector))
       )
     )
   }
 
   test("p = (a)-[r1*1..2]->(b)<-[r2]-c") {
     val expr = PathExpression(
-      NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING,
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING,
-      NilPathStep
-    ))))_
+      NodePathStep(
+        Variable("a") _,
+        MultiRelationshipPathStep(Variable("r1") _,
+                                  SemanticDirection.OUTGOING,
+                                  SingleRelationshipPathStep(Variable("r2") _, SemanticDirection.INCOMING, NilPathStep))
+      )) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r1",
-            singleIncomingRelationshipProjector("r2", nilProjector)
-          )
-        )
+                            multiOutgoingRelationshipProjector("r1",
+                                                               singleIncomingRelationshipProjector("r2", nilProjector)))
       )
     )
   }
 
   test("p = (a)-[r1]->(b)<-[r2*1..2]-c") {
     val expr = PathExpression(
-      NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING,
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING,
-      NilPathStep
-    ))))_
+      NodePathStep(
+        Variable("a") _,
+        MultiRelationshipPathStep(Variable("r1") _,
+                                  SemanticDirection.OUTGOING,
+                                  SingleRelationshipPathStep(Variable("r2") _, SemanticDirection.INCOMING, NilPathStep))
+      )) _
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
-          multiOutgoingRelationshipProjector("r1",
-            singleIncomingRelationshipProjector("r2", nilProjector)
-          )
-        )
+                            multiOutgoingRelationshipProjector("r1",
+                                                               singleIncomingRelationshipProjector("r2", nilProjector)))
       )
     )
   }

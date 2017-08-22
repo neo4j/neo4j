@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.{Iterator, immutable}
+import scala.collection.Iterator
+import scala.collection.immutable
 
 object ExecutionContext {
   def empty: ExecutionContext = apply()
@@ -45,18 +46,22 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
   def newWith1(key1: String, value1: AnyValue): ExecutionContext
   def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
-  def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext
+  def newWith3(key1: String,
+               value1: AnyValue,
+               key2: String,
+               value2: AnyValue,
+               key3: String,
+               value3: AnyValue): ExecutionContext
   def mergeWith(other: ExecutionContext): ExecutionContext
   def createClone(): ExecutionContext
 }
 
-case class MapExecutionContext(m: MutableMap[String, AnyValue])
-  extends ExecutionContext {
+case class MapExecutionContext(m: MutableMap[String, AnyValue]) extends ExecutionContext {
 
   override def copyFrom(input: ExecutionContext): Unit = fail()
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
-  override def getLongAt(offset: Int): Long = fail()
+  override def getLongAt(offset: Int): Long              = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
 
@@ -68,7 +73,7 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
     case MapExecutionContext(otherMap) => copy(m = m ++ otherMap)
-    case _ => fail()
+    case _                             => fail()
   }
 
   override def foreach[U](f: ((String, AnyValue)) => U) {
@@ -100,7 +105,12 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     createWithNewMap(newMap)
   }
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue) = {
+  override def newWith3(key1: String,
+                        value1: AnyValue,
+                        key2: String,
+                        value2: AnyValue,
+                        key3: String,
+                        value3: AnyValue) = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)

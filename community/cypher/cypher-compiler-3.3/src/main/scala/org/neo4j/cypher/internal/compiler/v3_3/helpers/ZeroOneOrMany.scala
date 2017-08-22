@@ -23,12 +23,12 @@ sealed trait ZeroOneOrMany[+T]
 
 object ZeroOneOrMany {
   def apply[T](elts: Seq[T]) = elts match {
-    case Seq() => Zero
+    case Seq()    => Zero
     case Seq(one) => One(one)
-    case many => Many(many)
+    case many     => Many(many)
   }
 }
 
-case object Zero extends ZeroOneOrMany[Nothing]
-final case class One[T](value: T) extends ZeroOneOrMany[T]
+case object Zero                         extends ZeroOneOrMany[Nothing]
+final case class One[T](value: T)        extends ZeroOneOrMany[T]
 final case class Many[T](values: Seq[T]) extends ZeroOneOrMany[T]

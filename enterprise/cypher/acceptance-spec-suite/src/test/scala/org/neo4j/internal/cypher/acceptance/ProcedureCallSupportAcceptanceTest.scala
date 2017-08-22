@@ -25,7 +25,9 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.helpers.collection.MapUtil.map
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.{Context, FieldSignature, Neo4jTypes}
+import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.proc.FieldSignature
+import org.neo4j.kernel.api.proc.Neo4jTypes
 
 class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
@@ -37,9 +39,10 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerProcedureReturningSingleValue(value)
 
     // Using graph execute to get a Java value
-    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
-      java.util.Collections.singletonMap("out", value)
-    ))
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(
+      List(
+        java.util.Collections.singletonMap("out", value)
+      ))
   }
 
   test("should return correctly typed list result (even if converting to and from scala representation internally)") {
@@ -50,9 +53,10 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerProcedureReturningSingleValue(value)
 
     // Using graph execute to get a Java value
-    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
-      java.util.Collections.singletonMap("out", value)
-    ))
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(
+      List(
+        java.util.Collections.singletonMap("out", value)
+      ))
   }
 
   test("should return correctly typed stream result (even if converting to and from scala representation internally)") {
@@ -64,27 +68,31 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     registerProcedureReturningSingleValue(stream)
 
     // Using graph execute to get a Java value
-    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
-      java.util.Collections.singletonMap("out", value)
-    ))
+    graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(
+      List(
+        java.util.Collections.singletonMap("out", value)
+      ))
   }
 
   test("should not yield deprecated fields") {
     // given
     registerProcedure("something.with.deprecated.output") { builder =>
-      builder.out(util.Arrays.asList(
-        FieldSignature.outputField("one",Neo4jTypes.NTString),
-        FieldSignature.outputField("oldTwo",Neo4jTypes.NTString, true),
-        FieldSignature.outputField("newTwo",Neo4jTypes.NTString) ))
+      builder.out(
+        util.Arrays.asList(
+          FieldSignature.outputField("one", Neo4jTypes.NTString),
+          FieldSignature.outputField("oldTwo", Neo4jTypes.NTString, true),
+          FieldSignature.outputField("newTwo", Neo4jTypes.NTString)
+        ))
       new BasicProcedure(builder.build) {
-        override def apply(ctx: Context, input: Array[AnyRef]):  RawIterator[Array[AnyRef], ProcedureException] =
-          RawIterator.of[Array[AnyRef], ProcedureException](Array("alpha","junk","beta"))
+        override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
+          RawIterator.of[Array[AnyRef], ProcedureException](Array("alpha", "junk", "beta"))
       }
     }
 
     // then
-    graph.execute("CALL something.with.deprecated.output()").stream().toArray.toList should equal(List(
-      map("one", "alpha", "newTwo", "beta")
-    ))
+    graph.execute("CALL something.with.deprecated.output()").stream().toArray.toList should equal(
+      List(
+        map("one", "alpha", "newTwo", "beta")
+      ))
   }
 }

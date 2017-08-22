@@ -56,25 +56,25 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
   }
 
   test("distinct aggregation on array property") {
-    createNode("prop"-> Array(42))
-    createNode("prop"-> Array(42))
-    createNode("prop"-> Array(1337))
+    createNode("prop" -> Array(42))
+    createNode("prop" -> Array(42))
+    createNode("prop" -> Array(1337))
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN DISTINCT a.prop")
     result.toComparableResult.toSet should equal(Set(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
 
   test("Node count from count store plan should work with labeled nodes") {
-    val node1 = createLabeledNode("Person")
-    val node2 = createLabeledNode("Person")
-    val node3 = createNode()
+    val node1  = createLabeledNode("Person")
+    val node2  = createLabeledNode("Person")
+    val node3  = createNode()
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
   test("Count should work with projected node variable") {
-    val node1 = createLabeledNode("Person")
-    val node2 = createLabeledNode("Person")
-    val node3 = createNode()
+    val node1  = createLabeledNode("Person")
+    val node2  = createLabeledNode("Person")
+    val node3  = createNode()
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
@@ -83,45 +83,46 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createNode()
     val node3 = createNode()
-    val r1 = relate(node1, node2)
-    val r2 = relate(node1, node3)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
+    val r1    = relate(node1, node2)
+    val r2    = relate(node1, node3)
+    val result =
+      succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
   test("combine grouping and aggregation with sorting") {
-    val node1 = createNode(Map("prop" -> 1))
-    val node2 = createNode(Map("prop" -> 2))
-    val r1 = relate(node1, node2)
+    val node1  = createNode(Map("prop" -> 1))
+    val node2  = createNode(Map("prop" -> 2))
+    val r1     = relate(node1, node2)
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 
   test("combine simple aggregation on projection with sorting") {
-    val node1 = createNode()
-    val node2 = createNode()
+    val node1  = createNode()
+    val node2  = createNode()
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
     result.toList should equal(List(Map("count(b)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (cannot use count store)") {
-    val node1 = createNode(Map("prop" -> 1))
-    val node2 = createNode(Map("prop" -> 2))
+    val node1  = createNode(Map("prop" -> 1))
+    val node2  = createNode(Map("prop" -> 2))
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
     result.toList should equal(List(Map("count(a.prop)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (can use node count store)") {
-    val node1 = createNode()
-    val node2 = createNode()
+    val node1  = createNode()
+    val node2  = createNode()
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN count(a) ORDER BY count(a)")
     result.toList should equal(List(Map("count(a)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (can use relationship count store)") {
-    val node1 = createNode()
-    val node2 = createNode()
-    val r1 = relate(node1, node2)
+    val node1  = createNode()
+    val node2  = createNode()
+    val r1     = relate(node1, node2)
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
     result.toList should equal(List(Map("count(r)" -> 2)))
   }

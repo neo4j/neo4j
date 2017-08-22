@@ -19,23 +19,25 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class UnwindCollection(opName: String, collection: CodeGenExpression) extends LoopDataGenerator {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =
     collection.init(generator)
 
-  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])
-                                 (implicit context: CodeGenContext): Unit = {
+  override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(
+      implicit context: CodeGenContext): Unit = {
     generator.declareIterator(iterVar)
     val iterator = generator.iteratorFrom(collection.generateExpression(generator))
     generator.assign(iterVar, CodeGenType.Any, iterator)
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext): Unit = {
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(
+      implicit context: CodeGenContext): Unit = {
     val next = generator.iteratorNext(generator.loadVariable(iterVar))
     generator.assign(nextVar.name, CodeGenType.Any, next)
   }

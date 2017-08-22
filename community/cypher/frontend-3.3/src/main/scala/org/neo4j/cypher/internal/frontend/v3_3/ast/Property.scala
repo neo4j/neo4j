@@ -20,7 +20,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with SimpleTyping {
+case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition)
+    extends Expression
+    with SimpleTyping {
   protected def possibleTypes = CTAny.covariant
 
   override def semanticCheck(ctx: SemanticContext) =

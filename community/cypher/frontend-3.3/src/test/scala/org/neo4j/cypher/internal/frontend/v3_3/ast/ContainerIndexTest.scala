@@ -18,19 +18,21 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class ContainerIndexTest extends CypherFunSuite {
 
-  val dummyString = DummyExpression(CTString)
+  val dummyString  = DummyExpression(CTString)
   val dummyInteger = DummyExpression(CTInteger)
-  val dummyNode = DummyExpression(CTNode)
-  val dummyAny = DummyExpression(CTAny)
-  val dummyList = DummyExpression(CTList(CTNode) | CTList(CTString))
+  val dummyNode    = DummyExpression(CTNode)
+  val dummyAny     = DummyExpression(CTAny)
+  val dummyList    = DummyExpression(CTList(CTNode) | CTList(CTString))
 
   test("should detect list lookup") {
-    val lhs = dummyList
-    val rhs = dummyInteger
+    val lhs   = dummyList
+    val rhs   = dummyInteger
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -41,8 +43,8 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should detect node lookup") {
-    val lhs = dummyNode
-    val rhs = dummyString
+    val lhs   = dummyNode
+    val rhs   = dummyString
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -53,8 +55,8 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should type as any if given untyped lookup arguments") {
-    val lhs = dummyAny
-    val rhs = dummyAny
+    val lhs   = dummyAny
+    val rhs   = dummyAny
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -65,9 +67,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should return list inner types of expression") {
-    val index = ContainerIndex(dummyList,
-                               SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
@@ -75,9 +75,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should raise error if indexing by fraction") {
-    val index = ContainerIndex(dummyList,
-                               DecimalDoubleLiteral("1.3")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, DecimalDoubleLiteral("1.3")(DummyPosition(5)))(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))

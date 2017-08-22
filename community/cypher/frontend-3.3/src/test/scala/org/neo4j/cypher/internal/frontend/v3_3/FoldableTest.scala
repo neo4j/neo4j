@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 object FoldableTest {
-  trait Exp extends Foldable
-  case class Val(int: Int) extends Exp
+  trait Exp                          extends Foldable
+  case class Val(int: Int)           extends Exp
   case class Add(lhs: Exp, rhs: Exp) extends Exp
-  case class Sum(args: Seq[Exp]) extends Exp
+  case class Sum(args: Seq[Exp])     extends Exp
 }
 
 class FoldableTest extends CypherFunSuite {
@@ -32,7 +32,9 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.fold(50) {
-      case Val(x) => acc => acc + x
+      case Val(x) =>
+        acc =>
+          acc + x
     }
 
     assert(result === 200)
@@ -42,7 +44,9 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(1), Add(Add(Val(2), Val(3)), Val(4)))
 
     val result = ast.fold(Seq.empty[Int]) {
-      case Val(x) => acc => acc :+ x
+      case Val(x) =>
+        acc =>
+          acc :+ x
     }
 
     assert(result === Seq(1, 2, 3, 4))
@@ -52,7 +56,9 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => acc => (acc + x, Some(identity))
+      case Val(x) =>
+        acc =>
+          (acc + x, Some(identity))
     }
 
     assert(result === 200)
@@ -62,8 +68,12 @@ class FoldableTest extends CypherFunSuite {
     val ast = Add(Val(55), Add(Val(43), Val(52)))
 
     val result = ast.treeFold(50) {
-      case Val(x) => acc => (acc + x, Some(identity))
-      case Add(Val(43), _) => acc => (acc + 20, None)
+      case Val(x) =>
+        acc =>
+          (acc + x, Some(identity))
+      case Add(Val(43), _) =>
+        acc =>
+          (acc + 20, None)
     }
 
     assert(result === 125)

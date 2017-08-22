@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 
 /*
  * Rewriters that live here are required to adhere to the contract of
@@ -37,17 +39,19 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: CompilerContext) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
-    fuseSelections,
-    unnestApply,
-    cleanUpEager,
-    simplifyPredicates,
-    unnestOptional,
-    predicateRemovalThroughJoins,
-    removeIdenticalPlans,
-    pruningVarExpander,
-    useTop
-  ).rewriter)
+  override def instance(context: CompilerContext) =
+    fixedPoint(
+      rewriterSequencer("LogicalPlanRewriter")(
+        fuseSelections,
+        unnestApply,
+        cleanUpEager,
+        simplifyPredicates,
+        unnestOptional,
+        predicateRemovalThroughJoins,
+        removeIdenticalPlans,
+        pruningVarExpander,
+        useTop
+      ).rewriter)
 }
 
 trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {

@@ -30,7 +30,7 @@ class RuntimeJavaValueConverterTest extends CypherFunSuite {
 
     val converted = converter.asDeepJavaValue(List(1, 2, 3)).asInstanceOf[SeqWrapper[_]]
 
-    converted.underlying shouldBe a [Vector[_]]
+    converted.underlying shouldBe a[Vector[_]]
   }
 
   test("should used indexed seq when converting iterator") {
@@ -38,6 +38,6 @@ class RuntimeJavaValueConverterTest extends CypherFunSuite {
 
     val converted = converter.asDeepJavaValue(List(1, 2, 3).iterator).asInstanceOf[SeqWrapper[_]]
 
-    converted.underlying shouldBe a [Vector[_]]
+    converted.underlying shouldBe a[Vector[_]]
   }
 }

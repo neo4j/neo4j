@@ -29,7 +29,8 @@ object ProcedureResultItem {
 }
 
 case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variable)(val position: InputPosition)
-  extends ASTNode with SemanticChecking {
+    extends ASTNode
+    with SemanticChecking {
 
   val outputName: String = output.map(_.name).getOrElse(variable.name)
 
@@ -41,6 +42,8 @@ case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variab
   def semanticCheck(types: Map[String, CypherType]): SemanticCheck =
     types
       .get(outputName)
-      .map { typ => variable.declare(typ): SemanticCheck }
+      .map { typ =>
+        variable.declare(typ): SemanticCheck
+      }
       .getOrElse(error(_: SemanticState, SemanticError(s"Unknown procedure output: `$outputName`", position)))
 }

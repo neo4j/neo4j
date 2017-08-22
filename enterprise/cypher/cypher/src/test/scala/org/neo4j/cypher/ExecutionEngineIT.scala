@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.{ExecutionPlanDescription, Result}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION
@@ -74,24 +76,32 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   class AllNodesProcedure extends CallableProcedure {
     import scala.collection.JavaConverters._
 
-    private val results = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
-    val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
+    private val results                           = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
+    val procedureName                             = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
-    val signature: ProcedureSignature = new ProcedureSignature(
-      procedureName, paramSignature, resultSignature, Mode.READ, java.util.Optional.empty(), Array.empty,
-      java.util.Optional.empty(), java.util.Optional.empty())
+    val signature: ProcedureSignature = new ProcedureSignature(procedureName,
+                                                               paramSignature,
+                                                               resultSignature,
+                                                               Mode.READ,
+                                                               java.util.Optional.empty(),
+                                                               Array.empty,
+                                                               java.util.Optional.empty(),
+                                                               java.util.Optional.empty())
 
     def paramSignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
 
-    def resultSignature: util.List[FieldSignature] = results.keys.foldLeft(List.empty[FieldSignature]) { (fields, entry) =>
-      fields :+ FieldSignature.outputField(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
-    }.asJava
+    def resultSignature: util.List[FieldSignature] =
+      results.keys
+        .foldLeft(List.empty[FieldSignature]) { (fields, entry) =>
+          fields :+ FieldSignature.outputField(entry, results(entry).asInstanceOf[Neo4jTypes.AnyType])
+        }
+        .asJava
 
     override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations = statement.readOperations
-      val nodes = readOperations.nodesGetAll()
-      var count = 0
+      val readOperations       = statement.readOperations
+      val nodes                = readOperations.nodesGetAll()
+      var count                = 0
       new RawIterator[Array[AnyRef], ProcedureException] {
         override def next(): Array[AnyRef] = {
           count = count + 1

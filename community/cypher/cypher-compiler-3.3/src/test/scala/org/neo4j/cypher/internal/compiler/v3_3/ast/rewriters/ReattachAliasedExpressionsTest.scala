@@ -27,45 +27,36 @@ class ReattachAliasedExpressionsTest extends CypherFunSuite with RewriteTest {
   override def rewriterUnderTest: Rewriter = reattachAliasedExpressions
 
   test("MATCH (a) RETURN a.x AS newAlias ORDER BY newAlias") {
-    assertRewrite(
-      "MATCH (a) RETURN a.x AS newAlias ORDER BY newAlias",
-      "MATCH (a) RETURN a.x AS newAlias ORDER BY a.x")
+    assertRewrite("MATCH (a) RETURN a.x AS newAlias ORDER BY newAlias", "MATCH (a) RETURN a.x AS newAlias ORDER BY a.x")
   }
 
   test("MATCH (a) RETURN count(*) AS foo ORDER BY foo") {
-    assertRewrite(
-      "MATCH (a) RETURN count(*) AS foo ORDER BY foo",
-      "MATCH (a) RETURN count(*) AS foo ORDER BY count(*)")
+    assertRewrite("MATCH (a) RETURN count(*) AS foo ORDER BY foo", "MATCH (a) RETURN count(*) AS foo ORDER BY count(*)")
   }
 
   test("MATCH (a) RETURN collect(a) AS foo ORDER BY length(foo)") {
-    assertRewrite(
-      "MATCH (a) RETURN collect(a) AS foo ORDER BY length(foo)",
-      "MATCH (a) RETURN collect(a) AS foo ORDER BY length(collect(a))")
+    assertRewrite("MATCH (a) RETURN collect(a) AS foo ORDER BY length(foo)",
+                  "MATCH (a) RETURN collect(a) AS foo ORDER BY length(collect(a))")
   }
 
   test("MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY foo") {
-    assertRewrite(
-      "MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY foo",
-      "MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY count(x)")
+    assertRewrite("MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY foo",
+                  "MATCH (x) WITH x AS x RETURN count(x) AS foo ORDER BY count(x)")
   }
 
   test("MATCH (a) WITH a.x AS newAlias ORDER BY newAlias RETURN *") {
-    assertRewrite(
-      "MATCH (a) WITH a.x AS newAlias ORDER BY newAlias RETURN *",
-      "MATCH (a) WITH a.x AS newAlias ORDER BY a.x RETURN *")
+    assertRewrite("MATCH (a) WITH a.x AS newAlias ORDER BY newAlias RETURN *",
+                  "MATCH (a) WITH a.x AS newAlias ORDER BY a.x RETURN *")
   }
 
   test("MATCH (a) WITH count(*) AS foo ORDER BY foo RETURN *") {
-    assertRewrite(
-      "MATCH (a) WITH count(*) AS foo ORDER BY foo RETURN *",
-      "MATCH (a) WITH count(*) AS foo ORDER BY count(*) RETURN *")
+    assertRewrite("MATCH (a) WITH count(*) AS foo ORDER BY foo RETURN *",
+                  "MATCH (a) WITH count(*) AS foo ORDER BY count(*) RETURN *")
   }
 
   test("MATCH (x) WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *") {
-    assertRewrite(
-      "MATCH (x) WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *",
-      "MATCH (x) WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
+    assertRewrite("MATCH (x) WITH x AS x WITH count(x) AS foo ORDER BY foo RETURN *",
+                  "MATCH (x) WITH x AS x WITH count(x) AS foo ORDER BY count(x) RETURN *")
   }
 
   test("MATCH (x) WITH x.prop as prop WHERE prop = 42 RETURN prop *") {

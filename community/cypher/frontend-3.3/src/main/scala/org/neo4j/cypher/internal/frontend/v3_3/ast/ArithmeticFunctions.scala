@@ -17,23 +17,31 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, TypeSpec, _}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticError, TypeGenerator, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.TypeGenerator
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import scala.util.Try
 
 case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression {
+    extends Expression
+    with BinaryOperatorExpression {
   def semanticCheck(ctx: SemanticContext) =
     lhs.semanticCheck(ctx) chain
-    lhs.expectType(TypeSpec.all) chain
-    rhs.semanticCheck(ctx) chain
-    rhs.expectType(infixRhsTypes(lhs)) chain
-    specifyType(infixOutputTypes(lhs, rhs)) chain
-    checkBoundary(lhs, rhs)
+      lhs.expectType(TypeSpec.all) chain
+      rhs.semanticCheck(ctx) chain
+      rhs.expectType(infixRhsTypes(lhs)) chain
+      specifyType(infixOutputTypes(lhs, rhs)) chain
+      checkBoundary(lhs, rhs)
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
-    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.addExact(l.value, r.value)).isFailure =>
+    case (l: IntegerLiteral, r: IntegerLiteral) if Try(Math.addExact(l.value, r.value)).isFailure =>
       SemanticError(s"result of ${l.value} + ${r.value} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
@@ -75,7 +83,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
     val rhsTypes = rhs.types(s)
 
     def when(fst: TypeSpec, snd: TypeSpec)(result: CypherType): TypeSpec =
-      if (lhsTypes.containsAny(fst) && rhsTypes.containsAny(snd) || lhsTypes.containsAny(snd) && rhsTypes.containsAny(fst))
+      if (lhsTypes.containsAny(fst) && rhsTypes.containsAny(snd) || lhsTypes.containsAny(snd) && rhsTypes.containsAny(
+            fst))
         result.invariant
       else
         TypeSpec.none
@@ -97,8 +106,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
         when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
     val listTypes = {
-      val lhsListTypes = lhsTypes constrain CTList(CTAny)
-      val rhsListTypes = rhsTypes constrain CTList(CTAny)
+      val lhsListTypes      = lhsTypes constrain CTList(CTAny)
+      val rhsListTypes      = rhsTypes constrain CTList(CTAny)
       val lhsListInnerTypes = lhsListTypes.unwrapLists
       val rhsListInnerTypes = rhsListTypes.unwrapLists
 
@@ -117,7 +126,9 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
 }
 
 case class UnaryAdd(rhs: Expression)(val position: InputPosition)
-  extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
+    extends Expression
+    with LeftUnaryOperatorExpression
+    with PrefixFunctionTyping {
 
   override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
@@ -128,7 +139,9 @@ case class UnaryAdd(rhs: Expression)(val position: InputPosition)
 }
 
 case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+    extends Expression
+    with BinaryOperatorExpression
+    with InfixFunctionTyping {
 
   override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
@@ -140,7 +153,7 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
     super.semanticCheck(ctx) chain checkBoundary(lhs, rhs)
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
-    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
+    case (l: IntegerLiteral, r: IntegerLiteral) if Try(Math.subtractExact(l.value, r.value)).isFailure =>
       SemanticError(s"result of ${l.value} - ${r.value} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
@@ -149,7 +162,9 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
 }
 
 case class UnarySubtract(rhs: Expression)(val position: InputPosition)
-  extends Expression with LeftUnaryOperatorExpression with PrefixFunctionTyping {
+    extends Expression
+    with LeftUnaryOperatorExpression
+    with PrefixFunctionTyping {
 
   override val signatures = Vector(
     ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
@@ -160,7 +175,9 @@ case class UnarySubtract(rhs: Expression)(val position: InputPosition)
 }
 
 case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+    extends Expression
+    with BinaryOperatorExpression
+    with InfixFunctionTyping {
 
   // 1 * 1 => 1
   // 1 * 1.1 => 1.1
@@ -176,7 +193,7 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
     super.semanticCheck(ctx) chain checkBoundary(lhs, rhs)
 
   private def checkBoundary(lhs: Expression, rhs: Expression): SemanticCheck = (lhs, rhs) match {
-    case (l:IntegerLiteral, r:IntegerLiteral) if Try(Math.multiplyExact(l.value, r.value)).isFailure =>
+    case (l: IntegerLiteral, r: IntegerLiteral) if Try(Math.multiplyExact(l.value, r.value)).isFailure =>
       SemanticError(s"result of ${l.value} * ${r.value} cannot be represented as an integer", position)
     case _ => SemanticCheckResult.success
   }
@@ -185,7 +202,9 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
 }
 
 case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+    extends Expression
+    with BinaryOperatorExpression
+    with InfixFunctionTyping {
 
   // 1 / 1 => 1
   // 1 / 1.1 => 0.909
@@ -201,7 +220,9 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
 }
 
 case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+    extends Expression
+    with BinaryOperatorExpression
+    with InfixFunctionTyping {
 
   // 1 % 1 => 0
   // 1 % 1.1 => 1.0
@@ -217,7 +238,9 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
 }
 
 case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition)
-  extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
+    extends Expression
+    with BinaryOperatorExpression
+    with InfixFunctionTyping {
 
   // 1 ^ 1 => 1.1
   // 1 ^ 1.1 => 1.0

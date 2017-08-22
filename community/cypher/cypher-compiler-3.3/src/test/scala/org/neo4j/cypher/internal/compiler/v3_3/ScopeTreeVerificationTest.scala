@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Scope, ScopeTreeVerifier}
+import org.neo4j.cypher.internal.frontend.v3_3.Scope
+import org.neo4j.cypher.internal.frontend.v3_3.ScopeTreeVerifier
 
 class ScopeTreeVerificationTest extends CypherFunSuite {
 
@@ -32,7 +33,8 @@ class ScopeTreeVerificationTest extends CypherFunSuite {
 
     val result = ScopeTreeVerifier.verify(given).map(_.fixNewLines)
 
-    result should equal(Seq(s"""'b' points to symbol with different name 'x@5(5): Integer' in scope ${given.toIdString}. Scope tree:
+    result should equal(
+      Seq(s"""'b' points to symbol with different name 'x@5(5): Integer' in scope ${given.toIdString}. Scope tree:
                                |${given.toIdString} {
                                |  a: 3
                                |  b: 5

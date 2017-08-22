@@ -43,12 +43,12 @@ Traverses the logical plan tree structure and builds up the corresponding output
  for it, storing it in the output stack. Pop ut 'b' from the plan stack, one output from the output stack, and build an output for 'b'.
  Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two outputs from the output stack to
  build the output for 'a'. Thanks for reading this far - I didn't think we would make it!
- */
+   */
   def create(plan: LogicalPlan): TO = {
 
-    val planStack = new mutable.Stack[LogicalPlan]()
+    val planStack   = new mutable.Stack[LogicalPlan]()
     val outputStack = new mutable.Stack[TO]()
-    var comingFrom = plan
+    var comingFrom  = plan
 
     def populate(plan: LogicalPlan) = {
       var current = plan
@@ -84,8 +84,8 @@ Traverses the logical plan tree structure and builds up the corresponding output
           outputStack.push(output)
 
         case (Some(left), Some(_)) if comingFrom eq left =>
-          val arg1 = outputStack.pop()
-          val arg2 = outputStack.pop()
+          val arg1   = outputStack.pop()
+          val arg2   = outputStack.pop()
           val output = build(current, arg1, arg2)
 
           outputStack.push(output)

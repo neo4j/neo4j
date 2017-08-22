@@ -19,17 +19,27 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
+import org.neo4j.cypher.NewRuntimeMonitor.NewPlanSeen
+import org.neo4j.cypher.NewRuntimeMonitor.UnableToCompileQuery
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CartesianPoint
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.GeographicPoint
+import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1}
+import org.neo4j.cypher.internal.compiler.v3_1.{GeographicPoint => GeographicPointv3_1}
+import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.{GeographicPoint => GeographicPointv3_2}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
+import org.neo4j.cypher.CypherException
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerMonitor
+import org.neo4j.cypher.NewRuntimeMonitor
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -37,7 +47,9 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.scalatest.Assertions
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 trait CypherComparisonSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
@@ -48,7 +60,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
     Map(GraphDatabaseSettings.cypher_hints_error -> "true")
   }
 
-  override protected def createGraphDatabase(config: collection.Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(
+      config: collection.Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
@@ -56,7 +69,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
     */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs)
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] =
+      res.toList.toComparableSeq(replaceNaNs)
 
     def toComparableResult: Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs = false)
   }
@@ -70,21 +84,22 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def toComparableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
-        case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case p: CartesianPointv3_1  => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
         case p: GeographicPointv3_2 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
-        case p: CartesianPointv3_2 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
-        case a: Array[_] => a.toList.map(convert)
+        case p: CartesianPointv3_2  => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case a: Array[_]            => a.toList.map(convert)
         case m: Map[_, _] =>
           Eagerly.immutableMapValues(m, convert)
         case m: java.util.Map[_, _] =>
           Eagerly.immutableMapValues(m.asScala, convert)
-        case l: java.util.List[_] => l.asScala.map(convert)
+        case l: java.util.List[_]                                            => l.asScala.map(convert)
         case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => NanReplacement
-        case m => m
+        case m                                                               => m
       }
 
-      res.map((map: Map[String, Any]) => map.map {
-        case (k, v) => k -> convert(v)
+      res.map((map: Map[String, Any]) =>
+        map.map {
+          case (k, v) => k -> convert(v)
       })
     }
   }
@@ -113,23 +128,22 @@ trait CypherComparisonSupport extends CypherTestSupport {
                                                     params: (String, Any)*): InternalExecutionResult = {
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
 
-    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
-      thisScenario =>
-        thisScenario.prepare()
-        val tryResult = graph.rollback(Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)))
+    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap { thisScenario =>
+      thisScenario.prepare()
+      val tryResult = graph.rollback(Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)))
 
-        val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
+      val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
-        if (expectedToSucceed) {
-          val thisResult = tryResult.get
-          thisScenario.checkStateForSuccess(query)
-          thisScenario.checkResultForSuccess(query, thisResult)
-          Some(thisResult -> thisScenario.name)
-        } else {
-          thisScenario.checkStateForFailure(query)
-          thisScenario.checkResultForFailure(query, tryResult)
-          None
-        }
+      if (expectedToSucceed) {
+        val thisResult = tryResult.get
+        thisScenario.checkStateForSuccess(query)
+        thisScenario.checkResultForSuccess(query, thisResult)
+        Some(thisResult -> thisScenario.name)
+      } else {
+        thisScenario.checkStateForFailure(query)
+        thisScenario.checkResultForFailure(query, tryResult)
+        None
+      }
 
     }
 
@@ -149,19 +163,30 @@ trait CypherComparisonSupport extends CypherTestSupport {
     lastResult
   }
 
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    query: String,
+                                                    params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
 
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
+  protected def updateWith(expectedSuccessFrom: TestConfiguration,
+                           query: String,
+                           params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
 
-  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
+  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                     query: String,
+                                                     params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
 
-  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration,
+                            query: String,
+                            params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
 
   protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration,
                                               query: String,
                                               checkPlans: Boolean,
-                                              params: (String, Any)*):
-  InternalExecutionResult = {
+                                              params: (String, Any)*): InternalExecutionResult = {
     if (expectedSuccessFrom.scenarios.isEmpty) {
       for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
         thisScenario.prepare()
@@ -173,7 +198,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
     } else {
       val firstScenario = extractFirstScenario(expectedSuccessFrom)
       firstScenario.prepare()
-      val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
+      val firstResult: InternalExecutionResult =
+        innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
       firstScenario.checkStateForSuccess(query)
 
       for (thisScenario <- Configs.AbsolutelyAll.scenarios if thisScenario != firstScenario) {
@@ -187,9 +213,15 @@ trait CypherComparisonSupport extends CypherTestSupport {
           thisScenario.checkStateForSuccess(query)
           thisScenario.checkResultForSuccess(query, thisResult)
           if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(thisScenario)) {
-            assertPlansSimilar(firstResult, thisResult, "${firstScenario.name} returned different results than ${thisScenario.name}")
+            assertPlansSimilar(firstResult,
+                               thisResult,
+                               "${firstScenario.name} returned different results than ${thisScenario.name}")
           }
-          assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
+          assertResultsAreSame(thisResult,
+                               firstResult,
+                               query,
+                               s"${thisScenario.name} returned different results than ${firstScenario.name}",
+                               replaceNaNs = true)
         } else {
           thisScenario.checkStateForFailure(query)
           thisScenario.checkResultForFailure(query, tryResult)
@@ -200,18 +232,25 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  private def assertPlansSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String) = {
+  private def assertPlansSimilar(firstResult: InternalExecutionResult,
+                                 thisResult: InternalExecutionResult,
+                                 hint: String) = {
     val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
-    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue(hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult.executionPlanDescription()) {
+    val otherOps   = thisResult.executionPlanDescription().flatten.map(simpleName)
+    withClue(
+      hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult
+        .executionPlanDescription()) {
       assert(currentOps equals otherOps)
     }
   }
 
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
+  private def simpleName(plan: InternalPlanDescription): String =
+    plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
 
-  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: String, params: (String, Any)*):
-  Unit = {
+  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
+                              query: String,
+                              message: String,
+                              params: (String, Any)*): Unit = {
     for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
       thisScenario.prepare()
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.scenarios.contains(thisScenario)
@@ -219,7 +258,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
       try {
         innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)
         if (expectedToFailWithSpecificMessage) {
-          fail("Unexpectedly Succeeded in " + thisScenario.name + " instead of failing with this message:'" + message + "'")
+          fail(
+            "Unexpectedly Succeeded in " + thisScenario.name + " instead of failing with this message:'" + message + "'")
         } else {
           fail("Unexpectedly Succeeded in " + thisScenario.name)
         }
@@ -227,12 +267,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
         case e: CypherException => {
           if (expectedToFailWithSpecificMessage) {
             if (!e.getMessage.contains(message)) {
-              fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
-                "' the error message was '" + e.getMessage + "'")
+              fail(
+                "Correctly failed in " + thisScenario.name + " but instead of '" + message +
+                  "' the error message was '" + e.getMessage + "'")
             }
           } else {
             if (e.getMessage.contains(message)) {
-              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
+              fail(
+                "Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
             }
             // It failed like expected, and we did not specify any message for this config
           }
@@ -242,12 +284,18 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+  protected def assertResultsAreSame(result1: InternalExecutionResult,
+                                     result2: InternalExecutionResult,
+                                     queryText: String,
+                                     errorMsg: String,
+                                     replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
-        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
+        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2
+          .toComparableResultWithOptions(replaceNaNs)
       } else {
-        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs result2.toComparableResultWithOptions(replaceNaNs)
+        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs result2
+          .toComparableResultWithOptions(replaceNaNs)
       }
     }
   }
@@ -284,14 +332,15 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     def Version3_2: TestConfiguration = Scenarios.Compatibility3_2
 
-    def Version3_3: TestConfiguration = Compiled + Scenarios.CommunityInterpreted3_3 + Scenarios.RulePlannerOnLatestVersion +
-      EnterpriseInterpreted
+    def Version3_3: TestConfiguration =
+      Compiled + Scenarios.CommunityInterpreted3_3 + Scenarios.RulePlannerOnLatestVersion +
+        EnterpriseInterpreted
 
-    def AllRulePlanners: TestConfiguration = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios
-      .RulePlannerOnLatestVersion
+    def AllRulePlanners: TestConfiguration =
+      Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios.RulePlannerOnLatestVersion
 
-    def Cost: TestConfiguration = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios
-      .ForcedCostPlanner
+    def Cost: TestConfiguration =
+      Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
     def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1
 
@@ -384,7 +433,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     object CompiledSource3_2 extends CompiledScenario {
       override def prepare(): Unit = newRuntimeMonitor.clear()
-
 
       override def preparserOptions: String = "3.2 planner=cost runtime=compiled debug=generate_java_source"
 

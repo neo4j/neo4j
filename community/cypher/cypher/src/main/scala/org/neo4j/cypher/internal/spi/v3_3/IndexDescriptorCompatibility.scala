@@ -20,24 +20,28 @@
 package org.neo4j.cypher.internal.spi.v3_3
 
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => CypherIndexDescriptor}
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
-import org.neo4j.kernel.api.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 
 trait IndexDescriptorCompatibility {
   implicit def cypherToKernel(index: CypherIndexDescriptor): KernelIndexDescriptor =
-    IndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
+    IndexDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id): _*)
 
   implicit def kernelToCypher(index: KernelIndexDescriptor): CypherIndexDescriptor =
     CypherIndexDescriptor(index.schema().getLabelId, index.schema().getPropertyIds)
 
   implicit def cypherToKernelSchema(index: CypherIndexDescriptor): LabelSchemaDescriptor =
-    SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id):_*)
+    SchemaDescriptorFactory.forLabel(index.label.id, index.properties.map(_.id): _*)
 
   implicit def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
-      SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
+    SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray: _*)
 
-  implicit def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
-    val labelId: Int = tc.getLabelId(labelName)
+  implicit def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext,
+                                       labelName: String,
+                                       propertyKeys: Seq[String]): LabelSchemaDescriptor = {
+    val labelId: Int             = tc.getLabelId(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
     toLabelSchemaDescriptor(labelId, propertyKeyIds)
   }

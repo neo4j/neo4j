@@ -20,39 +20,56 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, RelTypeName, Variable}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
 
 case class Expand(left: LogicalPlan,
                   from: IdName,
                   dir: SemanticDirection,
                   types: Seq[RelTypeName],
-                  to: IdName, relName: IdName,
+                  to: IdName,
+                  relName: IdName,
                   mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
-  override val lhs = Some(left)
-  override def rhs = None
+    extends LogicalPlan
+    with LazyLogicalPlan {
+  override val lhs                           = Some(left)
+  override def rhs                           = None
   override def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
-case class OptionalExpand(left: LogicalPlan, from: IdName, dir: SemanticDirection, types: Seq[RelTypeName], to: IdName, relName: IdName, mode: ExpansionMode = ExpandAll, predicates: Seq[Expression] = Seq.empty)
-                         (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-  override val lhs = Some(left)
-  override def rhs = None
+case class OptionalExpand(left: LogicalPlan,
+                          from: IdName,
+                          dir: SemanticDirection,
+                          types: Seq[RelTypeName],
+                          to: IdName,
+                          relName: IdName,
+                          mode: ExpansionMode = ExpandAll,
+                          predicates: Seq[Expression] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
+  override val lhs              = Some(left)
+  override def rhs              = None
   override def availableSymbols = left.availableSymbols + relName + to
 }
 
-case class VarExpand(left: LogicalPlan,
-                     from: IdName,
-                     dir: SemanticDirection,
-                     projectedDir: SemanticDirection,
-                     types: Seq[RelTypeName],
-                     to: IdName,
-                     relName: IdName,
-                     length: VarPatternLength,
-                     mode: ExpansionMode = ExpandAll,
-                     predicates: Seq[(Variable, Expression)] = Seq.empty)
-                    (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+case class VarExpand(
+    left: LogicalPlan,
+    from: IdName,
+    dir: SemanticDirection,
+    projectedDir: SemanticDirection,
+    types: Seq[RelTypeName],
+    to: IdName,
+    relName: IdName,
+    length: VarPatternLength,
+    mode: ExpansionMode = ExpandAll,
+    predicates: Seq[(Variable, Expression)] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override def rhs = None
@@ -60,15 +77,17 @@ case class VarExpand(left: LogicalPlan,
   override def availableSymbols = left.availableSymbols + relName + to
 }
 
-case class PruningVarExpand(left: LogicalPlan,
-                            from: IdName,
-                            dir: SemanticDirection,
-                            types: Seq[RelTypeName],
-                            to: IdName,
-                            minLength: Int,
-                            maxLength: Int,
-                            predicates: Seq[(Variable, Expression)] = Seq.empty)
-                           (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+case class PruningVarExpand(
+    left: LogicalPlan,
+    from: IdName,
+    dir: SemanticDirection,
+    types: Seq[RelTypeName],
+    to: IdName,
+    minLength: Int,
+    maxLength: Int,
+    predicates: Seq[(Variable, Expression)] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override def rhs = None
@@ -76,15 +95,17 @@ case class PruningVarExpand(left: LogicalPlan,
   override def availableSymbols = left.availableSymbols + to
 }
 
-case class FullPruningVarExpand(left: LogicalPlan,
-                                from: IdName,
-                                dir: SemanticDirection,
-                                types: Seq[RelTypeName],
-                                to: IdName,
-                                minLength: Int,
-                                maxLength: Int,
-                                predicates: Seq[(Variable, Expression)] = Seq.empty)
-                               (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+case class FullPruningVarExpand(
+    left: LogicalPlan,
+    from: IdName,
+    dir: SemanticDirection,
+    types: Seq[RelTypeName],
+    to: IdName,
+    minLength: Int,
+    maxLength: Int,
+    predicates: Seq[(Variable, Expression)] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   override val lhs = Some(left)
   override def rhs = None
@@ -93,5 +114,5 @@ case class FullPruningVarExpand(left: LogicalPlan,
 }
 
 sealed trait ExpansionMode
-case object ExpandAll extends ExpansionMode
+case object ExpandAll  extends ExpansionMode
 case object ExpandInto extends ExpansionMode

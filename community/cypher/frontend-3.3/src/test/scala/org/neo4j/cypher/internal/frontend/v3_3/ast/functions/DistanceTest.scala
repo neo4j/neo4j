@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-class DistanceTest extends FunctionTestBase("distance")  {
+class DistanceTest extends FunctionTestBase("distance") {
 
   test("should accept correct types") {
     testValidTypes(CTGeometry, CTGeometry)(CTFloat)

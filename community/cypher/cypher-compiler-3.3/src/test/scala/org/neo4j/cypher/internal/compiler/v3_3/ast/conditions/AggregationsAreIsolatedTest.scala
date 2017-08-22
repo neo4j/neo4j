@@ -28,20 +28,20 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
   private val condition: (Any => Seq[String]) = aggregationsAreIsolated
 
   test("happy when aggregation are top level in expressions") {
-    val ast: Expression = CountStar()_
+    val ast: Expression = CountStar() _
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy when aggregation is sub-expression of the expressions") {
-    val ast: Expression = Equals(CountStar()_, UnsignedDecimalIntegerLiteral("42")_)_
+    val ast: Expression = Equals(CountStar() _, UnsignedDecimalIntegerLiteral("42") _) _
 
     condition(ast) should equal(Seq(s"Expression $ast contains child expressions which are aggregations"))
   }
 
   test("unhappy when aggregations are both top-level and sub-expression of the expression") {
-    val equals: Expression = Equals(CountStar()_, UnsignedDecimalIntegerLiteral("42")_)_
-    val ast: Expression = FunctionInvocation(FunctionName("count")_, equals)_
+    val equals: Expression = Equals(CountStar() _, UnsignedDecimalIntegerLiteral("42") _) _
+    val ast: Expression    = FunctionInvocation(FunctionName("count") _, equals) _
 
     condition(ast) should equal(Seq(s"Expression $equals contains child expressions which are aggregations"))
   }

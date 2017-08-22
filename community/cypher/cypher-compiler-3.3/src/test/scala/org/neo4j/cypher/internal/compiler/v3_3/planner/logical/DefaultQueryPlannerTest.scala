@@ -20,17 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{times, verify, when}
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, Expression, Hint}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Hint
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ExpressionTypeInfo
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -48,7 +53,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("adds ProduceResult with a single value") {
-    val expr = varFor("x")
+    val expr  = varFor("x")
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(expr, ExpressionTypeInfo(CTFloat, None))
 
     val result = createProduceResultOperator(Seq("x"), semanticTable = SemanticTable(types = types))
@@ -70,7 +75,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val (_, result) = queryPlanner.plan(union)
 
-    result shouldBe a [ProduceResult]
+    result shouldBe a[ProduceResult]
 
     result.asInstanceOf[ProduceResult]
   }
@@ -116,12 +121,14 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     def apply(input: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = result
   }
 
-  private def mockLogicalPlanningContext(semanticTable: SemanticTable) = LogicalPlanningContext(
-    planContext = mock[PlanContext],
-    logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel]),
-    metrics = mock[Metrics],
-    semanticTable = semanticTable,
-    strategy = mock[QueryGraphSolver],
-    config = QueryPlannerConfiguration.default,
-    notificationLogger = devNullLogger)
+  private def mockLogicalPlanningContext(semanticTable: SemanticTable) =
+    LogicalPlanningContext(
+      planContext = mock[PlanContext],
+      logicalPlanProducer = LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+      metrics = mock[Metrics],
+      semanticTable = semanticTable,
+      strategy = mock[QueryGraphSolver],
+      config = QueryPlannerConfiguration.default,
+      notificationLogger = devNullLogger
+    )
 }

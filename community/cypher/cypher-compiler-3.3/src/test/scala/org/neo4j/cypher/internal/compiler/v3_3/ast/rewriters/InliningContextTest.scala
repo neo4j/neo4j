@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identN = varFor("n")
-  val identM = varFor("m")
-  val identA = varFor("a")
-  val astNull: Null = Null()_
+  val identN        = varFor("n")
+  val identM        = varFor("m")
+  val identA        = varFor("a")
+  val astNull: Null = Null() _
 
   val mapN = Map(identN -> astNull)
   val mapM = Map(identM -> astNull)
@@ -61,7 +61,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   test("should inline aliases into node patterns") {
     val ctx = InliningContext(mapAtoN)
 
-    val expr: NodePattern = NodePattern(Some(identA), Seq(), None)_
+    val expr: NodePattern = NodePattern(Some(identA), Seq(), None) _
 
     expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }
@@ -69,7 +69,7 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
   test("should inline aliases into relationship patterns") {
     val ctx = InliningContext(mapAtoN)
 
-    val expr: RelationshipPattern = RelationshipPattern(Some(identA), Seq(), None, None, SemanticDirection.OUTGOING)_
+    val expr: RelationshipPattern = RelationshipPattern(Some(identA), Seq(), None, None, SemanticDirection.OUTGOING) _
 
     expr.endoRewrite(ctx.patternRewriter).variable should equal(Some(identN))
   }

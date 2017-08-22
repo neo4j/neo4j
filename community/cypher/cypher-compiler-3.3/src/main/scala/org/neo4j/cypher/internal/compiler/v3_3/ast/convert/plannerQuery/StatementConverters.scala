@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, InternalException, SemanticTable, ast}
-import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.Foldable
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
+import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
 object StatementConverters {
   import Foldable._
@@ -40,11 +44,11 @@ object StatementConverters {
     classOf[Start]
   )
 
-
   private def findBlacklistedNodes(node: AnyRef): Seq[ASTNode] = {
     node.treeFold(Seq.empty[ASTNode]) {
       case node: ASTNode if NODE_BLACKLIST.contains(node.getClass) =>
-        acc => (acc :+ node, Some(identity))
+        acc =>
+          (acc :+ node, Some(identity))
     }
   }
 
@@ -60,7 +64,7 @@ object StatementConverters {
       case Query(periodicCommitHint, u: ast.Union) =>
         val queries: Seq[SingleQuery] = u.unionedQueries
         val distinct = u match {
-          case _: UnionAll => false
+          case _: UnionAll      => false
           case _: UnionDistinct => true
         }
         val plannedQueries: Seq[PlannerQueryBuilder] = queries.reverseMap(x => toPlannerQueryBuilder(x, semanticTable))

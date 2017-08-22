@@ -16,9 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{NodePattern, RelationshipPattern, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.NodePattern
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipPattern
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object nameAllPatternElements extends Rewriter {
 
@@ -29,7 +32,7 @@ case object nameAllPatternElements extends Rewriter {
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
 
-    case pattern: RelationshipPattern if pattern.variable.isEmpty  =>
+    case pattern: RelationshipPattern if pattern.variable.isEmpty =>
       val syntheticName = UnNamedNameGenerator.name(pattern.position.bumped())
       pattern.copy(variable = Some(Variable(syntheticName)(pattern.position)))(pattern.position)
   })

@@ -23,7 +23,8 @@ import org.mockito.Mockito
 import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 
 class AllNodesScanPipeTest extends CypherFunSuite {
@@ -34,7 +35,7 @@ class AllNodesScanPipeTest extends CypherFunSuite {
     val node1 = node(1)
     val node2 = node(2)
     // given
-    val nodes = List(node1, node2)
+    val nodes   = List(node1, node2)
     val nodeOps = when(mock[Operations[Node]].all).thenReturn(nodes.iterator).getMock[Operations[Node]]
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]

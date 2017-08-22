@@ -20,11 +20,18 @@
 package org.neo4j.internal.cypher.acceptance
 
 import java.io.ByteArrayOutputStream
-import java.util.zip.{DeflaterOutputStream, GZIPOutputStream}
-import javax.servlet.http.{HttpServletRequest, HttpServletResponse}
+import java.util.zip.DeflaterOutputStream
+import java.util.zip.GZIPOutputStream
+import javax.servlet.http.HttpServletRequest
+import javax.servlet.http.HttpServletResponse
 
-import org.eclipse.jetty.server.handler.{AbstractHandler, ContextHandler, ContextHandlerCollection}
-import org.eclipse.jetty.server.{Handler, Request, Server, ServerConnector}
+import org.eclipse.jetty.server.handler.AbstractHandler
+import org.eclipse.jetty.server.handler.ContextHandler
+import org.eclipse.jetty.server.handler.ContextHandlerCollection
+import org.eclipse.jetty.server.Handler
+import org.eclipse.jetty.server.Request
+import org.eclipse.jetty.server.Server
+import org.eclipse.jetty.server.ServerConnector
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.scalatest.BeforeAndAfterAll
 
@@ -46,57 +53,60 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
   test("should handle uncompressed csv over http") {
     val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/csv' AS lines RETURN lines")
 
-    result.toList should equal(List(
-      Map("lines" -> Seq("a1", "b1", "c1", "d1")),
-      Map("lines" -> Seq("a2", "b2", "c2", "d2"))
+    result.toList should equal(
+      List(
+        Map("lines" -> Seq("a1", "b1", "c1", "d1")),
+        Map("lines" -> Seq("a2", "b2", "c2", "d2"))
       ))
   }
 
   test("should handle gzipped csv over http") {
     val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/gzip' AS lines RETURN lines")
 
-    result.toList should equal(List(
-      Map("lines" -> Seq("a1", "b1", "c1", "d1")),
-      Map("lines" -> Seq("a2", "b2", "c2", "d2"))
-    ))
+    result.toList should equal(
+      List(
+        Map("lines" -> Seq("a1", "b1", "c1", "d1")),
+        Map("lines" -> Seq("a2", "b2", "c2", "d2"))
+      ))
   }
 
   test("should handle deflated csv over http") {
     val result = execute(s"LOAD CSV FROM 'http://localhost:${server.port}/deflate' AS lines RETURN lines")
 
-    result.toList should equal(List(
-      Map("lines" -> Seq("a1", "b1", "c1", "d1")),
-      Map("lines" -> Seq("a2", "b2", "c2", "d2"))
-    ))
+    result.toList should equal(
+      List(
+        Map("lines" -> Seq("a1", "b1", "c1", "d1")),
+        Map("lines" -> Seq("a2", "b2", "c2", "d2"))
+      ))
   }
 
-   /*
-    * Simple server that handles csv requests in plain text, gzip and deflate
-    */
+  /*
+   * Simple server that handles csv requests in plain text, gzip and deflate
+   */
   private class TestServer {
 
-     //let jetty pick a random available port for us
-     private val server: Server = new Server(0)
-     //assign the correct port when server has started.
-     private var _port = -1
-     private val handlers = new ContextHandlerCollection()
-     addHandler("/csv", new CsvHandler)
-     addHandler("/gzip", new GzipCsvHandler)
-     addHandler("/deflate", new DeflateCsvHandler)
-     server.setHandler(handlers)
+    //let jetty pick a random available port for us
+    private val server: Server = new Server(0)
+    //assign the correct port when server has started.
+    private var _port    = -1
+    private val handlers = new ContextHandlerCollection()
+    addHandler("/csv", new CsvHandler)
+    addHandler("/gzip", new GzipCsvHandler)
+    addHandler("/deflate", new DeflateCsvHandler)
+    server.setHandler(handlers)
 
-     def start() = {
-       server.start()
-       //find the port that we're using.
-       _port = server.getConnectors()(0).asInstanceOf[ServerConnector].getLocalPort
-       assert(_port > 0)
-     }
+    def start() = {
+      server.start()
+      //find the port that we're using.
+      _port = server.getConnectors()(0).asInstanceOf[ServerConnector].getLocalPort
+      assert(_port > 0)
+    }
 
-     def stop() = server.stop()
+    def stop() = server.stop()
 
-     def port = _port
+    def port = _port
 
-     private def addHandler(path: String, handler: Handler): Unit = {
+    private def addHandler(path: String, handler: Handler): Unit = {
       val contextHandler = new ContextHandler()
       contextHandler.setContextPath(path)
       contextHandler.setHandler(handler)
@@ -109,7 +119,9 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
    */
   private class CsvHandler extends AbstractHandler {
 
-    override def handle(s: String, request: Request, httpServletRequest: HttpServletRequest,
+    override def handle(s: String,
+                        request: Request,
+                        httpServletRequest: HttpServletRequest,
                         httpServletResponse: HttpServletResponse): Unit = {
       httpServletResponse.setContentType("text/csv")
       httpServletResponse.setStatus(HttpServletResponse.SC_OK)
@@ -123,13 +135,15 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
    */
   private class GzipCsvHandler extends AbstractHandler {
 
-    override def handle(s: String, request: Request, httpServletRequest: HttpServletRequest,
+    override def handle(s: String,
+                        request: Request,
+                        httpServletRequest: HttpServletRequest,
                         httpServletResponse: HttpServletResponse): Unit = {
       httpServletResponse.setContentType("text/csv")
       httpServletResponse.setStatus(HttpServletResponse.SC_OK)
       httpServletResponse.setHeader("content-encoding", "gzip")
       //write compressed data to a byte array
-      val stream = new ByteArrayOutputStream(CSV.length)
+      val stream     = new ByteArrayOutputStream(CSV.length)
       val gzipStream = new GZIPOutputStream(stream)
       gzipStream.write(CSV.getBytes)
       gzipStream.close()
@@ -147,14 +161,16 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
    */
   private class DeflateCsvHandler extends AbstractHandler {
 
-    override def handle(s: String, request: Request, httpServletRequest: HttpServletRequest,
+    override def handle(s: String,
+                        request: Request,
+                        httpServletRequest: HttpServletRequest,
                         httpServletResponse: HttpServletResponse): Unit = {
       httpServletResponse.setContentType("text/csv")
       httpServletResponse.setStatus(HttpServletResponse.SC_OK)
       httpServletResponse.setHeader("content-encoding", "deflate")
 
       //write deflated data to byte array
-      val stream = new ByteArrayOutputStream(CSV.length)
+      val stream        = new ByteArrayOutputStream(CSV.length)
       val deflateStream = new DeflaterOutputStream(stream)
       deflateStream.write(CSV.getBytes)
       deflateStream.close()

@@ -20,14 +20,21 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, QualifiedName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.EstimatedRows
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Signature
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, ProfilerStatisticsNotReadyException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.QueryExecutionException
 
 import scala.reflect.ClassTag
@@ -66,9 +73,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
-        case x: Signature => x
-      }.getOrElse(fail("expected a procedure signature"))
+      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments
+        .collectFirst {
+          case x: Signature => x
+        }
+        .getOrElse(fail("expected a procedure signature"))
 
       namespaces should equal(Seq("db"))
       procName should equal("labels")
@@ -86,9 +95,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
-      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments.collectFirst {
-        case x: Signature => x
-      }.getOrElse(fail("expected a procedure signature"))
+      val Signature(QualifiedName(namespaces, procName), _, returnSignature) = plan.arguments
+        .collectFirst {
+          case x: Signature => x
+        }
+        .getOrElse(fail("expected a procedure signature"))
 
       namespaces should equal(Seq("db"))
       procName should equal("labels")
@@ -99,7 +110,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("match (n) where (n)-[:FOO]->() return *") {
     //GIVEN
-    relate( createNode(), createNode(), "FOO")
+    relate(createNode(), createNode(), "FOO")
 
     //WHEN
     val result = profileWithAllPlanners("match (n) where (n)-[:FOO]->() return *")
@@ -114,7 +125,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("match (n:A)-->(x:B) return *") {
     //GIVEN
-    relate( createLabeledNode("A"), createLabeledNode("B"))
+    relate(createLabeledNode("A"), createLabeledNode("B"))
 
     //WHEN
     val result = profileWithAllPlannersAndRuntimes("match (n:A)-->(x:B) return *")
@@ -129,20 +140,22 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("PROFILE for Cypher 2.3") {
     val result = graph.execute("cypher 2.3 profile match (n) where (n)-[:FOO]->() return *")
 
-    assert(result.getQueryExecutionType.requestedExecutionPlanDescription, "result not marked with planDescriptionRequested")
+    assert(result.getQueryExecutionType.requestedExecutionPlanDescription,
+           "result not marked with planDescriptionRequested")
     result.getExecutionPlanDescription.toString should include("DB Hits")
   }
 
   test("PROFILE for Cypher 3.1") {
     val result = graph.execute("cypher 3.1 profile match (n) where (n)-[:FOO]->() return *")
 
-    assert(result.getQueryExecutionType.requestedExecutionPlanDescription, "result not marked with planDescriptionRequested")
+    assert(result.getQueryExecutionType.requestedExecutionPlanDescription,
+           "result not marked with planDescriptionRequested")
     result.getExecutionPlanDescription.toString should include("DB Hits")
   }
 
   test("match (n) where not (n)-[:FOO]->() return *") {
     //GIVEN
-    relate( createNode(), createNode(), "FOO")
+    relate(createNode(), createNode(), "FOO")
 
     //WHEN
     val result = profileWithAllPlanners("match (n) where not (n)-[:FOO]->() return *")
@@ -162,7 +175,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     //WHEN THEN
     val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
-    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    ex.getCause.getCause shouldBe a[ProfilerStatisticsNotReadyException]
     result.close() // ensure that the transaction is closed
   }
 
@@ -173,7 +186,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     //WHEN THEN
     val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
-    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    ex.getCause.getCause shouldBe a[ProfilerStatisticsNotReadyException]
     result.close() // ensure that the transaction is closed
   }
 
@@ -268,7 +281,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("LIMIT should influence cardinality estimation even when parameterized") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}", "limit" -> 10)
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) RETURN p LIMIT {limit}",
+                                                            "limit" -> 10)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
@@ -280,37 +295,44 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("LIMIT should influence cardinality estimation with literal and parameters") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10", "fifty" -> 50)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      s"PROFILE MATCH (p:Person) WHERE 50 = {fifty} RETURN p LIMIT 10",
+      "fifty" -> 50)
     assertEstimatedRows(10)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation with independent parameterless expression") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(ceil(cos(0))) + 4")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(ceil(cos(0))) + 4")
     assertEstimatedRows(5)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation by default value when expression contains parameter") {
     (0 until 100).map(i => createLabeledNode("Person"))
-    val result = executeWithAllPlannersAndCompatibilityMode(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(sin({limit}))", "limit" -> 1)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(sin({limit}))",
+      "limit" -> 1)
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
     (0 until 100).map(i => createLabeledNode("Person"))
     // NOTE: We cannot executeWithAllPlanners because of random result
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
   test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
     (0 until 100).map(i => createLabeledNode("Person"))
     // NOTE: We cannot executeWithAllPlanners because of random result
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
     assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
   }
 
-  test ("should support profiling union queries") {
+  test("should support profiling union queries") {
     val result = profileWithAllPlanners("return 1 as A union return 2 as A")
     result.toSet should equal(Set(Map("A" -> 1), Map("A" -> 2)))
   }
@@ -322,14 +344,16 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("should support profiling optional match queries") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val result = profileWithAllPlanners("match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
+    val result = profileWithAllPlanners(
+      "match (a:Label {x: 1}) optional match (a)-[:REL]->(b) return a.x as A, b.x as B").toList.head
     result("A") should equal(1)
     result("B") should equal(null.asInstanceOf[Int])
   }
 
   test("should support profiling optional match and with") {
     createLabeledNode(Map("x" -> 1), "Label")
-    val executionResult: InternalExecutionResult = profileWithAllPlanners("match (n) optional match (n)--(m) with n, m where m is null return n.x as A")
+    val executionResult: InternalExecutionResult =
+      profileWithAllPlanners("match (n) optional match (n)--(m) with n, m where m is null return n.x as A")
     val result = executionResult.toList.head
     result("A") should equal(1)
   }
@@ -351,9 +375,9 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     // then
     val expectedTxCount = 1 + // First tx used to compile the query
-                          10  // One per 10 rows of CSV file
+      10 // One per 10 rows of CSV file
 
-    graph.txCounts-initialTxCounts should equal(TxCounts(commits = expectedTxCount))
+    graph.txCounts - initialTxCounts should equal(TxCounts(commits = expectedTxCount))
     result.queryStatistics().containsUpdates should equal(true)
     result.queryStatistics().nodesCreated should equal(100)
   }
@@ -411,7 +435,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     //THEN
     assertDbHits(7)(result)("Expand(All)")
     assertDbHits(2)(result)("NodeUniqueIndexSeek")
-   }
+  }
 
   test("should show expand without types in a simple form") {
     val a = profileWithAllPlannersAndRuntimes("match (n)-->() return *")
@@ -487,7 +511,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = graph.execute("profile match (n) return n")
 
     val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
-    ex.getCause.getCause shouldBe a [ProfilerStatisticsNotReadyException]
+    ex.getCause.getCause shouldBe a[ProfilerStatisticsNotReadyException]
     result.close() // ensure that the transaction is closed
   }
 
@@ -581,10 +605,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("joins with identical scans") {
     //given
     val corp = createLabeledNode("Company")
-    val a1 = createLabeledNode("Artist")
-    val a2 = createLabeledNode("Artist")
-    val c = createLabeledNode("Concert")
-    val v = createLabeledNode("Venue")
+    val a1   = createLabeledNode("Artist")
+    val a2   = createLabeledNode("Artist")
+    val c    = createLabeledNode("Concert")
+    val v    = createLabeledNode("Venue")
     relate(corp, a1, "SIGNED_WITH")
     relate(corp, a2, "SIGNED_WITH")
     relate(a1, c, "PERFORMED_AT")
@@ -610,8 +634,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   //valid for the compiled runtime
   test("distinct should not look up properties every time") {
     // GIVEN
-    createNode("prop"-> 42)
-    createNode("prop"-> 42)
+    createNode("prop" -> 42)
+    createNode("prop" -> 42)
 
     // WHEN
     val result = innerExecute("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.prop")
@@ -622,10 +646,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("profile with filter using nested expressions pipe should report dbhits correctly") {
     // GIVEN
-    createLabeledNode(Map("category_type"-> "cat"), "Category")
-    createLabeledNode(Map("category_type"-> "cat"), "Category")
-    val e1 = createLabeledNode(Map("domain_id"-> "1"), "Entity")
-    val e2 = createLabeledNode(Map("domain_id"-> "2"), "Entity")
+    createLabeledNode(Map("category_type" -> "cat"), "Category")
+    createLabeledNode(Map("category_type" -> "cat"), "Category")
+    val e1    = createLabeledNode(Map("domain_id" -> "1"), "Entity")
+    val e2    = createLabeledNode(Map("domain_id" -> "2"), "Entity")
     val aNode = createNode()
     relate(aNode, e1)
     val anotherNode = createNode()
@@ -648,20 +672,21 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
-    getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+    getPlanDescriptions(result, names).foreach { plan =>
+      assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
     }
   }
 
   private def assertEstimatedRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
-    getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[EstimatedRows](plan).value, s" wrong estiamted row count for plan: ${plan.name}")
+    getPlanDescriptions(result, names).foreach { plan =>
+      assert(expectedRows === getArgument[EstimatedRows](plan).value,
+             s" wrong estiamted row count for plan: ${plan.name}")
     }
   }
 
   private def assertDbHits(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
-    getPlanDescriptions(result, names).foreach {
-      plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
+    getPlanDescriptions(result, names).foreach { plan =>
+      assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
     }
   }
 
@@ -672,27 +697,34 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
 
     val planDescription: InternalPlanDescription = result.executionPlanDescription()
-    planDescription.flatten.foreach {
-      p =>
-        if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
-          fail("Found plan that was not profiled with DbHits: " + p.name)
-        }
-        if (!p.arguments.exists(_.isInstanceOf[Rows])) fail("Found plan that was not profiled with Rows: " + p.name)
+    planDescription.flatten.foreach { p =>
+      if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
+        fail("Found plan that was not profiled with DbHits: " + p.name)
+      }
+      if (!p.arguments.exists(_.isInstanceOf[Rows])) fail("Found plan that was not profiled with Rows: " + p.name)
     }
     result
   }
 
-  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndCompatibilityMode(_,_:_*), q, params:_*)
+  def profileWithAllPlanners(q: String, params: (String, Any)*): InternalExecutionResult =
+    profileWithPlanner(executeWithAllPlannersAndCompatibilityMode(_, _: _*), q, params: _*)
 
-  def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(executeWithAllPlannersAndRuntimesAndCompatibilityMode(_,_:_*), q, params:_*)
+  def profileWithAllPlannersAndRuntimes(q: String, params: (String, Any)*): InternalExecutionResult =
+    profileWithPlanner(executeWithAllPlannersAndRuntimesAndCompatibilityMode(_, _: _*), q, params: _*)
 
-  override def profile(q: String, params: (String, Any)*): InternalExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
+  override def profile(q: String, params: (String, Any)*): InternalExecutionResult =
+    fail("Don't use profile all together in ProfilerAcceptanceTest")
 
-  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
+  def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult =
+    profileWithPlanner(innerExecute(_, _: _*), q, params: _*)
 
-  private def getArgument[A <: Argument](plan: InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
-    case x: A => x
-  }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
+  private def getArgument[A <: Argument](plan: InternalPlanDescription)(implicit manifest: ClassTag[A]): A =
+    plan.arguments
+      .collectFirst {
+        case x: A => x
+      }
+      .getOrElse(fail(
+        s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 
   private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[InternalPlanDescription] = {
     result.toList
@@ -700,13 +732,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     if (names.isEmpty)
       description.flatten
     else {
-      names.flatMap {
-        name =>
-          val descriptions: Seq[InternalPlanDescription] = description.find(name)
-          withClue(s"$description\n$name is missing; ") {
-            assert(descriptions.nonEmpty)
-          }
-          descriptions
+      names.flatMap { name =>
+        val descriptions: Seq[InternalPlanDescription] = description.find(name)
+        withClue(s"$description\n$name is missing; ") {
+          assert(descriptions.nonEmpty)
+        }
+        descriptions
       }
     }
   }

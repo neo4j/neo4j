@@ -22,28 +22,32 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{EagerReadWriteCallMode, LazyReadOnlyCallMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.EagerReadWriteCallMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.LazyReadOnlyCallMode
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryContextAdaptation
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{IntValue, LongValue}
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
 
-class ProcedureCallPipeTest
-  extends CypherFunSuite
-    with PipeTestSupport
-    with AstConstructionTestSupport {
+class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with AstConstructionTestSupport {
 
   val procedureName = QualifiedName(List.empty, "foo")
-  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", symbols.CTAny))), None, ProcedureReadOnlyAccess(Array.empty))
+  val signature = ProcedureSignature(procedureName,
+                                     IndexedSeq.empty,
+                                     Some(IndexedSeq(FieldSignature("foo", symbols.CTAny))),
+                                     None,
+                                     ProcedureReadOnlyAccess(Array.empty))
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -52,21 +56,22 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> "r")
+      resultIndices = Seq(0   -> "r")
     )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
-      ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
-      ExecutionContext.from("a" ->2, "r" -> "take 1/2"),
-      ExecutionContext.from("a" ->2, "r" -> "take 2/2")
-    ))
+    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(
+      List(
+        ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
+        ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
+        ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
+      ))
   }
 
   test("should execute read-write procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -75,20 +80,21 @@ class ProcedureCallPipeTest
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0 -> "r")
+      resultIndices = Seq(0   -> "r")
     )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
-      ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
-      ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
-      ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
-    ))
+    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(
+      List(
+        ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
+        ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
+        ExecutionContext.from("a" -> 2, "r" -> "take 2/2")
+      ))
   }
 
   test("should execute void procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -101,10 +107,11 @@ class ProcedureCallPipeTest
     )()
 
     val qtx = new FakeQueryContext(procedureName, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
-    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(List(
-      ExecutionContext.from("a" -> 1),
-      ExecutionContext.from("a" -> 2)
-    ))
+    pipe.createResults(QueryStateHelper.emptyWith(qtx)).toList should equal(
+      List(
+        ExecutionContext.from("a" -> 1),
+        ExecutionContext.from("a" -> 2)
+      ))
   }
 
   private def resultsTransformer(args: Seq[Any]): Iterator[Array[AnyRef]] = {
@@ -115,9 +122,11 @@ class ProcedureCallPipeTest
 
   }.toIterator
 
-
-  class FakeQueryContext(procedureName: QualifiedName, result: Seq[Any] => Iterator[Array[AnyRef]],
-                         expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
+  class FakeQueryContext(procedureName: QualifiedName,
+                         result: Seq[Any] => Iterator[Array[AnyRef]],
+                         expectedAccessMode: ProcedureAccessMode)
+      extends QueryContext
+      with QueryContextAdaptation {
     override def isGraphKernelResultValue(v: Any): Boolean = false
 
     override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) = {
@@ -125,15 +134,17 @@ class ProcedureCallPipeTest
       doIt(name, args, allowed)
     }
 
-    override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    override def callReadWriteProcedure(name: QualifiedName,
+                                        args: Seq[Any],
+                                        allowed: Array[String]): Iterator[Array[AnyRef]] = {
       expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
       doIt(name, args, allowed)
     }
 
     override def asObject(value: AnyValue): AnyRef = value match {
-      case i: IntValue => Int.box(i.value())
+      case i: IntValue  => Int.box(i.value())
       case l: LongValue => Long.box(l.value())
-      case _ => throw new IllegalStateException()
+      case _            => throw new IllegalStateException()
     }
 
     private def doIt(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {

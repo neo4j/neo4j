@@ -28,46 +28,46 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                                 |RETURN p1.name AS l, p2.name AS r""".stripMargin
   test("find friends of others") {
     // given
-    execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"}), (d:Person{name:"d"})
+    execute("""CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"}), (d:Person{name:"d"})
                |CREATE (a)-[:FRIEND]->(c), (b)-[:FRIEND]->(c), (c)-[:FRIEND]->(d)""".stripMargin)
 
     // when
     val result = profile(QUERY)
 
     // then
-    result.toSet should equal(Set(
-      Map("l" -> "a", "r" -> "b"),
-      Map("l" -> "a", "r" -> "d"),
-      Map("l" -> "b", "r" -> "a"),
-      Map("l" -> "b", "r" -> "d"),
-      Map("l" -> "d", "r" -> "a"),
-      Map("l" -> "d", "r" -> "b")))
+    result.toSet should equal(
+      Set(Map("l" -> "a", "r" -> "b"),
+          Map("l" -> "a", "r" -> "d"),
+          Map("l" -> "b", "r" -> "a"),
+          Map("l" -> "b", "r" -> "d"),
+          Map("l" -> "d", "r" -> "a"),
+          Map("l" -> "d", "r" -> "b")))
     result should use("TriadicSelection")
   }
 
   test("find friendly people") {
     // given
-    execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"}), (d:Person{name:"d"}), (e:Person{name:"e"})
+    execute(
+      """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"}), (d:Person{name:"d"}), (e:Person{name:"e"})
                |CREATE (a)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (c)-[:FRIEND]->(e), (d)-[:FRIEND]->(e)""".stripMargin)
 
     // when
     val result = profile(QUERY)
 
     // then
-    result.toSet should equal(Set(
-      Map("l" -> "a", "r" -> "e"),
-      Map("l" -> "b", "r" -> "e"),
-      Map("l" -> "d", "r" -> "c"),
-      Map("l" -> "c", "r" -> "d"),
-      Map("l" -> "e", "r" -> "a"),
-      Map("l" -> "e", "r" -> "b")))
+    result.toSet should equal(
+      Set(Map("l" -> "a", "r" -> "e"),
+          Map("l" -> "b", "r" -> "e"),
+          Map("l" -> "d", "r" -> "c"),
+          Map("l" -> "c", "r" -> "d"),
+          Map("l" -> "e", "r" -> "a"),
+          Map("l" -> "e", "r" -> "b")))
     result should use("TriadicSelection")
   }
 
   test("should not find my friends") {
     // given
-    execute(
-      """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"})
+    execute("""CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c"})
         |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (c)-[:FRIEND]->(a)""".stripMargin)
 
     // when
@@ -79,9 +79,10 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
 
   test("triadic should not handle complex incoming predicates for now") {
     // given
-    graph.createIndex( "Person", "name")
+    graph.createIndex("Person", "name")
 
-    execute( """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
+    execute(
+      """CREATE (a:Person{name:"a"}), (b:Person{name:"b"}), (c:Person{name:"c",age:39}), (d:Person{name:"d"}), (e:Person{name:"e"})
                |CREATE (a)-[:FRIEND]->(b), (b)-[:FRIEND]->(c), (b)-[:FRIEND]->(d), (b)-[:FRIEND]->(e)
                |CREATE (a)-[:FRIEND]->(c), (a)-[:FRIEND]->(d), (c)-[:FRIEND]->(d)""".stripMargin)
 
@@ -91,7 +92,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                |USING INDEX a:Person(name)
                |WHERE a.name = 'a' AND b.age = 39 AND exists(c.name) AND (a)-[:FRIEND]->(c)
                |RETURN a.name AS l, b.name as m, c.name AS r""".stripMargin
-    val result = profile(queryWithPredicates)
+    val result              = profile(queryWithPredicates)
 
     // then
     result.toSet should equal(Set(Map("l" -> "a", "m" -> "c", "r" -> "d")))
@@ -182,52 +183,54 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
       """.stripMargin
 
     Seq(create_contraints, create_model) foreach { queries =>
-      queries.split(";").collect {
-        case q if q.trim.nonEmpty => q.trim
-      }.foreach { query =>
-        execute(query)
-      }
+      queries
+        .split(";")
+        .collect {
+          case q if q.trim.nonEmpty => q.trim
+        }
+        .foreach { query =>
+          execute(query)
+        }
     }
     println(execute("MATCH (n) RETURN count(*)").toList)
     Map(
       "non-triadic1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
         "command" -> "Expand(Into)",
-        "count" -> 3),
-      "non-triadic2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a",
-        "command" -> "Expand(Into)",
-        "count" -> 3),
+        "count"   -> 3),
+      "non-triadic2" -> Map("query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a",
+                            "command" -> "Expand(Into)",
+                            "count"   -> 3),
       "triadic-neg1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count" -> 7),
+        "count"   -> 7),
       "triadic-neg2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count" -> 7),
+        "count"   -> 7),
       "triadic-neg3" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count" -> 7),
+        "count"   -> 7),
       "triadic-neg4" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "AntiSemiApply",
-        "count" -> 7),
+        "count"   -> 7),
       "triadic-pos1" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count" -> 3),
+        "count"   -> 3),
       "triadic-pos2" -> Map(
-        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a",
+        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count" -> 3)
+        "count"   -> 3)
     ).collect {
-      case (name, config:Map[String,Any]) =>
-        val query = config("query").asInstanceOf[String]
-        val count = config("count").asInstanceOf[Int]
+      case (name, config: Map[String, Any]) =>
+        val query   = config("query").asInstanceOf[String]
+        val count   = config("count").asInstanceOf[Int]
         val command = config("command").asInstanceOf[String]
-        val result = execute(query)
+        val result  = execute(query)
         result should haveCount(count)
         result should use(command)
     }

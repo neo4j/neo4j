@@ -28,7 +28,7 @@ class KeyTokenTest extends CypherFunSuite {
   test("should_resolve_unresolved") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
-    val keyToken = KeyToken.Unresolved("a", tokenType)
+    val keyToken  = KeyToken.Unresolved("a", tokenType)
 
     // when
     val result = keyToken.resolve(null)
@@ -40,7 +40,7 @@ class KeyTokenTest extends CypherFunSuite {
   test("should_not_resolve_resolved") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
-    val keyToken = KeyToken.Resolved("a", 2, tokenType)
+    val keyToken  = KeyToken.Resolved("a", 2, tokenType)
 
     // when
     val result = keyToken.resolve(null)
@@ -52,7 +52,7 @@ class KeyTokenTest extends CypherFunSuite {
   test("should_not_resolve_unknown") {
     // given
     val tokenType = MapKeyTokenType(Map("a" -> 1))
-    val keyToken = KeyToken.Unresolved("b", tokenType)
+    val keyToken  = KeyToken.Unresolved("b", tokenType)
 
     // when
     val result = keyToken.resolve(null)

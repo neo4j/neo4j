@@ -20,11 +20,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case class ShortestPathExpression(pattern: ShortestPaths) extends Expression with SimpleTyping {
-  def position = pattern.position
+  def position                = pattern.position
   protected def possibleTypes = CTList(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.declareVariables(Pattern.SemanticContext.Expression) chain
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
-    super.semanticCheck(ctx)
+      pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
+      super.semanticCheck(ctx)
 }

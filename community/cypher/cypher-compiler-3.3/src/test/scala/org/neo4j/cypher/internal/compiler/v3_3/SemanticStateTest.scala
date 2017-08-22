@@ -22,14 +22,16 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class SemanticStateTest extends CypherFunSuite {
 
   test("should declare variable once") {
     val variable1 = Variable("foo")(DummyPosition(0))
     val variable2 = Variable("foo")(DummyPosition(3))
-    val state = SemanticState.clean.declareVariable(variable1, CTNode).right.get
+    val state     = SemanticState.clean.declareVariable(variable1, CTNode).right.get
 
     state.declareVariable(variable2, CTNode) match {
       case Right(_) => fail("Expected an error from second declaration")
@@ -45,8 +47,8 @@ class SemanticStateTest extends CypherFunSuite {
     val variable3 = Variable("foo")(DummyPosition(3))
 
     SemanticState.clean.implicitVariable(variable1, CTNode) chain
-    ((_: SemanticState).implicitVariable(variable2, CTNode)) chain
-    ((_: SemanticState).implicitVariable(variable3, CTNode)) match {
+      ((_: SemanticState).implicitVariable(variable2, CTNode)) chain
+      ((_: SemanticState).implicitVariable(variable3, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val positions = state.currentScope.localSymbol("foo").map(_.positions).get
@@ -59,7 +61,7 @@ class SemanticStateTest extends CypherFunSuite {
     val variable2 = Variable("foo")(DummyPosition(3))
 
     SemanticState.clean.implicitVariable(variable1, CTNode | CTRelationship) chain
-    ((_: SemanticState).implicitVariable(variable2, CTNode)) match {
+      ((_: SemanticState).implicitVariable(variable2, CTNode)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -67,7 +69,7 @@ class SemanticStateTest extends CypherFunSuite {
     }
 
     SemanticState.clean.implicitVariable(variable1, CTRelationship) chain
-    ((_: SemanticState).implicitVariable(variable2, CTNode | CTRelationship)) match {
+      ((_: SemanticState).implicitVariable(variable2, CTNode | CTRelationship)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -75,7 +77,7 @@ class SemanticStateTest extends CypherFunSuite {
     }
 
     SemanticState.clean.implicitVariable(variable1, CTNode | CTRelationship) chain
-    ((_: SemanticState).implicitVariable(variable2, CTAny.covariant)) match {
+      ((_: SemanticState).implicitVariable(variable2, CTAny.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -83,7 +85,7 @@ class SemanticStateTest extends CypherFunSuite {
     }
 
     SemanticState.clean.implicitVariable(variable1, CTNode) chain
-    ((_: SemanticState).implicitVariable(variable2, CTMap.covariant)) match {
+      ((_: SemanticState).implicitVariable(variable2, CTMap.covariant)) match {
       case Left(_) => fail("Expected success")
       case Right(state) =>
         val types = state.symbolTypes("foo")
@@ -97,31 +99,32 @@ class SemanticStateTest extends CypherFunSuite {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
         error.position should equal(DummyPosition(3))
-        error.references should be (Seq(DummyPosition(0)))
+        error.references should be(Seq(DummyPosition(0)))
         error.msg should equal("Type mismatch: foo already defined with conflicting type Map (expected Node)")
     }
 
     SemanticState.clean.implicitVariable(Variable("foo")(DummyPosition(0)), CTNode | CTRelationship) chain
-    ((_: SemanticState).implicitVariable(Variable("foo")(DummyPosition(3)), CTNode | CTInteger)) chain
-    ((_: SemanticState).implicitVariable(Variable("foo")(DummyPosition(9)), CTInteger | CTRelationship)) match {
+      ((_: SemanticState).implicitVariable(Variable("foo")(DummyPosition(3)), CTNode | CTInteger)) chain
+      ((_: SemanticState).implicitVariable(Variable("foo")(DummyPosition(9)), CTInteger | CTRelationship)) match {
       case Right(_) => fail("Expected an error")
       case Left(error) =>
         error.position should equal(DummyPosition(9))
         error.references should equal(Seq(DummyPosition(0), DummyPosition(3)))
-        error.msg should equal("Type mismatch: foo already defined with conflicting type Node (expected Integer or Relationship)")
+        error.msg should equal(
+          "Type mismatch: foo already defined with conflicting type Node (expected Integer or Relationship)")
     }
   }
 
   test("should record type for expression when specifying type") {
     val expression = DummyExpression(CTInteger | CTString)
-    val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
+    val state      = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
     state.expressionType(expression).specified should equal(expression.possibleTypes)
     state.expressionType(expression).actual should equal(expression.possibleTypes)
   }
 
   test("should expect type for expression") {
     val expression = DummyExpression(CTInteger | CTString | CTMap)
-    val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
+    val state      = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
 
     state.expectType(expression, CTNumber.covariant) match {
       case (s, typ) =>
@@ -157,23 +160,23 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should return types of variable") {
     val variable = Variable("foo")(DummyPosition(0))
-    val s1 = SemanticState.clean.declareVariable(variable, CTNode).right.get
+    val s1       = SemanticState.clean.declareVariable(variable, CTNode).right.get
     s1.expressionType(variable).actual should equal(CTNode: TypeSpec)
   }
 
   test("should return types of variable at later expression") {
     val variable1 = Variable("foo")(DummyPosition(0))
     val variable2 = Variable("foo")(DummyPosition(3))
-    val s1 = SemanticState.clean.declareVariable(variable1, CTNode).right.get
-    val s2 = s1.implicitVariable(variable2, CTNode).right.get
+    val s1        = SemanticState.clean.declareVariable(variable1, CTNode).right.get
+    val s2        = s1.implicitVariable(variable2, CTNode).right.get
     s2.expressionType(variable2).actual should equal(CTNode: TypeSpec)
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {
     val exp1 = Property(Variable("n")(DummyPosition(0)), PropertyKeyName("prop")(DummyPosition(3)))(DummyPosition(0))
     val exp2 = Property(Variable("n")(DummyPosition(6)), PropertyKeyName("prop")(DummyPosition(9)))(DummyPosition(6))
-    val s1 = SemanticState.clean.specifyType(exp1, CTNode).right.get
-    val s2 = s1.specifyType(exp2, CTRelationship).right.get
+    val s1   = SemanticState.clean.specifyType(exp1, CTNode).right.get
+    val s2   = s1.specifyType(exp2, CTRelationship).right.get
 
     s2.expressionType(exp1).specified should equal(CTNode: TypeSpec)
     s2.expressionType(exp2).specified should equal(CTRelationship: TypeSpec)
@@ -185,7 +188,8 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should gracefully update a variable") {
     val s1 = SemanticState.clean.declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-    val s2: SemanticState = s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTRelationship).right.get
+    val s2: SemanticState =
+      s1.newChildScope.declareVariable(Variable("foo")(DummyPosition(0)), CTRelationship).right.get
     s1.symbolTypes("foo") should equal(CTNode.invariant)
     s2.symbolTypes("foo") should equal(CTRelationship.invariant)
   }
@@ -193,32 +197,51 @@ class SemanticStateTest extends CypherFunSuite {
   test("should be able to merge scopes") {
     val s1 =
       SemanticState.clean
-      .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-      .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
+        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
 
     s2.mergeScope(s1.scopeTree) should equal(
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode, Set(DummyPosition(0))).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode, Set(DummyPosition(0)))
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
     )
   }
 
   test("should be able to merge scopes and honor excludes") {
     val s1 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
 
     s2.mergeScope(s1.scopeTree, Set("foo")) should equal(s2)
   }
@@ -226,22 +249,34 @@ class SemanticStateTest extends CypherFunSuite {
   test("should be able to import scopes") {
     val s1 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
+        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
 
     val actual = s1.importScope(s2.scopeTree)
     val expected =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
 
     actual.scopeTree should equal(expected.scopeTree)
   }
@@ -249,23 +284,37 @@ class SemanticStateTest extends CypherFunSuite {
   test("should be able to import scopes and honor excludes") {
     val s1 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-
+        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
 
     val s2 =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-        .declareVariable(Variable("frob")(DummyPosition(5)), CTNode).right.get
+        .declareVariable(Variable("foo")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("frob")(DummyPosition(5)), CTNode)
+        .right
+        .get
 
     val actual = s1.importScope(s2.scopeTree, Set("foo", "frob"))
     val expected =
       SemanticState.clean
-        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get
-        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode).right.get
-        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
-
+        .declareVariable(Variable("foo")(DummyPosition(0)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("bar")(DummyPosition(1)), CTNode)
+        .right
+        .get
+        .declareVariable(Variable("baz")(DummyPosition(4)), CTNode)
+        .right
+        .get
 
     actual.scopeTree should equal(expected.scopeTree)
   }

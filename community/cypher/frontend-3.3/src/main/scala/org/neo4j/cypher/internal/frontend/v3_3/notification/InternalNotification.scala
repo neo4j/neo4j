@@ -19,13 +19,14 @@ package org.neo4j.cypher.internal.frontend.v3_3.notification
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 
 /**
- * Describes a notification
- */
+  * Describes a notification
+  */
 sealed trait InternalNotification
 
 case class DeprecatedStartNotification(position: InputPosition, alternativeQuery: String) extends InternalNotification
 
-case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String]) extends InternalNotification
+case class CartesianProductNotification(position: InputPosition, isolatedVariables: Set[String])
+    extends InternalNotification
 
 case class LengthOnNonPathNotification(position: InputPosition) extends InternalNotification
 
@@ -55,15 +56,20 @@ case class UnboundedShortestPathNotification(position: InputPosition) extends In
 
 case class ExhaustiveShortestPathForbiddenNotification(position: InputPosition) extends InternalNotification
 
-case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
+case class DeprecatedFunctionNotification(position: InputPosition, oldName: String, newName: String)
+    extends InternalNotification
 
-case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String) extends InternalNotification
+case class DeprecatedProcedureNotification(position: InputPosition, oldName: String, newName: String)
+    extends InternalNotification
 
-case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String) extends InternalNotification
+case class ProcedureWarningNotification(position: InputPosition, procedure: String, warning: String)
+    extends InternalNotification
 
-case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String) extends InternalNotification
+case class DeprecatedFieldNotification(position: InputPosition, procedure: String, field: String)
+    extends InternalNotification
 
-case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String) extends InternalNotification
+case class DeprecatedVarLengthBindingNotification(position: InputPosition, variable: String)
+    extends InternalNotification
 
 case class DeprecatedRelTypeSeparatorNotification(position: InputPosition) extends InternalNotification
 

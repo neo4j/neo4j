@@ -30,19 +30,19 @@ class AllVariablesTest extends CypherFunSuite {
   test("nodes") {
     val symbols = getSymbols("n" -> CTNode)
 
-     x.expressions(symbols) should equal(Map("n" -> Variable("n")))
+    x.expressions(symbols) should equal(Map("n" -> Variable("n")))
   }
 
   test("relationships") {
     val symbols = getSymbols("r" -> CTRelationship)
 
-     x.expressions(symbols) should equal(Map("r" -> Variable("r")))
+    x.expressions(symbols) should equal(Map("r" -> Variable("r")))
   }
 
   test("paths") {
     val symbols = getSymbols("p" -> CTPath)
 
-     x.expressions(symbols) should equal(Map("p" -> Variable("p")))
+    x.expressions(symbols) should equal(Map("p" -> Variable("p")))
   }
 
   private def getSymbols(k: (String, CypherType)*) = SymbolTable(k.toMap)

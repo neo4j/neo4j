@@ -22,14 +22,15 @@ sealed trait SemanticErrorDef {
   def references: Seq[InputPosition]
 }
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
+final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*)
+    extends SemanticErrorDef
 
 sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 
 final case class ClauseError(clause: String, position: InputPosition) extends UnsupportedOpenCypher {
 
   override val msg: String = s"The referenced clause $clause is not supported by Neo4j"
-  override def references = Seq.empty
+  override def references  = Seq.empty
 }
 
 final case class PatternError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {

@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTPath, TypeSpec}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTPath
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 sealed trait PathStep {
   def dependencies: Set[Variable]
@@ -27,11 +29,13 @@ final case class NodePathStep(node: Variable, next: PathStep) extends PathStep {
   val dependencies = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class SingleRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep)
+    extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
-final case class MultiRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class MultiRelationshipPathStep(rel: Variable, direction: SemanticDirection, next: PathStep)
+    extends PathStep {
   val dependencies = next.dependencies + rel
 }
 

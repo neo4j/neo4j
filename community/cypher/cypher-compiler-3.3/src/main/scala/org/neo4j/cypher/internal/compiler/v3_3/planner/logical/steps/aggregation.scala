@@ -25,15 +25,21 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_3.AggregatingQueryProjection
 
 object aggregation {
-  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val groupingExpressions: Map[String, Expression] = aggregation.groupingKeys
 
-    val variablesToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
-      case (_, exp) => exp.dependencies
-    }.toList.distinct.map {
-      case id => id.name -> id
-    }.toMap
+    val variablesToKeep: Map[String, Expression] = aggregation.aggregationExpressions
+      .flatMap {
+        case (_, exp) => exp.dependencies
+      }
+      .toList
+      .distinct
+      .map {
+        case id => id.name -> id
+      }
+      .toMap
 
     //  TODO: we need to project here since the pipe does not do that,
     //  when moving to the new runtime the aggregation pipe MUST do the projection itself
@@ -41,6 +47,7 @@ object aggregation {
 
     val (rewrittenPlan, aggregations) = PatternExpressionSolver()(projectedPlan, aggregation.aggregationExpressions)
 
-    context.logicalPlanProducer.planAggregation(rewrittenPlan, groupingExpressions, aggregations, aggregation.aggregationExpressions)
+    context.logicalPlanProducer
+      .planAggregation(rewrittenPlan, groupingExpressions, aggregations, aggregation.aggregationExpressions)
   }
 }

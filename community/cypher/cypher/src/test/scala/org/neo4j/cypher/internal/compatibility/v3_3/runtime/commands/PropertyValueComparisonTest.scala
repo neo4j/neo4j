@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -32,16 +33,16 @@ class PropertyValueComparisonTest extends CypherFunSuite {
   private val expectedNull = NO_VALUE
 
   test("nullNodeShouldGiveNullProperty") {
-    val p = Property(Variable("variable"), PropertyKey("property"))
-    val ctx = ExecutionContext.from("variable" -> NO_VALUE)
+    val p     = Property(Variable("variable"), PropertyKey("property"))
+    val ctx   = ExecutionContext.from("variable" -> NO_VALUE)
     val state = QueryStateHelper.empty
 
     p(ctx)(state) should equal(expectedNull)
   }
 
   test("nonExistentPropertyShouldEvaluateToNull") {
-    val p = Property(Variable("variable"), PropertyKey("nonExistent"))
-    val ctx = ExecutionContext.from("variable" -> Map("property" -> 42))
+    val p     = Property(Variable("variable"), PropertyKey("nonExistent"))
+    val ctx   = ExecutionContext.from("variable" -> Map("property" -> 42))
     val state = QueryStateHelper.empty
 
     p(ctx)(state) should equal(expectedNull)

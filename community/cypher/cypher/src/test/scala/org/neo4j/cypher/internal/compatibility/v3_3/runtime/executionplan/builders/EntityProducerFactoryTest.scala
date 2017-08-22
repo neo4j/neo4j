@@ -22,20 +22,23 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.build
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{AnyIndex, EntityProducerFactory, SchemaIndex}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.AnyIndex
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SchemaIndex
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryContextAdaptation
 import org.neo4j.graphdb.Node
 
 class EntityProducerFactoryTest extends CypherFunSuite {
-  var planContext: PlanContext = null
+  var planContext: PlanContext       = null
   var factory: EntityProducerFactory = null
-  val context = ExecutionContext.empty
+  val context                        = ExecutionContext.empty
 
   override def beforeEach() {
     super.beforeEach()
@@ -46,19 +49,21 @@ class EntityProducerFactoryTest extends CypherFunSuite {
   test("throws error when index is missing") {
     //GIVEN
     val label: String = "label"
-    val prop: String = "prop"
+    val prop: String  = "prop"
     when(planContext.indexGet(label, Seq(prop))).thenReturn(None)
 
     //WHEN
-    intercept[IndexHintException](factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("id", label, Seq(prop), AnyIndex, None, Seq.empty)))
+    intercept[IndexHintException](
+      factory.nodeByIndexHint(readOnly = true)(
+        planContext -> SchemaIndex("id", label, Seq(prop), AnyIndex, None, Seq.empty)))
   }
 
   test("calls the right methods") {
     //GIVEN
-    val label: String = "label"
-    val prop: String = "prop"
-    val index: IndexDescriptor = IndexDescriptor(123, 456)
-    val value = 42
+    val label: String              = "label"
+    val prop: String               = "prop"
+    val index: IndexDescriptor     = IndexDescriptor(123, 456)
+    val value                      = 42
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.indexGet(label, Seq(prop))).thenReturn(Some(index))
     val indexResult = Iterator(null)
@@ -66,20 +71,29 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("id", label, Seq(prop),
-                                                                                   AnyIndex, Some(SingleQueryExpression(Literal(value))), Seq.empty))
+    val func = factory.nodeByIndexHint(readOnly = true)(
+      planContext -> SchemaIndex("id",
+                                 label,
+                                 Seq(prop),
+                                 AnyIndex,
+                                 Some(SingleQueryExpression(Literal(value))),
+                                 Seq.empty))
     func(context, state) should equal(indexResult)
   }
 
   test("should translate values to neo4j") {
     //GIVEN
-    val labelName = "Label"
-    val propertyKey = "prop"
+    val labelName              = "Label"
+    val propertyKey            = "prop"
     val index: IndexDescriptor = IndexDescriptor(123, 456)
     when(planContext.indexGet(labelName, Seq(propertyKey))).thenReturn(Some(index))
-    val producer = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("x", labelName, Seq(propertyKey),
-                                                                                       AnyIndex,
-                                                                                       Some(SingleQueryExpression(Literal(Seq(1,2,3)))), Seq.empty))
+    val producer = factory.nodeByIndexHint(readOnly = true)(
+      planContext -> SchemaIndex("x",
+                                 labelName,
+                                 Seq(propertyKey),
+                                 AnyIndex,
+                                 Some(SingleQueryExpression(Literal(Seq(1, 2, 3)))),
+                                 Seq.empty))
 
     var seenValues: Seq[Any] = null
 
@@ -95,6 +109,6 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     producer.apply(context, state)
 
     //THEN
-    seenValues.head should equal(Array(1L,2L,3L))
+    seenValues.head should equal(Array(1L, 2L, 3L))
   }
 }

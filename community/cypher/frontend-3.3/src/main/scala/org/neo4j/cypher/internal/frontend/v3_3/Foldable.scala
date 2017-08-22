@@ -26,25 +26,25 @@ object Foldable {
 
   implicit class TreeAny(val that: Any) extends AnyVal {
     def children: Iterator[AnyRef] = that match {
-      case p: Product => p.productIterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product   => p.productIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Seq[_]    => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]    => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case _            => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
     def reverseChildren: Iterator[AnyRef] = that match {
-      case p: Product => reverseProductIterator(p)
-      case s: Seq[_] => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case s: Set[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
+      case p: Product   => reverseProductIterator(p)
+      case s: Seq[_]    => s.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_]    => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case m: Map[_, _] => m.iterator.asInstanceOf[Iterator[AnyRef]]
-      case _ => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case _            => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
     private def reverseProductIterator(p: Product) = new Iterator[AnyRef] {
       private var c: Int = p.productArity - 1
-      def hasNext = c >= 0
-      def next() = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
+      def hasNext        = c >= 0
+      def next()         = { val result = p.productElement(c).asInstanceOf[AnyRef]; c -= 1; result }
     }
   }
 
@@ -81,10 +81,18 @@ object Foldable {
       * @return the accumulated result
       */
     def treeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
-      treeFoldAcc(mutable.ArrayStack(that), init, f.lift, new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](), reverse = false)
+      treeFoldAcc(mutable.ArrayStack(that),
+                  init,
+                  f.lift,
+                  new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
+                  reverse = false)
 
     def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
-      treeFoldAcc(mutable.ArrayStack(that), init, f.lift, new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](), reverse = true)
+      treeFoldAcc(mutable.ArrayStack(that),
+                  init,
+                  f.lift,
+                  new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
+                  reverse = true)
 
     /*
     Allows searching through object tree and object collections
@@ -99,18 +107,18 @@ object Foldable {
       countAcc(mutable.ArrayStack(that), f.lift, 0)
     }
 
-    def findByClass[A : ClassTag]: A =
+    def findByClass[A: ClassTag]: A =
       findAcc[A](mutable.ArrayStack(that))
 
     def findByAllClass[A: ClassTag]: Seq[A] = {
       val remaining = mutable.ArrayStack(that)
-      var result = mutable.ListBuffer[A]()
+      var result    = mutable.ListBuffer[A]()
 
       while (remaining.nonEmpty) {
         val that = remaining.pop()
         that match {
           case x: A => result += x
-          case _ =>
+          case _    =>
         }
         remaining ++= that.reverseChildren
       }
@@ -129,8 +137,11 @@ object Foldable {
     }
 
   @tailrec
-  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[R => (R, Option[R => R])],
-                             continuation: mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)], reverse: Boolean): R =
+  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any],
+                             acc: R,
+                             f: Any => Option[R => (R, Option[R => R])],
+                             continuation: mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)],
+                             reverse: Boolean): R =
     if (remaining.isEmpty) {
       if (continuation.isEmpty) {
         acc
@@ -151,7 +162,7 @@ object Foldable {
               val children = if (reverse) that.children else that.reverseChildren
               treeFoldAcc(mutable.ArrayStack() ++= children, newAcc, f, continuation, reverse)
             case (newAcc, None) =>
-              treeFoldAcc(remaining, newAcc, f, continuation,reverse)
+              treeFoldAcc(remaining, newAcc, f, continuation, reverse)
           }
       }
     }
@@ -187,14 +198,14 @@ object Foldable {
     }
 
   @tailrec
-  private def findAcc[A : ClassTag](remaining: mutable.ArrayStack[Any]): A =
+  private def findAcc[A: ClassTag](remaining: mutable.ArrayStack[Any]): A =
     if (remaining.isEmpty) {
       throw new NoSuchElementException
     } else {
       val that = remaining.pop()
       that match {
         case x: A => x
-        case _ => findAcc(remaining ++= that.reverseChildren)
+        case _    => findAcc(remaining ++= that.reverseChildren)
       }
     }
 }

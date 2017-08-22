@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])
-                          (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
+case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])(
+    val solved: PlannerQuery with CardinalityEstimation)
+    extends NodeLogicalLeafPlan {
 
   def availableSymbols: Set[IdName] = argumentIds + idName
 }

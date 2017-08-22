@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekByRange
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.UniqueIndexSeekByRange
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.SyntaxException
 
 /**
   * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -32,7 +35,6 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("should handle comparing large integers") {
     // Given
     val person = createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
-
 
     graph.createIndex("Person", "age")
 
@@ -47,7 +49,6 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("should handle comparing large integers 2") {
     // Given
     createLabeledNode(Map("age" -> 5987523281782486379L), "Person")
-
 
     graph.createIndex("Person", "age")
 
@@ -144,7 +145,9 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
         |WHERE 43 = {apa}
         |  AND a.prop STARTS WITH 'w'
         |  AND a.prop STARTS WITH 'www'
-        |RETURN a""".stripMargin, "apa" -> 43)
+        |RETURN a""".stripMargin,
+      "apa" -> 43
+    )
 
     result should (use(IndexSeekByRange.name) and evaluateTo(List(Map("a" -> a1), Map("a" -> a2))))
     result.executionPlanDescription().toString should include("prop STARTS WITH www")
@@ -220,12 +223,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> Double.NegativeInfinity),
-        Map("prop" -> -5),
-        Map("prop" -> 0),
-        Map("prop" -> 5),
-        Map("prop" -> 5.0))))
+      evaluateTo(
+        List(Map("prop" -> Double.NegativeInfinity),
+             Map("prop" -> -5),
+             Map("prop" -> 0),
+             Map("prop" -> 5),
+             Map("prop" -> 5.0))))
   }
 
   test("should be able to plan index seek for numerical negated greater than or equal") {
@@ -255,12 +258,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> Double.NegativeInfinity),
-        Map("prop" -> -5),
-        Map("prop" -> 0),
-        Map("prop" -> 5),
-        Map("prop" -> 5.0))))
+      evaluateTo(
+        List(Map("prop" -> Double.NegativeInfinity),
+             Map("prop" -> -5),
+             Map("prop" -> 0),
+             Map("prop" -> 5),
+             Map("prop" -> 5.0))))
   }
 
   test("should be able to plan index seek for numerical less than or equal") {
@@ -290,15 +293,16 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> Double.NegativeInfinity),
-        Map("prop" -> -5),
-        Map("prop" -> 0),
-        Map("prop" -> 5),
-        Map("prop" -> 5.0),
-        Map("prop" -> 10),
-        Map("prop" -> 10.0)
-      )))
+      evaluateTo(
+        List(
+          Map("prop" -> Double.NegativeInfinity),
+          Map("prop" -> -5),
+          Map("prop" -> 0),
+          Map("prop" -> 5),
+          Map("prop" -> 5.0),
+          Map("prop" -> 10),
+          Map("prop" -> 10.0)
+        )))
   }
 
   test("should be able to plan index seek for numerical negated greater than") {
@@ -328,15 +332,16 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> Double.NegativeInfinity),
-        Map("prop" -> -5),
-        Map("prop" -> 0),
-        Map("prop" -> 5),
-        Map("prop" -> 5.0),
-        Map("prop" -> 10),
-        Map("prop" -> 10.0)
-      )))
+      evaluateTo(
+        List(
+          Map("prop" -> Double.NegativeInfinity),
+          Map("prop" -> -5),
+          Map("prop" -> 0),
+          Map("prop" -> 5),
+          Map("prop" -> 5.0),
+          Map("prop" -> 10),
+          Map("prop" -> 10.0)
+        )))
   }
 
   test("should be able to plan index seek for numerical greater than") {
@@ -598,16 +603,16 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val smallValue = s"15${java.lang.Character.MIN_VALUE}"
 
     // Given Non-matches
-    createLabeledNode(Map("prop" -> "15"), "Label")
-    createLabeledNode(Map("prop" -> smallValue), "Label")
-    createLabeledNode(Map("prop" -> "5"), "Label")
+    createLabeledNode(Map("prop"  -> "15"), "Label")
+    createLabeledNode(Map("prop"  -> smallValue), "Label")
+    createLabeledNode(Map("prop"  -> "5"), "Label")
     createLabeledNode(Map("prop2" -> 5), "Label")
-    createLabeledNode(Map("prop" -> ""), "Label")
-    createLabeledNode(Map("prop" -> "-5"), "Label")
-    createLabeledNode(Map("prop" -> "0"), "Label")
-    createLabeledNode(Map("prop" -> "10"), "Label")
+    createLabeledNode(Map("prop"  -> ""), "Label")
+    createLabeledNode(Map("prop"  -> "-5"), "Label")
+    createLabeledNode(Map("prop"  -> "0"), "Label")
+    createLabeledNode(Map("prop"  -> "10"), "Label")
     createLabeledNode(Map("prop2" -> 10), "Label")
-    createLabeledNode(Map("prop" -> "14whatever"), "Label")
+    createLabeledNode(Map("prop"  -> "14whatever"), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -700,11 +705,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> 5),
-        Map("prop" -> 5.0),
-        Map("prop" -> 6.1)
-      )))
+      evaluateTo(
+        List(
+          Map("prop" -> 5),
+          Map("prop" -> 5.0),
+          Map("prop" -> 6.1)
+        )))
   }
 
   test("should be able to plan index seek using multiple non-overlapping numerical ranges") {
@@ -729,18 +735,20 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
     graph.createIndex("Label", "prop")
 
-    val query = "MATCH (n:Label) WHERE n.prop >= 0 AND n.prop >=5 AND n.prop < 10 AND n.prop < 100 RETURN n.prop AS prop"
+    val query =
+      "MATCH (n:Label) WHERE n.prop >= 0 AND n.prop >=5 AND n.prop < 10 AND n.prop < 100 RETURN n.prop AS prop"
 
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> 5),
-        Map("prop" -> 5.0),
-        Map("prop" -> 6.1)
-      )))
+      evaluateTo(
+        List(
+          Map("prop" -> 5),
+          Map("prop" -> 5.0),
+          Map("prop" -> 6.1)
+        )))
   }
 
   test("should be able to plan index seek using empty textual range") {
@@ -827,10 +835,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> "10"),
-        Map("prop" -> "14whatever"
-        ))))
+      evaluateTo(List(Map("prop" -> "10"), Map("prop" -> "14whatever"))))
   }
 
   test("should be able to plan index seek using multiple non-overlapping textual ranges") {
@@ -854,20 +859,19 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
     graph.createIndex("Label", "prop")
 
-    val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop >= '10' AND n.prop < '15' AND n.prop <= '14whatever' RETURN n.prop AS prop"
+    val query =
+      "MATCH (n:Label) WHERE n.prop > '1' AND n.prop >= '10' AND n.prop < '15' AND n.prop <= '14whatever' RETURN n.prop AS prop"
 
     // When
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
     result should (use("NodeIndexSeekByRange") and
-      evaluateTo(List(
-        Map("prop" -> "10"),
-        Map("prop" -> "14whatever"
-        ))))
+      evaluateTo(List(Map("prop" -> "10"), Map("prop" -> "14whatever"))))
   }
 
-  test("should be able to execute index seek using inequalities over different types as long as one inequality yields no results (1)") {
+  test(
+    "should be able to execute index seek using inequalities over different types as long as one inequality yields no results (1)") {
     // Given
     createLabeledNode(Map("prop" -> "15"), "Label")
     createLabeledNode(Map("prop" -> "5"), "Label")
@@ -886,7 +890,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     result should (use("NodeIndexSeekByRange") and be(empty))
   }
 
-  test("should be able to execute index seek using inequalities over different types as long as one inequality yields no results (2)") {
+  test(
+    "should be able to execute index seek using inequalities over different types as long as one inequality yields no results (2)") {
     // Given
     createLabeledNode(Map("prop" -> 15), "Label")
     createLabeledNode(Map("prop" -> 5), "Label")
@@ -929,7 +934,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     // Given
     val query = "MATCH (n:Label) WHERE n.prop >= [1, 2, 3] RETURN n.prop AS prop"
 
-    a [SyntaxException] should be thrownBy {
+    a[SyntaxException] should be thrownBy {
       executeWithAllPlannersAndCompatibilityMode(query).toList
     }
   }
@@ -950,7 +955,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     executeWithAllPlannersAndCompatibilityMode(s"EXPLAIN $query") should use("NodeIndexSeekByRange")
   }
 
-  test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
+  test(
+    "should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
     // Given
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -959,13 +965,14 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} AND n.prop < null RETURN n.prop AS prop"
 
-    executeWithAllPlannersAndCompatibilityMode(query, "param" -> Array[Int](1, 2, 3)) should (use("NodeIndexSeekByRange") and be(empty))
+    executeWithAllPlannersAndCompatibilityMode(query, "param" -> Array[Int](1, 2, 3)) should (use(
+      "NodeIndexSeekByRange") and be(empty))
   }
 
   test("should plan range index seeks matching characters against properties (coerced to string wrt the inequality)") {
     // Given
     val nonMatchingChar = "X".charAt(0).charValue()
-    val matchingChar = "Y".charAt(0).charValue()
+    val matchingChar    = "Y".charAt(0).charValue()
 
     (1 to 500).foreach { _ =>
       createLabeledNode("Label")
@@ -979,13 +986,15 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val result = executeWithAllPlannersAndCompatibilityMode(query, "param" -> matchingChar)
 
-    result should (use("NodeIndexSeekByRange") and evaluateTo(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString))))
+    result should (use("NodeIndexSeekByRange") and evaluateTo(
+      List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString))))
   }
 
-  test("should plan range index seeks matching strings against character properties (coerced to string wrt the inequality)") {
+  test(
+    "should plan range index seeks matching strings against character properties (coerced to string wrt the inequality)") {
     // Given
     val nonMatchingChar = "X".charAt(0).charValue()
-    val matchingChar = "Y".charAt(0).charValue()
+    val matchingChar    = "Y".charAt(0).charValue()
 
     (1 to 500).foreach { _ =>
       createLabeledNode("Label")
@@ -999,7 +1008,8 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val result = executeWithAllPlannersAndCompatibilityMode(query, "param" -> matchingChar.toString)
 
-    result should (use("NodeIndexSeekByRange") and evaluateTo(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString))))
+    result should (use("NodeIndexSeekByRange") and evaluateTo(
+      List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString))))
   }
 
   test("rule planner should plan index seek for inequality match") {
@@ -1021,7 +1031,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
+    val query  = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1034,7 +1044,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
+    val query  = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1047,7 +1057,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
+    val query  = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1060,7 +1070,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
+    val query  = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1074,7 +1084,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
+    val query  = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1113,7 +1123,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     (1 to size).foreach { i =>
       // Half of unlabeled nodes has prop = 0 (for even i:s prop = 0, for odd i:s prop = i)
-      val a = createNode(Map("prop" -> (i & 1) * i))
+      val a = createNode(Map("prop"        -> (i & 1) * i))
       val b = createLabeledNode(Map("prop" -> i), "Label")
       relate(a, b)
     }

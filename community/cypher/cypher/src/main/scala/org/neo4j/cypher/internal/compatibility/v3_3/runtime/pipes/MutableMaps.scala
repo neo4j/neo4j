@@ -23,15 +23,15 @@ import org.neo4j.values.AnyValue
 
 object MutableMaps {
 
-  def create(size: Int) : collection.mutable.Map[String, AnyValue] =
+  def create(size: Int): collection.mutable.Map[String, AnyValue] =
     new collection.mutable.OpenHashMap[String, AnyValue](if (size < 16) 16 else size)
 
   def empty: collection.mutable.Map[String, AnyValue] = create(16)
 
-  def create(input: scala.collection.Map[String, AnyValue]) : collection.mutable.Map[String, AnyValue] =
+  def create(input: scala.collection.Map[String, AnyValue]): collection.mutable.Map[String, AnyValue] =
     create(input.size) ++= input
 
-  def create(input: (String, AnyValue)*) : collection.mutable.Map[String, AnyValue] = {
+  def create(input: (String, AnyValue)*): collection.mutable.Map[String, AnyValue] = {
     create(input.size) ++= input
   }
 }

@@ -20,7 +20,8 @@
 package cypher.cucumber.db
 
 import java.io.FileInputStream
-import java.security.{DigestInputStream, MessageDigest}
+import java.security.DigestInputStream
+import java.security.MessageDigest
 
 import cypher.cucumber.db.GraphRecipe.CypherScript
 
@@ -44,14 +45,12 @@ object GraphRecipeLoader {
 
     val file = repository.graphImportFile(name)
     val json =
-      Try(file.slurp(Codec.UTF8))
-        .toOption
+      Try(file.slurp(Codec.UTF8)).toOption
         .getOrElse(throw new IllegalArgumentException(s"$file should exist"))
 
-
-    val parsed = parse(json)
+    val parsed    = parse(json)
     val extracted = parsed.extract[GraphRecipe.Descriptor[String]]
-    val resolved = extracted.mapScripts(resolveScriptFile(repository))
+    val resolved  = extracted.mapScripts(resolveScriptFile(repository))
     resolved
   }
 

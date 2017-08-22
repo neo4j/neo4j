@@ -45,7 +45,8 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def txIdProvider: () => Long = {
     val innerTxProvider = translateException(inner.txIdProvider)
-    () => translateException(innerTxProvider())
+    () =>
+      translateException(innerTxProvider())
   }
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =

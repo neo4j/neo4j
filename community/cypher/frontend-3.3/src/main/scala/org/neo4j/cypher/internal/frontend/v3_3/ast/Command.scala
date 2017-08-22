@@ -17,19 +17,21 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 sealed trait Command extends Statement {
   override def returnColumns = List.empty
 }
 
-case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
+case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition)
+    extends Command {
 //  def property = properties(0)
   def semanticCheck = Seq()
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
-  def property = properties.head
+  def property      = properties.head
   def semanticCheck = Seq()
 }
 
@@ -102,18 +104,34 @@ trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
   def relType: RelTypeName
 }
 
-case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends NodeKeyConstraintCommand
+case class CreateNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(
+    val position: InputPosition)
+    extends NodeKeyConstraintCommand
 
-case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends NodeKeyConstraintCommand
+case class DropNodeKeyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(
+    val position: InputPosition)
+    extends NodeKeyConstraintCommand
 
-case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class CreateUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(
+    val position: InputPosition)
+    extends UniquePropertyConstraintCommand
 
-case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(val position: InputPosition) extends UniquePropertyConstraintCommand
+case class DropUniquePropertyConstraint(variable: Variable, label: LabelName, properties: Seq[Property])(
+    val position: InputPosition)
+    extends UniquePropertyConstraintCommand
 
-case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class CreateNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(
+    val position: InputPosition)
+    extends NodePropertyConstraintCommand
 
-case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(val position: InputPosition) extends NodePropertyConstraintCommand
+case class DropNodePropertyExistenceConstraint(variable: Variable, label: LabelName, property: Property)(
+    val position: InputPosition)
+    extends NodePropertyConstraintCommand
 
-case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class CreateRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(
+    val position: InputPosition)
+    extends RelationshipPropertyConstraintCommand
 
-case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(val position: InputPosition) extends RelationshipPropertyConstraintCommand
+case class DropRelationshipPropertyExistenceConstraint(variable: Variable, relType: RelTypeName, property: Property)(
+    val position: InputPosition)
+    extends RelationshipPropertyConstraintCommand

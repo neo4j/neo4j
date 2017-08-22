@@ -33,16 +33,16 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
-  val aNode = IdName("a")
-  val bNode = IdName("b")
-  val cNode = IdName("c")
-  val dNode = IdName("d")
+  val aNode  = IdName("a")
+  val bNode  = IdName("b")
+  val cNode  = IdName("c")
+  val dNode  = IdName("d")
   val r1Name = IdName("r1")
   val r2Name = IdName("r2")
   val r3Name = IdName("r3")
-  val r1Rel = PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val r2Rel = PatternRelationship(r2Name, (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val r3Rel = PatternRelationship(r3Name, (cNode, dNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val r1Rel  = PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val r2Rel  = PatternRelationship(r2Name, (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val r3Rel  = PatternRelationship(r3Name, (cNode, dNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("solve optional match with outer join") {
     // MATCH a OPTIONAL MATCH a-->b
@@ -53,9 +53,10 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
-      case _ => Cost(1000)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) =>
+      plan match {
+        case AllNodesScan(IdName("b"), _) => Cost(1) // Make sure we start the inner plan using b
+        case _                            => Cost(1000)
     })
 
     val innerPlan = newMockedLogicalPlan("b")
@@ -65,7 +66,7 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator])
     )
-    val left = newMockedLogicalPlanWithPatterns(Set(aNode))
+    val left  = newMockedLogicalPlanWithPatterns(Set(aNode))
     val plans = outerHashJoin(optionalQg, left)
 
     plans should equal(Some(OuterHashJoin(Set(aNode), left, innerPlan)(solved)))

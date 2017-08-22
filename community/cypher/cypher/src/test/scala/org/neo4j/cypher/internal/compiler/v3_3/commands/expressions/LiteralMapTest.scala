@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.commands.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{CountStar, LiteralMap, Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.CountStar
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.LiteralMap
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -28,8 +31,8 @@ class LiteralMapTest extends CypherFunSuite {
   test("should_present_all_child_expressions") {
     val x = Variable("x")
     // given
-    val propX = Property(x, UnresolvedProperty("foo"))
-    val count = CountStar()
+    val propX      = Property(x, UnresolvedProperty("foo"))
+    val count      = CountStar()
     val literalMap = LiteralMap(Map("x" -> propX, "count" -> count))
 
     // when

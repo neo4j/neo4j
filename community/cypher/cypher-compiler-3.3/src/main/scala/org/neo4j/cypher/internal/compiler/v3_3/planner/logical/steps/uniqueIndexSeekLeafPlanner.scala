@@ -21,24 +21,30 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, QueryExpression}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.UsingIndexHint
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
-  protected def constructPlan(idName: IdName,
-                              label: LabelToken,
-                              propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint],
-                              argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
+  protected def constructPlan(
+      idName: IdName,
+      label: LabelToken,
+      propertyKeys: Seq[PropertyKeyToken],
+      valueExpr: QueryExpression[Expression],
+      hint: Option[UsingIndexHint],
+      argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer
+        .planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
 
-  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
+  protected def findIndexesFor(label: String, properties: Seq[String])(
+      implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.uniqueIndexGet(label, properties)
 }

@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{CNFNormalizer, collapseMultipleInPredicates}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.collapseMultipleInPredicates
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport {
@@ -63,7 +64,7 @@ class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupp
   }
 
   private def parse(query: String) = {
-    val parsed = parser.parse(query)
+    val parsed   = parser.parse(query)
     val rewriter = CNFNormalizer.instance(ContextHelper.create())
     parsed.endoRewrite(rewriter)
   }

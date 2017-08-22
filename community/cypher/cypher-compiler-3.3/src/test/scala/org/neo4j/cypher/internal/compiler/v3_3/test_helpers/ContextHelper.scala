@@ -23,11 +23,17 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {
@@ -42,7 +48,16 @@ object ContextHelper extends MockitoSugar {
              updateStrategy: UpdateStrategy = mock[UpdateStrategy],
              debugOptions: Set[String] = Set.empty,
              clock: Clock = Clock.systemUTC()): CompilerContext = {
-    new CompilerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
+    new CompilerContext(exceptionCreator,
+                        tracer,
+                        notificationLogger,
+                        planContext,
+                        monitors,
+                        metrics,
+                        config,
+                        queryGraphSolver,
+                        updateStrategy,
+                        debugOptions,
+                        clock)
   }
 }

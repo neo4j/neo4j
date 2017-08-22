@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_3.phases
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 
 object LateAstRewriting extends StatementRewriter {
   override def instance(context: BaseContext): Rewriter = inSequence(

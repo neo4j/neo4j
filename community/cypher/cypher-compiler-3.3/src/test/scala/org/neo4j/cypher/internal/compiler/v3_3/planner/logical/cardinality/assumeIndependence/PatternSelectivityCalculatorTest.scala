@@ -26,28 +26,36 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{VarPatternLength, _}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
+import org.neo4j.cypher.internal.ir.v3_3._
 
 import scala.collection.mutable
 
-class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
+class PatternSelectivityCalculatorTest
+    extends CypherFunSuite
+    with LogicalPlanConstructionTestSupport
+    with AstConstructionTestSupport {
 
   test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(0))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ZERO)
   }
@@ -57,14 +65,14 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
   }
@@ -75,13 +83,14 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(3))
 
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
-    val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
+    val relationship =
+      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
   }
@@ -92,14 +101,14 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
       override def answer(invocationOnMock: InvocationOnMock): Cardinality = {
         val arg = invocationOnMock.getArguments()(0).asInstanceOf[Option[LabelId]]
         arg match {
-          case None => Cardinality(10)
+          case None    => Cardinality(10)
           case Some(_) => Cardinality(1)
         }
       }
     })
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val labels = new mutable.HashMap[String, LabelId]()
@@ -108,8 +117,8 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(l))(pos))).toSet
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = labels)
-    implicit val selections = Selections(predicates)
-    val result = calculator.apply(relationship, Map.empty)
+    implicit val selections    = Selections(predicates)
+    val result                 = calculator.apply(relationship, Map.empty)
 
     result should equal(Selectivity.ONE)
   }

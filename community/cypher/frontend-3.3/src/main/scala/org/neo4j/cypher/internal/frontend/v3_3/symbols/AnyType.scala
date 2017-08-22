@@ -18,12 +18,12 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object AnyType {
   val instance = new AnyType() {
-    val parentType = this
+    val parentType          = this
     override val isAbstract = true
 
     override def isAssignableFrom(other: CypherType): Boolean = true
 
-    override val toString = "Any"
+    override val toString        = "Any"
     override val toNeoTypeString = "ANY?"
 
   }

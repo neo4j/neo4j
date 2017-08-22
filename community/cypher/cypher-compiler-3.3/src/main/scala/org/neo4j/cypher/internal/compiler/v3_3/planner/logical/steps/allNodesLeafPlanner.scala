@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object allNodesLeafPlanner extends LeafPlanner {
   def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext) =
     queryGraph.patternNodes
-    .filter(!queryGraph.argumentIds.contains(_))
-    .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds)).toIndexedSeq
+      .filter(!queryGraph.argumentIds.contains(_))
+      .map(context.logicalPlanProducer.planAllNodesScan(_, queryGraph.argumentIds))
+      .toIndexedSeq
 }

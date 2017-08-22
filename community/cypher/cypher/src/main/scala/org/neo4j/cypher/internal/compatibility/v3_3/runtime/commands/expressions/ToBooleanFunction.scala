@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{BooleanValue, TextValue, Values}
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
 
 case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies

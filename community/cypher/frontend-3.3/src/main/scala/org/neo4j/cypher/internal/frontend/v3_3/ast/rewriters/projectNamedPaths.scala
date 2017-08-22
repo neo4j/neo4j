@@ -18,7 +18,10 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Ref, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.Ref
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 import scala.annotation.tailrec
 
@@ -30,17 +33,18 @@ case object projectNamedPaths extends Rewriter {
 
     self =>
 
-    def withoutNamedPaths = copy(paths = Map.empty)
-    def withProtectedVariable(ident: Ref[Variable]) = copy(protectedVariables = protectedVariables + ident)
+    def withoutNamedPaths                                = copy(paths = Map.empty)
+    def withProtectedVariable(ident: Ref[Variable])      = copy(protectedVariables = protectedVariables + ident)
     def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
     def withRewrittenVariable(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry
       copy(variableRewrites = variableRewrites + (ref -> pathExpr.endoRewrite(copyVariables)))
     }
 
-    def returnItems = paths.map {
-      case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
-    }.toIndexedSeq
+    def returnItems =
+      paths.map {
+        case (ident, pathExpr) => AliasedReturnItem(pathExpr, ident)(ident.position)
+      }.toIndexedSeq
 
     def withVariableRewritesForExpression(expr: Expression) =
       expr.treeFold(self) {
@@ -48,7 +52,7 @@ case object projectNamedPaths extends Rewriter {
           acc =>
             acc.paths.get(ident) match {
               case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
-              case None => (acc, Some(identity))
+              case None           => (acc, Some(identity))
             }
       }
   }
@@ -64,7 +68,7 @@ case object projectNamedPaths extends Rewriter {
       case (ident: Variable) if !protectedVariables(Ref(ident)) =>
         variableRewrites.getOrElse(Ref(ident), ident)
 
-      case namedPart@NamedPatternPart(_, _: ShortestPaths) =>
+      case namedPart @ NamedPatternPart(_, _: ShortestPaths) =>
         namedPart
 
       case NamedPatternPart(_, part) =>
@@ -85,7 +89,7 @@ case object projectNamedPaths extends Rewriter {
       acc =>
         acc.paths.get(ident) match {
           case Some(pathExpr) => (acc.withRewrittenVariable(Ref(ident) -> pathExpr), Some(identity))
-          case None => (acc, Some(identity))
+          case None           => (acc, Some(identity))
         }
 
     // Optimization 1
@@ -103,13 +107,14 @@ case object projectNamedPaths extends Rewriter {
 
     case projection: With =>
       acc =>
-        val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) {
-          (acc, expr) => acc.withVariableRewritesForExpression(expr)
+        val projectedAcc = projection.returnItems.items.map(_.expression).foldLeft(acc) { (acc, expr) =>
+          acc.withVariableRewritesForExpression(expr)
         }
         (projectedAcc.withoutNamedPaths, Some(identity))
 
     case NamedPatternPart(_, part: ShortestPaths) =>
-      acc => (acc, Some(identity))
+      acc =>
+        (acc, Some(identity))
 
     case part @ NamedPatternPart(variable, patternPart) =>
       acc =>
@@ -125,18 +130,19 @@ case object projectNamedPaths extends Rewriter {
   def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep)
 
   @tailrec
-  private def flip(element: PatternElement, step: PathStep): PathStep  = {
+  private def flip(element: PatternElement, step: PathStep): PathStep = {
     element match {
       case NodePattern(node, _, _) =>
         NodePathStep(node.get.copyId, step)
 
-      case RelationshipChain(relChain, RelationshipPattern(rel, _, length, _, direction, _), _) => length match {
-        case None =>
-          flip(relChain, SingleRelationshipPathStep(rel.get.copyId, direction, step))
+      case RelationshipChain(relChain, RelationshipPattern(rel, _, length, _, direction, _), _) =>
+        length match {
+          case None =>
+            flip(relChain, SingleRelationshipPathStep(rel.get.copyId, direction, step))
 
-        case Some(_) =>
-          flip(relChain, MultiRelationshipPathStep(rel.get.copyId, direction, step))
-      }
+          case Some(_) =>
+            flip(relChain, MultiRelationshipPathStep(rel.get.copyId, direction, step))
+        }
     }
   }
 }

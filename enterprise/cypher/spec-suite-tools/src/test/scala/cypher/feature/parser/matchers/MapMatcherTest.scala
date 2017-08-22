@@ -25,22 +25,27 @@ import cypher.feature.parser.matchers.ValueMatcher.NULL_MATCHER
 class MapMatcherTest extends ParsingTestSupport {
 
   test("should match maps") {
-    new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava) should accept(Map("key" -> "value").asJava)
+    new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava) should accept(
+      Map("key" -> "value").asJava)
     new MapMatcher(Map.empty[String, ValueMatcher].asJava) should accept(Map.empty.asJava)
   }
 
   test("should match nested maps") {
-    new MapMatcher(Map[String, ValueMatcher]("key" -> new MapMatcher(Map[String, ValueMatcher]("key" -> new FloatMatcher(0.0)).asJava)).asJava) should accept(Map("key" -> Map("key" -> 0.0).asJava).asJava)
+    new MapMatcher(Map[String, ValueMatcher](
+      "key" -> new MapMatcher(Map[String, ValueMatcher]("key" -> new FloatMatcher(0.0)).asJava)).asJava) should accept(
+      Map("key" -> Map("key" -> 0.0).asJava).asJava)
   }
 
   test("should not match maps of different size") {
     new MapMatcher(Map.empty[String, ValueMatcher].asJava) shouldNot accept(Map("k" -> "").asJava)
     new MapMatcher(Map("k" -> NULL_MATCHER).asJava) shouldNot accept(Map.empty.asJava)
-    new MapMatcher(Map("k" -> NULL_MATCHER, "k2" -> new BooleanMatcher(true)).asJava) shouldNot accept(Map("k" -> NULL_MATCHER))
+    new MapMatcher(Map("k" -> NULL_MATCHER, "k2" -> new BooleanMatcher(true)).asJava) shouldNot accept(
+      Map("k" -> NULL_MATCHER))
   }
 
   test("should not accept different maps") {
-    new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value1")).asJava) shouldNot accept(Map("key" -> "value2").asJava)
+    new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value1")).asJava) shouldNot accept(
+      Map("key" -> "value2").asJava)
   }
 
 }

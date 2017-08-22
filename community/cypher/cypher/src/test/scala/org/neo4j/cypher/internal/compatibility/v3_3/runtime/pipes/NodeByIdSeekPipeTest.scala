@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
@@ -32,8 +34,8 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek node by id") {
     // given
-    val id = 17
-    val node = nodeProxy(17)
+    val id      = 17
+    val node    = nodeProxy(17)
     val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[Node]]
     when(nodeOps.getById(17)).thenReturn(node)
     when(nodeOps.exists(17)).thenReturn(true)
@@ -50,9 +52,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek nodes by multiple ids") {
     // given
-    val node1 = nodeProxy(42)
-    val node2 = nodeProxy(21)
-    val node3 = nodeProxy(11)
+    val node1   = nodeProxy(42)
+    val node2   = nodeProxy(21)
+    val node3   = nodeProxy(11)
     val nodeOps = mock[Operations[Node]]
 
     when(nodeOps.getById(42)).thenReturn(node1)
@@ -67,7 +69,8 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     )
 
     // whens
-    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
+    val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))()
+      .createResults(queryState)
 
     // then
     result.map(_("a")).toList should equal(List(fromNodeProxy(node1), fromNodeProxy(node2), fromNodeProxy(node3)))

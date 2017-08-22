@@ -26,11 +26,11 @@ import org.neo4j.values.storable.Values._
 
 class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
 
-  val byte: Byte = 1
-  val short: Short = 1
-  val int: Int = 1
-  val long: Long = 1
-  val float: Float = 1
+  val byte: Byte     = 1
+  val short: Short   = 1
+  val int: Int       = 1
+  val long: Long     = 1
+  val float: Float   = 1
   val double: Double = 1
 
   test("checks") {

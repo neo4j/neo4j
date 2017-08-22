@@ -73,12 +73,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+    val result = updateWith(
+      Configs.CommunityInterpreted - Configs.Cost2_3,
       """
         |MATCH (start:Start),(end:End)
         |OPTIONAL MATCH (start)-[rel]->(end)
         |DELETE rel
-        |RETURN DISTINCT start""".stripMargin)
+        |RETURN DISTINCT start""".stripMargin
+    )
 
     result.toList should equal(List(Map("start" -> start)))
   }
@@ -107,9 +109,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val result = succeedWith(Configs.Interpreted,
-      s"match (n) where n.x < 100 return n"
-    )
+    val result = succeedWith(Configs.Interpreted, s"match (n) where n.x < 100 return n")
 
     result.columnAs[Node]("n").toList should equal(List(n1, n2, n3, n4, n5))
   }
@@ -121,9 +121,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode(Map("x" -> "Zzing"))
     createNode(Map("x" -> 'Ä'))
 
-    val result = succeedWith(Configs.CommunityInterpreted,
-      s"match (n) where n.x < 'Z' AND n.x < 'z' return n"
-    )
+    val result = succeedWith(Configs.CommunityInterpreted, s"match (n) where n.x < 'Z' AND n.x < 'z' return n")
 
     result.columnAs("n").toList should equal(List(n1, n2))
   }
@@ -133,9 +131,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B")
     val r1 = relate("A" -> "KNOWS" -> "B")
 
-    val result = succeedWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*..15]-(b {name:'B'})) return p").
-
-      toList.head("p").asInstanceOf[Path]
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
+      "match p = shortestPath((a {name:'A'})-[*..15]-(b {name:'B'})) return p").toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       val number_of_relationships_in_path = result.length()
@@ -160,8 +158,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
 
     // when
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
-      toList
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
+      "MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").toList
 
     // then
     graph.inTx {
@@ -190,21 +189,23 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = succeedWith(Configs.CommunityInterpreted,  """
+    val result = succeedWith(Configs.CommunityInterpreted, """
 match (a {name:'A'}), (x) where x.name in ['B', 'C']
 optional match p = shortestPath((a)-[*]->(x))
 return x, p""").toSet
 
-    graph.inTx(assert(Set(
-      Map("x" -> b, "p" -> PathImpl(a, r, b)),
-      Map("x" -> c, "p" -> null)
-    ) === result))
+    graph.inTx(
+      assert(
+        Set(
+          Map("x" -> b, "p" -> PathImpl(a, r, b)),
+          Map("x" -> c, "p" -> null)
+        ) === result))
   }
 
   test("should handle all shortest paths") {
     createDiamond()
 
-    val result = succeedWith(Configs.CommunityInterpreted,  """
+    val result = succeedWith(Configs.CommunityInterpreted, """
 match (a), (d) where id(a) = 0 and id(d) = 3
 match p = allShortestPaths( (a)-[*]->(d) )
 return p""")
@@ -216,19 +217,24 @@ return p""")
     val a = createNode()
     val b = createNode()
     relate(a, b)
-    val result = succeedWith(Configs.CommunityInterpreted, "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
+    val result =
+      succeedWith(Configs.CommunityInterpreted,
+                  "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList
+        .head("p")
+        .asInstanceOf[Path]
 
     result.startNode() should equal(b)
     result.endNode() should equal(a)
   }
 
   test("should return shortest paths when only one side is bound") {
-    val a = createLabeledNode("A")
-    val b = createLabeledNode("B")
+    val a  = createLabeledNode("A")
+    val b  = createLabeledNode("B")
     val r1 = relate(a, b)
 
-    val result = succeedWith(Configs.CommunityInterpreted, "match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
-
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
+      "match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       result.startNode() should equal(a)
@@ -241,7 +247,7 @@ return p""")
   test("should handle cartesian products even when same argument exists on both sides") {
     val node1 = createNode()
     val node2 = createNode()
-    val r = relate(node1, node2)
+    val r     = relate(node1, node2)
 
     val query = """WITH [{0}, {1}] AS x, count(*) as y
                   |MATCH (n) WHERE ID(n) IN x
@@ -262,7 +268,7 @@ return p""")
   test("length on filter") {
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
-    succeedWith(Configs.CommunityInterpreted, q).toList should equal (List(Map("cn" -> 0)))
+    succeedWith(Configs.CommunityInterpreted, q).toList should equal(List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
@@ -270,14 +276,15 @@ return p""")
   test("should be able to use index hints") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     // when
-    val result = succeedWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result =
+      succeedWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> jake)))
@@ -288,14 +295,15 @@ return p""")
     // given
     (1 to 50) foreach (i => createLabeledNode(Map("name" -> ("Robot" + i)), "Person"))
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     // when
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
+    val result = succeedWith(Configs.Interpreted,
+                             "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> jake)))
@@ -305,14 +313,15 @@ return p""")
   test("should be able to use index hints with inequality/range predicates") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     // when
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> jake)))
@@ -326,8 +335,8 @@ return p""")
 
     val node1 = createNode()
     val node2 = createNode()
-    val r1 = relate(node1, node2, "prop" -> 10)
-    val r2 = relate(node1, node2, "prop" -> 0)
+    val r1    = relate(node1, node2, "prop" -> 10)
+    val r2    = relate(node1, node2, "prop" -> 0)
 
     val result = succeedWith(Configs.All - Configs.Compiled, query)
 
@@ -392,24 +401,26 @@ return p""")
     val result = succeedWith(Configs.Interpreted, "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
-    assert(result.toSet === Set(
-      Map("a" -> a, "b" -> a),
-      Map("a" -> a, "b" -> b),
-      Map("a" -> b, "b" -> b),
-      Map("a" -> b, "b" -> a),
-      Map("a" -> e, "b" -> e)
-    ))
+    assert(
+      result.toSet === Set(
+        Map("a" -> a, "b" -> a),
+        Map("a" -> a, "b" -> b),
+        Map("a" -> b, "b" -> b),
+        Map("a" -> b, "b" -> a),
+        Map("a" -> e, "b" -> e)
+      ))
   }
 
   test("should use the index for property existence queries (with exists) for cost when asked for it") {
     // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
 
     // when
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -418,13 +429,14 @@ return p""")
 
   test("should use the index for property existence queries (with IS NOT NULL) for cost when asked for it") {
     // given
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
 
     // when
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -435,8 +447,8 @@ return p""")
     for (i <- 1 to 100) {
       createLabeledNode(Map("name" -> ("Joe Soap " + i)), "User")
     }
-    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
     graph.createIndex("User", "name")
@@ -460,7 +472,8 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
+    val result =
+      succeedWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head)))
@@ -499,8 +512,8 @@ return p""")
   test("should only evaluate non-deterministic predicates after pattern is matched") {
     // given
     graph.inTx {
-      (0 to 100) foreach {
-        x => createNode()
+      (0 to 100) foreach { x =>
+        createNode()
       }
     }
 
@@ -534,9 +547,9 @@ return p""")
                   |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first  = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check  = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -547,7 +560,6 @@ return p""")
   test("Should be able to run delete/merge query multiple times, match on property") {
     //GIVEN
     createLabeledNode("User")
-
 
     val query = """MATCH (user:User)
                   |MERGE (project:Project {p: 'Test'})
@@ -568,9 +580,9 @@ return p""")
 
     //WHEN
 
-    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first  = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check  = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -594,7 +606,8 @@ return p""")
     1.to(1000).foreach(_ => createNode())
 
     // when
-    val result = succeedWith(Configs.CommunityInterpreted, s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
+    val result = succeedWith(Configs.CommunityInterpreted,
+                             s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
 
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))
@@ -645,12 +658,14 @@ return p""")
       relate(a, b)
     }
     //TODO move to LernaeanTestSupport
-    val resultNoAlias = graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a SKIP 0 MATCH (a)-[]->(b:B) return a, b")
+    val resultNoAlias =
+      graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a SKIP 0 MATCH (a)-[]->(b:B) return a, b")
     resultNoAlias.asScala.toList.size should equal(11)
-    val resultWithAlias = graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
+    val resultWithAlias =
+      graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
     resultWithAlias.asScala.toList.size should equal(11)
 
-    var descriptionNoAlias = resultNoAlias.getExecutionPlanDescription
+    var descriptionNoAlias   = resultNoAlias.getExecutionPlanDescription
     var descriptionWithAlias = resultWithAlias.getExecutionPlanDescription
     descriptionWithAlias.getArguments.get("EstimatedRows") should equal(
       descriptionNoAlias.getArguments.get("EstimatedRows"))
@@ -678,7 +693,9 @@ return p""")
 
     // When
     val res =
-      succeedWith(Configs.AllExceptSleipnir, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
+      succeedWith(Configs.AllExceptSleipnir,
+                  "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c",
+                  "p" -> List(node1, node2))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -695,11 +712,14 @@ return p""")
 
     // When
     val res =
-      succeedWith(Configs.AllExceptSleipnir,
+      succeedWith(
+        Configs.AllExceptSleipnir,
         """UNWIND {p1} AS n1
           |UNWIND {p2} AS n2
           |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
-        "p1" -> List(node1), "p2" -> List(node2))
+        "p1" -> List(node1),
+        "p2" -> List(node2)
+      )
 
     //Then
     res.toList should equal(List(Map("n1.prop" -> 1, "n2.prop" -> 2)))
@@ -716,7 +736,8 @@ return p""")
     relate(node2, node4, "T", Map("roles" -> "NEO"))
 
     // When
-    val res = succeedWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
+    val res =
+      succeedWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
 
     // Then
     res.toSet should equal(Set(Map("n" -> node1)))
@@ -731,7 +752,8 @@ return p""")
     relate(n3, createNode())
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
+    val result =
+      succeedWith(Configs.CommunityInterpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
 
     // Then
     result.toList should equal(List(Map("size" -> 8)))
@@ -741,10 +763,12 @@ return p""")
     * Append variable to keys and transform value arrays to lists
     */
   private def asResult(data: Map[String, Any], id: String) =
-    data.map {
-      case (k, v) => (s"$id.$k", v)
-    }.mapValues {
-      case v: Array[_] => v.toList
-      case v => v
-    }
+    data
+      .map {
+        case (k, v) => (s"$id.$k", v)
+      }
+      .mapValues {
+        case v: Array[_] => v.toList
+        case v           => v
+      }
 }

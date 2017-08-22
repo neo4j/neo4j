@@ -21,13 +21,23 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PlanFingerprint
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PlanFingerprintReference
 import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.MetricsFactory
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.compiler.v3_3.ContextCreator
+import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.v3_3.UpdateStrategy
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,
@@ -40,9 +50,17 @@ class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosit
                               override val updateStrategy: UpdateStrategy,
                               override val debugOptions: Set[String],
                               override val clock: Clock)
-  extends CompilerContext(exceptionCreator, tracer,
-                          notificationLogger, planContext, monitors, metrics,
-                          config, queryGraphSolver, updateStrategy, debugOptions, clock) {
+    extends CompilerContext(exceptionCreator,
+                            tracer,
+                            notificationLogger,
+                            planContext,
+                            monitors,
+                            metrics,
+                            config,
+                            queryGraphSolver,
+                            updateStrategy,
+                            debugOptions,
+                            clock) {
 
   val createFingerprintReference: (Option[PlanFingerprint]) => PlanFingerprintReference =
     new PlanFingerprintReference(clock, config.queryPlanTTL, config.statsDivergenceThreshold, _)
@@ -65,13 +83,22 @@ object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeCon
                       evaluator: ExpressionEvaluator): CommunityRuntimeContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
-    val metrics: Metrics = if (planContext == null)
-      null
-    else
-      metricsFactory.newMetrics(planContext.statistics, evaluator)
+    val metrics: Metrics =
+      if (planContext == null)
+        null
+      else
+        metricsFactory.newMetrics(planContext.statistics, evaluator)
 
-    new CommunityRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                        monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock)
+    new CommunityRuntimeContext(exceptionCreator,
+                                tracer,
+                                notificationLogger,
+                                planContext,
+                                monitors,
+                                metrics,
+                                config,
+                                queryGraphSolver,
+                                updateStrategy,
+                                debugOptions,
+                                clock)
   }
 }
-

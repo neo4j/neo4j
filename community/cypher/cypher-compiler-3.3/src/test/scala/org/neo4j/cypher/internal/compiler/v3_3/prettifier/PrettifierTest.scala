@@ -36,7 +36,8 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("should not break CREATE in FOREACH") {
-    actual("match p=n foreach(x in p | create x--())") should equal(expected("MATCH p=n%nFOREACH (x IN p | CREATE x--())"))
+    actual("match p=n foreach(x in p | create x--())") should equal(
+      expected("MATCH p=n%nFOREACH (x IN p | CREATE x--())"))
   }
 
   test("should not break CREATE in complex FOREACH") {
@@ -82,14 +83,15 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("should not break CREATE UNIQUE") {
-    actual("start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3") should equal(
+    actual(
+      "start me=node(3) match p1 = me-[*2]-friendOfFriend create p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" }) create unique p3 = wife-[:KNOWS]-friendOfFriend return p1,p2,p3") should equal(
       expected(
         "START me=node(3)%n" +
-        "MATCH p1 = me-[*2]-friendOfFriend%n" +
-        "CREATE p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" })%n" +
-        "CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend%n" +
-        "RETURN p1,p2,p3"
-    ))
+          "MATCH p1 = me-[*2]-friendOfFriend%n" +
+          "CREATE p2 = me-[:MARRIED_TO]-(wife { name: \"Gunhild\" })%n" +
+          "CREATE UNIQUE p3 = wife-[:KNOWS]-friendOfFriend%n" +
+          "RETURN p1,p2,p3"
+      ))
   }
 
   test("should not break WHERE in comprehensions") {
@@ -99,8 +101,10 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("should upcase extra keywords") {
-    actual("match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson") should equal(
-      expected("MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson")
+    actual(
+      "match david--otherPerson-->() where david.name='David' with otherPerson, count(*) as foaf where foaf > 1 return otherPerson") should equal(
+      expected(
+        "MATCH david--otherPerson-->()%nWHERE david.name='David'%nWITH otherPerson, count(*) AS foaf%nWHERE foaf > 1%nRETURN otherPerson")
     )
 
   }
@@ -109,13 +113,13 @@ class PrettifierTest extends CypherFunSuite {
     actual("optional MATCH (n)-->(x) return n, x") should equal(expected("OPTIONAL MATCH (n)-->(x)%nRETURN n, x"))
   }
 
-
   test("should handle LOAD CSV") {
     actual("LOAD CSV FROM \"f\" AS line") should equal(expected("LOAD CSV FROM \"f\" AS line"))
   }
 
   test("should handle LOAD CSV WITH HEADERS") {
-    actual("LOAD CSV wiTh HEADERS FROM \"f\" AS line") should equal(expected("LOAD CSV WITH HEADERS FROM \"f\" AS line"))
+    actual("LOAD CSV wiTh HEADERS FROM \"f\" AS line") should equal(
+      expected("LOAD CSV WITH HEADERS FROM \"f\" AS line"))
 
   }
 
@@ -150,18 +154,20 @@ class PrettifierTest extends CypherFunSuite {
   }
 
   test("should handle CALL YIELD") {
-    actual("match (n) call db.indexes yield state RETURN *") should equal(expected("MATCH (n)%nCALL db.indexes YIELD state%nRETURN *"))
+    actual("match (n) call db.indexes yield state RETURN *") should equal(
+      expected("MATCH (n)%nCALL db.indexes YIELD state%nRETURN *"))
   }
 
   test("MERGE should start on a new line") {
-    actual("MERGE (a:A) MERGE (b:B) MERGE (a)-[:T]->(b) RETURN *") should equal(expected(
-      "MERGE (a:A)%nMERGE (b:B)%nMERGE (a)-[:T]->(b)%nRETURN *"))
+    actual("MERGE (a:A) MERGE (b:B) MERGE (a)-[:T]->(b) RETURN *") should equal(
+      expected("MERGE (a:A)%nMERGE (b:B)%nMERGE (a)-[:T]->(b)%nRETURN *"))
   }
 
   test("UNWIND should start on a new line") {
-    actual("WITH [1,2,2] AS coll UNWIND coll AS x RETURN collect(x)") should equal(expected("WITH [1,2,2] AS coll%nUNWIND coll AS x%nRETURN collect(x)"))
+    actual("WITH [1,2,2] AS coll UNWIND coll AS x RETURN collect(x)") should equal(
+      expected("WITH [1,2,2] AS coll%nUNWIND coll AS x%nRETURN collect(x)"))
   }
 
-  private def actual(text: String) = Prettifier(text)
+  private def actual(text: String)   = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }

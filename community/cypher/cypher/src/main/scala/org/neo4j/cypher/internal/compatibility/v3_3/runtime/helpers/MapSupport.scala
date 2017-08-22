@@ -22,20 +22,25 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import java.util
 import java.util.Map
 
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.immutable
 
 object IsMap extends MapSupport {
 
-  def unapply(x: AnyValue): Option[QueryContext => MapValue] = if (isMap(x)) {
-    Some(castToMap(x))
-  } else {
-    None
-  }
+  def unapply(x: AnyValue): Option[QueryContext => MapValue] =
+    if (isMap(x)) {
+      Some(castToMap(x))
+    } else {
+      None
+    }
 }
 
 trait MapSupport {
@@ -43,23 +48,31 @@ trait MapSupport {
   def isMap(x: AnyValue): Boolean = castToMap.isDefinedAt(x)
 
   def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
-    case x: MapValue => _ => x
-    case x: NodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
-    case x: EdgeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
+    case x: MapValue =>
+      _ =>
+        x
+    case x: NodeValue =>
+      ctx =>
+        VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
+    case x: EdgeValue =>
+      ctx =>
+        VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
   }
 }
 
 class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id: Long)
-  extends java.util.Map[String, AnyValue] {
+    extends java.util.Map[String, AnyValue] {
 
   import scala.collection.JavaConverters._
 
-  private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id)
+  private lazy val allProps: util.Map[String, AnyValue] = ops
+    .propertyKeyIds(id)
     .map(propertyId => {
       val value: AnyValue = ops.getProperty(id, propertyId)
       ctx.getPropertyKeyName(propertyId) -> value
-    }
-    ).toMap.asJava
+    })
+    .toMap
+    .asJava
 
   override def values(): util.Collection[AnyValue] = allProps.values()
 
@@ -67,8 +80,7 @@ class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id:
 
   override def remove(key: scala.Any): AnyValue = throw new UnsupportedOperationException()
 
-  override def put(key: String,
-                   value: AnyValue): AnyValue = throw new UnsupportedOperationException()
+  override def put(key: String, value: AnyValue): AnyValue = throw new UnsupportedOperationException()
 
   override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
 
@@ -78,8 +90,10 @@ class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id:
 
   override def entrySet(): util.Set[Map.Entry[String, AnyValue]] = allProps.entrySet()
 
-  override def containsKey(key: Any): Boolean = ctx.getOptPropertyKeyId(key.asInstanceOf[String])
-    .exists(ops.hasProperty(id, _))
+  override def containsKey(key: Any): Boolean =
+    ctx
+      .getOptPropertyKeyId(key.asInstanceOf[String])
+      .exists(ops.hasProperty(id, _))
 
   override def clear(): Unit = throw new UnsupportedOperationException
 
@@ -99,7 +113,7 @@ object MapSupport {
     def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
       other.foldLeft(m) {
         case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry) => acc + entry
+        case (acc, entry)                     => acc + entry
       }
     }
   }

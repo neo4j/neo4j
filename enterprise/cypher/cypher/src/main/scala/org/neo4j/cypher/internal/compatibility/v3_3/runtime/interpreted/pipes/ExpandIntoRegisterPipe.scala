@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.Primitiv
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 /**
@@ -43,34 +44,38 @@ case class ExpandIntoRegisterPipe(source: Pipe,
                                   toOffset: Int,
                                   dir: SemanticDirection,
                                   lazyTypes: LazyTypes,
-                                  pipelineInformation: PipelineInformation)
-                                 (val id: Id = new Id)
-  extends PipeWithSource(source) with PrimitiveCachingExpandInto {
+                                  pipelineInformation: PipelineInformation)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with PrimitiveCachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new PrimitiveRelationshipsCache(CACHE_SIZE)
 
-    input.flatMap {
-      inputRow =>
-        val fromNode = inputRow.getLongAt(fromOffset)
-        val toNode = inputRow.getLongAt(toOffset)
+    input.flatMap { inputRow =>
+      val fromNode = inputRow.getLongAt(fromOffset)
+      val toNode   = inputRow.getLongAt(toOffset)
 
-        if (nodeIsNull(fromNode) || nodeIsNull(toNode))
-          Iterator.empty
-        else {
-          val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
-            .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+      if (nodeIsNull(fromNode) || nodeIsNull(toNode))
+        Iterator.empty
+      else {
+        val relationships: PrimitiveLongIterator = relCache
+          .get(fromNode, toNode, dir)
+          .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
-          PrimitiveLongHelper.map(relationships, (relId: Long) => {
+        PrimitiveLongHelper.map(
+          relationships,
+          (relId: Long) => {
             val outputRow = PrimitiveExecutionContext(pipelineInformation)
             outputRow.copyFrom(inputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow
-          })
-        }
+          }
+        )
+      }
     }
   }
 }

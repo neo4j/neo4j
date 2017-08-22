@@ -25,14 +25,16 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, Result}
+import org.neo4j.graphdb.ExecutionPlanDescription
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Result
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
-  private var db : GraphDatabaseService = _
+  private var db: GraphDatabaseService = _
 
   override protected def stopTest(): Unit = {
     super.stopTest()
@@ -45,7 +47,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -63,7 +66,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -81,7 +85,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -100,7 +105,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -116,7 +122,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "RULE")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -132,7 +139,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -148,7 +156,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.1")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -164,7 +173,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3")
+      .newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -179,7 +189,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.query_cache_size, "0").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.query_cache_size, "0")
+      .newGraphDatabase()
 
     // when
     db.execute("RETURN 42").close()

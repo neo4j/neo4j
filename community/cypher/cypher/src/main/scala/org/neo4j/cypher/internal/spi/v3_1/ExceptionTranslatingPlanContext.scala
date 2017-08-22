@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.InternalNotificationLogger
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.EntityProducer
-import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.{ExpanderStep, TraversalMatcher}
-import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.{IndexDescriptor, UniquenessConstraint}
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.ExpanderStep
+import org.neo4j.cypher.internal.compiler.v3_1.pipes.matching.TraversalMatcher
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes.UniquenessConstraint
 import org.neo4j.cypher.internal.compiler.v3_1.spi._
 import org.neo4j.graphdb.Node
 
@@ -40,12 +42,15 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkNodeIndex(idxName: String): Unit =
     translateException(inner.checkNodeIndex(idxName))
 
-  override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher =
+  override def bidirectionalTraversalMatcher(steps: ExpanderStep,
+                                             start: EntityProducer[Node],
+                                             end: EntityProducer[Node]): TraversalMatcher =
     translateException(inner.bidirectionalTraversalMatcher(steps, start, end))
 
   override def txIdProvider: () => Long = {
     val innerTxProvider = translateException(inner.txIdProvider)
-    () => translateException(innerTxProvider())
+    () =>
+      translateException(innerTxProvider())
   }
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =

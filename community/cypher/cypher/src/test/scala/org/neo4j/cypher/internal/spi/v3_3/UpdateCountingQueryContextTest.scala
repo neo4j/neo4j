@@ -27,41 +27,42 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
-  val inner = mock[QueryContext]
-  val nodeA = mock[Node]
-  val nodeB = mock[Node]
+  val inner   = mock[QueryContext]
+  val nodeA   = mock[Node]
+  val nodeB   = mock[Node]
   val nodeAId = 666
-  val rel = mock[Relationship]
-  val relId = 42
+  val rel     = mock[Relationship]
+  val relId   = 42
 
   val nodeOps = mock[Operations[Node]]
-  val relOps = mock[Operations[Relationship]]
+  val relOps  = mock[Operations[Relationship]]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)
 
   // We need to have the inner mock return the right counts for added/removed labels.
-  when( inner.setLabelsOnNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
-    def answer(invocation: InvocationOnMock):Int = {
+  when(inner.setLabelsOnNode(anyLong(), any())).thenAnswer(new Answer[Int]() {
+    def answer(invocation: InvocationOnMock): Int = {
       invocation.getArguments()(1).asInstanceOf[Iterator[String]].size
     }
-  } )
+  })
 
-  when( inner.removeLabelsFromNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
-    def answer(invocation: InvocationOnMock):Int = {
+  when(inner.removeLabelsFromNode(anyLong(), any())).thenAnswer(new Answer[Int]() {
+    def answer(invocation: InvocationOnMock): Int = {
       invocation.getArguments()(1).asInstanceOf[Iterator[String]].size
     }
-  } )
+  })
 
   when(inner.createUniqueConstraint(anyObject())).thenReturn(true)
 
-  when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
+  when(inner.createNodePropertyExistenceConstraint(anyInt(), anyInt())).thenReturn(true)
 
-  when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
+  when(inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt())).thenReturn(true)
 
   when(inner.addIndexRule(anyObject()))
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))

@@ -19,11 +19,15 @@
  */
 package cypher.feature.reporting
 
-import java.io.{File, PrintStream}
+import java.io.File
+import java.io.PrintStream
 
 import cypher.cucumber.CucumberAdapter
-import cypher.feature.parser.reporting.{CombinationChartWriter, CoverageChartWriter}
-import gherkin.formatter.model.{Match, Result, Step}
+import cypher.feature.parser.reporting.CombinationChartWriter
+import cypher.feature.parser.reporting.CoverageChartWriter
+import gherkin.formatter.model.Match
+import gherkin.formatter.model.Result
+import gherkin.formatter.model.Step
 import org.opencypher.tools.tck.constants.TCKStepDefinitions
 
 import scala.util.matching.Regex
@@ -36,21 +40,25 @@ object CypherResultReporter {
   }
 }
 
-class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, chartWriter: CoverageChartWriter,
+class CypherResultReporter(producer: OutputProducer,
+                           jsonWriter: PrintStream,
+                           chartWriter: CoverageChartWriter,
                            combinationChartWriter: CombinationChartWriter)
-  extends CucumberAdapter {
+    extends CucumberAdapter {
 
   def this(reportDir: File) = {
-    this(producer = JsonProducer,
-         jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
-         chartWriter = new CoverageChartWriter(reportDir, "tags"),
-         combinationChartWriter = new CombinationChartWriter(reportDir, "tagCombinations"))
+    this(
+      producer = JsonProducer,
+      jsonWriter = CypherResultReporter.createPrintStream(reportDir, "compact.json"),
+      chartWriter = new CoverageChartWriter(reportDir, "tags"),
+      combinationChartWriter = new CombinationChartWriter(reportDir, "tagCombinations")
+    )
   }
 
-  private var query: String = null
-  private var status: String = Result.PASSED
+  private var query: String     = null
+  private var status: String    = Result.PASSED
   private val execQRegex: Regex = TCKStepDefinitions.EXECUTING_QUERY.r
-  private val controlQRegex = TCKStepDefinitions.EXECUTING_CONTROL_QUERY.r
+  private val controlQRegex     = TCKStepDefinitions.EXECUTING_CONTROL_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())
@@ -68,9 +76,9 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
   override def step(step: Step) {
     if (step.getKeyword.trim == "When") {
       step.getName match {
-        case execQRegex() => query = step.getDocString.getValue
+        case execQRegex()    => query = step.getDocString.getValue
         case controlQRegex() => // do nothing
-        case _ => throw new IllegalStateException("An illegal 'When' step was encountered: " + step.getName)
+        case _               => throw new IllegalStateException("An illegal 'When' step was encountered: " + step.getName)
       }
     }
   }
@@ -79,8 +87,7 @@ class CypherResultReporter(producer: OutputProducer, jsonWriter: PrintStream, ch
     val resultStatus = result.getStatus
     if (status == Result.PASSED) {
       status = resultStatus
-    }
-    else if (!status.contains(resultStatus)) {
+    } else if (!status.contains(resultStatus)) {
       status = s"$status;$resultStatus"
     }
   }

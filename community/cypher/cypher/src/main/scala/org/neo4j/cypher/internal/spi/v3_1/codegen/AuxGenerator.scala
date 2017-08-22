@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v3_1.codegen
 
-import org.neo4j.codegen.{CodeGenerator, TypeReference}
+import org.neo4j.codegen.CodeGenerator
+import org.neo4j.codegen.TypeReference
 import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compiler.v3_1.helpers._
 
@@ -30,16 +31,18 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
   import GeneratedQueryStructure.lowerType
 
   private val types: scala.collection.mutable.Map[Map[String, CodeGenType], TypeReference] = mutable.Map.empty
-  private var nameId = 0
-
+  private var nameId                                                                       = 0
 
   def typeReference(structure: Map[String, CodeGenType]): TypeReference = {
-    types.getOrElseUpdate(structure, using(generator.generateClass(packageName, newName())) { clazz =>
-      structure.foreach {
-        case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
+    types.getOrElseUpdate(
+      structure,
+      using(generator.generateClass(packageName, newName())) { clazz =>
+        structure.foreach {
+          case (fieldName, fieldType: CodeGenType) => clazz.field(lowerType(fieldType), fieldName)
+        }
+        clazz.handle()
       }
-      clazz.handle()
-    })
+    )
   }
 
   private def newName() = {

@@ -53,12 +53,11 @@ trait SaveGeneratedSource extends CypherTestSupport {
     super.initTest()
     val cwd = Paths.get(".").normalize.toRealPath()
     // If CWD is set up correctly, we assign the generated source location
-    if(Files.isRegularFile(cwd.resolve("src/test/scala").resolve(getClass.getName.replace('.', '/') + ".scala"))
-      && Files.isDirectory(cwd.resolve("target"))) {
+    if (Files.isRegularFile(cwd.resolve("src/test/scala").resolve(getClass.getName.replace('.', '/') + ".scala"))
+        && Files.isDirectory(cwd.resolve("target"))) {
       setLocation(cwd.resolve("target").resolve("generated-test-sources").resolve("cypher"))
     }
   }
-
 
   private def setLocation(location: Path) = {
     System.err.println(s"Will save generated sources to $location")
@@ -82,5 +81,5 @@ trait SaveGeneratedSource extends CypherTestSupport {
 
 private object SaveGeneratedSource {
   private val GENERATED_SOURCE_LOCATION = "org.neo4j.cypher.DEBUG.generated_source_location"
-  private val RELATIVE = Set("", "..")
+  private val RELATIVE                  = Set("", "..")
 }

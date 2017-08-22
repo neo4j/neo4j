@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(prop@ContainerIndex(variable: Variable, _), _) =>
+    case WithSeekableArgs(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
       None
@@ -35,8 +35,8 @@ object AsDynamicPropertyNonSeekable {
 object AsDynamicPropertyNonScannable {
   def unapply(v: Any) = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
-      if  func.function == functions.Exists =>
+    case func @ FunctionInvocation(_, _, _, IndexedSeq(ContainerIndex(variable: Variable, _)))
+        if func.function == functions.Exists =>
       Some(variable)
 
     case Equals(ContainerIndex(variable: Variable, _), _) =>
@@ -45,7 +45,7 @@ object AsDynamicPropertyNonScannable {
     case expr: InequalityExpression =>
       expr.lhs match {
         case ContainerIndex(variable: Variable, _) => Some(variable)
-        case _ => None
+        case _                                     => None
       }
 
     case StartsWith(ContainerIndex(variable: Variable, _), _) =>
@@ -71,11 +71,11 @@ object AsDynamicPropertyNonScannable {
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case startsWith@StartsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+    case startsWith @ StartsWith(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case contains@Contains(prop@ContainerIndex(variable: Variable, _), _) =>
+    case contains @ Contains(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case contains@EndsWith(prop@ContainerIndex(variable: Variable, _), _) =>
+    case contains @ EndsWith(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
       None
@@ -85,24 +85,24 @@ object AsStringRangeNonSeekable {
 // This is when dynamic properties are used
 object AsValueRangeNonSeekable {
   def unapply(v: Any) = v match {
-    case GreaterThan(prop@ContainerIndex(variable: Variable, _), _) =>
+    case GreaterThan(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case GreaterThan(_, prop@ContainerIndex(variable: Variable, _)) =>
-      Some(variable)
-
-    case GreaterThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
-      Some(variable)
-    case GreaterThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case GreaterThan(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
-    case LessThan(prop@ContainerIndex(variable: Variable, _), _) =>
+    case GreaterThanOrEqual(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case LessThan(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case GreaterThanOrEqual(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
-    case LessThanOrEqual(prop@ContainerIndex(variable: Variable, _), _) =>
+    case LessThan(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
-    case LessThanOrEqual(_, prop@ContainerIndex(variable: Variable, _)) =>
+    case LessThan(_, prop @ ContainerIndex(variable: Variable, _)) =>
+      Some(variable)
+
+    case LessThanOrEqual(prop @ ContainerIndex(variable: Variable, _), _) =>
+      Some(variable)
+    case LessThanOrEqual(_, prop @ ContainerIndex(variable: Variable, _)) =>
       Some(variable)
 
     case _ =>

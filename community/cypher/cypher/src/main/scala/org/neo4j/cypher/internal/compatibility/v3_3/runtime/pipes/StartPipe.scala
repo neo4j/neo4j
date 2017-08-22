@@ -20,15 +20,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsAllNodes}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Effects
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ReadsAllNodes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
-sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
-                                                        name: String,
-                                                        createSource: EntityProducer[T]) extends PipeWithSource(source) {
+sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe, name: String, createSource: EntityProducer[T])
+    extends PipeWithSource(source) {
   def variableType: CypherType
   def asAnyValue(in: T): AnyValue
 
@@ -45,18 +48,17 @@ sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
 case class NodeStartPipe(source: Pipe,
                          name: String,
                          createSource: EntityProducer[Node],
-                         itemEffects: Effects = Effects(ReadsAllNodes))
-                        (val id: Id = new Id)
-  extends StartPipe[Node](source, name, createSource) {
+                         itemEffects: Effects = Effects(ReadsAllNodes))(val id: Id = new Id)
+    extends StartPipe[Node](source, name, createSource) {
   def variableType = CTNode
 
   override def asAnyValue(in: Node): AnyValue = AnyValues.asNodeValue(in)
 }
 
-case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
-                                (val id: Id = new Id) extends StartPipe[Relationship](source, name, createSource) {
+case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])(val id: Id =
+                                                                                                           new Id)
+    extends StartPipe[Relationship](source, name, createSource) {
   def variableType = CTRelationship
 
   override def asAnyValue(in: Relationship): AnyValue = AnyValues.asEdgeValue(in)
 }
-

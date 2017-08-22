@@ -20,9 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{AllNodesScan, DoNotIncludeTies, Limit, Projection}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Limit
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   implicit val windowsSafe = WindowsStringSafe
@@ -45,8 +50,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans that contain multiple WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b, r1 LIMIT 1 RETURN b as `b`")._2
 
-    result.toString should equal(
-      """Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
+    result.toString should equal("""Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |  LHS -> Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r1), ExpandAll) {
         |    LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |      LHS -> AllNodesScan(IdName(a), Set()) {}
@@ -71,8 +75,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans for two matches separated by WITH") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")._2
 
-    result.toString should equal(
-      """Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
+    result.toString should equal("""Expand(IdName(a), OUTGOING, List(), IdName(b), IdName(r), ExpandAll) {
         |  LHS -> Limit(SignedDecimalIntegerLiteral(1), DoNotIncludeTies) {
         |    LHS -> AllNodesScan(IdName(a), Set()) {}
         |  }

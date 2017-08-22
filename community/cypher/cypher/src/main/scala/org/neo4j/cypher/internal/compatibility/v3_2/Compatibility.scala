@@ -21,20 +21,36 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.LegacyNodeIndexUsage
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.LegacyRelationshipIndexUsage
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.SchemaIndexScanUsage
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.SchemaIndexSeekUsage
+import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{ExecutionPlan => ExecutionPlan_v3_2}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
-import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.InfoLogger
+import org.neo4j.cypher.internal.compiler.v3_2.{ExplainMode => ExplainModev3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.{NormalMode => NormalModev3_2}
+import org.neo4j.cypher.internal.compiler.v3_2.{ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, CompilationPhaseTracer, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.frontend.v3_2.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_2.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_2.{ExceptionTranslatingPlanContext, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper => TransactionalContextWrapperV3_2}
+import org.neo4j.cypher.internal.spi.v3_2.ExceptionTranslatingPlanContext
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundGraphStatistics
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_2.{TransactionalContextWrapper => TransactionalContextWrapperV3_2}
 import org.neo4j.cypher.internal.spi.v3_3.{TransactionalContextWrapper => TransactionalContextWrapperV3_3}
-import org.neo4j.cypher.internal.{frontend, _}
+import org.neo4j.cypher.internal.frontend
+import org.neo4j.cypher.internal._
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
+import org.neo4j.kernel.api.query.IndexUsage.legacyIndexUsage
+import org.neo4j.kernel.api.query.IndexUsage.schemaIndexUsage
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -59,57 +75,68 @@ trait Compatibility[C <: CompilerContext] {
 
   implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+  def produceParsedQuery(preParsedQuery: PreParsedQuery,
+                         tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger
     val preparedSyntacticQueryForV_3_2 =
-      Try(compiler.parseQuery(preParsedQuery.statement,
-                              preParsedQuery.rawStatement,
-                              notificationLogger,
-                              preParsedQuery.planner.name,
-                              preParsedQuery.debugOptions,
-                              Some(helpers.as3_2(preParsedQuery.offset)), tracer))
+      Try(
+        compiler.parseQuery(
+          preParsedQuery.statement,
+          preParsedQuery.rawStatement,
+          notificationLogger,
+          preParsedQuery.planner.name,
+          preParsedQuery.debugOptions,
+          Some(helpers.as3_2(preParsedQuery.offset)),
+          tracer
+        ))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapperV3_3,
-                        tracer: frontend.v3_3.phases.CompilationPhaseTracer):
-      (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
-        val tc = TransactionalContextWrapperV3_2(transactionalContext.tc)
-        val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
-        val syntacticQuery = preparedSyntacticQueryForV_3_2.get
-        val pos3_2 = helpers.as3_2(preParsedQuery.offset)
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext,
-                                                                         preParsedQuery.debugOptions,
-                                                                         Some(pos3_2),
-                                                                         helpers.as3_2(tracer))
+                        tracer: frontend.v3_3.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) =
+        exceptionHandler.runSafely {
+          val tc             = TransactionalContextWrapperV3_2(transactionalContext.tc)
+          val planContext    = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
+          val syntacticQuery = preparedSyntacticQueryForV_3_2.get
+          val pos3_2         = helpers.as3_2(preParsedQuery.offset)
+          val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery,
+                                                                           notificationLogger,
+                                                                           planContext,
+                                                                           preParsedQuery.debugOptions,
+                                                                           Some(pos3_2),
+                                                                           helpers.as3_2(tracer))
 
-        // Log notifications/warnings from planning
-        planImpl.notifications(planContext).foreach(notificationLogger.log)
+          // Log notifications/warnings from planning
+          planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl, transactionalContext,preParsingNotifications, pos3_2), extractedParameters)
-      }
+          (new ExecutionPlanWrapper(planImpl, transactionalContext, preParsingNotifications, pos3_2),
+           extractedParameters)
+        }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, transactionalContext: TransactionalContextWrapperV3_3,
-                             preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_2.InputPosition)
-    extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2,
+                             transactionalContext: TransactionalContextWrapperV3_3,
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                             offSet: frontend.v3_2.InputPosition)
+      extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
     private def queryContext(transactionalContext: TransactionalContextWrapperV3_3) = {
-      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_2(transactionalContext.tc))(
-        searchMonitor)
+      val ctx =
+        new TransactionBoundQueryContext(TransactionalContextWrapperV3_2(transactionalContext.tc))(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode,
+    def run(transactionalContext: TransactionalContextWrapperV3_3,
+            executionMode: CypherExecutionMode,
             params: Map[String, Any]): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_2
         case CypherExecutionMode.profile => ProfileModev3_2
-        case CypherExecutionMode.normal => NormalModev3_2
+        case CypherExecutionMode.normal  => NormalModev3_2
       }
       exceptionHandler.runSafely {
         val innerParams = typeConversions.asPrivateMap(params)
@@ -123,7 +150,8 @@ trait Compatibility[C <: CompilerContext] {
                                        inner.runtimeUsed,
                                        preParsingNotifications,
                                        Some(offSet)),
-            exceptionHandler.runSafely)
+            exceptionHandler.runSafely
+          )
         )
       }
     }
@@ -135,16 +163,20 @@ trait Compatibility[C <: CompilerContext] {
 
     override def plannerInfo: PlannerInfo = {
       import scala.collection.JavaConverters._
-      new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, label, propertyKeys) =>
-          val labelId = transactionalContext.readOperations.labelGetForName(label)
-          schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, label, propertyKey) =>
-          val labelId = transactionalContext.readOperations.labelGetForName(label)
-          schemaIndexUsage(identifier, labelId, label, propertyKey)
-        case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
-        case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
-      }.asJava)
+      new PlannerInfo(
+        inner.plannerUsed.name,
+        inner.runtimeUsed.name,
+        inner.plannedIndexUsage.map {
+          case SchemaIndexSeekUsage(identifier, label, propertyKeys) =>
+            val labelId = transactionalContext.readOperations.labelGetForName(label)
+            schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+          case SchemaIndexScanUsage(identifier, label, propertyKey) =>
+            val labelId = transactionalContext.readOperations.labelGetForName(label)
+            schemaIndexUsage(identifier, labelId, label, propertyKey)
+          case LegacyNodeIndexUsage(identifier, index)         => legacyIndexUsage(identifier, "NODE", index)
+          case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
+        }.asJava
+      )
     }
   }
 
@@ -156,4 +188,3 @@ class StringInfoLogger(log: Log) extends InfoLogger {
     log.info(message)
   }
 }
-

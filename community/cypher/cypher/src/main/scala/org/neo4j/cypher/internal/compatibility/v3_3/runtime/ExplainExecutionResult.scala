@@ -25,20 +25,22 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, ResourceIterator}
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 case class ExplainExecutionResult(fieldNames: Array[String],
                                   executionPlanDescription: InternalPlanDescription,
                                   queryType: InternalQueryType,
                                   notifications: Set[Notification])
-  extends InternalExecutionResult {
+    extends InternalExecutionResult {
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
-  def columnAs[T](column: String) = Iterator.empty
-  override def javaColumns: util.List[String] = Collections.emptyList()
+  def columnAs[T](column: String)                           = Iterator.empty
+  override def javaColumns: util.List[String]               = Collections.emptyList()
 
   def queryStatistics() = QueryStatistics()
 
@@ -47,7 +49,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
   }
 
   val dumpToString: String =
-     """+--------------------------------------------+
+    """+--------------------------------------------+
        || No data returned, and nothing was changed. |
        |+--------------------------------------------+
        |""".stripMargin
@@ -62,18 +64,19 @@ case class ExplainExecutionResult(fieldNames: Array[String],
 
   def hasNext = false
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit      = {}
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode
 
-  override def withNotifications(added: Notification*): InternalExecutionResult = copy(notifications = notifications ++ added)
+  override def withNotifications(added: Notification*): InternalExecutionResult =
+    copy(notifications = notifications ++ added)
 }
 
 final class EmptyResourceIterator[T]() extends ResourceIterator[T] {
   def close() {}
 
-  def next(): T= Iterator.empty.next()
+  def next(): T = Iterator.empty.next()
 
   def remove() {
     throw new UnsupportedOperationException

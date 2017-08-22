@@ -27,8 +27,8 @@ case class LoadCSV(source: LogicalPlan,
                    variableName: IdName,
                    format: CSVFormat,
                    fieldTerminator: Option[String],
-                   legacyCsvQuoteEscaping: Boolean)
-                  (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+                   legacyCsvQuoteEscaping: Boolean)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan {
 
   override def availableSymbols = source.availableSymbols + variableName
 

@@ -23,20 +23,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)
-                                (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.filter {
-      (outerContext) =>
-        predicate.isTrue(outerContext)(state) || {
-          val innerState = state.withInitialContext(outerContext)
-          val innerResults = inner.createResults(innerState)
-          if (negated) innerResults.isEmpty else innerResults.nonEmpty
-        }
+    input.filter { (outerContext) =>
+      predicate.isTrue(outerContext)(state) || {
+        val innerState   = state.withInitialContext(outerContext)
+        val innerResults = inner.createResults(innerState)
+        if (negated) innerResults.isEmpty else innerResults.nonEmpty
+      }
     }
   }
 

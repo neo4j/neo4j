@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
+import java.io.StringWriter
 
 import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
-case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics) extends CypherSerializer {
+case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics)
+    extends CypherSerializer {
 
   def dumpToString(implicit query: QueryContext): String = {
     val stringWriter = new StringWriter()
-    val writer = new PrintWriter(stringWriter)
+    val writer       = new PrintWriter(stringWriter)
     dumpToString(writer)
     writer.close()
     stringWriter.getBuffer.toString
@@ -36,13 +38,13 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
 
   def dumpToString(writer: PrintWriter)(implicit query: QueryContext) {
     if (columns.nonEmpty) {
-      val headers = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
+      val headers     = columns.map((c) => Map[String, Any](c -> Some(c))).reduceLeft(_ ++ _)
       val columnSizes = calculateColumnSizes
-      val headerLine = createString(columnSizes, headers)
-      val lineWidth = headerLine.length - 2
-      val --- = "+" + repeat("-", lineWidth) + "+"
+      val headerLine  = createString(columnSizes, headers)
+      val lineWidth   = headerLine.length - 2
+      val ---         = "+" + repeat("-", lineWidth) + "+"
 
-      val row = if (result.size > 1) "rows" else "row"
+      val row    = if (result.size > 1) "rows" else "row"
       val footer = "%d %s".format(result.size, row)
 
       writer.println(---)
@@ -72,12 +74,14 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
   }
 
   def createString(columnSizes: Map[String, Int], m: Map[String, Any])(implicit query: QueryContext): String = {
-    columns.map(c => {
-      val length = columnSizes.get(c).get
-      val txt = serialize(m.get(c).get, query)
-      val value = makeSize(txt, length)
-      value
-    }).mkString("| ", " | ", " |")
+    columns
+      .map(c => {
+        val length = columnSizes.get(c).get
+        val txt    = serialize(m.get(c).get, query)
+        val value  = makeSize(txt, length)
+        value
+      })
+      .mkString("| ", " | ", " |")
   }
 
   def calculateColumnSizes(implicit query: QueryContext): Map[String, Int] = {
@@ -94,4 +98,3 @@ case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[St
     columnSizes.toMap
   }
 }
-

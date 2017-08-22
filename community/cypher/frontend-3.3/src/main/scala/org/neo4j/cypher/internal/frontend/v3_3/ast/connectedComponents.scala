@@ -24,18 +24,22 @@ import scala.collection.immutable
  */
 object connectedComponents {
 
-  type ComponentPart = Set[Variable]
+  type ComponentPart      = Set[Variable]
   type ConnectedComponent = Set[ComponentPart]
 
   //enable using the companion objects of the type aliases,
   //e.g. `ComponentPart(Variable("a"), Variable("b"),...)`
-  val ComponentPart = Set
+  val ComponentPart      = Set
   val ConnectedComponent = Set
 
   def apply(patternParts: Seq[PatternPart]): IndexedSeq[ConnectedComponent] = {
-    val parts: immutable.IndexedSeq[ComponentPart] = patternParts.map(_.fold(Set.empty[Variable]) {
-      case NodePattern(Some(id), _, _) => list => list + id
-    }).toIndexedSeq
+    val parts: immutable.IndexedSeq[ComponentPart] = patternParts
+      .map(_.fold(Set.empty[Variable]) {
+        case NodePattern(Some(id), _, _) =>
+          list =>
+            list + id
+      })
+      .toIndexedSeq
 
     this.apply(parts)
   }
@@ -43,7 +47,8 @@ object connectedComponents {
   def apply(parts: IndexedSeq[ComponentPart]): IndexedSeq[ConnectedComponent] = {
 
     @tailrec
-    def loop(remaining: IndexedSeq[ComponentPart], connectedComponents: IndexedSeq[ConnectedComponent]): IndexedSeq[ConnectedComponent] = {
+    def loop(remaining: IndexedSeq[ComponentPart],
+             connectedComponents: IndexedSeq[ConnectedComponent]): IndexedSeq[ConnectedComponent] = {
       if (remaining.isEmpty) connectedComponents
       else {
         val part = remaining.head

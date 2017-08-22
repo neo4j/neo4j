@@ -34,16 +34,16 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
-  val symbols = SymbolTable(Map("a" -> CTNode))
+  val symbols                        = SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
-  val rightNode = patternRelationship.right
-  val label = UnresolvedLabel("Person")
+  val rightNode                      = patternRelationship.right
+  val label                          = UnresolvedLabel("Person")
 
   test("should_handle_a_single_relationship_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val aNode        = createNode()
 
     // When
     val result = withQueryState { queryState =>
@@ -57,9 +57,9 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
   test("should_handle_a_single_relationship_with_1_match") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val aNode        = createNode()
+    val bNode        = createNode()
     val relationship = relate(aNode, bNode)
 
     // When
@@ -74,9 +74,9 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
   test("should_handle_a_mandatory_labeled_node_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
+    val aNode        = createNode()
+    val bNode        = createNode()
     relate(aNode, bNode)
 
     // When
@@ -91,9 +91,9 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
   test("should_handle_a_mandatory_labeled_node_with_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createLabeledNode("Person")
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Variable("b"), label)), Set("a", "r", "b"))
+    val aNode        = createNode()
+    val bNode        = createLabeledNode("Person")
     val relationship = relate(aNode, bNode)
 
     // When

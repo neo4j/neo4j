@@ -23,15 +23,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConvers
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue, stringValue}
-import org.neo4j.values.virtual.VirtualValues.{list, map}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.list
+import org.neo4j.values.virtual.VirtualValues.map
 
 import scala.collection.mutable
 
 class CheckerTest extends CypherFunSuite {
 
   test("iterator gets emptied checking for a value") {
-    val buildUp = new BuildUp(iterator(42, 123))
+    val buildUp              = new BuildUp(iterator(42, 123))
     val (result, newChecker) = buildUp.contains(stringValue("hello"))
     result should equal(Some(false))
     newChecker shouldBe a[SetChecker]
@@ -50,7 +53,7 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("checking for lists in lists") {
-    val input = iterator(Array(1, 2, 3), List(1, 2))
+    val input   = iterator(Array(1, 2, 3), List(1, 2))
     val buildUp = new BuildUp(input)
     buildUp.contains(list(intValue(1), intValue(2), intValue(3))) should equal((Some(true), buildUp))
   }
@@ -73,7 +76,7 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("null in the list") {
-    val input = iterator(42, null)
+    val input   = iterator(42, null)
     val buildUp = new BuildUp(input)
     buildUp.contains(intValue(42)) should equal((Some(true), buildUp))
     val (result, newChecker) = buildUp.contains(stringValue("hullo"))
@@ -82,33 +85,33 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("buildUp can handle maps on the lhs") {
-    val buildUp = new BuildUp(iterator(1, 2, 3))
+    val buildUp              = new BuildUp(iterator(1, 2, 3))
     val (result, newChecker) = buildUp.contains(map(Array("a"), Array[AnyValue](intValue(42))))
     result should equal(Some(false))
     newChecker shouldBe a[SetChecker]
   }
 
   test("fastChecker can handle maps on the lhs") {
-    val buildUp = new SetChecker(mutable.Set(intValue(1), intValue(2), intValue(3)), Some(false))
+    val buildUp              = new SetChecker(mutable.Set(intValue(1), intValue(2), intValue(3)), Some(false))
     val (result, newChecker) = buildUp.contains(map(Array("a"), Array[AnyValue](intValue(42))))
     result should equal(Some(false))
     newChecker shouldBe a[SetChecker]
   }
 
   test("buildUp can handle maps on the rhs") {
-    val buildUp = new BuildUp(iterator(1, 2, 3, Map("a" -> 42)))
+    val buildUp              = new BuildUp(iterator(1, 2, 3, Map("a" -> 42)))
     val (result, newChecker) = buildUp.contains(stringValue("apa"))
     result should equal(Some(false))
     newChecker shouldBe a[SetChecker]
   }
 
   test("buildUp handles a single null in the collection") {
-    val buildUp = new BuildUp(iterator(null))
+    val buildUp              = new BuildUp(iterator(null))
     val (result, newChecker) = buildUp.contains(stringValue("apa"))
     result should equal(None)
     newChecker shouldBe a[NullListChecker.type]
   }
 
-  private def iterator(a: Any*) = list(a.map(ValueConversion.asValue):_*)
+  private def iterator(a: Any*) = list(a.map(ValueConversion.asValue): _*)
 
 }

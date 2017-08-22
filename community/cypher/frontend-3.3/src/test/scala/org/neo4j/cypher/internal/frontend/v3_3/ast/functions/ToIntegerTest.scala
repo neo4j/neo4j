@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-class ToIntegerTest extends FunctionTestBase("toInteger")  {
+class ToIntegerTest extends FunctionTestBase("toInteger") {
 
   test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString)(CTInteger)

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 class QueryStateSettingIterator(input: Iterator[ExecutionContext], state: QueryState)
-  extends Iterator[ExecutionContext] {
+    extends Iterator[ExecutionContext] {
   def hasNext: Boolean = input.hasNext
 
   def next(): ExecutionContext = {

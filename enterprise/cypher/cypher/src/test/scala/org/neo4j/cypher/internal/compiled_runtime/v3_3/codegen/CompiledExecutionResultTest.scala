@@ -29,18 +29,23 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.CompiledExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.NormalMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.graphdb.NotFoundException
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.helpers.collection.Iterators
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{ListValue, MapValue}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
@@ -62,7 +67,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
   test("should throw if non-existing column") {
     val result = newCompiledExecutionResult(javaMap("foo" -> "bar"))
 
-    a [NotFoundException] shouldBe thrownBy(result.columnAs[String]("baz"))
+    a[NotFoundException] shouldBe thrownBy(result.columnAs[String]("baz"))
   }
 
   test("should return scala objects for list") {
@@ -169,7 +174,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
                                          taskCloser: TaskCloser = new TaskCloser,
                                          assertion: () => Unit = () => {}) = {
     val noCompiledCode: GeneratedQueryExecution = new GeneratedQueryExecution {
-      override def setCompletable(closeable: Completable){}
+      override def setCompletable(closeable: Completable) {}
 
       override def fieldNames(): Array[String] = row.keySet().toArray(new Array[String](row.size()))
 
@@ -177,10 +182,11 @@ class CompiledExecutionResultTest extends CypherFunSuite {
       override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
         try {
           val fields = new Array[AnyValue](row.size())
-          var i = 0
-          row.asScala.foreach { case (k, v) =>
-            fields(i) = AnyValues.of(v)
-            i += 1
+          var i      = 0
+          row.asScala.foreach {
+            case (k, v) =>
+              fields(i) = AnyValues.of(v)
+              i += 1
           }
           visitor.visit(new ResultRecord(fields))
           assertion()
@@ -203,11 +209,11 @@ class CompiledExecutionResultTest extends CypherFunSuite {
 
   import JavaConverters._
   private def toObjectConverter(a: AnyRef): AnyRef = a match {
-    case Values.NO_VALUE => null
-    case s: TextValue => s.stringValue()
-    case b: BooleanValue => Boolean.box(b.booleanValue())
+    case Values.NO_VALUE       => null
+    case s: TextValue          => s.stringValue()
+    case b: BooleanValue       => Boolean.box(b.booleanValue())
     case f: FloatingPointValue => Double.box(f.doubleValue())
-    case i: IntegralValue => Long.box(i.longValue())
+    case i: IntegralValue      => Long.box(i.longValue())
     case l: ListValue =>
       val list = new util.ArrayList[AnyRef]
       l.iterator().asScala.foreach(a => list.add(toObjectConverter(a)))

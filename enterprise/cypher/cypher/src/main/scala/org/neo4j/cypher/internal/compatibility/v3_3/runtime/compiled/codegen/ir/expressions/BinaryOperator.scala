@@ -39,8 +39,8 @@ trait BinaryOperator {
 
   override final def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     def isListOf(codeGenType: CodeGenType, cType: CypherType) = codeGenType match {
-      case CypherCodeGenType(ListType(inner),_) if inner == cType => true
-      case _ => false
+      case CypherCodeGenType(ListType(inner), _) if inner == cType => true
+      case _                                                       => false
     }
     (lhs.codeGenType, rhs.codeGenType) match {
       case (CypherCodeGenType(CTBoolean, _), t) if !(isListOf(t, CTAny) || isListOf(t, CTBoolean)) =>
@@ -60,8 +60,7 @@ trait BinaryOperator {
         generator(structure)(context)(lhs.generateExpression(structure),
                                       structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 
-      case _ => generator(structure)(context)(lhs.generateExpression(structure),
-                                              rhs.generateExpression(structure))
+      case _ => generator(structure)(context)(lhs.generateExpression(structure), rhs.generateExpression(structure))
     }
   }
 

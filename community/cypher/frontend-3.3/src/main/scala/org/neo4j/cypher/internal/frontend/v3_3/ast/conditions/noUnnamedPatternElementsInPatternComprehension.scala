@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable.FoldableAny
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{PatternComprehension, PatternElement, RelationshipsPattern}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternComprehension
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternElement
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipsPattern
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
 case object noUnnamedPatternElementsInPatternComprehension extends Condition {
@@ -26,7 +28,8 @@ case object noUnnamedPatternElementsInPatternComprehension extends Condition {
 
   override def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
     case expr: PatternComprehension if containsUnNamedPatternElement(expr.pattern) =>
-      acc => (acc :+ s"Expression $expr contains pattern elements which are not named", None)
+      acc =>
+        (acc :+ s"Expression $expr contains pattern elements which are not named", None)
   }
 
   private def containsUnNamedPatternElement(expr: RelationshipsPattern) = expr.treeExists {

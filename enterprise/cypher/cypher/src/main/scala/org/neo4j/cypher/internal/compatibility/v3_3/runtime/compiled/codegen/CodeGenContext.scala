@@ -30,14 +30,16 @@ import scala.collection.mutable
 
 case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id],
-                     lookup: Map[String, Int], val namer: Namer = Namer()) {
+class CodeGenContext(val semanticTable: SemanticTable,
+                     idMap: Map[LogicalPlan, Id],
+                     lookup: Map[String, Int],
+                     val namer: Namer = Namer()) {
 
-  private val variables: mutable.Map[String, Variable] = mutable.Map()
+  private val variables: mutable.Map[String, Variable]          = mutable.Map()
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
-  private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
-  private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
-  val operatorIds: mutable.Map[Id, String] = mutable.Map()
+  private val probeTables: mutable.Map[CodeGenPlan, JoinData]   = mutable.Map()
+  private val parents: mutable.Stack[CodeGenPlan]               = mutable.Stack()
+  val operatorIds: mutable.Map[Id, String]                      = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
     //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)

@@ -20,10 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+class QueryPlanCompactionAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with NewPlannerTestSupport {
 
   implicit val windowsSafe = WindowsStringSafe
 
@@ -715,8 +719,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |""".stripMargin)
   }
 
-  test("Compact smaller, but still long and compactable query"){
-    val query = """CREATE (TheMatrix:Movie {title:'The Matrix', released:2001, tagline:'Welcome to the Real World3'})
+  test("Compact smaller, but still long and compactable query") {
+    val query  = """CREATE (TheMatrix:Movie {title:'The Matrix', released:2001, tagline:'Welcome to the Real World3'})
         |CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
         |CREATE (Carrie:Person {name:'Carrie-Anne Moss', born:1967})
         |CREATE (Laurence:Person {name:'Laurence Fishburne', born:1961})
@@ -814,18 +818,18 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {
-    val a = createLabeledNode(Map("name"->"Keanu Reeves"), "Actor")
-    val b = createLabeledNode(Map("name"->"Craig"), "Actor")
-    val c = createLabeledNode(Map("name"->"Olivia"), "Actor")
-    val d = createLabeledNode(Map("name"->"Carrie"), "Actor")
-    val e = createLabeledNode(Map("name"->"Andres"), "Actor")
-    relate(a,b)
-    relate(b,c)
-    relate(c,d)
-    relate(d,e)
-    relate(c,b)
-    relate(d,b)
-    val query = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
+    val a = createLabeledNode(Map("name" -> "Keanu Reeves"), "Actor")
+    val b = createLabeledNode(Map("name" -> "Craig"), "Actor")
+    val c = createLabeledNode(Map("name" -> "Olivia"), "Actor")
+    val d = createLabeledNode(Map("name" -> "Carrie"), "Actor")
+    val e = createLabeledNode(Map("name" -> "Andres"), "Actor")
+    relate(a, b)
+    relate(b, c)
+    relate(c, d)
+    relate(d, e)
+    relate(c, b)
+    relate(d, b)
+    val query  = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
     val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     result should havePlanLike(
       """

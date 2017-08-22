@@ -20,18 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
-
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
-  val NODES_CARDINALITY = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY = Selectivity.of(0.2).get
-  val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
-  val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
-  val INDEX_SELECTIVITY = Selectivity.of(.02).get
+  val NODES_CARDINALITY                 = Cardinality(10000)
+  val NODES_WITH_LABEL_SELECTIVITY      = Selectivity.of(0.2).get
+  val NODES_WITH_LABEL_CARDINALITY      = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
+  val RELATIONSHIPS_CARDINALITY         = Cardinality(50000)
+  val INDEX_SELECTIVITY                 = Selectivity.of(.02).get
   val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
 
   def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
@@ -43,6 +44,8 @@ class HardcodedGraphStatisticsValues extends GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     labelId.map(_ => NODES_WITH_LABEL_CARDINALITY).getOrElse(NODES_CARDINALITY)
 
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                             relTypeId: Option[RelTypeId],
+                                             toLabel: Option[LabelId]): Cardinality =
     RELATIONSHIPS_CARDINALITY
 }

@@ -26,13 +26,13 @@ import scala.reflect.Manifest
 
 @RunWith(classOf[JUnitRunner])
 abstract class CypherFunSuite
-  extends Suite
-  with Assertions
-  with CypherTestSupport
-  with MockitoSugar
-  with FunSuiteLike
-  with Matchers
-  with BeforeAndAfterEach {
+    extends Suite
+    with Assertions
+    with CypherTestSupport
+    with MockitoSugar
+    with FunSuiteLike
+    with Matchers
+    with BeforeAndAfterEach {
 
   override protected def beforeEach() {
     initTest()

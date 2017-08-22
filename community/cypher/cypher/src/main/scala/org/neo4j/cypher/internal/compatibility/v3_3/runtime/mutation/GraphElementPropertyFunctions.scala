@@ -25,8 +25,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
@@ -44,7 +47,9 @@ trait GraphElementPropertyFunctions extends ListSupport {
     def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 
-  def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext,
+  def setProperties(pc: PropertyContainer,
+                    props: Map[String, Expression],
+                    context: ExecutionContext,
                     state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
@@ -52,38 +57,48 @@ trait GraphElementPropertyFunctions extends ListSupport {
     }
   }
 
-  def toString(m: Map[String, Expression]): String = m.map {
-    case (k, e) => "%s: %s".format(k, e.toString)
-  }.mkString("{", ", ", "}")
+  def toString(m: Map[String, Expression]): String =
+    m.map {
+        case (k, e) => "%s: %s".format(k, e.toString)
+      }
+      .mkString("{", ", ", "}")
 
   def getMapFromExpression(v: AnyValue): MapValue = {
     v match {
-      case null => throw new InvalidArgumentException("Property map expression is null")
+      case null                      => throw new InvalidArgumentException("Property map expression is null")
       case x if x == Values.NO_VALUE => throw new InvalidArgumentException("Property map expression is null")
-      case m: MapValue => m
-      case _ => throw new CypherTypeException(
-        s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
+      case m: MapValue               => m
+      case _ =>
+        throw new CypherTypeException(s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
     }
   }
 
-  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer,
+  private def setAllMapKeyValues(expression: Expression,
+                                 context: ExecutionContext,
+                                 pc: PropertyContainer,
                                  state: QueryState) {
     val map = getMapFromExpression(expression(context)(state))
 
     pc match {
-      case n: Node => map.foreach(new BiConsumer[String, AnyValue] {
-        override def accept(key: String, value: AnyValue): Unit =
-          state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      })
+      case n: Node =>
+        map.foreach(new BiConsumer[String, AnyValue] {
+          override def accept(key: String, value: AnyValue): Unit =
+            state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
+        })
 
-      case r: Relationship => map.foreach(new BiConsumer[String, AnyValue] {
-        override def accept(key: String, value: AnyValue): Unit =
-          state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      })
+      case r: Relationship =>
+        map.foreach(new BiConsumer[String, AnyValue] {
+          override def accept(key: String, value: AnyValue): Unit =
+            state.query.relationshipOps
+              .setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
+        })
     }
   }
 
-  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String,
+  private def setSingleValue(expression: Expression,
+                             context: ExecutionContext,
+                             pc: PropertyContainer,
+                             key: String,
                              state: QueryState) {
     val unsafeValue: AnyValue = expression(context)(state)
     if (unsafeValue != Values.NO_VALUE) {
@@ -98,5 +113,3 @@ trait GraphElementPropertyFunctions extends ListSupport {
     }
   }
 }
-
-

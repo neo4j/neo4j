@@ -48,7 +48,7 @@ object TokenType extends Enumeration {
   }
 }
 
-trait TokenType  {
+trait TokenType {
   def apply(name: String) = KeyToken.Unresolved(name, this)
 
   def apply(name: String, id: Int) = KeyToken.Resolved(name, id, this)
@@ -59,5 +59,3 @@ trait TokenType  {
 
   def getOrCreateIdForName(name: String, queryContext: QueryContext): Int
 }
-
-

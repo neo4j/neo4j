@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 // Only put tests that assert on memory performance behaviour in this class
 class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -28,7 +29,8 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     createNode()
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      "MATCH (a) WHERE 42 IN [a.prop] RETURN *", "param" -> null
+      "MATCH (a) WHERE 42 IN [a.prop] RETURN *",
+      "param" -> null
     )
 
     result shouldBe empty

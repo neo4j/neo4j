@@ -29,9 +29,10 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
+class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(
+      config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
@@ -70,8 +71,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
 
     // Then
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Smoke"), "User")
     createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
   }
 
@@ -113,8 +114,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("composite NODE KEY constraint should not fail when we have nodes with different properties") {
     // When
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Smoke"), "User")
     createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // Then
@@ -129,8 +130,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // Then
     a[CypherExecutionException] should be thrownBy {
-      succeedWith(Configs.AbsolutelyAll,
-        "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
+      succeedWith(Configs.AbsolutelyAll, "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
     }
   }
 
@@ -163,8 +163,9 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       Configs.AbsolutelyAll - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and properties `name` = 'A', `surname` = 'B'")
+      String.format(
+        "Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%n" +
+          "Both Node(0) and Node(1) have the label `Person` and properties `name` = 'A', `surname` = 'B'")
     )
   }
 
@@ -175,8 +176,9 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       Configs.AbsolutelyAll - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
+      String.format(
+        "Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%n" +
+          "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
     )
   }
 
@@ -207,7 +209,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       Configs.AllExceptSleipnir + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
       String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
-      )
+    )
   }
 
   test("should give appropriate error message when there is already an index") {
@@ -215,10 +217,12 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE INDEX ON :Person(firstname, lastname)".fixNewLines)
 
     // then
-    failWithError(Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+    failWithError(
+      Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
       "There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
-                  "A constraint cannot be created until the index has been dropped.")
+        "A constraint cannot be created until the index has been dropped."
+    )
   }
 
   test("should give appropriate error message when there is already a NODE KEY constraint") {
@@ -230,7 +234,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
       "CREATE INDEX ON :Person(firstname, lastname)",
       "Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
-                  "so an index is already created that matches this.")
+        "so an index is already created that matches this."
+    )
   }
 
   test("Should give a nice error message when trying to remove property with node key constraint") {
@@ -239,9 +244,11 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val id = createLabeledNode(Map("firstname" -> "John", "surname" -> "Wood"), "Person").getId
 
     // Expect
-    failWithError(Configs.CommunityInterpreted + Configs.Procs - Configs.Cost2_3,
+    failWithError(
+      Configs.CommunityInterpreted + Configs.Procs - Configs.Cost2_3,
       "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.surname",
-      s"Node($id) with label `Person` must have the properties `firstname, surname`")
+      s"Node($id) with label `Person` must have the properties `firstname, surname`"
+    )
 
   }
 
@@ -252,7 +259,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
+                "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
 
     // Then
     graph.inTx {
@@ -267,11 +274,10 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
+                "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
 
     // Then
-    succeedWith(Configs.Interpreted,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
+    succeedWith(Configs.Interpreted, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
   }
 
   test("Should be able to remove label when node key constraint") {
@@ -281,10 +287,9 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
+                "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
 
     // Then
-    succeedWith(Configs.Interpreted,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
+    succeedWith(Configs.Interpreted, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
   }
 }

@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Equals, Predicate}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equals
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 
 class GenericCaseTest extends CypherFunSuite {
 
@@ -84,7 +87,7 @@ class GenericCaseTest extends CypherFunSuite {
 
   test("case_with_a_single_null_value_uses_the_default") {
     //GIVEN CASE WHEN null THEN 42 ELSE "defaults"
-    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
+    val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null()) -> Literal(42)), Some(Literal("defaults")))
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)

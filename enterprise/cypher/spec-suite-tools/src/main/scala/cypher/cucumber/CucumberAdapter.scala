@@ -22,26 +22,27 @@ package cypher.cucumber
 import java.util
 
 import gherkin.formatter.model._
-import gherkin.formatter.{Formatter, Reporter}
+import gherkin.formatter.Formatter
+import gherkin.formatter.Reporter
 
 trait CucumberAdapter extends Formatter with Reporter {
-  override def endOfScenarioLifeCycle(scenario: Scenario){}
-  override def scenario(scenario: Scenario){}
-  override def startOfScenarioLifeCycle(scenario: Scenario){}
-  override def uri(uri: String){}
-  override def done(){}
-  override def background(background: Background){}
-  override def scenarioOutline(scenarioOutline: ScenarioOutline){}
-  override def close(){}
-  override def feature(feature: Feature){}
-  override def step(step: Step){}
-  override def eof(){}
-  override def examples(examples: Examples){}
-  override def syntaxError(state: String, event: String, legalEvents: util.List[String], uri: String, line: Integer){}
-  override def result(result: Result){}
-  override def `match`(`match`: Match){}
-  override def after(`match`: Match, result: Result){}
-  override def embedding(mimeType: String, data: Array[Byte]){}
-  override def write(text: String){}
-  override def before(`match`: Match, result: Result){}
+  override def endOfScenarioLifeCycle(scenario: Scenario) {}
+  override def scenario(scenario: Scenario) {}
+  override def startOfScenarioLifeCycle(scenario: Scenario) {}
+  override def uri(uri: String) {}
+  override def done() {}
+  override def background(background: Background) {}
+  override def scenarioOutline(scenarioOutline: ScenarioOutline) {}
+  override def close() {}
+  override def feature(feature: Feature) {}
+  override def step(step: Step) {}
+  override def eof() {}
+  override def examples(examples: Examples) {}
+  override def syntaxError(state: String, event: String, legalEvents: util.List[String], uri: String, line: Integer) {}
+  override def result(result: Result) {}
+  override def `match`(`match`: Match) {}
+  override def after(`match`: Match, result: Result) {}
+  override def embedding(mimeType: String, data: Array[Byte]) {}
+  override def write(text: String) {}
+  override def before(`match`: Match, result: Result) {}
 }

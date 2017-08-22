@@ -28,7 +28,8 @@ class RelationshipMatcherTest extends ParsingTestSupport {
   }
 
   test("should match relationships with properties") {
-    val matcher = new RelationshipMatcher("T", new MapMatcher(Map[String, ValueMatcher]("key" -> new FloatMatcher(1e10)).asJava))
+    val matcher =
+      new RelationshipMatcher("T", new MapMatcher(Map[String, ValueMatcher]("key" -> new FloatMatcher(1e10)).asJava))
 
     matcher should accept(relationship("T", Map("key" -> java.lang.Double.valueOf(1e10))))
   }

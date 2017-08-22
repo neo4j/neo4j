@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 object PropertySupport {
-  def firstNullPropertyIfAny[T](props: collection.Map[T, Expression], context: ExecutionContext, state: QueryState): Option[T] =
+  def firstNullPropertyIfAny[T](props: collection.Map[T, Expression],
+                                context: ExecutionContext,
+                                state: QueryState): Option[T] =
     props.collectFirst {
       case (key, expr) if expr(context)(state) == null => key
     }

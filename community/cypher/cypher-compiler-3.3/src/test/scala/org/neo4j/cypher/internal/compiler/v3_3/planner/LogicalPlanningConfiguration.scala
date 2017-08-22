@@ -23,12 +23,18 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Cost, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Cost
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 trait LogicalPlanningConfiguration {
   def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                       expressionEvaluator: ExpressionEvaluator): CardinalityModel
   def costModel(): PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost]
   def graphStatistics: GraphStatistics
   def indexes: Set[(String, Seq[String])]
@@ -38,21 +44,25 @@ trait LogicalPlanningConfiguration {
   def labelsById: Map[Int, String]
   def qg: QueryGraph
 
-  protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] = pf.andThen(Cardinality.apply)
+  protected def mapCardinality(pf: PartialFunction[PlannerQuery, Double]): PartialFunction[PlannerQuery, Cardinality] =
+    pf.andThen(Cardinality.apply)
 }
 
-class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
-  override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable = parent.updateSemanticTableWithTokens(in)
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, expressionEvaluator: ExpressionEvaluator): CardinalityModel =
+class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
+    extends LogicalPlanningConfiguration {
+  override def updateSemanticTableWithTokens(in: SemanticTable): SemanticTable =
+    parent.updateSemanticTableWithTokens(in)
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
-  override def costModel() = parent.costModel()
-  override def graphStatistics = parent.graphStatistics
-  override def indexes = parent.indexes
-  override def uniqueIndexes = parent.uniqueIndexes
+  override def costModel()      = parent.costModel()
+  override def graphStatistics  = parent.graphStatistics
+  override def indexes          = parent.indexes
+  override def uniqueIndexes    = parent.uniqueIndexes
   override def labelCardinality = parent.labelCardinality
-  override def knownLabels = parent.knownLabels
-  override def labelsById = parent.labelsById
-  override def qg = parent.qg
+  override def knownLabels      = parent.knownLabels
+  override def labelsById       = parent.labelsById
+  override def qg               = parent.qg
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {
@@ -66,13 +76,15 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
       if (!table.resolvedPropertyKeyNames.contains(property))
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
-    indexes.foreach { case (label, properties) =>
-      addLabelIfUnknown(label)
-      properties.foreach(addPropertyKeyIfUnknown(_))
+    indexes.foreach {
+      case (label, properties) =>
+        addLabelIfUnknown(label)
+        properties.foreach(addPropertyKeyIfUnknown(_))
     }
-    uniqueIndexes.foreach { case (label, properties) =>
-      addLabelIfUnknown(label)
-      properties.foreach(addPropertyKeyIfUnknown(_))
+    uniqueIndexes.foreach {
+      case (label, properties) =>
+        addLabelIfUnknown(label)
+        properties.foreach(addPropertyKeyIfUnknown(_))
     }
     labelCardinality.keys.foreach(addLabelIfUnknown)
     knownLabels.foreach(addLabelIfUnknown)

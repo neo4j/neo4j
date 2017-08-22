@@ -19,8 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
-
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
 class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -36,39 +37,39 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // When
     val result = graph.execute("with [4923,489,521,487] as ids RETURN reverse(ids)")
 
-    val results= result.columnAs("reverse(ids)").next().toString
+    val results = result.columnAs("reverse(ids)").next().toString
 
     // Then
-    results should equal ("[487, 521, 489, 4923]")
+    results should equal("[487, 521, 489, 4923]")
   }
 
   test("reverse function should work with collections that contains null") {
     // When
     val result = graph.execute("with [4923,null,521,487] as ids RETURN reverse(ids)")
 
-    val results= result.columnAs("reverse(ids)").next().toString
+    val results = result.columnAs("reverse(ids)").next().toString
 
     // Then
-    results should equal ("[487, 521, null, 4923]")
+    results should equal("[487, 521, null, 4923]")
   }
 
   test("reverse function should work with empty collections") {
     // When
     val result = graph.execute("with [] as ids RETURN reverse(ids)")
 
-    val results= result.columnAs("reverse(ids)").next().toString
+    val results = result.columnAs("reverse(ids)").next().toString
 
     // Then
-    results should equal ("[]")
+    results should equal("[]")
   }
 
   test("reverse function should work with collections of mixed types") {
     // When
     val result = graph.execute("with [4923,'abc',521,487] as ids RETURN reverse(ids)")
 
-    val results= result.columnAs("reverse(ids)").next().toString
+    val results = result.columnAs("reverse(ids)").next().toString
 
     // Then
-    results should equal ("[487, 521, abc, 4923]")
+    results should equal("[487, 521, abc, 4923]")
   }
 }

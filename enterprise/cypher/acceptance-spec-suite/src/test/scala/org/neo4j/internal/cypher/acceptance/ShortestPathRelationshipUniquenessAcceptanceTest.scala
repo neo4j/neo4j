@@ -21,7 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -81,7 +82,8 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
     RETURN nodes(p) as nodes"""
 
     val result = executeUsingCostPlannerOnly(query).columnAs("nodes").toList
-    result should be(List(List(p0, pLongPath0, pLongPath1, pLongPath2, pLongPath3, pLongPath4, pLongPath5, p3, p2, p4, p5)))
+    result should be(
+      List(List(p0, pLongPath0, pLongPath1, pLongPath2, pLongPath3, pLongPath4, pLongPath5, p3, p2, p4, p5)))
   }
 
   def executeUsingCostPlannerOnly(query: String) =

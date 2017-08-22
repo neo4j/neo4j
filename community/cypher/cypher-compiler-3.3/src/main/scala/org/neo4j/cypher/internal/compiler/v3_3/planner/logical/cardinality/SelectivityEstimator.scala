@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{Selections, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_3.Selections
+import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 
 trait SelectivityEstimator extends (Expression => Selectivity) {
   self: SelectivityEstimator =>
@@ -35,7 +36,7 @@ trait SelectivityEstimator extends (Expression => Selectivity) {
 
 case class DelegatingSelectivityEstimator(inner: SelectivityEstimator) extends SelectivityEstimator {
   def apply(expr: Expression) = inner(expr)
-  def combiner = inner.combiner
+  def combiner                = inner.combiner
 }
 
 // TODO: Fuse with ExpressionSelectivityCalculator
@@ -43,7 +44,7 @@ case class ExpressionSelectivityEstimator(selections: Selections,
                                           stats: GraphStatistics,
                                           semanticTable: SemanticTable,
                                           combiner: SelectivityCombiner)
-  extends SelectivityEstimator {
+    extends SelectivityEstimator {
 
   self =>
 

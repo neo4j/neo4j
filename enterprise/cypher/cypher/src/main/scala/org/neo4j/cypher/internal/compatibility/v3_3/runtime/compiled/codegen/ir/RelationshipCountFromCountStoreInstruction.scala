@@ -21,19 +21,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
-case class RelationshipCountFromCountStoreInstruction(opName: String, variable: Variable, startLabel: Option[(Option[Int],String)],
-                                                      relTypes: Seq[(Option[Int], String)], endLabel: Option[(Option[Int],String)],
-                                                      inner: Instruction) extends Instruction {
+case class RelationshipCountFromCountStoreInstruction(opName: String,
+                                                      variable: Variable,
+                                                      startLabel: Option[(Option[Int], String)],
+                                                      relTypes: Seq[(Option[Int], String)],
+                                                      endLabel: Option[(Option[Int], String)],
+                                                      inner: Instruction)
+    extends Instruction {
   private val hasTokens = opName + "hasTokens"
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     generator.assign(variable, generator.constantPrimitiveExpression(0L))
     generator.trace(opName) { body =>
-
       body.ifStatement(body.loadVariable(hasTokens)) { ifBody =>
-
         def labelToken(lbl: Option[(Option[Int], String)], varName: String): E = lbl match {
           // label specified, and token known at compile time
           case Some((Some(token), _)) =>
@@ -49,7 +52,7 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
         }
 
         val start = labelToken(startLabel, "StartOf")
-        val end = labelToken(endLabel, "EndOf")
+        val end   = labelToken(endLabel, "EndOf")
 
         if (relTypes.isEmpty)
           ifBody.incrementInteger(variable.name, ifBody.relCountFromCountStore(start, end, ifBody.wildCardToken))
@@ -62,7 +65,8 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
 
             case (None, name) =>
               val relTypeToken = ifBody.loadVariable(s"${variable.name}TypeOf$name")
-              val ifValidToken = ifBody.notExpression(ifBody.equalityExpression(relTypeToken, ifBody.wildCardToken, CodeGenType.javaInt))
+              val ifValidToken =
+                ifBody.notExpression(ifBody.equalityExpression(relTypeToken, ifBody.wildCardToken, CodeGenType.javaInt))
               ifBody.ifStatement(ifValidToken) { inner =>
                 inner.incrementDbHits()
                 inner.incrementInteger(variable.name, inner.relCountFromCountStore(start, end, relTypeToken))
@@ -77,7 +81,6 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
 
   override def children = Seq(inner)
 
-
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = {
     super.init(generator)
 
@@ -90,7 +93,8 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
     def loadLabelToken(labelName: String, varName: String) = {
       val variableName = s"${variable.name}$varName$labelName"
       generator.assign(variableName, CodeGenType.javaInt, generator.lookupLabelIdE(labelName))
-      val isTokenMissing = generator.equalityExpression(generator.loadVariable(variableName), generator.wildCardToken, CodeGenType.primitiveBool)
+      val isTokenMissing = generator
+        .equalityExpression(generator.loadVariable(variableName), generator.wildCardToken, CodeGenType.primitiveBool)
       generator.ifStatement(isTokenMissing) { block =>
         block.assign(hasTokens, CodeGenType.primitiveBool, block.constantPrimitiveExpression(false))
       }
@@ -98,11 +102,11 @@ case class RelationshipCountFromCountStoreInstruction(opName: String, variable: 
 
     startLabel.foreach {
       case (token, name) if token.isEmpty => loadLabelToken(name, "StartOf")
-      case _ => ()
+      case _                              => ()
     }
     endLabel.foreach {
       case (token, name) if token.isEmpty => loadLabelToken(name, "EndOf")
-      case _ => ()
+      case _                              => ()
     }
     relTypes.foreach {
       case (token, name) if token.isEmpty =>

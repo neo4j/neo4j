@@ -30,7 +30,7 @@ case object CypherPreParser extends Parser with Base {
 
   def QueryWithOptions: Rule1[Seq[PreParsedStatement]] =
     WS ~ AllOptions ~ WS ~ AnySomething ~~>>
-      ( (options: Seq[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
+      ((options: Seq[PreParserOption], text: String) => pos => Seq(PreParsedStatement(text, options, pos)))
 
   def AllOptions: Rule1[Seq[PreParserOption]] = zeroOrMore(AnyCypherOption, WS)
 
@@ -44,12 +44,12 @@ case object CypherPreParser extends Parser with Base {
       zeroOrMore(PlannerOption | RuntimeOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
   }
 
-  def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
-      option("planner", "cost") ~ push(CostPlannerOption)
-    | option("planner", "rule") ~ push(RulePlannerOption)
-    | option("planner", "greedy") ~ push(GreedyPlannerOption)
-    | option("planner", "idp") ~ push(IDPPlannerOption)
-    | option("planner", "dp") ~ push(DPPlannerOption)
+  def PlannerOption: Rule1[PreParserOption] = rule("planner option")(
+    option("planner", "cost") ~ push(CostPlannerOption)
+      | option("planner", "rule") ~ push(RulePlannerOption)
+      | option("planner", "greedy") ~ push(GreedyPlannerOption)
+      | option("planner", "idp") ~ push(IDPPlannerOption)
+      | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
   def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(

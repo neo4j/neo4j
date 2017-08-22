@@ -22,32 +22,37 @@ package org.neo4j.cypher.internal.spi.v2_3
 import java.util.function.Predicate
 
 import org.neo4j.cypher.internal.compiler.v2_3._
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.{ExpanderStep, TraversalMatcher, TraversalPathExpander}
-import org.neo4j.cypher.internal.compiler.v2_3.pipes.{EntityProducer, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.ExpanderStep
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.TraversalMatcher
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.TraversalPathExpander
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.EntityProducer
+import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
 import org.neo4j.graphdb.traversal._
-import org.neo4j.graphdb.{Node, Path}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector
-import org.neo4j.kernel.impl.traversal.{MonoDirectionalTraversalDescription, BidirectionalTraversalDescriptionImpl}
+import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription
+import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl
 
 import scala.collection.JavaConverters._
 
-class BidirectionalTraversalMatcher(steps: ExpanderStep,
-                                    start: EntityProducer[Node],
-                                    end: EntityProducer[Node]) extends TraversalMatcher {
+class BidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node])
+    extends TraversalMatcher {
 
   lazy val reversedSteps = steps.reverse()
 
   val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
-    def reverse() = this
+    def reverse()                                      = this
   }
 
   val initialEndStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(reversedSteps)
-    def reverse() = this
+    def reverse()                                      = this
   }
-  val baseTraversal: TraversalDescription = new MonoDirectionalTraversalDescription().uniqueness(Uniqueness.RELATIONSHIP_PATH)
+  val baseTraversal: TraversalDescription =
+    new MonoDirectionalTraversalDescription().uniqueness(Uniqueness.RELATIONSHIP_PATH)
   val collisionDetector = new StepCollisionDetector
 
   def findMatchingPaths(state: QueryState, context: ExecutionContext): Iterator[Path] = {
@@ -57,15 +62,15 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
 
     def produceTraversalDescriptions() = {
       val startWithoutCutoff = baseTraversal.expand(new TraversalPathExpander(context, state), initialStartStep)
-      val endWithoutCutOff = baseTraversal.expand(new TraversalPathExpander(context, state), initialEndStep)
+      val endWithoutCutOff   = baseTraversal.expand(new TraversalPathExpander(context, state), initialEndStep)
 
       steps.size match {
-        case None       => (startWithoutCutoff, endWithoutCutOff)
+        case None => (startWithoutCutoff, endWithoutCutOff)
         case Some(size) => {
           val startDepth = atLeastOne(size / 2)
-          val endDepth = atLeastOne(size - startDepth)
+          val endDepth   = atLeastOne(size - startDepth)
           (startWithoutCutoff.evaluator(Evaluators.toDepth(startDepth)),
-            endWithoutCutOff.evaluator(Evaluators.toDepth(endDepth)))
+           endWithoutCutOff.evaluator(Evaluators.toDepth(endDepth)))
         }
       }
     }
@@ -76,24 +81,26 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
       .startSide(startDescription)
       .endSide(endDescription)
       .collisionPolicy(collisionDetector)
-      .traverse(s.asJava, e.asJava).iterator()
+      .traverse(s.asJava, e.asJava)
+      .iterator()
 
     result.asScala
   }
 
-  def atLeastOne(i: Int): Int = if (i < 1) {
-    1
-  } else {
-    i
-  }
+  def atLeastOne(i: Int): Int =
+    if (i < 1) {
+      1
+    } else {
+      i
+    }
 
   class StepCollisionDetector extends StandardBranchCollisionDetector(null) with BranchCollisionPolicy {
     override def includePath(path: Path, startPath: TraversalBranch, endPath: TraversalBranch): Boolean = {
       val s = startPath.state().asInstanceOf[Option[ExpanderStep]]
       val e = endPath.state().asInstanceOf[Option[ExpanderStep]]
 
-      def doBranchesMatch(startStep:ExpanderStep, endStep:ExpanderStep):(Boolean,Boolean)={
-        val foundEnd = endStep.id + 1 == startStep.id
+      def doBranchesMatch(startStep: ExpanderStep, endStep: ExpanderStep): (Boolean, Boolean) = {
+        val foundEnd             = endStep.id + 1 == startStep.id
         val includeButDoNotPrune = endStep.id == startStep.id && endStep.shouldInclude() || startStep.shouldInclude()
         (foundEnd || includeButDoNotPrune, foundEnd)
       }
@@ -124,5 +131,5 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
   }
 
   def arguments: Seq[Argument] = Seq.empty // TODO: Remove this class. This is wrong. But not worth fixing plans for.
-                                           // This class will die when Ronja rules the world
+  // This class will die when Ronja rules the world
 }

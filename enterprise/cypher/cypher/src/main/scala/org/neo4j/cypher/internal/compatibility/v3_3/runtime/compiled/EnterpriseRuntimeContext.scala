@@ -23,11 +23,20 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.CodeStructure
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.MetricsFactory
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.compiler.v3_3.ContextCreator
+import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
+import org.neo4j.cypher.internal.compiler.v3_3.UpdateStrategy
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
 
 class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
@@ -42,11 +51,20 @@ class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosi
                                override val debugOptions: Set[String],
                                override val clock: Clock,
                                val codeStructure: CodeStructure[GeneratedQuery])
-  extends CommunityRuntimeContext(exceptionCreator, tracer,
-                                  notificationLogger, planContext, monitors, metrics,
-                                  config, queryGraphSolver, updateStrategy, debugOptions, clock)
+    extends CommunityRuntimeContext(exceptionCreator,
+                                    tracer,
+                                    notificationLogger,
+                                    planContext,
+                                    monitors,
+                                    metrics,
+                                    config,
+                                    queryGraphSolver,
+                                    updateStrategy,
+                                    debugOptions,
+                                    clock)
 
-case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery]) extends ContextCreator[EnterpriseRuntimeContext] {
+case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[GeneratedQuery])
+    extends ContextCreator[EnterpriseRuntimeContext] {
 
   override def create(tracer: CompilationPhaseTracer,
                       notificationLogger: InternalNotificationLogger,
@@ -63,12 +81,23 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                       evaluator: ExpressionEvaluator): EnterpriseRuntimeContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
-    val metrics: Metrics = if (planContext == null)
-      null
-    else
-      metricsFactory.newMetrics(planContext.statistics, evaluator)
+    val metrics: Metrics =
+      if (planContext == null)
+        null
+      else
+        metricsFactory.newMetrics(planContext.statistics, evaluator)
 
-    new EnterpriseRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                                monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, codeStructure)
+    new EnterpriseRuntimeContext(exceptionCreator,
+                                 tracer,
+                                 notificationLogger,
+                                 planContext,
+                                 monitors,
+                                 metrics,
+                                 config,
+                                 queryGraphSolver,
+                                 updateStrategy,
+                                 debugOptions,
+                                 clock,
+                                 codeStructure)
   }
 }

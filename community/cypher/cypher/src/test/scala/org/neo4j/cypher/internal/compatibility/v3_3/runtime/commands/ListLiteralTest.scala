@@ -20,11 +20,16 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Predicate}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{FALSE, NO_VALUE, TRUE}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.TRUE
 
 class ListLiteralTest extends CypherFunSuite {
 
@@ -94,10 +99,9 @@ class ListLiteralTest extends CypherFunSuite {
 
     def none(expected: Any) = check(expected, NoneInList.apply)
 
-    private def check(expected: Any,
-                      collectionFunction: (Expression, String, Predicate) => InList) {
+    private def check(expected: Any, collectionFunction: (Expression, String, Predicate) => InList) {
       val function = collectionFunction(Literal(values), "x", CoercedPredicate(Variable("x")))
-      val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
+      val result   = function(ExecutionContext.empty)(QueryStateHelper.empty)
       result should equal(expected)
     }
   }

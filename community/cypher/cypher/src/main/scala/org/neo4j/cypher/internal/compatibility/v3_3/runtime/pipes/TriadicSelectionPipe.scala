@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
+import org.neo4j.collection.primitive.Primitive
+import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
@@ -27,11 +28,16 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable.ListBuffer
-import scala.collection.{AbstractIterator, Iterator}
+import scala.collection.AbstractIterator
+import scala.collection.Iterator
 
-case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: String, seen: String, target: String, right: Pipe)
-                               (val id: Id = new Id)
-extends PipeWithSource(left) {
+case class TriadicSelectionPipe(positivePredicate: Boolean,
+                                left: Pipe,
+                                source: String,
+                                seen: String,
+                                target: String,
+                                right: Pipe)(val id: Id = new Id)
+    extends PipeWithSource(left) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     var triadicState: PrimitiveLongSet = null
@@ -40,27 +46,30 @@ extends PipeWithSource(left) {
       override def getKey(row: ExecutionContext) = row(source)
 
       override def getValue(row: ExecutionContext) = row(seen) match {
-        case n: NodeValue => Some(n.id())
+        case n: NodeValue    => Some(n.id())
         case Values.NO_VALUE => None
-        case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
+        case x               => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
       override def setState(triadicSet: PrimitiveLongSet) = triadicState = triadicSet
 
-    // 2. pass through 'right'
+      // 2. pass through 'right'
     }.flatMap { (outerContext) =>
-      val original = outerContext.createClone()
-      val innerState = state.withInitialContext(outerContext)
-      val innerResults = right.createResults(innerState)
-      innerResults.map { context => context mergeWith original }
+        val original     = outerContext.createClone()
+        val innerState   = state.withInitialContext(outerContext)
+        val innerResults = right.createResults(innerState)
+        innerResults.map { context =>
+          context mergeWith original
+        }
 
-    // 3. Probe
-    }.filter { ctx =>
-      ctx(target) match {
-        case n: NodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
-        case _ => false
+      // 3. Probe
       }
-    }
+      .filter { ctx =>
+        ctx(target) match {
+          case n: NodeValue => if (positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
+          case _            => false
+        }
+      }
   }
 }
 
@@ -70,35 +79,34 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
   def getValue(row: ROW): Option[Long]
 
   var current: Iterator[ROW] = null
-  var nextRow: ROW = null
+  var nextRow: ROW           = null
 
-  override def next() = if(hasNext) current.next() else Iterator.empty.next()
+  override def next() = if (hasNext) current.next() else Iterator.empty.next()
 
   override def hasNext: Boolean = {
     if (current != null && current.hasNext)
       true
     else {
-      val firstRow = if(nextRow != null) {
+      val firstRow = if (nextRow != null) {
         val row = nextRow
         nextRow = null
         row
-      } else if(input.hasNext) {
+      } else if (input.hasNext) {
         input.next()
       } else null
       if (firstRow == null) {
         current = null
         setState(null)
         false
-      }
-      else {
-        val buffer = new ListBuffer[ROW]
+      } else {
+        val buffer   = new ListBuffer[ROW]
         val valueSet = Primitive.longSet()
         setState(valueSet)
         buffer += firstRow
         update(valueSet, firstRow)
         val key = getKey(firstRow)
         // N.B. should we rewrite takeWhile to a while-loop?
-        buffer ++= input.takeWhile{ row =>
+        buffer ++= input.takeWhile { row =>
           val s = getKey(row)
           if (s == key) {
             update(valueSet, row)

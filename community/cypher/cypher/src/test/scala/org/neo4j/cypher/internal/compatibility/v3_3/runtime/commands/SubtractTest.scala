@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Subtract}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Subtract
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -31,10 +32,9 @@ class SubtractTest extends CypherFunSuite {
   val m = ExecutionContext.empty
   val s = QueryStateHelper.empty
 
-
   test("numbers") {
     val expr = Subtract(Literal(2), Literal(1))
-   expr(m)(s) should equal(longValue(1))
+    expr(m)(s) should equal(longValue(1))
   }
 
   test("strings") {

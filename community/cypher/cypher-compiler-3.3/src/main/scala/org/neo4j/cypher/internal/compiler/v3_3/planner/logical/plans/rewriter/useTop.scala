@@ -19,8 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{DoNotIncludeTies, Limit, Sort, Top}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Limit
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Sort
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Top
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 /**
   * When doing ORDER BY c1,c2,...,cn LIMIT e, we don't have to sort the full result in one go

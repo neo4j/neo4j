@@ -30,7 +30,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   override protected def initTest(): Unit = {
     super.initTest()
-    for(_ <- 1 to 1000) createLabeledNode("Label")
+    for (_ <- 1 to 1000) createLabeledNode("Label")
   }
 
   def changeLastChar(f: Char => Char)(in: String) =
@@ -41,7 +41,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
   def testOperator(operator: String) = {
 
     val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
-    val queryUsingIndex = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
+    val queryUsingIndex    = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
 
     def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Any): Unit = {
       val indexedResult = execute(queryUsingIndex, "prop" -> value)
@@ -82,7 +82,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
     test(s"testing string with $operator") {
       graph.createIndex("Label", "indexed")
-      forAll (Gen.alphaStr){ propertyValue: String =>
+      forAll(Gen.alphaStr) { propertyValue: String =>
         tester(propertyValue, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar))
       }
     }

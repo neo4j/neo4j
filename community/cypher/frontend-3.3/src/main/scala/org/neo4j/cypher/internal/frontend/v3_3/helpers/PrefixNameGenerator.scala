@@ -38,6 +38,6 @@ case class PrefixNameGenerator(generatorName: String) {
 
   def name(position: InputPosition): String = s"$prefix${position.toOffsetString}"
 
-  def isNamed(x: String) = !notNamed(x)
+  def isNamed(x: String)  = !notNamed(x)
   def notNamed(x: String) = x.startsWith(prefix)
 }

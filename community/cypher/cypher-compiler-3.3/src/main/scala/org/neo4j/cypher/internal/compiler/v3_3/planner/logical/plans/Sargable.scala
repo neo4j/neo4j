@@ -20,23 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.InequalitySeekRangeWrapper
+import org.neo4j.cypher.internal.compiler.v3_3.ast.PrefixSeekRangeWrapper
 import org.neo4j.cypher.internal.compiler.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.frontend.v3_3.ExclusiveBound
+import org.neo4j.cypher.internal.frontend.v3_3.InclusiveBound
 
 object WithSeekableArgs {
   def unapply(v: Any) = v match {
-    case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
+    case In(lhs, rhs)     => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
-    case _ => None
+    case _                => None
   }
 }
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(func@FunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
-      if func.function == functions.Id && !rhs.dependencies(ident) =>
+    case WithSeekableArgs(func @ FunctionInvocation(_, _, _, IndexedSeq(ident: Variable)), rhs)
+        if func.function == functions.Id && !rhs.dependencies(ident) =>
       Some(IdSeekable(func, ident, rhs))
     case _ =>
       None
@@ -45,8 +47,7 @@ object AsIdSeekable {
 
 object AsPropertySeekable {
   def unapply(v: Any) = v match {
-    case WithSeekableArgs(prop@Property(ident: Variable, propertyKey), rhs)
-      if !rhs.dependencies(ident) =>
+    case WithSeekableArgs(prop @ Property(ident: Variable, propertyKey), rhs) if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
     case _ =>
       None
@@ -56,8 +57,8 @@ object AsPropertySeekable {
 object AsPropertyScannable {
   def unapply(v: Any): Option[Scannable[Expression]] = v match {
 
-    case func@FunctionInvocation(_, _, _, IndexedSeq(property@Property(ident: Variable, _)))
-      if func.function == functions.Exists =>
+    case func @ FunctionInvocation(_, _, _, IndexedSeq(property @ Property(ident: Variable, _)))
+        if func.function == functions.Exists =>
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
     case expr: Equals =>
@@ -80,11 +81,13 @@ object AsPropertyScannable {
   }
 
   private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
-    case property@Property(ident: Variable, _) =>
-      PartialPredicate.ifNotEqual(
-        FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
-        predicate
-      ).map(ImplicitlyPropertyScannable(_, ident, property))
+    case property @ Property(ident: Variable, _) =>
+      PartialPredicate
+        .ifNotEqual(
+          FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
+          predicate
+        )
+        .map(ImplicitlyPropertyScannable(_, ident, property))
 
     case _ =>
       None
@@ -93,9 +96,10 @@ object AsPropertyScannable {
 
 object AsStringRangeSeekable {
   def unapply(v: Any): Option[PrefixRangeSeekable] = v match {
-    case startsWith@StartsWith(Property(ident: Variable, propertyKey), lit@StringLiteral(prefix)) if prefix.nonEmpty =>
+    case startsWith @ StartsWith(Property(ident: Variable, propertyKey), lit @ StringLiteral(prefix))
+        if prefix.nonEmpty =>
       Some(PrefixRangeSeekable(PrefixRange(lit), startsWith, ident, propertyKey))
-    case startsWith@StartsWith(Property(ident: Variable, propertyKey), rhs) =>
+    case startsWith @ StartsWith(Property(ident: Variable, propertyKey), rhs) =>
       Some(PrefixRangeSeekable(PrefixRange(rhs), startsWith, ident, propertyKey))
     case _ =>
       None
@@ -104,9 +108,9 @@ object AsStringRangeSeekable {
 
 object AsValueRangeSeekable {
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
-    case inequalities@AndedPropertyInequalities(ident, prop, innerInequalities)
-      if innerInequalities.forall( _.rhs.dependencies.isEmpty ) =>
-        Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
+    case inequalities @ AndedPropertyInequalities(ident, prop, innerInequalities)
+        if innerInequalities.forall(_.rhs.dependencies.isEmpty) =>
+      Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
     case _ =>
       None
   }
@@ -164,24 +168,26 @@ sealed trait EqualitySeekable[T <: Expression] extends Seekable[T] {
 }
 
 case class IdSeekable(expr: FunctionInvocation, ident: Variable, args: SeekableArgs)
-  extends EqualitySeekable[FunctionInvocation] {
+    extends EqualitySeekable[FunctionInvocation] {
 
   def dependencies: Set[Variable] = args.dependencies
 }
 
-case class PropertySeekable(expr: Property, ident: Variable, args: SeekableArgs)
-  extends EqualitySeekable[Property] {
+case class PropertySeekable(expr: Property, ident: Variable, args: SeekableArgs) extends EqualitySeekable[Property] {
 
   def propertyKey: PropertyKeyName = expr.propertyKey
-  def dependencies: Set[Variable] = args.dependencies
+  def dependencies: Set[Variable]  = args.dependencies
 }
 
 sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {
   def range: SeekRange[V]
 }
 
-case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr: StartsWith, ident: Variable, propertyKey: PropertyKeyName)
-  extends RangeSeekable[StartsWith, Expression] {
+case class PrefixRangeSeekable(override val range: PrefixRange[Expression],
+                               expr: StartsWith,
+                               ident: Variable,
+                               propertyKey: PropertyKeyName)
+    extends RangeSeekable[StartsWith, Expression] {
 
   def dependencies: Set[Variable] = Set.empty
 
@@ -190,16 +196,16 @@ case class PrefixRangeSeekable(override val range: PrefixRange[Expression], expr
 }
 
 case class InequalityRangeSeekable(ident: Variable, propertyKeyName: PropertyKeyName, expr: AndedPropertyInequalities)
-  extends RangeSeekable[AndedPropertyInequalities, Expression] {
+    extends RangeSeekable[AndedPropertyInequalities, Expression] {
 
   def dependencies: Set[Variable] = expr.inequalities.map(_.dependencies).toSet.flatten
 
   def range: InequalitySeekRange[Expression] =
     InequalitySeekRange.fromPartitionedBounds(expr.inequalities.partition {
-      case GreaterThan(_, value) => Left(ExclusiveBound(value))
+      case GreaterThan(_, value)        => Left(ExclusiveBound(value))
       case GreaterThanOrEqual(_, value) => Left(InclusiveBound(value))
-      case LessThan(_, value) => Right(ExclusiveBound(value))
-      case LessThanOrEqual(_, value) => Right(InclusiveBound(value))
+      case LessThan(_, value)           => Right(ExclusiveBound(value))
+      case LessThanOrEqual(_, value)    => Right(InclusiveBound(value))
     })
 
   def hasEquality: Boolean = expr.inequalities.map(_.includeEquality).reduceLeft(_ || _)
@@ -216,10 +222,10 @@ sealed trait Scannable[+T <: Expression] extends Sargable[T] {
 }
 
 case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: Variable, property: Property)
-  extends Scannable[FunctionInvocation]
+    extends Scannable[FunctionInvocation]
 
 case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: Variable, property: Property)
-  extends Scannable[PartialPredicate[T]]
+    extends Scannable[PartialPredicate[T]]
 
 sealed trait SeekableArgs {
   def expr: Expression
@@ -242,24 +248,22 @@ case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
 case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
   val sizeHint: Option[Int] = expr match {
     case coll: ListLiteral => Some(coll.expressions.size)
-    case _ => None
+    case _                 => None
   }
 
   override def mapValues(f: Expression => Expression): ManySeekableArgs = expr match {
     case coll: ListLiteral => copy(expr = coll.map(f))
-    case _ => copy(expr = f(expr))
+    case _                 => copy(expr = f(expr))
   }
 
   def asQueryExpression: QueryExpression[Expression] = expr match {
     case coll: ListLiteral =>
       ZeroOneOrMany(coll.expressions) match {
         case One(value) => SingleQueryExpression(value)
-        case _ => ManyQueryExpression(coll)
+        case _          => ManyQueryExpression(coll)
       }
 
     case _ =>
       ManyQueryExpression(expr)
   }
 }
-
-

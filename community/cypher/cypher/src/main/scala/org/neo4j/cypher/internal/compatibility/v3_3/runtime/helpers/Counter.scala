@@ -47,7 +47,7 @@ class Counter(initialCount: Long) {
 
   def map[T](f: Long => T) = new CountingIterator[T] {
     override def hasNext = true
-    override def next() = f(self += 1)
+    override def next()  = f(self += 1)
   }
 
   def track[T](tracked: Iterator[T]) = new CountingIterator[T] {
@@ -68,7 +68,7 @@ class Counter(initialCount: Long) {
 
     def limit(maxCount: Long)(thunk: Long => T) = new CountingIterator[T] {
       override def hasNext = inner.hasNext
-      override def next() = if (counted >= maxCount) thunk(self += 1) else inner.next()
+      override def next()  = if (counted >= maxCount) thunk(self += 1) else inner.next()
     }
   }
 }

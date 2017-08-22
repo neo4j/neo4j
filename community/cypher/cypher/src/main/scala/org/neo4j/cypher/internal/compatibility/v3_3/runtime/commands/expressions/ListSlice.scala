@@ -20,14 +20,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, ListSupport}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
-  extends NullInNullOutExpression(collection) with ListSupport {
+    extends NullInNullOutExpression(collection)
+    with ListSupport {
   def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
 
   private val function: (ListValue, ExecutionContext, QueryState) => AnyValue =
@@ -35,12 +39,15 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
       case (Some(f), Some(n)) => fullSlice(f, n)
       case (Some(f), None)    => fromSlice(f)
       case (None, Some(f))    => toSlice(f)
-      case (None, None)       => (coll, _, _) => coll
+      case (None, None) =>
+        (coll, _, _) =>
+          coll
     }
 
-  private def fullSlice(from: Expression, to: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
+  private def fullSlice(from: Expression,
+                        to: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
     val maybeFromValue = asInt(from, ctx, state)
-    val maybeToValue = asInt(to, ctx, state)
+    val maybeToValue   = asInt(to, ctx, state)
     (maybeFromValue, maybeToValue) match {
       case (None, _) => Values.NO_VALUE
       case (_, None) => Values.NO_VALUE
@@ -56,7 +63,7 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
           VirtualValues.slice(collectionValue, start, toValue)
         } else {
           val start = size + fromValue
-          val end = size + toValue
+          val end   = size + toValue
           VirtualValues.slice(collectionValue, start, end)
         }
     }
@@ -79,13 +86,12 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
     toValue match {
       case None => Values.NO_VALUE
       case Some(value) if value >= 0 =>
-       VirtualValues.take(collectionValue, value)
+        VirtualValues.take(collectionValue, value)
       case Some(value) =>
         val end = collectionValue.size + value
         VirtualValues.take(collectionValue, end)
     }
   }
-
 
   def asInt(e: Expression, ctx: ExecutionContext, state: QueryState): Option[Int] = {
     val index = e(ctx)(state)

@@ -34,7 +34,8 @@ case class ListLiteral(expressions: Seq[CodeGenExpression]) extends CodeGenExpre
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     codeGenType match {
-      case cType@CypherCodeGenType(ListType(_), ListReferenceType(innerRepr)) if RepresentationType.isPrimitive(innerRepr) =>
+      case cType @ CypherCodeGenType(ListType(_), ListReferenceType(innerRepr))
+          if RepresentationType.isPrimitive(innerRepr) =>
         structure.asPrimitiveStream(expressions.map(e => {
           e.generateExpression(structure)
         }), cType)

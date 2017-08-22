@@ -20,17 +20,27 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, ShortestPathPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.ShortestPath
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SingleNode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.FakePipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.Node
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
+import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
-  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
-    allowZeroLength = false, Some(15), single = true, relIterator = None)
+  private val path = ShortestPath("p",
+                                  SingleNode("a"),
+                                  SingleNode("b"),
+                                  Seq(),
+                                  SemanticDirection.BOTH,
+                                  allowZeroLength = false,
+                                  Some(15),
+                                  single = true,
+                                  relIterator = None)
 
   test("should return the shortest path between two nodes") {
     val a = createNode("a")
@@ -49,7 +59,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   }
 
   private def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): PathValue = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"-> CTNode, "b"-> CTNode)
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
     val pipe = ShortestPathPipe(source, path)()
     graph.withTx { tx =>

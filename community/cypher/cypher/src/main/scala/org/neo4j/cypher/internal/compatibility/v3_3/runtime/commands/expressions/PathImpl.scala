@@ -23,42 +23,44 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{Iterator => JavaIterator}
 
 import org.neo4j.graphdb.traversal.Paths
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 case class PathImpl(pathEntities: PropertyContainer*)
-  extends org.neo4j.graphdb.Path
-  with Traversable[PropertyContainer] {
+    extends org.neo4j.graphdb.Path
+    with Traversable[PropertyContainer] {
 
   val sz = pathEntities.size
 
-  val (nodeList,relList) = {
+  val (nodeList, relList) = {
     if (sz % 2 == 0)
       throw new IllegalArgumentException(
         s"Tried to construct a path that is not built like a path: even number of elements ($sz)")
-    var x = 0
-    val nodes = new Array[Node](pathEntities.size/2+1)
-    val rels = new Array[Relationship](pathEntities.size/2)
+    var x     = 0
+    val nodes = new Array[Node](pathEntities.size / 2 + 1)
+    val rels  = new Array[Relationship](pathEntities.size / 2)
     try {
       pathEntities.foreach(e => {
-        if ((x % 2) == 0) nodes.update(x/2, e.asInstanceOf[Node])
-        else rels.update((x-1)/2, e.asInstanceOf[Relationship])
-        x+=1
+        if ((x % 2) == 0) nodes.update(x / 2, e.asInstanceOf[Node])
+        else rels.update((x - 1) / 2, e.asInstanceOf[Relationship])
+        x += 1
       })
     } catch {
       case e: ClassCastException =>
-        throw new IllegalArgumentException(
-          s"Tried to construct a path that is not built like a path: $pathEntities", e)
+        throw new IllegalArgumentException(s"Tried to construct a path that is not built like a path: $pathEntities", e)
     }
-    (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
+    (new mutable.WrappedArray.ofRef(nodes), new mutable.WrappedArray.ofRef(rels))
   }
 
   require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
 
   def isProperPath: Boolean = {
-    val atLeastOneNode = nodeList.length > 0
+    val atLeastOneNode                        = nodeList.length > 0
     val relsLengthEqualsToNodesLengthMinusOne = relList.length == nodeList.length - 1
     atLeastOneNode && relsLengthEqualsToNodesLengthMinusOne
   }
@@ -85,7 +87,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
 
   override def canEqual(that: Any) = that != null && that.isInstanceOf[Path]
 
-  override def equals(p1: Any):Boolean = {
+  override def equals(p1: Any): Boolean = {
     if (!canEqual(p1)) return false
 
     val that = p1.asInstanceOf[Path]

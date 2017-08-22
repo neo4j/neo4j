@@ -23,18 +23,27 @@ import java.lang.reflect.Modifier
 import java.util
 
 import org.neo4j.codegen.TypeReference._
-import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
+import org.neo4j.codegen.bytecode.ByteCode.BYTECODE
+import org.neo4j.codegen.bytecode.ByteCode.VERIFY_GENERATED_BYTECODE
 import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.SourceVisitor
-import org.neo4j.codegen.{CodeGenerator, Parameter, _}
+import org.neo4j.codegen._
+import org.neo4j.codegen.CodeGenerator
+import org.neo4j.codegen.Parameter
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.{CodeGenType, FloatType, IntType, ReferenceType}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.CodeGenType
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.FloatType
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.IntType
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ir.expressions.ReferenceType
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.using
-import org.neo4j.cypher.internal.compiler.v3_1.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultVisitor, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_1.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v3_1.TaskCloser
 import org.neo4j.cypher.internal.frontend.v3_1.symbols
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
@@ -43,34 +52,37 @@ import scala.collection.mutable
 
 object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
-  import Expression.{constant, invoke, newInstance}
+  import Expression.constant
+  import Expression.invoke
+  import Expression.newInstance
   import MethodReference.constructorReference
 
   case class GeneratedQueryStructureResult(query: GeneratedQuery, source: Option[(String, String)])
-    extends CodeStructureResult[GeneratedQuery]
+      extends CodeStructureResult[GeneratedQuery]
 
   private def createGenerator(conf: CodeGenConfiguration, source: (String, String) => Unit) = {
     val mode = conf.mode match {
       case SourceCodeMode => SOURCECODE
-      case ByteCodeMode => BYTECODE
+      case ByteCodeMode   => BYTECODE
     }
 
     val options = mutable.ListBuffer.empty[CodeGeneratorOption]
-    if(conf.saveSource) {
-      options += (if(mode == SOURCECODE) new SourceVisitor {
-        override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
-          source(reference.fullName(), sourceCode.toString)
-      } else new DisassemblyVisitor {
-        override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
-          source(className, disassembly.toString)
-      })
+    if (conf.saveSource) {
+      options += (if (mode == SOURCECODE) new SourceVisitor {
+                    override protected def visitSource(reference: TypeReference, sourceCode: CharSequence): Unit =
+                      source(reference.fullName(), sourceCode.toString)
+                  } else
+                    new DisassemblyVisitor {
+                      override protected def visitDisassembly(className: String, disassembly: CharSequence): Unit =
+                        source(className, disassembly.toString)
+                    })
     }
-    if(getClass.desiredAssertionStatus()) {
+    if (getClass.desiredAssertionStatus()) {
       options += VERIFY_GENERATED_BYTECODE
     }
 
     try {
-      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, options:_*)
+      CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode, options: _*)
     } catch {
       case e: Exception => throw new CantCompileQueryException(e.getMessage, e)
     }
@@ -80,19 +92,23 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
     private var _source: Option[(String, String)] = None
 
-    override def apply(typeName: String, sourceCode: String): Unit =  _source = Some(typeName, sourceCode)
+    override def apply(typeName: String, sourceCode: String): Unit = _source = Some(typeName, sourceCode)
 
     def source: Option[(String, String)] = _source
   }
 
-  override def generateQuery(className: String, columns: Seq[String], operatorIds: Map[String, Id],
-                             conf: CodeGenConfiguration)
-                            (block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
+  override def generateQuery(
+      className: String,
+      columns: Seq[String],
+      operatorIds: Map[String, Id],
+      conf: CodeGenConfiguration)(block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
 
     val sourceSaver = new SourceSaver
-    val generator = createGenerator(conf, sourceSaver)
+    val generator   = createGenerator(conf, sourceSaver)
     val execution = using(
-      generator.generateClass(conf.packageName, className + "Execution", typeRef[GeneratedQueryExecution],
+      generator.generateClass(conf.packageName,
+                              className + "Execution",
+                              typeRef[GeneratedQueryExecution],
                               typeRef[SuccessfulCloseable])) { clazz =>
       // fields
       val fields = Fields(
@@ -105,10 +121,11 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         params = clazz.field(typeRef[util.Map[String, Object]], "params"),
         closeable = clazz.field(typeRef[SuccessfulCloseable], "closeable"),
         success = clazz.generate(Templates.success(clazz.handle())),
-        close = clazz.generate(Templates.close(clazz.handle())))
-        // the "COLUMNS" static field
-        clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
-        columns.map(key => constant(key))))
+        close = clazz.generate(Templates.close(clazz.handle()))
+      )
+      // the "COLUMNS" static field
+      clazz
+        .staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](columns.map(key => constant(key))))
 
       // the operator id fields
       operatorIds.keys.foreach { opId =>
@@ -122,11 +139,15 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       clazz.generate(Templates.executionPlanDescription(clazz.handle()))
       clazz.generate(Templates.JAVA_COLUMNS)
 
-      using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-                                                    Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]],
-                                                                                      typeParameter("E")), "visitor")).
-        parameterizedWith("E", extending(typeRef[Exception])).
-        throwsException(typeParameter("E")))) { method =>
+      using(
+        clazz.generate(
+          MethodDeclaration
+            .method(typeRef[Unit],
+                    "accept",
+                    Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]], typeParameter("E")),
+                                    "visitor"))
+            .parameterizedWith("E", extending(typeRef[Exception]))
+            .throwsException(typeParameter("E")))) { method =>
         method.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
         block(GeneratedMethodStructure(fields, method, new AuxGenerator(conf.packageName, generator)))
         method.expression(invoke(method.self(), fields.success))
@@ -135,29 +156,36 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       clazz.handle()
     }
     val query = using(generator.generateClass(conf.packageName, className, typeRef[GeneratedQuery])) { clazz =>
-      using(clazz.generateMethod(typeRef[GeneratedQueryExecution], "execute",
-                                 param[TaskCloser]("closer"),
-                                 param[QueryContext]("queryContext"),
-                                 param[ExecutionMode]("executionMode"),
-                                 param[Provider[InternalPlanDescription]]("description"),
-                                 param[QueryExecutionTracer]("tracer"),
-                                 param[util.Map[String, Object]]("params"))) { execute =>
+      using(
+        clazz.generateMethod(
+          typeRef[GeneratedQueryExecution],
+          "execute",
+          param[TaskCloser]("closer"),
+          param[QueryContext]("queryContext"),
+          param[ExecutionMode]("executionMode"),
+          param[Provider[InternalPlanDescription]]("description"),
+          param[QueryExecutionTracer]("tracer"),
+          param[util.Map[String, Object]]("params")
+        )) { execute =>
         execute.returns(
           invoke(
             newInstance(execution),
-            constructorReference(execution,
-                                 typeRef[TaskCloser],
-                                 typeRef[QueryContext],
-                                 typeRef[ExecutionMode],
-                                 typeRef[Provider[InternalPlanDescription]],
-                                 typeRef[QueryExecutionTracer],
-                                 typeRef[util.Map[String, Object]]),
-                                  execute.load("closer"),
-                                  execute.load("queryContext"),
-                                  execute.load("executionMode"),
-                                  execute.load("description"),
-                                  execute.load("tracer"),
-                                  execute.load("params")))
+            constructorReference(
+              execution,
+              typeRef[TaskCloser],
+              typeRef[QueryContext],
+              typeRef[ExecutionMode],
+              typeRef[Provider[InternalPlanDescription]],
+              typeRef[QueryExecutionTracer],
+              typeRef[util.Map[String, Object]]
+            ),
+            execute.load("closer"),
+            execute.load("queryContext"),
+            execute.load("executionMode"),
+            execute.load("description"),
+            execute.load("tracer"),
+            execute.load("params")
+          ))
       }
       clazz.handle()
     }.newInstance().asInstanceOf[GeneratedQuery]
@@ -169,8 +197,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     GeneratedQueryStructureResult(query, sourceSaver.source)
   }
 
-  def method[O <: AnyRef, R](name: String, params: TypeReference*)
-                            (implicit owner: Manifest[O], returns: Manifest[R]): MethodReference =
+  def method[O <: AnyRef, R](name: String, params: TypeReference*)(implicit owner: Manifest[O],
+                                                                   returns: Manifest[R]): MethodReference =
     MethodReference.methodReference(typeReference(owner), typeReference(returns), name, Modifier.PUBLIC, params: _*)
 
   def staticField[O <: AnyRef, R](name: String)(implicit owner: Manifest[O], fieldType: Manifest[R]): FieldReference =
@@ -183,7 +211,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   def typeReference(manifest: Manifest[_]): TypeReference = {
     val arguments = manifest.typeArguments
-    val base = TypeReference.typeReference(manifest.runtimeClass)
+    val base      = TypeReference.typeReference(manifest.runtimeClass)
     if (arguments.nonEmpty) {
       TypeReference.parameterizedType(base, arguments.map(typeReference): _*)
     } else {
@@ -192,17 +220,17 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   def lowerType(cType: CodeGenType): TypeReference = cType match {
-    case CodeGenType(symbols.CTNode, IntType) => typeRef[Long]
+    case CodeGenType(symbols.CTNode, IntType)         => typeRef[Long]
     case CodeGenType(symbols.CTRelationship, IntType) => typeRef[Long]
-    case CodeGenType(symbols.CTInteger, IntType) => typeRef[Long]
-    case CodeGenType(symbols.CTFloat, FloatType) => typeRef[Double]
+    case CodeGenType(symbols.CTInteger, IntType)      => typeRef[Long]
+    case CodeGenType(symbols.CTFloat, FloatType)      => typeRef[Double]
     case CodeGenType(symbols.CTString, ReferenceType) => typeRef[String]
-    case _ => typeRef[Object]
+    case _                                            => typeRef[Object]
   }
 
   def nullValue(cType: CodeGenType) = cType match {
-    case CodeGenType(symbols.CTNode, IntType) => constant(-1L)
+    case CodeGenType(symbols.CTNode, IntType)         => constant(-1L)
     case CodeGenType(symbols.CTRelationship, IntType) => constant(-1L)
-    case _ => constant(null)
+    case _                                            => constant(null)
   }
 }

@@ -17,5 +17,5 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 trait UserDefinedFunctionInvocation {
-  def isAggregate:Boolean
+  def isAggregate: Boolean
 }

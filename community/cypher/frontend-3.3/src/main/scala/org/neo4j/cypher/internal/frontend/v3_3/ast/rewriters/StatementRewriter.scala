@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 
 trait StatementRewriter extends Phase[BaseContext, BaseState, BaseState] {
   override def phase: CompilationPhase = AST_REWRITE

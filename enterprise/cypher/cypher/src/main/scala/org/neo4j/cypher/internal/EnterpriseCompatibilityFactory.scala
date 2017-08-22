@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.CypherPlanner
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContextCreator
-import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
+import org.neo4j.cypher.internal.compatibility.v3_3.Compatibility
+import org.neo4j.cypher.internal.compatibility.v3_3.CostCompatibility
+import org.neo4j.cypher.internal.compatibility.v2_3
+import org.neo4j.cypher.internal.compatibility.v3_1
+import org.neo4j.cypher.internal.compatibility.v3_2
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -30,9 +33,12 @@ import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 
-class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDatabaseQueryService,
-                                     kernelAPI: KernelAPI, kernelMonitors: KernelMonitors,
-                                     logProvider: LogProvider) extends CompatibilityFactory {
+class EnterpriseCompatibilityFactory(inner: CompatibilityFactory,
+                                     graph: GraphDatabaseQueryService,
+                                     kernelAPI: KernelAPI,
+                                     kernelMonitors: KernelMonitors,
+                                     logProvider: LogProvider)
+    extends CompatibilityFactory {
   override def create(spec: PlannerSpec_v2_3, config: CypherCompilerConfiguration): v2_3.Compatibility =
     inner.create(spec, config)
 
@@ -42,13 +48,22 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
   override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility[_] =
     inner.create(spec, config)
 
-  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): Compatibility[_,_] =
+  override def create(spec: PlannerSpec_v3_3, config: CypherCompilerConfiguration): Compatibility[_, _] =
     (spec.planner, spec.runtime) match {
       case (CypherPlanner.rule, _) => inner.create(spec, config)
 
       case _ =>
-        CostCompatibility(config, CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, logProvider.getLog(getClass),
-                          spec.planner, spec.runtime, spec.updateStrategy, EnterpriseRuntimeBuilder,
-                          EnterpriseRuntimeContextCreator(GeneratedQueryStructure))
+        CostCompatibility(
+          config,
+          CompilerEngineDelegator.CLOCK,
+          kernelMonitors,
+          kernelAPI,
+          logProvider.getLog(getClass),
+          spec.planner,
+          spec.runtime,
+          spec.updateStrategy,
+          EnterpriseRuntimeBuilder,
+          EnterpriseRuntimeContextCreator(GeneratedQueryStructure)
+        )
     }
 }

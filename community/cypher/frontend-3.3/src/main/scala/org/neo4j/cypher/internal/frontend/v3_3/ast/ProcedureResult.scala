@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 
 object ProcedureResult {
@@ -24,9 +25,9 @@ object ProcedureResult {
     ProcedureResult(items.toIndexedSeq, None)(position)
 }
 
-case class ProcedureResult(items: IndexedSeq[ProcedureResultItem], where: Option[Where] = None)
-                          (val position: InputPosition)
-  extends ASTNode {
+case class ProcedureResult(items: IndexedSeq[ProcedureResultItem], where: Option[Where] = None)(
+    val position: InputPosition)
+    extends ASTNode {
 
   def semanticCheck: SemanticCheck =
     items.foldSemanticCheck(_.semanticCheck) chain where.map(_.semanticCheck).getOrElse(success)

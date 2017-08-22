@@ -22,27 +22,27 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{desugarMapProjection, normalizeReturnClauses, normalizeWithClauses, recordScopes}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.desugarMapProjection
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeWithClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.recordScopes
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Rewriter, SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 
 class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
 
-  assertRewrite(
-    "match (n) return n{k:42} as x",
-    "match (n) return n{k:42} as x")
+  assertRewrite("match (n) return n{k:42} as x", "match (n) return n{k:42} as x")
 
-  assertRewrite(
-    "match (n) return n{.id} as x",
-    "match (n) return n{id: n.id} as x")
+  assertRewrite("match (n) return n{.id} as x", "match (n) return n{id: n.id} as x")
 
-  assertRewrite(
-    "with '42' as existing match (n) return n{existing} as x",
-    "with '42' as existing match (n) return n{existing: existing} as x")
+  assertRewrite("with '42' as existing match (n) return n{existing} as x",
+                "with '42' as existing match (n) return n{existing: existing} as x")
 
-  assertRewrite(
-    "match (n) return n{.foo,.bar,.baz} as x",
-    "match (n) return n{foo: n.foo, bar: n.bar, baz: n.baz} as x")
+  assertRewrite("match (n) return n{.foo,.bar,.baz} as x",
+                "match (n) return n{foo: n.foo, bar: n.bar, baz: n.baz} as x")
 
   assertRewrite(
     "match (n) return n{.*, .apa} as x",
@@ -59,7 +59,6 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
       |   .apa
       | }
       |} as x""".stripMargin,
-
     """match (n), (m)
       |return n {
       | foo: n.foo,
@@ -68,16 +67,17 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
       |   baz: m.baz,
       |   apa: m.apa
       | }
-      |} as x""".stripMargin)
+      |} as x""".stripMargin
+  )
 
   def assertRewrite(originalQuery: String, expectedQuery: String) {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
-        val mkException = new SyntaxExceptionCreator(originalQuery, None)
-        val sequence: Rewriter = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
-        val originalAst = parser.parse(q).endoRewrite(sequence)
+        val mkException         = new SyntaxExceptionCreator(originalQuery, None)
+        val sequence: Rewriter  = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
+        val originalAst         = parser.parse(q).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
-        val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
+        val withScopes          = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
 
         withScopes.endoRewrite(desugarMapProjection(semanticCheckResult.state))
       }

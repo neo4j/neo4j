@@ -27,8 +27,8 @@ import org.neo4j.values.AnyValue
 
 case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = throw new
-      InternalException("This should never be called")
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    throw new InternalException("This should never be called")
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 

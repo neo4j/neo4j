@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
-                (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
+case class Limit(left: LogicalPlan, count: Expression, ties: Ties)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
@@ -32,5 +34,5 @@ case class Limit(left: LogicalPlan, count: Expression, ties: Ties)
 
 // Using a trait instead of a bool to make the code more readable
 sealed trait Ties
-case object IncludeTies extends Ties
+case object IncludeTies      extends Ties
 case object DoNotIncludeTies extends Ties

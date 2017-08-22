@@ -27,9 +27,11 @@ import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Map
 
-class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, CypherType)*) extends Pipe with MockitoSugar {
+class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, CypherType)*)
+    extends Pipe
+    with MockitoSugar {
 
-  def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
+  def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables: _*)
 
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(AnyValues.of).toSeq: _*)))

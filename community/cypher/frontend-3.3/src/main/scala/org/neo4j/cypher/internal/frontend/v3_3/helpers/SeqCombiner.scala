@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.helpers
 
 object SeqCombiner {
+
   /**
     * Combines each element in the inner Seq's with one element of every other inner Seq.
     *
@@ -51,8 +52,8 @@ object SeqCombiner {
           List(C, 3, z))
     */
   def combine[A](xs: Traversable[Traversable[A]]): Seq[Seq[A]] =
-    xs.foldLeft(Seq(Seq.empty[A])) {
-      (x, y) => for (a <- x; b <- y) yield a :+ b
+    xs.foldLeft(Seq(Seq.empty[A])) { (x, y) =>
+      for (a <- x; b <- y) yield a :+ b
     }
 
 }

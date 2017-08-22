@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.storable.Values
 
-case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
-                       (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class OptionalPipe(nullableVariables: Set[String], source: Pipe)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
     val context = initialContext.getOrElse(ExecutionContext.empty)
@@ -33,7 +32,8 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
     context
   }
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext(state.initialContext))
     else input
 }

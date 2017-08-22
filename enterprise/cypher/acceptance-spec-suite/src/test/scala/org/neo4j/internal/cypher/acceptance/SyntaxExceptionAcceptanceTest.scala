@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite}
+import org.neo4j.cypher.CypherException
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
 import scala.util.matching.Regex
 
@@ -172,12 +173,16 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should handle empty string") {
-    test(" ", "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 1, column 2 (offset: 1))")
+    test(
+      " ",
+      "Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 1, column 2 (offset: 1))")
   }
 
   test("should handle newline") {
     val sep = System.lineSeparator()
-    test(sep, s"Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: ${sep.length}))")
+    test(
+      sep,
+      s"Unexpected end of input: expected whitespace, comment, CYPHER options, EXPLAIN, PROFILE or Query (line 2, column 1 (offset: ${sep.length}))")
   }
 
   def test(query: String, message: String) {
@@ -200,7 +205,7 @@ class SyntaxExceptionAcceptanceTest extends ExecutionEngineFunSuite {
       case x: CypherException =>
         val actual = x.getMessage.lines.next().trim
         messageRegex findFirstIn actual match {
-          case None => fail(s"Expected matching '$messageRegex', but was '$actual'")
+          case None    => fail(s"Expected matching '$messageRegex', but was '$actual'")
           case Some(_) => ()
         }
     }

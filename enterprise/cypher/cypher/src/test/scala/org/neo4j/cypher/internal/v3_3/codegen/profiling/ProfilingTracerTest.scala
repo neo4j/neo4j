@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.v3_3.codegen.profiling
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.EmptyKernelStatisticProvider
+import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 
@@ -37,10 +38,10 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("shouldReportExecutionTimeOfQueryExecution") {
     // given
-    val clock = new Clock
+    val clock      = new Clock
     val operatorId = new Id
-    val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
-    val event = tracer.executeOperator(operatorId)
+    val tracer     = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
+    val event      = tracer.executeOperator(operatorId)
 
     // when
     clock.progress(516)
@@ -52,9 +53,9 @@ class ProfilingTracerTest extends CypherFunSuite {
 
   test("multiple uses of the same Id should aggregate spent time") {
     // given
-    val clock = new Clock
+    val clock      = new Clock
     val operatorId = new Id
-    val tracer = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
+    val tracer     = new ProfilingTracer(clock, EmptyKernelStatisticProvider)
 
     // when
     val event1 = tracer.executeOperator(operatorId)
@@ -72,8 +73,8 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("shouldReportDbHitsOfQueryExecution") {
     // given
     val operatorId = new Id
-    val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
-    val event = tracer.executeOperator(operatorId)
+    val tracer     = new ProfilingTracer(EmptyKernelStatisticProvider)
+    val event      = tracer.executeOperator(operatorId)
 
     // when
     (0 until 516).foreach { _ =>
@@ -89,8 +90,8 @@ class ProfilingTracerTest extends CypherFunSuite {
   test("shouldReportRowsOfQueryExecution") {
     // given
     val operatorId = new Id
-    val tracer = new ProfilingTracer(EmptyKernelStatisticProvider)
-    val event = tracer.executeOperator(operatorId)
+    val tracer     = new ProfilingTracer(EmptyKernelStatisticProvider)
+    val event      = tracer.executeOperator(operatorId)
 
     // when
     (0 until 516).foreach { _ =>
@@ -105,12 +106,13 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache hits as part of profiling statistics") {
-    val operatorId = new Id
+    val operatorId   = new Id
     val cursorTracer = new DefaultPageCursorTracer
-    var tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
-    val event = tracer.executeOperator(operatorId)
+    var tracer       = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
+    val event        = tracer.executeOperator(operatorId)
 
-    1 to 100 foreach { _ => {
+    1 to 100 foreach { _ =>
+      {
         val pin = cursorTracer.beginPin(false, 1, null)
         pin.hit()
         pin.done()
@@ -124,17 +126,18 @@ class ProfilingTracerTest extends CypherFunSuite {
   }
 
   test("report page cache misses as part of profiling statistics") {
-    val operatorId = new Id
+    val operatorId   = new Id
     val cursorTracer = new DefaultPageCursorTracer
-    var tracer = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
-    val event = tracer.executeOperator(operatorId)
+    var tracer       = new ProfilingTracer(new DelegatingKernelStatisticProvider(cursorTracer))
+    val event        = tracer.executeOperator(operatorId)
 
-    1 to 17 foreach { _ => {
-      val pin = cursorTracer.beginPin(false, 1, null)
-      val pageFault = pin.beginPageFault()
-      pageFault.done()
-      pin.done()
-    }
+    1 to 17 foreach { _ =>
+      {
+        val pin       = cursorTracer.beginPin(false, 1, null)
+        val pageFault = pin.beginPageFault()
+        pageFault.done()
+        pin.done()
+      }
     }
 
     event.close()

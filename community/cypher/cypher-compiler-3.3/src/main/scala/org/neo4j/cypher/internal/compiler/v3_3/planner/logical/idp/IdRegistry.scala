@@ -60,9 +60,9 @@ object IdRegistry {
 }
 
 class DefaultIdRegistry[I] extends IdRegistry[I] {
-  private var count = -1
-  private val map = new mutable.HashMap[I, Int]
-  private val reverseMap = new mutable.HashMap[Int, I]
+  private var count         = -1
+  private val map           = new mutable.HashMap[I, Int]
+  private val reverseMap    = new mutable.HashMap[Int, I]
   private val compactionMap = new mutable.HashMap[Int, BitSet]
 
   override def registerAll(elems: Iterable[I]): BitSet = {
@@ -117,5 +117,3 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def compacted() = compactionMap.nonEmpty
 }
-
-

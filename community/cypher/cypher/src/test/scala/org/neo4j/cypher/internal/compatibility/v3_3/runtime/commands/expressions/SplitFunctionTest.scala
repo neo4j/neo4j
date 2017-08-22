@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 
 class SplitFunctionTest extends CypherFunSuite {
 
-  val nullSeq = null.asInstanceOf[Seq[String]]
+  val nullSeq    = null.asInstanceOf[Seq[String]]
   val nullString = null.asInstanceOf[String]
 
   test("passing null to split() returns null") {
@@ -48,7 +48,7 @@ class SplitFunctionTest extends CypherFunSuite {
   }
 
   test("splitting a string containing only the split pattern should return two empty strings") {
-    split(",", ",") should be(seq("",""))
+    split(",", ",") should be(seq("", ""))
   }
 
   test("using an empty separator should split on every character") {
@@ -57,7 +57,7 @@ class SplitFunctionTest extends CypherFunSuite {
     split("", "") should be(seq(""))
   }
 
-  private def seq(vals: String*) = list(vals.map(stringValue):_*)
+  private def seq(vals: String*) = list(vals.map(stringValue): _*)
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))

@@ -22,14 +22,18 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.{namePatternPredicatePatternElements, _}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.namePatternPredicatePatternElements
+import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature, _}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureSignature
+import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -39,29 +43,39 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.ir.v3_3._
 
 import scala.collection.mutable
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport
+    extends CypherTestSupport
+    with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  val monitors = mock[Monitors]
-  val parser = new CypherParser
+  val monitors          = mock[Monitors]
+  val parser            = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
-  val mockRel = newPatternRelationship("a", "b", "r")
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val astRewriter       = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  val mockRel           = newPatternRelationship("a", "b", "r")
+  val solved            = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
-  def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
+  def newPatternRelationship(start: IdName,
+                             end: IdName,
+                             rel: IdName,
+                             dir: SemanticDirection = SemanticDirection.OUTGOING,
+                             types: Seq[RelTypeName] = Seq.empty,
+                             length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+    def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                evaluator: ExpressionEvaluator) =
       SimpleMetricsFactory.newCardinalityEstimator(queryGraphCardinalityModel, evaluator)
     def newCostModel() =
       SimpleMetricsFactory.newCostModel()
@@ -105,15 +119,24 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                       semanticTable: SemanticTable = newMockedSemanticTable,
                                       strategy: QueryGraphSolver = new IDPQueryGraphSolver(
                                         SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
-                                        cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor]),
+                                        cartesianProductsOrValueJoins,
+                                        mock[IDPQueryGraphSolverMonitor]),
                                       cardinality: Cardinality = Cardinality(1),
                                       strictness: Option[StrictnessMode] = None,
                                       notificationLogger: InternalNotificationLogger = devNullLogger,
                                       useErrorsOverWarnings: Boolean = false): LogicalPlanningContext =
-    LogicalPlanningContext(planContext, LogicalPlanProducer(metrics.cardinality), metrics, semanticTable,
-      strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
-      notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
-      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default)
+    LogicalPlanningContext(
+      planContext,
+      LogicalPlanProducer(metrics.cardinality),
+      metrics,
+      semanticTable,
+      strategy,
+      QueryGraphSolverInput(Map.empty, cardinality, strictness),
+      notificationLogger = notificationLogger,
+      useErrorsOverWarnings = useErrorsOverWarnings,
+      legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping,
+      config = QueryPlannerConfiguration.default
+    )
 
   def newMockedStatistics = mock[GraphStatistics]
   def hardcodedStatistics = HardcodedGraphStatistics
@@ -126,14 +149,17 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlanWithProjections(ids: String*): LogicalPlan = {
     val projections = RegularQueryProjection(projections = ids.map((id) => id -> varFor(id)).toMap)
-    FakePlan(ids.map(IdName(_)).toSet)(CardinalityEstimation.lift(RegularPlannerQuery(
-        horizon = projections,
-        queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
-      ), Cardinality(0))
-    )
+    FakePlan(ids.map(IdName(_)).toSet)(
+      CardinalityEstimation.lift(RegularPlannerQuery(
+                                   horizon = projections,
+                                   queryGraph = QueryGraph.empty.addPatternNodes(ids.map(IdName(_)): _*)
+                                 ),
+                                 Cardinality(0)))
   }
 
-  def newMockedLogicalPlan(idNames: Set[IdName], cardinality: Cardinality = Cardinality(1), hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
+  def newMockedLogicalPlan(idNames: Set[IdName],
+                           cardinality: Cardinality = Cardinality(1),
+                           hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints)
     FakePlan(idNames)(CardinalityEstimation.lift(RegularPlannerQuery(qg), cardinality))
   }
@@ -169,29 +195,30 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   val pipeLine =
     Parsing andThen
-    PreparatoryRewriting andThen
-    SemanticAnalysis(warn = true) andThen
-    AstRewriting(newPlain, literalExtraction = Never) andThen
-    RewriteProcedureCalls andThen
-    Namespacer andThen
-    rewriteEqualityToInPredicate andThen
-    CNFNormalizer andThen
-    LateAstRewriting andThen
+      PreparatoryRewriting andThen
+      SemanticAnalysis(warn = true) andThen
+      AstRewriting(newPlain, literalExtraction = Never) andThen
+      RewriteProcedureCalls andThen
+      Namespacer andThen
+      rewriteEqualityToInPredicate andThen
+      CNFNormalizer andThen
+      LateAstRewriting andThen
 //    ResolveTokens andThen
-    // This fakes pattern expression naming for testing purposes
-    // In the actual code path, this renaming happens as part of planning
-    //
-    // cf. QueryPlanningStrategy
-    //
-    Do(rewriteStuff _) andThen
-    CreatePlannerQuery
+      // This fakes pattern expression naming for testing purposes
+      // In the actual code path, this renaming happens as part of planning
+      //
+      // cf. QueryPlanningStrategy
+      //
+      Do(rewriteStuff _) andThen
+      CreatePlannerQuery
 
   private def rewriteStuff(input: BaseState, context: CompilerContext): BaseState = {
     val newStatement = input.statement().endoRewrite(namePatternPredicatePatternElements)
     LogicalPlanState(input).copy(maybeStatement = Some(newStatement))
   }
 
-  def buildPlannerUnionQuery(query: String, procLookup: Option[QualifiedName => ProcedureSignature] = None,
+  def buildPlannerUnionQuery(query: String,
+                             procLookup: Option[QualifiedName => ProcedureSignature] = None,
                              fcnLookup: Option[QualifiedName => Option[UserFunctionSignature]] = None) = {
     val signature = ProcedureSignature(
       QualifiedName(Seq.empty, "foo"),
@@ -200,26 +227,27 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
       accessMode = ProcedureReadOnlyAccess(Array.empty)
     )
-    val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
+    val mkException                                             = new SyntaxExceptionCreator(query, Some(pos))
+    val procs: (QualifiedName) => ProcedureSignature            = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
-    val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
+    val planContext                                             = new TestSignatureResolvingPlanContext(procs, funcs)
+    val state                                                   = LogicalPlanState(query, None, CostBasedPlannerName.default)
 
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
-    val output = pipeLine.transform(state, context)
+    val output  = pipeLine.transform(state, context)
 
     output.unionQuery
   }
 
   def identHasLabel(name: String, labelName: String): HasLabels = {
-    val labelNameObj: LabelName = LabelName(labelName)_
-    HasLabels(Variable(name)_, Seq(labelNameObj))_
+    val labelNameObj: LabelName = LabelName(labelName) _
+    HasLabels(Variable(name) _, Seq(labelNameObj)) _
   }
 }
 
 case class FakePlan(availableSymbols: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+    extends LogicalPlan
+    with LazyLogicalPlan {
   def rhs = None
   def lhs = None
 }

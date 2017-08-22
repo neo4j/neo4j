@@ -24,14 +24,18 @@ import java.util
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.MapBasedRow
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Version
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.values.result.QueryResult
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
@@ -44,13 +48,13 @@ class PipeExecutionResult(val result: ResultIterator,
                           val executionPlanBuilder: () => InternalPlanDescription,
                           val executionMode: ExecutionMode,
                           val queryType: InternalQueryType)
-  extends InternalExecutionResult {
+    extends InternalExecutionResult {
 
   self =>
 
-  private val query = state.query
-  val javaValues = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
-  val scalaValues = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
+  private val query     = state.query
+  val javaValues        = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
+  val scalaValues       = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
@@ -61,20 +65,23 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = query.asObject(result.next().getOrElse(column, columnNotFoundException(column, columns))).asInstanceOf[T]
+    def next() =
+      query.asObject(result.next().getOrElse(column, columnNotFoundException(column, columns))).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
-    if (this.columns.contains(column)) map { case m => getAnyColumn(column, m).asInstanceOf[T] }
-    else columnNotFoundException(column, columns)
+    if (this.columns.contains(column)) map { case m => getAnyColumn(column, m).asInstanceOf[T] } else
+      columnNotFoundException(column, columns)
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = immutableMapValues(result.next(), query.asObject).asJava
+    def next()  = immutableMapValues(result.next(), query.asObject).asJava
   }
 
-  override def toList: List[Predef.Map[String, Any]] = result.toList.map(immutableMapValues(_, query.asObject))
-    .map(immutableMapValues(_, scalaValues.asDeepScalaValue))
+  override def toList: List[Predef.Map[String, Any]] =
+    result.toList
+      .map(immutableMapValues(_, query.asObject))
+      .map(immutableMapValues(_, scalaValues.asDeepScalaValue))
 
   def hasNext = result.hasNext
 
@@ -87,15 +94,15 @@ class PipeExecutionResult(val result: ResultIterator,
   def planDescriptionRequested = executionMode == ExplainMode || executionMode == ProfileMode
 
   private def columnNotFoundException(column: String, expected: Iterable[String]) =
-    throw new NotFoundException("No column named '" + column + "' was found. Found: " + expected.mkString("(\"", "\", \"", "\")"))
+    throw new NotFoundException(
+      "No column named '" + column + "' was found. Found: " + expected.mkString("(\"", "\", \"", "\")"))
 
   private def getAnyColumn[T](column: String, m: Map[String, Any]): Any =
     m.getOrElse(column, columnNotFoundException(column, m.keys))
 
-
   private def withDumper[T](f: (ExecutionResultDumper) => (QueryContext => T)): T = {
     val result = toList
-    state.query.withAnyOpenQueryContext( qtx => f(ExecutionResultDumper(result, columns, queryStatistics()))(qtx) )
+    state.query.withAnyOpenQueryContext(qtx => f(ExecutionResultDumper(result, columns, queryStatistics()))(qtx))
   }
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
@@ -104,7 +111,7 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   //notifications only present for EXPLAIN
-  override val notifications = Iterable.empty[Notification]
+  override val notifications                                                           = Iterable.empty[Notification]
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
   def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {

@@ -25,41 +25,42 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 /**
- * LabelSpec represent parsed label sets before they are turned into either expressions or predicates
- *
- * They come in three forms
- *
- * <ul>
- *   <li>LabelSet.empty denotes that no labels have been parsed</li>
- *   <li>LabelSet(Some(expr)) denotes that a single set of labels has been parsed</li>
- *   <li>LabelChoice(labelSets) denotes that multiple sets of labels have been parsed</li>
- * </ul>
- *
- */
+  * LabelSpec represent parsed label sets before they are turned into either expressions or predicates
+  *
+  * They come in three forms
+  *
+  * <ul>
+  *   <li>LabelSet.empty denotes that no labels have been parsed</li>
+  *   <li>LabelSet(Some(expr)) denotes that a single set of labels has been parsed</li>
+  *   <li>LabelChoice(labelSets) denotes that multiple sets of labels have been parsed</li>
+  * </ul>
+  *
+  */
 sealed abstract class LabelSpec {
+
   /**
-   * @return true if this has been created without given any labels at all
-   */
+    * @return true if this has been created without given any labels at all
+    */
   def bare: Boolean
 
   /**
-   * @return all LabelSets contained in this LabelSpec
-   */
+    * @return all LabelSets contained in this LabelSpec
+    */
   def allSets: Seq[LabelSet]
 
   /**
-   * @throws SyntaxException if this is a LabelChoice
-   * @return this as a LabelSet
-   */
+    * @throws SyntaxException if this is a LabelChoice
+    * @return this as a LabelSet
+    */
   def asLabelSet: LabelSet
 
-  def toPredicates(ident: Variable): Seq[HasLabel] = asLabelSet.labelVals.map(HasLabel(ident,_))
+  def toPredicates(ident: Variable): Seq[HasLabel] = asLabelSet.labelVals.map(HasLabel(ident, _))
 
   /**
-   * Reduce a LabelChoice to a LabelSet if possible
-   *
-   * @return a simplified LabelSpec
-   */
+    * Reduce a LabelChoice to a LabelSet if possible
+    *
+    * @return a simplified LabelSpec
+    */
   def simplify: LabelSpec = this
 }
 
@@ -68,8 +69,8 @@ object LabelSet {
 }
 
 final case class LabelSet(labelVals: Seq[KeyToken]) extends LabelSpec {
-  val bare = labelVals.isEmpty
-  def allSets = if (bare) Seq.empty else Seq(this)
+  val bare       = labelVals.isEmpty
+  def allSets    = if (bare) Seq.empty else Seq(this)
   def asLabelSet = this
 }
 

@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 object functionConverter {
 
-  def apply(fcn: ast.FunctionInvocation, callback: ast.Expression => CodeGenExpression)
-           (implicit context: CodeGenContext): CodeGenExpression = fcn.function match {
+  def apply(fcn: ast.FunctionInvocation, callback: ast.Expression => CodeGenExpression)(
+      implicit context: CodeGenContext): CodeGenExpression = fcn.function match {
 
     // id(n)
     case ast.functions.Id =>
@@ -42,6 +42,3 @@ object functionConverter {
     case other => throw new CantCompileQueryException(s"Function $other not yet supported")
   }
 }
-
-
-

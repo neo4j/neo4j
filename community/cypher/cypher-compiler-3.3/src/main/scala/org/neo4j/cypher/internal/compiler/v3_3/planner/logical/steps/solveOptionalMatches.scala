@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, LogicalPlanningFunction2}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningFunction2
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object solveOptionalMatches {
@@ -31,8 +32,8 @@ object solveOptionalMatches {
 case object applyOptional extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val innerContext: LogicalPlanningContext = context.recurse(lhs)
-    val inner = context.strategy.plan(optionalQg)(innerContext)
-    val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols)(innerContext)
+    val inner                                = context.strategy.plan(optionalQg)(innerContext)
+    val rhs                                  = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols)(innerContext)
     Some(context.logicalPlanProducer.planApply(lhs, rhs))
   }
 }
@@ -40,11 +41,11 @@ case object applyOptional extends OptionalSolver {
 case object outerHashJoin extends OptionalSolver {
   def apply(optionalQg: QueryGraph, lhs: LogicalPlan)(implicit context: LogicalPlanningContext) = {
     val joinNodes = optionalQg.argumentIds
-    val rhs = context.strategy.plan(optionalQg.withoutArguments())
+    val rhs       = context.strategy.plan(optionalQg.withoutArguments())
 
     if (joinNodes.nonEmpty &&
-      joinNodes.forall(lhs.availableSymbols) &&
-      joinNodes.forall(optionalQg.patternNodes)) {
+        joinNodes.forall(lhs.availableSymbols) &&
+        joinNodes.forall(optionalQg.patternNodes)) {
       Some(context.logicalPlanProducer.planOuterHashJoin(joinNodes, lhs, rhs))
     } else {
       None

@@ -24,16 +24,22 @@ import java.util.function.Consumer
 import org.neo4j.codegen.ExpressionTemplate._
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
+import org.neo4j.collection.primitive.Primitive
+import org.neo4j.collection.primitive.PrimitiveLongIntMap
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap
 import org.neo4j.cypher.internal.compiler.v3_1.codegen._
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v3_1.spi.QueryTransactionalContext
+import org.neo4j.cypher.internal.compiler.v3_1.ExecutionMode
+import org.neo4j.cypher.internal.compiler.v3_1.TaskCloser
 import org.neo4j.cypher.internal.frontend.v3_1.CypherExecutionException
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
+import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.StatementTokenNameLookup
+import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -42,61 +48,81 @@ import org.neo4j.kernel.impl.core.NodeManager
   */
 object Templates {
 
-  import GeneratedQueryStructure.{method, param, staticField, typeRef}
+  import GeneratedQueryStructure.method
+  import GeneratedQueryStructure.param
+  import GeneratedQueryStructure.staticField
+  import GeneratedQueryStructure.typeRef
 
-  def createNewInstance(valueType: TypeReference, args: (TypeReference,Expression)*): Expression = {
-    val argTypes = args.map(_._1)
+  def createNewInstance(valueType: TypeReference, args: (TypeReference, Expression)*): Expression = {
+    val argTypes      = args.map(_._1)
     val argExpression = args.map(_._2)
     Expression.invoke(Expression.newInstance(valueType),
-                      MethodReference.constructorReference(valueType, argTypes: _*), argExpression:_*)
+                      MethodReference.constructorReference(valueType, argTypes: _*),
+                      argExpression: _*)
   }
 
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
-  val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
+  val newCountingMap   = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
-  def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression = Expression.invoke(
-    methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
-    Expression.newArray(typeRef[T], values: _*))
+  def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression =
+    Expression.invoke(methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
+                      Expression.newArray(typeRef[T], values: _*))
 
-  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)
-                         (block: CodeBlock => V): V = {
+  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, close: MethodReference)(
+      block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
 
-    generate.tryCatch(new Consumer[CodeBlock] {
-      override def accept(body: CodeBlock) = {
-        result = block(body)
-      }
-    }, new Consumer[CodeBlock]() {
-      override def accept(handle: CodeBlock) = {
-        handle.expression(Expression.invoke(handle.self(), close))
-        handle.throwException(Expression.invoke(
-          Expression.newInstance(typeRef[CypherExecutionException]),
-          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-          Expression
-            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                    Expression.invoke(
-                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
-                      MethodReference
-                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), ro))), handle.load("e")
-        ))
-      }
-    }, param[KernelException]("e"))
+    generate.tryCatch(
+      new Consumer[CodeBlock] {
+        override def accept(body: CodeBlock) = {
+          result = block(body)
+        }
+      },
+      new Consumer[CodeBlock]() {
+        override def accept(handle: CodeBlock) = {
+          handle.expression(Expression.invoke(handle.self(), close))
+          handle.throwException(
+            Expression.invoke(
+              Expression.newInstance(typeRef[CypherExecutionException]),
+              MethodReference
+                .constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+              Expression
+                .invoke(
+                  handle.load("e"),
+                  method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                  Expression.invoke(
+                    Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                    MethodReference
+                      .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                    Expression.get(handle.self(), ro)
+                  )
+                ),
+              handle.load("e")
+            ))
+        }
+      },
+      param[KernelException]("e")
+    )
 
     result
   }
 
-  def tryCatch(generate: CodeBlock)(tryBlock :CodeBlock => Unit)(exception: Parameter)(catchBlock :CodeBlock => Unit): Unit = {
-    generate.tryCatch(new Consumer[CodeBlock] {
-      override def accept(body: CodeBlock) = tryBlock(body)
-    }, new Consumer[CodeBlock]() {
-      override def accept(handle: CodeBlock) = catchBlock(handle)
-    }, exception)
+  def tryCatch(generate: CodeBlock)(tryBlock: CodeBlock => Unit)(exception: Parameter)(
+      catchBlock: CodeBlock => Unit): Unit = {
+    generate.tryCatch(
+      new Consumer[CodeBlock] {
+        override def accept(body: CodeBlock) = tryBlock(body)
+      },
+      new Consumer[CodeBlock]() {
+        override def accept(handle: CodeBlock) = catchBlock(handle)
+      },
+      exception
+    )
   }
 
   val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
   val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
-  val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
+  val both     = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
   val newResultRow = Expression
     .invoke(Expression.newInstance(typeRef[ResultRowImpl]),
             MethodReference.constructorReference(typeRef[ResultRowImpl]))
@@ -104,55 +130,91 @@ object Templates {
     .invoke(Expression.newInstance(typeRef[RelationshipDataExtractor]),
             MethodReference.constructorReference(typeRef[RelationshipDataExtractor]))
 
-  def constructor(classHandle: ClassHandle) = MethodTemplate.constructor(
-    param[TaskCloser]("closer"),
-    param[QueryContext]("queryContext"),
-    param[ExecutionMode]("executionMode"),
-    param[Provider[InternalPlanDescription]]("description"),
-    param[QueryExecutionTracer]("tracer"),
-
-    param[util.Map[String, Object]]("params")).
-    invokeSuper().
-    put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
-    put(self(classHandle), typeRef[ReadOperations], "ro",
-        cast(classOf[ReadOperations], invoke(
-          invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, QueryTransactionalContext]("transactionalContext")),
-          method[QueryTransactionalContext, Object]("readOperations")))).
-    put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
-    put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
-    put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
-    put(self(classHandle), typeRef[util.Map[String, Object]], "params", load("params", typeRef[util.Map[String, Object]])).
-    put(self(classHandle), typeRef[NodeManager], "nodeManager",
+  def constructor(classHandle: ClassHandle) =
+    MethodTemplate
+      .constructor(
+        param[TaskCloser]("closer"),
+        param[QueryContext]("queryContext"),
+        param[ExecutionMode]("executionMode"),
+        param[Provider[InternalPlanDescription]]("description"),
+        param[QueryExecutionTracer]("tracer"),
+        param[util.Map[String, Object]]("params")
+      )
+      .invokeSuper()
+      .put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser]))
+      .put(
+        self(classHandle),
+        typeRef[ReadOperations],
+        "ro",
+        cast(
+          classOf[ReadOperations],
+          invoke(
+            invoke(load("queryContext", typeRef[QueryContext]),
+                   method[QueryContext, QueryTransactionalContext]("transactionalContext")),
+            method[QueryTransactionalContext, Object]("readOperations")
+          )
+        )
+      )
+      .put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode]))
+      .put(self(classHandle),
+           typeRef[Provider[InternalPlanDescription]],
+           "description",
+           load("description", typeRef[InternalPlanDescription]))
+      .put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer]))
+      .put(self(classHandle),
+           typeRef[util.Map[String, Object]],
+           "params",
+           load("params", typeRef[util.Map[String, Object]]))
+      .put(
+        self(classHandle),
+        typeRef[NodeManager],
+        "nodeManager",
         cast(typeRef[NodeManager],
-             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
-    build()
+             invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))
+      )
+      .build()
 
-  def setSuccessfulCloseable(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "setSuccessfulCloseable",
-                                                                               param[SuccessfulCloseable]("closeable")).
-    put(self(classHandle), typeRef[SuccessfulCloseable], "closeable", load("closeable", typeRef[SuccessfulCloseable])).
-    build()
+  def setSuccessfulCloseable(classHandle: ClassHandle) =
+    MethodTemplate
+      .method(typeRef[Unit], "setSuccessfulCloseable", param[SuccessfulCloseable]("closeable"))
+      .put(self(classHandle),
+           typeRef[SuccessfulCloseable],
+           "closeable",
+           load("closeable", typeRef[SuccessfulCloseable]))
+      .build()
 
-  def success(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "success").
-    expression(
-      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("success"))).
-    build()
+  def success(classHandle: ClassHandle) =
+    MethodTemplate
+      .method(typeRef[Unit], "success")
+      .expression(invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"),
+                         method[SuccessfulCloseable, Unit]("success")))
+      .build()
 
-  def close(classHandle: ClassHandle) = MethodTemplate.method(typeRef[Unit], "close").
-    expression(
-      invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"), method[SuccessfulCloseable, Unit]("close"))).
-    build()
+  def close(classHandle: ClassHandle) =
+    MethodTemplate
+      .method(typeRef[Unit], "close")
+      .expression(invoke(get(self(classHandle), typeRef[SuccessfulCloseable], "closeable"),
+                         method[SuccessfulCloseable, Unit]("close")))
+      .build()
 
-  def executionMode(classHandle: ClassHandle) = MethodTemplate.method(typeRef[ExecutionMode], "executionMode").
-    returns(get(self(classHandle), typeRef[ExecutionMode], "executionMode")).
-    build()
+  def executionMode(classHandle: ClassHandle) =
+    MethodTemplate
+      .method(typeRef[ExecutionMode], "executionMode")
+      .returns(get(self(classHandle), typeRef[ExecutionMode], "executionMode"))
+      .build()
 
-  def executionPlanDescription(classHandle: ClassHandle) = MethodTemplate.method(typeRef[InternalPlanDescription], "executionPlanDescription").
-    returns(cast( typeRef[InternalPlanDescription],
-      invoke(get(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description"),
-                   method[Provider[InternalPlanDescription], Object]("get")))).
-    build()
+  def executionPlanDescription(classHandle: ClassHandle) =
+    MethodTemplate
+      .method(typeRef[InternalPlanDescription], "executionPlanDescription")
+      .returns(cast(
+        typeRef[InternalPlanDescription],
+        invoke(get(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description"),
+               method[Provider[InternalPlanDescription], Object]("get"))
+      ))
+      .build()
 
-  val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
-    returns(get(typeRef[util.List[String]], "COLUMNS")).
-    build()
+  val JAVA_COLUMNS = MethodTemplate
+    .method(typeRef[util.List[String]], "javaColumns")
+    .returns(get(typeRef[util.List[String]], "COLUMNS"))
+    .build()
 }

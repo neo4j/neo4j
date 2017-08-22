@@ -26,19 +26,22 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
   import Mockito._
 
-  val query = mock[QueryContext]
+  val query   = mock[QueryContext]
   val nodeOps = mock[Operations[Node]]
-  val relOps = mock[Operations[Relationship]]
+  val relOps  = mock[Operations[Relationship]]
 
   when(query.nodeOps).thenReturn(nodeOps)
   when(query.relationshipOps).thenReturn(relOps)
@@ -64,7 +67,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
   test("should map nodes to maps") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    when(nodeOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(nodeOps.propertyKeyIds(0)).thenReturn(List(0, 1).iterator)
     when(query.getPropertyKeyName(0)).thenReturn("a")
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(nodeOps.getProperty(0, 0)).thenReturn(stringValue("x"))
@@ -77,7 +80,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     when(rel.getId).thenReturn(0)
-    when(relOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(relOps.propertyKeyIds(0)).thenReturn(List(0, 1).iterator)
     when(query.getPropertyKeyName(0)).thenReturn("a")
     when(query.getPropertyKeyName(1)).thenReturn("b")
     when(relOps.getProperty(0, 0)).thenReturn(stringValue("x"))

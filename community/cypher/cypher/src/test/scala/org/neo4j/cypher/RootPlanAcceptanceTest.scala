@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InterpretedRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeName
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
@@ -73,8 +74,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("another troublesome query that should be run in cost") {
-    given(
-      """MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
+    given("""MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
         |MATCH (s)<-[:DELIVERY_ROUTE]-(db1) MATCH (db2)-[:DELIVERY_ROUTE]->(e)
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
       .withCypherVersion(CypherVersion.v3_3)
@@ -84,7 +84,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("AllNodesScan should be the only child of the plan") {
     val description = given("match (n) return n").planDescription
-    var children = description.getChildren
+    var children    = description.getChildren
     children should have size 1
     while (children.get(0).getChildren.size() > 0) {
       children = children.get(0).getChildren
@@ -100,18 +100,21 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .planDescription
     val children = description.getChildren
     children should have size 1
-    description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
+    description.getArguments.get("DbHits") should equal(0)     // ProduceResults has no hits
     children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
   test("Rows should be properly formatted in interpreted runtime") {
     given("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
-      .planDescription.getArguments.get("Rows") should equal(0)
+      .planDescription
+      .getArguments
+      .get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
+    given("match (n) return n").planDescription.getArguments
+      .get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
   }
 
   def given(query: String) = TestQuery(query)
@@ -150,7 +153,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       val prepend = (cypherVersion, planner, runtime) match {
         case (None, None, None) => ""
         case _ =>
-          val version = cypherVersion.map(_.name).getOrElse("")
+          val version       = cypherVersion.map(_.name).getOrElse("")
           val plannerString = planner.map("planner=" + _.name).getOrElse("")
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"

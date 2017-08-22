@@ -44,7 +44,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
   test("twoNodesOneRelationship") {
     val nodA = new FakeNode
     val nodB = new FakeNode
-    val rel = new FakeRel(nodA, nodB, typ)
+    val rel  = new FakeRel(nodA, nodB, typ)
     val path = new expressions.PathImpl(nodA, rel, nodB)
 
     path.length() should equal(1)
@@ -67,7 +67,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
       Seq(rel1)
     )
 
-    badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p:_*)))
+    badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p: _*)))
   }
 
   test("retrieveLastRelationshipOnLongPath") {

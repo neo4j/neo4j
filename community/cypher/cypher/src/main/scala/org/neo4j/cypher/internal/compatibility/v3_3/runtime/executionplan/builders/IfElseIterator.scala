@@ -29,7 +29,7 @@ class IfElseIterator(input: Iterator[ExecutionContext],
                      ifClause: ExecutionContext => Iterator[ExecutionContext],
                      elseClause: ExecutionContext => Iterator[ExecutionContext],
                      finallyClause: () => Unit = () => ())
-  extends Iterator[ExecutionContext] {
+    extends Iterator[ExecutionContext] {
 
   private var resultIterator: Iterator[ExecutionContext] = Iterator.empty
 

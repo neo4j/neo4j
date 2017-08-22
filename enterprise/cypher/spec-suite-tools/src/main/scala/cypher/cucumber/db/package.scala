@@ -19,7 +19,8 @@
  */
 package cypher.cucumber
 
-import cypher.cucumber.db.GraphRecipe.{CypherScript, Descriptor}
+import cypher.cucumber.db.GraphRecipe.CypherScript
+import cypher.cucumber.db.GraphRecipe.Descriptor
 
 package object db {
   type GraphRecipeLoader = String => Descriptor[CypherScript]

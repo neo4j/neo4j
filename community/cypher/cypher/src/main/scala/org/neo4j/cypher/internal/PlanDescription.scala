@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal
 
 /**
- * Abstract description of an execution plan
- */
+  * Abstract description of an execution plan
+  */
 trait PlanDescription {
   self =>
 

@@ -19,12 +19,14 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticCheckResult, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class ListComprehensionTest extends CypherFunSuite {
 
-  val dummyExpression = DummyExpression(
-    CTList(CTNode) | CTBoolean | CTList(CTString))
+  val dummyExpression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString))
 
   test("withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression") {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
@@ -36,7 +38,8 @@ class ListComprehensionTest extends CypherFunSuite {
   test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
     val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
-    val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
+    val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(
+      DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
@@ -51,7 +54,8 @@ class ListComprehensionTest extends CypherFunSuite {
       }
     }
 
-    val filter = ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
+    val filter =
+      ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)

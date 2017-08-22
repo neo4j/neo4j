@@ -19,9 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
+import org.neo4j.cypher.internal.helpers.NodeKeyConstraintCreator
+import org.neo4j.cypher.internal.helpers.UniquenessConstraintCreator
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.MergeConstraintConflictException
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -29,16 +33,19 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
-class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+class MergeNodeCompatibilityAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with NewPlannerTestSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(
+      config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
-
-    test(s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_if_only_found_single_node_for_both_indexes") {
+    test(
+      s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_if_only_found_single_node_for_both_indexes") {
       // given
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "Person", "mail")
@@ -47,7 +54,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        updateWithCompatibilityAndAssertSimilarPlans(
+          "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -59,7 +67,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       }
     }
 
-    test(s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_and_labels_if_only_found_single_node_for_both_indexes") {
+    test(
+      s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_and_labels_if_only_found_single_node_for_both_indexes") {
       // given
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "User", "mail")
@@ -68,7 +77,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        updateWithCompatibilityAndAssertSimilarPlans(
+          "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -80,7 +90,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       }
     }
 
-    test(s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_using_same_key_if_only_found_single_node_for_both_indexes") {
+    test(
+      s"$constraintCreator: should_match_on_merge_using_multiple_unique_indexes_using_same_key_if_only_found_single_node_for_both_indexes") {
       // given
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "User", "id")
@@ -89,7 +100,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
+        updateWithCompatibilityAndAssertSimilarPlans(
+          "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -100,7 +112,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       }
     }
 
-    test(s"$constraintCreator: should_fail_on_merge_using_multiple_unique_indexes_using_same_key_if_found_different_nodes") {
+    test(
+      s"$constraintCreator: should_fail_on_merge_using_multiple_unique_indexes_using_same_key_if_found_different_nodes") {
       // given
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "User", "id")
@@ -109,7 +122,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      intercept[MergeConstraintConflictException](updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23}) return a"))
+      intercept[MergeConstraintConflictException](
+        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23}) return a"))
       countNodes() should equal(2)
     }
 
@@ -120,7 +134,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
+        updateWithCompatibilityAndAssertSimilarPlans(
+          "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -140,7 +155,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
+        updateWithCompatibilityAndAssertSimilarPlans(
+          "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -162,10 +178,12 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> -1, "mail" -> "emil@neo.com"), "Person")
 
       expectMergeConstraintConflictException(
-        "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a", Seq(
+        "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a",
+        Seq(
           "Merge did not find a matching node",
           "can not create a new node due to conflicts with existing unique nodes"
-        ))
+        )
+      )
 
       countNodes() should equal(2)
     }
@@ -181,7 +199,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       }
     }
 
-    test(s"$constraintCreator: should_fail_on_merge_using_multiple_unique_indexes_if_it_found_a_node_matching_single_property_only") {
+    test(
+      s"$constraintCreator: should_fail_on_merge_using_multiple_unique_indexes_if_it_found_a_node_matching_single_property_only") {
       // given
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "Person", "mail")
@@ -190,11 +209,13 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when + then
       expectMergeConstraintConflictException(
-        "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a", Seq(
+        "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a",
+        Seq(
           "Merge did not find a matching node",
           "can not create a new node due to conflicts",
           "unique nodes"
-        ))
+        )
+      )
 
       countNodes() should equal(1)
     }
@@ -204,15 +225,17 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "User", "mail")
 
-      createLabeledNode(Map("id" -> 23), "Person")
+      createLabeledNode(Map("id"   -> 23), "Person")
       createLabeledNode(Map("mail" -> "emil@neo.com"), "User")
 
       // when
       expectMergeConstraintConflictException(
-        "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) return a", Seq(
+        "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) return a",
+        Seq(
           "Merge did not find a matching node",
           "can not create a new node due to conflicts with existing unique nodes"
-        ))
+        )
+      )
 
       // then
       countNodes() should equal(2)

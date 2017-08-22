@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Property, PropertyKeyName}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, ast, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Property
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object replaceLiteralDynamicPropertyLookups extends Rewriter {
 

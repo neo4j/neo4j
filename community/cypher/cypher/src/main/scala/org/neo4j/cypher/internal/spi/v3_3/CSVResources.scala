@@ -20,10 +20,14 @@
 package org.neo4j.cypher.internal.spi.v3_3
 
 import java.io._
-import java.net.{CookieHandler, CookieManager, CookiePolicy, URL}
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
+import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
-import java.util.zip.{GZIPInputStream, InflaterInputStream}
+import java.util.zip.GZIPInputStream
+import java.util.zip.InflaterInputStream
 
 import org.neo4j.csv.reader._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
@@ -35,10 +39,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
 object CSVResources {
-  val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
+  val NEO_USER_AGENT_PREFIX          = "NeoLoadCSV_"
   val DEFAULT_FIELD_TERMINATOR: Char = ','
-  val DEFAULT_BUFFER_SIZE: Int =  2 * 1024 * 1024
-  val DEFAULT_QUOTE_CHAR: Char = '"'
+  val DEFAULT_BUFFER_SIZE: Int       = 2 * 1024 * 1024
+  val DEFAULT_QUOTE_CHAR: Char       = '"'
 
   private def config(legacyCsvQuoteEscaping: Boolean) = new Configuration {
     override def quotationCharacter(): Char = DEFAULT_QUOTE_CHAR
@@ -57,7 +61,9 @@ object CSVResources {
 
 class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL,
+                     fieldTerminator: Option[String],
+                     legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
     val inputStream = openStream(url)
 
     val reader = if (url.getProtocol == "file") {
@@ -66,10 +72,10 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
     }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
-    val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
-    val extractor = new Extractors(delimiter).string()
-    val intDelimiter = delimiter.toInt
-    val mark = new Mark
+    val seeker          = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
+    val extractor       = new Extractors(delimiter).string()
+    val intDelimiter    = delimiter.toInt
+    val mark            = new Mark
 
     cleaner.addTask(_ => {
       seeker.close()
@@ -83,7 +89,8 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
             val success = seeker.tryExtract(mark, extractor)
             buffer += (if (success) extractor.value() else null)
             if (mark.isEndOfLine) break()
-        }}
+          }
+        }
 
         if (buffer.isEmpty) {
           null
@@ -115,9 +122,9 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       con.setReadTimeout(readTimeout)
       val stream = con.getInputStream
       con.getContentEncoding match {
-        case "gzip" => new GZIPInputStream(stream)
+        case "gzip"    => new GZIPInputStream(stream)
         case "deflate" => new InflaterInputStream(stream)
-        case _ => stream
+        case _         => stream
       }
     } catch {
       case e: IOException =>
@@ -141,4 +148,3 @@ object TheCookieManager {
     cookieManager
   }
 }
-

@@ -19,15 +19,20 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport
-  with QueryStatisticsTestSupport {
+class ParameterValuesAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with NewPlannerTestSupport
+    with QueryStatisticsTestSupport {
 
   test("should be able to send in an array of nodes via parameter") {
     // given
     val node = createLabeledNode("Person")
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("WITH {param} as p RETURN p", "param" -> Array(node))
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("WITH {param} as p RETURN p", "param" -> Array(node))
     val outputP = result.next.get("p").get
     outputP should equal(Array(node))
   }
@@ -47,10 +52,14 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
   test("should not erase the type of an empty array sent as parameter") {
     import Array._
 
-    Seq(emptyLongArray, emptyShortArray, emptyByteArray, emptyIntArray,
-      emptyDoubleArray, emptyFloatArray,
-      emptyBooleanArray, Array[String]()).foreach { array =>
-
+    Seq(emptyLongArray,
+        emptyShortArray,
+        emptyByteArray,
+        emptyIntArray,
+        emptyDoubleArray,
+        emptyFloatArray,
+        emptyBooleanArray,
+        Array[String]()).foreach { array =>
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
       val r = executeWithAllPlanners(q, "param" -> array)
 
@@ -62,10 +71,14 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
   }
 
   test("should not erase the type of nonempty arrays sent as parameter") {
-    Seq(Array[Long](1l), Array[Short](2), Array[Byte](3), Array[Int](4),
-      Array[Double](3.14), Array[Float](5.56f),
-      Array[Boolean](false, true), Array[String]("", " ")).foreach { array =>
-
+    Seq(Array[Long](1l),
+        Array[Short](2),
+        Array[Byte](3),
+        Array[Int](4),
+        Array[Double](3.14),
+        Array[Float](5.56f),
+        Array[Boolean](false, true),
+        Array[String]("", " ")).foreach { array =>
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
       val r = executeWithAllPlanners(q, "param" -> array)
 
@@ -80,7 +93,8 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
     // given
     val node = createLabeledNode("Person")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (b) WHERE b = {param} RETURN b", "param" -> node)
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (b) WHERE b = {param} RETURN b", "param" -> node)
     result.toList should equal(List(Map("b" -> node)))
   }
 
@@ -88,7 +102,9 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
     // given
     val rel = relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", "param" -> rel)
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r",
+                                                            "param" -> rel)
     result.toList should equal(List(Map("r" -> rel)))
   }
 

@@ -32,7 +32,7 @@ import scala.collection.mutable.{Map => MutableMap}
 class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("empty input gives empty output") {
-    val source = new FakePipe(List(), "x" -> CTAny)
+    val source   = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
     assertEquals(List(), sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList)
@@ -40,56 +40,52 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
   test("simple sorting is supported") {
     val list: Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
-    val source = new FakePipe(list, "x" -> CTString)
-    val sortPipe = new SortPipe(source, List(Ascending("x")))()
+    val source                             = new FakePipe(list, "x" -> CTString)
+    val sortPipe                           = new SortPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A"), Map("x" -> "B")))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> "A"), Map("x" -> "B")))
   }
 
   test("sort by two columns") {
-    val source = new FakePipe(List(
-      MutableMap[String, Any]("x" -> "B", "y" -> 20),
-      MutableMap[String, Any]("x" -> "A", "y" -> 100),
-      MutableMap[String, Any]("x" -> "B", "y" -> 10)), "x" -> CTString, "y" -> CTNumber)
+    val source = new FakePipe(
+      List(MutableMap[String, Any]("x" -> "B", "y" -> 20),
+           MutableMap[String, Any]("x" -> "A", "y" -> 100),
+           MutableMap[String, Any]("x" -> "B", "y" -> 10)),
+      "x" -> CTString,
+      "y" -> CTNumber
+    )
 
-    val sortPipe = new SortPipe(source, List(
-      Ascending("x"),
-      Ascending("y")))()
+    val sortPipe = new SortPipe(source, List(Ascending("x"), Ascending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> "A", "y" -> 100),
-      Map("x" -> "B", "y" -> 10),
-      Map("x" -> "B", "y" -> 20)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map("x" -> "A", "y" -> 100), Map("x" -> "B", "y" -> 10), Map("x" -> "B", "y" -> 20)))
   }
 
   test("sort by two columns with one descending") {
-    val source = new FakePipe(List(
-      MutableMap[String, Any]("x" -> "B", "y" -> 20),
-      MutableMap[String, Any]("x" -> "A", "y" -> 100),
-      MutableMap[String, Any]("x" -> "B", "y" -> 10)), "x" -> CTString, "y" -> CTNumber)
+    val source = new FakePipe(
+      List(MutableMap[String, Any]("x" -> "B", "y" -> 20),
+           MutableMap[String, Any]("x" -> "A", "y" -> 100),
+           MutableMap[String, Any]("x" -> "B", "y" -> 10)),
+      "x" -> CTString,
+      "y" -> CTNumber
+    )
 
-    val sortPipe = new SortPipe(source, List(
-      Ascending("x"),
-      Descending("y")))()
+    val sortPipe = new SortPipe(source, List(Ascending("x"), Descending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map[String, Any]("x" -> "A", "y" -> 100),
-      Map[String, Any]("x" -> "B", "y" -> 20),
-      Map[String, Any]("x" -> "B", "y" -> 10)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(
+      List(Map[String, Any]("x" -> "A", "y" -> 100),
+           Map[String, Any]("x" -> "B", "y" -> 20),
+           Map[String, Any]("x" -> "B", "y" -> 10)))
   }
 
   test("should handle null values") {
-    val list: Seq[MutableMap[String, Any]] = List(
-      MutableMap("y" -> 1),
-      MutableMap("y" -> null),
-      MutableMap("y" -> 2))
-    val source = new FakePipe(list, "y" -> CTNumber)
+    val list: Seq[MutableMap[String, Any]] = List(MutableMap("y" -> 1), MutableMap("y" -> null), MutableMap("y" -> 2))
+    val source                             = new FakePipe(list, "y" -> CTNumber)
 
     val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should equal(List(
-      Map("y" -> intValue(1)),
-      Map("y" -> intValue(2)),
-      Map("y" -> Values.NO_VALUE)))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should equal(
+      List(Map("y" -> intValue(1)), Map("y" -> intValue(2)), Map("y" -> Values.NO_VALUE)))
   }
 }

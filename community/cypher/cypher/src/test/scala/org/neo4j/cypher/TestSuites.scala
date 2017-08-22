@@ -20,16 +20,22 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Node, PropertyContainer, Result}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.exceptions.Status
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters._
 
 abstract class GraphDatabaseFunSuite extends CypherFunSuite with GraphDatabaseTestSupport
 
 abstract class ExecutionEngineFunSuite
-  extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport with QueryPlanTestSupport {
+    extends CypherFunSuite
+    with GraphDatabaseTestSupport
+    with ExecutionEngineTestSupport
+    with QueryPlanTestSupport {
 
   case class haveProperty(propName: String) extends Matcher[PropertyContainer] {
     def apply(left: PropertyContainer): MatchResult = {
@@ -48,7 +54,7 @@ abstract class ExecutionEngineFunSuite
     def withValue(value: Any) = this and new Matcher[PropertyContainer] {
       def apply(left: PropertyContainer): MatchResult = {
         val propValue = graph.inTx(left.getProperty(propName))
-        val result = propValue == value
+        val result    = propValue == value
         MatchResult(
           result,
           s"Property `$propName` didn't have expected value. Expected: $value\nbut was: $propValue",

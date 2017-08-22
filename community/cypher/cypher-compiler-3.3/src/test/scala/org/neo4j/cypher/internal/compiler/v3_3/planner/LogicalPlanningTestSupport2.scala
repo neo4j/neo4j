@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter.unnestApply
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, _}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -38,28 +39,39 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.Foldable
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
-import org.scalatest.matchers.{BeMatcher, MatchResult}
+import org.scalatest.matchers.BeMatcher
+import org.scalatest.matchers.MatchResult
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
-trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+trait LogicalPlanningTestSupport2
+    extends CypherTestSupport
+    with AstConstructionTestSupport
+    with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
-  var parser = new CypherParser
+  val solved            = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
+  var parser            = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  var astRewriter       = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
   final var planner = new QueryPlanner() {
-    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, leafPlan: Option[LogicalPlan] = None): LogicalPlan =
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext,
+                                          leafPlan: Option[LogicalPlan] = None): LogicalPlan =
       planSingleQuery(query)
   }
-  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
+  var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(
+    SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]),
+    cartesianProductsOrValueJoins,
+    mock[IDPQueryGraphSolverMonitor])
   val realConfig = new RealLogicalPlanningConfiguration
   val cypherCompilerConfig = CypherCompilerConfiguration(
     queryCacheSize = 100,
@@ -82,7 +94,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def newCostModel() =
         (plan: LogicalPlan, input: QueryGraphSolverInput) => config.costModel()(plan -> input)
 
-      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                  evaluator: ExpressionEvaluator) =
         config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
       def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
@@ -106,19 +119,21 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
       override def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.uniqueIndexes((labelName, propertyKeys)))
-          Some(IndexDescriptor(
-            semanticTable.resolvedLabelIds(labelName).id,
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
-          ))
+          Some(
+            IndexDescriptor(
+              semanticTable.resolvedLabelIds(labelName).id,
+              propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
+            ))
         else
           None
 
       override def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
         if (config.indexes((labelName, propertyKeys)) || config.uniqueIndexes((labelName, propertyKeys)))
-          Some(IndexDescriptor(
-            semanticTable.resolvedLabelIds(labelName).id,
-            propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
-          ))
+          Some(
+            IndexDescriptor(
+              semanticTable.resolvedLabelIds(labelName).id,
+              propertyKeys.map(semanticTable.resolvedPropertyKeyNames(_).id)
+            ))
         else
           None
 
@@ -137,19 +152,19 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     val pipeLine =
       Parsing andThen
-      PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true) andThen
-      AstRewriting(newPlain, literalExtraction = Never) andThen
-      RewriteProcedureCalls andThen
-      Namespacer andThen
-      rewriteEqualityToInPredicate andThen
-      CNFNormalizer andThen
-      LateAstRewriting andThen
-      ResolveTokens andThen
-      CreatePlannerQuery andThen
-      OptionalMatchRemover andThen
-      QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-      Do(removeApply _)
+        PreparatoryRewriting andThen
+        SemanticAnalysis(warn = true) andThen
+        AstRewriting(newPlain, literalExtraction = Never) andThen
+        RewriteProcedureCalls andThen
+        Namespacer andThen
+        rewriteEqualityToInPredicate andThen
+        CNFNormalizer andThen
+        LateAstRewriting andThen
+        ResolveTokens andThen
+        CreatePlannerQuery andThen
+        OptionalMatchRemover andThen
+        QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
+        Do(removeApply _)
 
     // This fakes pattern expression naming for testing purposes
     // In the actual code path, this renaming happens as part of planning
@@ -168,21 +183,27 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
-      def context = ContextHelper.create(planContext = planContext, exceptionCreator = mkException, metrics = metrics,
-                                         config = cypherCompilerConfig, queryGraphSolver = queryGraphSolver)
+      val metrics     = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
+      def context =
+        ContextHelper.create(planContext = planContext,
+                             exceptionCreator = mkException,
+                             metrics = metrics,
+                             config = cypherCompilerConfig,
+                             queryGraphSolver = queryGraphSolver)
 
-      val state = LogicalPlanState(queryString, None, IDPPlannerName)
-      val output = pipeLine.transform(state, context)
+      val state       = LogicalPlanState(queryString, None, IDPPlannerName)
+      val output      = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
       (output.periodicCommit, logicalPlan, output.semanticTable())
     }
 
     def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
-      metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator]).queryGraphCardinalityModel(qg, input, semanticTable)
+      metricsFactory
+        .newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+        .queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+      val metrics             = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,
@@ -205,7 +226,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   class fromDbStructure(dbStructure: Visitable[DbStructureVisitor])
-    extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
+      extends DelegatingLogicalPlanningConfiguration(DbStructureLogicalPlanningConfiguration(dbStructure))
 
   implicit def propertyKeyId(label: String)(implicit semanticTable: SemanticTable): PropertyKeyId =
     semanticTable.resolvedPropertyKeyNames(label)
@@ -214,12 +235,15 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     import Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
-        case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)
+        case lp if tag.runtimeClass.isInstance(lp) =>
+          acc =>
+            (true, None)
       }
       MatchResult(
         matches = matches,
         rawFailureMessage = s"Plan should use ${tag.runtimeClass.getSimpleName}",
-        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}")
+        rawNegatedFailureMessage = s"Plan should not use ${tag.runtimeClass.getSimpleName}"
+      )
     }
   }
 }

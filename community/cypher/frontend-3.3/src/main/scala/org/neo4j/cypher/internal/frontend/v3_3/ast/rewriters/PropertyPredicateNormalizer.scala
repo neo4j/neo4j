@@ -28,13 +28,14 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case RelationshipPattern(Some(id), _, None, Some(props), _, _) if !isParameter(props) =>
       propertyPredicates(id, props)
 
-    case rp@RelationshipPattern(Some(id), _, Some(_), Some(props), _, _) if !isParameter(props) =>
+    case rp @ RelationshipPattern(Some(id), _, Some(_), Some(props), _, _) if !isParameter(props) =>
       Vector(varLengthPropertyPredicates(id, props, rp.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
-    case p@NodePattern(Some(_) ,_, Some(props)) if !isParameter(props)                  => p.copy(properties = None)(p.position)
-    case p@RelationshipPattern(Some(_), _, _, Some(props), _, _) if !isParameter(props) => p.copy(properties = None)(p.position)
+    case p @ NodePattern(Some(_), _, Some(props)) if !isParameter(props) => p.copy(properties = None)(p.position)
+    case p @ RelationshipPattern(Some(_), _, _, Some(props), _, _) if !isParameter(props) =>
+      p.copy(properties = None)(p.position)
   }
 
   private def isParameter(expr: Expression) = expr match {
@@ -46,7 +47,8 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
     case mapProps: MapExpression =>
       mapProps.items.map {
         // MATCH (a {a: 1, b: 2}) => MATCH (a) WHERE a.a = 1 AND a.b = 2
-        case (propId, expression) => Equals(Property(id.copyId, propId)(mapProps.position), expression)(mapProps.position)
+        case (propId, expression) =>
+          Equals(Property(id.copyId, propId)(mapProps.position), expression)(mapProps.position)
       }.toIndexedSeq
     case expr: Expression =>
       Vector(Equals(id.copyId, expr)(expr.position))
@@ -55,16 +57,16 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   private def varLengthPropertyPredicates(id: Variable, props: Expression, patternPosition: InputPosition): Expression = {
-    val idName = FreshIdNameGenerator.name(patternPosition)
-    val newId = Variable(idName)(id.position)
+    val idName      = FreshIdNameGenerator.name(patternPosition)
+    val newId       = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)
     AllIterablePredicate(newId, id.copyId, Some(conjunction))(props.position)
   }
 
   private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
-    case Nil           => throw new IllegalArgumentException("There should be at least one predicate to be rewritten")
-    case expr +: Nil   => expr
-    case expr +: tail  => And(expr, conjunct(tail))(expr.position)
+    case Nil          => throw new IllegalArgumentException("There should be at least one predicate to be rewritten")
+    case expr +: Nil  => expr
+    case expr +: tail => And(expr, conjunct(tail))(expr.position)
   }
 }

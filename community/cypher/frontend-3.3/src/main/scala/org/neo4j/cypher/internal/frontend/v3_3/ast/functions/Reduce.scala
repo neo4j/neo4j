@@ -17,14 +17,17 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Function
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheck, SemanticError, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 // this implementation exists only to handle the case where "reduce(x = 0, x in y : foo)" is parsed as a function invocation,
 // rather than a ReduceExpression
 case object Reduce extends Function {
   def name = "reduce"
 
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext,
+                                 invocation: ast.FunctionInvocation): SemanticCheck =
     semanticCheck(ctx, invocation)
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =

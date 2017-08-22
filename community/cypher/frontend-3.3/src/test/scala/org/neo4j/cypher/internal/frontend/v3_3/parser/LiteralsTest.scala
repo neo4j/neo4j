@@ -17,13 +17,14 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
 
   def Expression: Rule1[ast.Expression] = ???
-  val t = DummyPosition(0)
+  val t                                 = DummyPosition(0)
 
   test("test variable can contain ascii") {
     implicit val parserToTest = Variable

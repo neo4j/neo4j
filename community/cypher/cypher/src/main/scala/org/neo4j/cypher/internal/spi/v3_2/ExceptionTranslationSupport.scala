@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.spi.v3_2
 
 import org.neo4j.cypher.internal.compiler.v3_2.spi.TokenContext
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
+import org.neo4j.cypher.ConstraintValidationException
+import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
@@ -28,24 +29,29 @@ import org.neo4j.kernel.api.exceptions.KernelException
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
 
-  protected def translateException[A](f: => A) = try {
-    f
-  } catch {
-    case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
+  protected def translateException[A](f: => A) =
+    try {
+      f
+    } catch {
+      case e: KernelException =>
+        throw new CypherExecutionException(
+          e.getUserMessage(new TokenNameLookup {
+            def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+            def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
-      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
-    }), e)
-    case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
-  }
+            def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
+          }),
+          e
+        )
+      case e: KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
+    }
 
   protected def translateIterator[A](iteratorFactory: => Iterator[A]): Iterator[A] = {
     val iterator = translateException(iteratorFactory)
     new Iterator[A] {
       override def hasNext: Boolean = translateException(iterator.hasNext)
-      override def next(): A = translateException(iterator.next())
+      override def next(): A        = translateException(iterator.next())
     }
   }
 }

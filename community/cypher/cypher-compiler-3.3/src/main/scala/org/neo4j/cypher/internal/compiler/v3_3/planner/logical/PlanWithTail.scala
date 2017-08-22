@@ -25,24 +25,26 @@ import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
 which in most cases is then rewritten away by LogicalPlan rewriting.
-*/
-case class PlanWithTail(planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
-                        planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
-                        planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
-  extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
+ */
+case class PlanWithTail(
+    planEventHorizon: LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] = PlanEventHorizon,
+    planPart: (PlannerQuery, LogicalPlanningContext) => LogicalPlan = planPart,
+    planUpdates: LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] = PlanUpdates)
+    extends LogicalPlanningFunction2[LogicalPlan, Option[PlannerQuery], LogicalPlan] {
 
-  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery])(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext = context.recurse(lhs)
-        val partPlan = planPart(plannerQuery, lhsContext)
+        val lhsContext        = context.recurse(lhs)
+        val partPlan          = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
-        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
+        val planWithUpdates   = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
 
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
 
-        val applyContext = lhsContext.recurse(applyPlan)
-        val projectedPlan = planEventHorizon(plannerQuery, applyPlan)(applyContext)
+        val applyContext     = lhsContext.recurse(applyPlan)
+        val projectedPlan    = planEventHorizon(plannerQuery, applyPlan)(applyContext)
         val projectedContext = applyContext.recurse(projectedPlan)
 
         this.apply(projectedPlan, plannerQuery.tail)(projectedContext)

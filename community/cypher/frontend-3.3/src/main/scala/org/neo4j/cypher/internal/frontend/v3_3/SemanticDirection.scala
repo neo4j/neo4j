@@ -23,5 +23,5 @@ sealed trait SemanticDirection {
 case object SemanticDirection {
   case object OUTGOING extends SemanticDirection { override def reversed: SemanticDirection = INCOMING }
   case object INCOMING extends SemanticDirection { override def reversed: SemanticDirection = OUTGOING }
-  case object BOTH extends SemanticDirection { override def reversed: SemanticDirection = BOTH }
+  case object BOTH     extends SemanticDirection { override def reversed: SemanticDirection = BOTH     }
 }

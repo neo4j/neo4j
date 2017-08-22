@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.Node
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -46,10 +47,11 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
 
   test("Seek node by id with multiple values") {
     createNode("a")
-    val n1= createNode("b")
+    val n1 = createNode("b")
     val n2 = createNode("c")
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match (n) where id(n) IN [${n1.getId}, ${n2.getId}] return n")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode(s"match (n) where id(n) IN [${n1.getId}, ${n2.getId}] return n")
     result.columnAs("n").toList should equal(Seq(n1, n2))
   }
 
@@ -74,13 +76,15 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
   test("Seek relationship by id given on the left") {
     val rel = relate(createNode("a"), createNode("b"))
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match ()-[r]->() where ${rel.getId} = id(r) return r") should equal(rel)
+    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match ()-[r]->() where ${rel.getId} = id(r) return r") should equal(
+      rel)
   }
 
   test("Seek relationship by id given on the right") {
     val rel = relate(createNode("a"), createNode("b"))
 
-    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(rel)
+    executeScalarWithAllPlannersAndCompatibilityMode[Node](s"match ()-[r]->() where id(r) = ${rel.getId} return r") should equal(
+      rel)
   }
 
   test("Seek relationship by id with multiple values") {
@@ -88,7 +92,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val rel1 = relate(createNode("a"), createNode("b"))
     val rel2 = relate(createNode("c"), createNode("d"))
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
     result.columnAs("r").toList should equal(Seq(rel1, rel2))
   }
 
@@ -98,9 +103,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val r = relate(a, b)
 
     val result = executeWithAllPlanners(s"match (a)-[r]-(b) where id(r) = ${r.getId} return a,r,b")
-    result.toSet should equal(Set(
-      Map("r" -> r, "a" -> a, "b" -> b),
-      Map("r" -> r, "a" -> b, "b" -> a)))
+    result.toSet should equal(Set(Map("r" -> r, "a" -> a, "b" -> b), Map("r" -> r, "a" -> b, "b" -> a)))
   }
 
   test("Seek relationship by id and unwind") {
@@ -108,7 +111,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     val b = createNode("x")
     val r = relate(a, b)
 
-    val result = executeWithAllPlanners(s"PROFILE UNWIND [${r.getId}] as rId match (a)-[r]->(b) where id(r) = rId return a,r,b")
+    val result =
+      executeWithAllPlanners(s"PROFILE UNWIND [${r.getId}] as rId match (a)-[r]->(b) where id(r) = rId return a,r,b")
 
     result.executionPlanDescription().toString should include("RelationshipById")
 
@@ -127,7 +131,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph.createIndex("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
+    val result =
+      executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
     result should equal(node)
   }
 
@@ -136,7 +141,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph.createIndex("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
+    val result =
+      executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
     result should equal(node)
   }
 
@@ -145,7 +151,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph.createConstraint("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
+    val result =
+      executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person) where n.prop = 42 return n")
     result should equal(node)
   }
 
@@ -154,8 +161,8 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with NewPl
     graph.createConstraint("Person", "prop")
 
     val node = createLabeledNode(Map("prop" -> 42), "Person")
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
+    val result =
+      executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Node](s"match (n:Person {prop: 42}) return n")
     result should equal(node)
   }
 }
-

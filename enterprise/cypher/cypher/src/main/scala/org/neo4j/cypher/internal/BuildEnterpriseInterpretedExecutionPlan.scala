@@ -20,27 +20,36 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.EnterprisePipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilationContains
+import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Monitors, Phase}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.AnyValue
 
-object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
+object BuildEnterpriseInterpretedExecutionPlan
+    extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
@@ -55,27 +64,30 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
-      val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
-      val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
+      val idMap                    = LogicalPlanIdentificationBuilder(logicalPlan)
+      val converters               = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock,
+                                                              context.monitors,
                                                               expressionConverters = converters,
-                                                              pipeBuilderFactory = EnterprisePipeBuilderFactory(
-                                                                pipelines))
-      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
-                                                         from.plannerName)
+                                                              pipeBuilderFactory =
+                                                                EnterprisePipeBuilderFactory(pipelines))
+      val pipeBuildContext =
+        PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-      val columns = from.statement().returnColumns
-      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
+      val columns                                                         = from.statement().returnColumns
+      val resultBuilderFactory                                            = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo,
+                                                                        from.queryText,
+                                                                        updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
                                                                         EnterpriseInterpretedRuntimeName)
-      val fingerprint = context.createFingerprintReference(fp)
+      val fingerprint    = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
-      val indexes = logicalPlan.indexUsage
-      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+      val indexes        = logicalPlan.indexUsage
+      val execPlan       = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
@@ -86,25 +98,29 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
     val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val registeredRewriter = new RegisteredRewriter(context.planContext)
-    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    val registeredRewriter                                     = new RegisteredRewriter(context.planContext)
+    val (logicalPlan, pipelines)                               = registeredRewriter(beforeRewrite, beforePipelines)
     (logicalPlan, pipelines)
   }
 
-  case class RegisteredExecutionPlan(fingerprint: PlanFingerprintReference,
-                                     isPeriodicCommit: Boolean,
-                                     plannerUsed: PlannerName,
-                                     override val plannedIndexUsage: Seq[IndexUsage],
-                                     runFunction: (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult,
-                                     pipe: Pipe,
-                                     config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
+  case class RegisteredExecutionPlan(
+      fingerprint: PlanFingerprintReference,
+      isPeriodicCommit: Boolean,
+      plannerUsed: PlannerName,
+      override val plannedIndexUsage: Seq[IndexUsage],
+      runFunction: (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult,
+      pipe: Pipe,
+      config: CypherCompilerConfiguration)
+      extends executionplan.ExecutionPlan {
 
-    override def run(queryContext: QueryContext, planType: ExecutionMode,
+    override def run(queryContext: QueryContext,
+                     planType: ExecutionMode,
                      params: Map[String, AnyValue]): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint
-      .isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean =
+      fingerprint
+        .isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = EnterpriseInterpretedRuntimeName
 
@@ -113,18 +129,26 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlan, PipelineInformation])
-    extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id],
-              expressionConverters: ExpressionConverters)
-             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+      extends PipeBuilderFactory {
+    def apply(monitors: Monitors,
+              recurse: LogicalPlan => Pipe,
+              readOnly: Boolean,
+              idMap: Map[LogicalPlan, Id],
+              expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext,
+                                                          planContext: PlanContext): PipeBuilder = {
 
       val expressionToExpression = recursePipes(recurse, planContext) _
 
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters,
-                                          expressionToExpression)
+      val fallback =
+        CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, expressionToExpression)
 
-      new EnterprisePipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
-        expressionToExpression)
+      new EnterprisePipeBuilder(fallback,
+                                expressionConverters,
+                                idMap,
+                                monitors,
+                                pipelineInformation,
+                                readOnly,
+                                expressionToExpression)
     }
   }
 

@@ -21,15 +21,18 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{doubleValue, intValue, stringValue}
-import org.neo4j.values.storable.{IntValue, Values}
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.Values
 
 class MinFunctionTest extends CypherFunSuite with AggregateTest {
   test("singleValueReturnsThatNumber") {
     val result = aggregateOn(intValue(1))
 
     result should equal(intValue(1))
-    result shouldBe an [IntValue]
+    result shouldBe an[IntValue]
   }
 
   test("singleValueOfDecimalReturnsDecimal") {
@@ -63,13 +66,15 @@ class MinFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("aggregating strings work") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
 
     result should equal(stringValue("B"))
   }
 
   test("nulls are simply skipped") {
-    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), Values.NO_VALUE, stringValue("abc1"))
+    val result =
+      aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), Values.NO_VALUE, stringValue("abc1"))
 
     result should equal(stringValue("a"))
   }

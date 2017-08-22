@@ -19,14 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 /**
- * These tests are testing the actual index implementation, thus they should all check the actual result.
- * If you only want to verify that plans using indexes are actually planned, please use
- * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
- */
-class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+  * These tests are testing the actual index implementation, thus they should all check the actual result.
+  * If you only want to verify that plans using indexes are actually planned, please use
+  * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
+  */
+class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should handle OR when using index") {
     // Given
@@ -36,7 +37,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("prop" -> 3), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n")
 
     // Then
     result should useOperationTimes("NodeIndexSeek", 1)
@@ -51,7 +53,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("prop" -> 3), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n")
 
     // Then
     result should useOperationTimes("NodeIndexSeek", 1)
@@ -149,12 +152,12 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result should (use("NodeIndexSeek") and be(empty))
   }
-
 
   test("should be able to use value coming from UNWIND for index seek") {
     // Given
@@ -165,7 +168,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
     val expected = List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3))
@@ -174,7 +178,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
   test("should use index selectivity when planning") {
     // Given
-    graph.inTx{
+    graph.inTx {
       val ls = (1 to 100).map { i =>
         createLabeledNode(Map("l" -> i), "L")
       }
@@ -183,7 +187,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         createLabeledNode(Map("r" -> 23), "R")
       }
 
-      for (l <- ls ; r <- rs) {
+      for (l <- ls; r <- rs) {
         relate(l, r, "REL")
       }
     }
@@ -192,7 +196,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
     result should (use("NodeIndexSeek") and have size 100)
   }
 
@@ -205,11 +210,10 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     // create many nodes with label 'Place' to make sure index seek is planned
     (1 to 100).foreach(i => createLabeledNode(Map("name" -> s"Area $i"), "Place"))
 
-   graph.createIndex("Place", "name")
+    graph.createIndex("Place", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      """
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("""
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName
         |OPTIONAL MATCH (p:Place)
@@ -240,10 +244,11 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
-    result.toList should equal(List(
-      Map("m" -> n2),
-      Map("m" -> n3)
-    ))
+    result.toList should equal(
+      List(
+        Map("m" -> n2),
+        Map("m" -> n3)
+      ))
     result.executionPlanDescription().toString shouldNot include("Index")
   }
 
@@ -265,10 +270,11 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
-    result.toList should equal(List(
-      Map("m" -> n1),
-      Map("m" -> n4)
-    ))
+    result.toList should equal(
+      List(
+        Map("m" -> n1),
+        Map("m" -> n4)
+      ))
     result.executionPlanDescription().toString shouldNot include("Index")
   }
 
@@ -287,7 +293,9 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     //Then
     result should useOperationTimes("NodeIndexSeek", 1)
-    result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
+    result.toList should contain theSameElementsAs List(Map("root" -> root1),
+                                                        Map("root" -> root2),
+                                                        Map("root" -> root3))
   }
 
   test("should handle primitive array as parameter when using index") {
@@ -305,14 +313,16 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
 
     //Then
     result should useOperationTimes("NodeIndexSeek", 1)
-    result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
+    result.toList should contain theSameElementsAs List(Map("root" -> root1),
+                                                        Map("root" -> root2),
+                                                        Map("root" -> root3))
   }
 
   test("should handle list properties in index") {
     // Given
     graph.createIndex("L", "prop")
-    val node1 = createLabeledNode(Map("prop" -> Array(1,2,3)), "L")
-    val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
+    val node1 = createLabeledNode(Map("prop" -> Array(1, 2, 3)), "L")
+    val node2 = createLabeledNode(Map("prop" -> Array(3, 2, 1)), "L")
 
     // When
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
@@ -325,8 +335,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   test("should handle list properties in unique index") {
     // Given
     graph.createConstraint("L", "prop")
-    val node1 = createLabeledNode(Map("prop" -> Array(1,2,3)), "L")
-    val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
+    val node1 = createLabeledNode(Map("prop" -> Array(1, 2, 3)), "L")
+    val node2 = createLabeledNode(Map("prop" -> Array(3, 2, 1)), "L")
 
     // When
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
@@ -337,8 +347,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
   }
 
   private def setUpDatabaseForTests() {
-    updateWithBothPlannersAndCompatibilityMode(
-      """CREATE (architect:Matrix { name:'The Architect' }),
+    updateWithBothPlannersAndCompatibilityMode("""CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),
         |       (trinity:Crew { name:'Trinity' }),

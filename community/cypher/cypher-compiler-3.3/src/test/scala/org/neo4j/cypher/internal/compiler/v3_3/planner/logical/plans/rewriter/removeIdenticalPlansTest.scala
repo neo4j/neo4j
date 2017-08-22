@@ -40,7 +40,7 @@ class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSu
   test("should not rewrite when not needed") {
     val scan1 = AllNodesScan(IdName("a"), Set.empty)(solved)
     val scan2 = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val join = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
+    val join  = NodeHashJoin(Set(IdName("a")), scan1, scan2)(solved)
 
     val rewritten = join.endoRewrite(removeIdenticalPlans)
 

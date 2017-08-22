@@ -23,19 +23,21 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 
 import scala.collection.mutable
 
 class LazyPropertyKeyTest extends CypherFunSuite {
-  private val pos = DummyPosition(0)
+  private val pos               = DummyPosition(0)
   private val PROPERTY_KEY_NAME = PropertyKeyName("foo")(pos)
-  private val PROPERTY_KEY_ID = PropertyKeyId(42)
+  private val PROPERTY_KEY_ID   = PropertyKeyId(42)
 
   test("if key is resolved, don't do any lookups") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context        = mock[TokenContext]
     when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map(PROPERTY_KEY_NAME.name -> PROPERTY_KEY_ID))
 
     //WHEN
@@ -49,7 +51,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
   test("if key is not resolved, do a lookup") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context        = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
     when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
 
@@ -65,7 +67,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
   test("multiple calls to id should result in only one lookup") {
     // GIVEN
     implicit val table = mock[SemanticTable]
-    val context = mock[TokenContext]
+    val context        = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
     when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
 

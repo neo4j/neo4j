@@ -22,35 +22,39 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.QueryProjection
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
-  def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan = query.horizon match {
-    case p: QueryProjection =>
-      val shuffle = p.shuffle
-      val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
-        case (Nil, s, l) =>
-          addLimit(l, addSkip(s, plan))
+  def apply(plan: LogicalPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext): LogicalPlan =
+    query.horizon match {
+      case p: QueryProjection =>
+        val shuffle = p.shuffle
+        val producedPlan = (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
+          case (Nil, s, l) =>
+            addLimit(l, addSkip(s, plan))
 
-        case (sortItems, s, l) =>
-          require(sortItems.forall(_.expression.isInstanceOf[Variable]))
-          val sortDescriptions = sortItems.map(sortDescription)
-          val sortedPlan = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
+          case (sortItems, s, l) =>
+            require(sortItems.forall(_.expression.isInstanceOf[Variable]))
+            val sortDescriptions = sortItems.map(sortDescription)
+            val sortedPlan       = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
 
-          addLimit(l, addSkip(s, sortedPlan))
-      }
+            addLimit(l, addSkip(s, sortedPlan))
+        }
 
-      producedPlan
+        producedPlan
 
-    case _ => plan
-  }
+      case _ => plan
+    }
 
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
-    case ast.AscSortItem(ast.Variable(key)) => Ascending(IdName(key))
+    case ast.AscSortItem(ast.Variable(key))  => Ascending(IdName(key))
     case ast.DescSortItem(ast.Variable(key)) => Descending(IdName(key))
-    case _ => throw new InternalException("Sort items expected to only use single variable expression")
+    case _                                   => throw new InternalException("Sort items expected to only use single variable expression")
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =

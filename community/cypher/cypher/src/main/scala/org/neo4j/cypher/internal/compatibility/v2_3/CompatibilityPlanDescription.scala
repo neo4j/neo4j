@@ -21,17 +21,25 @@ package org.neo4j.cypher.internal.compatibility.v2_3
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription, PlanDescriptionArgumentSerializer}
-import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, RuntimeName}
-import org.neo4j.cypher.internal.javacompat.{PlanDescription, ProfilerStatistics}
-import org.neo4j.cypher.{CypherVersion, InternalException}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.PlanDescriptionArgumentSerializer
+import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3.RuntimeName
+import org.neo4j.cypher.internal.javacompat.PlanDescription
+import org.neo4j.cypher.internal.javacompat.ProfilerStatistics
+import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.InternalException
 
 import scala.collection.JavaConverters._
 
-case class CompatibilityPlanDescription(inner: InternalPlanDescription, version: CypherVersion,
-                                        planner: PlannerName, runtime: RuntimeName)
-  extends org.neo4j.cypher.internal.PlanDescription {
+case class CompatibilityPlanDescription(inner: InternalPlanDescription,
+                                        version: CypherVersion,
+                                        planner: PlannerName,
+                                        runtime: RuntimeName)
+    extends org.neo4j.cypher.internal.PlanDescription {
 
   self =>
 
@@ -40,7 +48,9 @@ case class CompatibilityPlanDescription(inner: InternalPlanDescription, version:
   }
 
   def arguments: Map[String, AnyRef] = exceptionHandler.runSafely {
-    inner.arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap
+    inner.arguments.map { arg =>
+      arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
+    }.toMap
   }
 
   def identifiers = exceptionHandler.runSafely {

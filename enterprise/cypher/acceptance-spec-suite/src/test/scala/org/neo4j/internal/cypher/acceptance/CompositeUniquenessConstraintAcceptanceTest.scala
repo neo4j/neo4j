@@ -32,7 +32,8 @@ import scala.collection.Map
 
 class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
+  override protected def createGraphDatabase(
+      config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
 
@@ -52,9 +53,8 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to create composite uniqueness constraints") {
     // When
-    expectError(
-      "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
-      "Only single property uniqueness constraints are supported")
+    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
+                "Only single property uniqueness constraints are supported")
 
     // Then
     graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))
@@ -62,9 +62,8 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to drop composite uniqueness constraints") {
     // When
-    expectError(
-      "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
-      "Only single property uniqueness constraints are supported")
+    expectError("DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
+                "Only single property uniqueness constraints are supported")
 
     // Then
     graph should not(haveConstraints("UNIQUENESS:Person(firstname,lastname)"))

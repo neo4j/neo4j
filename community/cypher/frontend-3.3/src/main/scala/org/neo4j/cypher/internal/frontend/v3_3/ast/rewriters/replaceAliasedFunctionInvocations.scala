@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, FunctionName}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionName
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 import scala.collection.immutable.TreeMap
 
@@ -28,13 +30,12 @@ case object replaceAliasedFunctionInvocations extends Rewriter {
   /*
    * These are historical names for functions. They are all subject to removal in an upcoming major release.
    */
-  val aliases: Map[String, String] = TreeMap("toInt" -> "toInteger",
-                                             "upper" -> "toUpper",
-                                             "lower" -> "toLower",
-                                             "rels" -> "relationships")(CaseInsensitiveOrdered)
+  val aliases: Map[String, String] =
+    TreeMap("toInt" -> "toInteger", "upper" -> "toUpper", "lower" -> "toLower", "rels" -> "relationships")(
+      CaseInsensitiveOrdered)
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
-    case func@FunctionInvocation(_, f@FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
+    case func @ FunctionInvocation(_, f @ FunctionName(name), _, _) if aliases.get(name).nonEmpty =>
       func.copy(functionName = FunctionName(aliases(name))(f.position))(func.position)
   })
 

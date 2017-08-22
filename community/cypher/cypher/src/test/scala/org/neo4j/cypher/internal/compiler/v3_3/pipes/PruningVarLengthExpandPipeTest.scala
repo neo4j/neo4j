@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Property, Variable}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, Predicate, True}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equals
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
@@ -31,7 +35,8 @@ import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.values.AnyValues.asNodeValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -40,8 +45,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = LazyTypes(Seq.empty[String])
 
   test("node without any relationships produces empty result") {
-    val n1 = createNode()
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val n1            = createNode()
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -54,12 +59,13 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList shouldBe List(Map("from" -> asNodeValue(n1), "to" -> asNodeValue(n2)))
+      pipeUnderTest.createResults(queryState).toList shouldBe List(
+        Map("from" -> asNodeValue(n1), "to" -> asNodeValue(n2)))
     }
   }
 
@@ -67,7 +73,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 0, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -89,15 +95,18 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
-    val min = 3
-    val max = 5
+    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val min           = 3
+    val max           = 5
     val pipeUnderTest = createPipe(src, min, max, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
       pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
-        nodes.slice(min, max + 1).map(asNodeValue).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
+        nodes
+          .slice(min, max + 1)
+          .map(asNodeValue)
+          .toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
       )
     }
   }
@@ -112,7 +121,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n1)
     relate(n1, n2)
 
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 2, 2, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
@@ -137,8 +146,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2, "k" -> 1)
     relate(n2, n3, "k" -> 2)
 
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate     = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, predicate, True())
 
     graph.withTx { tx =>
@@ -163,8 +172,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2)
     relate(n2, n3)
 
-    val src = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
+    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate     = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, True(), predicate)
 
     graph.withTx { tx =>
@@ -197,12 +206,13 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n5 = nodes(5)
     relate(n1, n4)
 
-    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> asNodeValue(n1), "to" -> asNodeValue(n))).toSet)
+      pipeUnderTest.createResults(queryState).toSet should equal(
+        nodes.tail.map(n => Map("from" -> asNodeValue(n1), "to" -> asNodeValue(n))).toSet)
     }
   }
 
@@ -215,28 +225,29 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
+    val src           = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(Set(
-        Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(2))),
-        Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(3))),
-        Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(4))),
-        Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(5))),
-        Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(6))),
-        Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(7))),
-        Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(8))),
-        Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(9)))
-      ))
+      pipeUnderTest.createResults(queryState).toSet should equal(
+        Set(
+          Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(2))),
+          Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(3))),
+          Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(4))),
+          Map("from" -> asNodeValue(nodes(1)), "to" -> asNodeValue(nodes(5))),
+          Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(6))),
+          Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(7))),
+          Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(8))),
+          Map("from" -> asNodeValue(nodes(5)), "to" -> asNodeValue(nodes(9)))
+        ))
     }
   }
 
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
-    var tx = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
+    var tx    = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
     var count = 0
 
     def checkAndSwitch() = {
@@ -271,12 +282,21 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   }
 
   private def testNode(startNode: Node, r: Random) = {
-    val min = r.nextInt(3)
-    val max = min + 1 + r.nextInt(3)
-    val sourcePipe = new FakePipe(Iterator(Map("from" -> startNode)))
-    val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
+    val min           = r.nextInt(3)
+    val max           = min + 1 + r.nextInt(3)
+    val sourcePipe    = new FakePipe(Iterator(Map("from" -> startNode)))
+    val sourcePipe2   = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
-    val pipe = VarLengthExpandPipe(sourcePipe2, "from", "r", "to", SemanticDirection.BOTH, SemanticDirection.BOTH, types, min, Some(max), nodeInScope = false)()
+    val pipe = VarLengthExpandPipe(sourcePipe2,
+                                   "from",
+                                   "r",
+                                   "to",
+                                   SemanticDirection.BOTH,
+                                   SemanticDirection.BOTH,
+                                   types,
+                                   min,
+                                   Some(max),
+                                   nodeInScope = false)()
     val comparison = DistinctPipe(pipe, Map("from" -> Variable("from"), "to" -> Variable("to")))()
 
     val distinctExpand = graph.withTx { tx =>
@@ -292,7 +312,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val oldThing = distinctAfterVarLengthExpand.toSet
     val newThing = distinctExpand.toSet
     if (oldThing != newThing) {
-      val missingFromNew = oldThing -- newThing
+      val missingFromNew   = oldThing -- newThing
       val shouldNotBeInNew = newThing -- oldThing
       var message =
         s"""startNode: $startNode
@@ -301,10 +321,10 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
             |min $min
             |max $max
             |""".stripMargin
-      if(missingFromNew.nonEmpty) {
+      if (missingFromNew.nonEmpty) {
         message += s"missing from new result: ${missingFromNew.mkString(",")}\n"
       }
-      if(shouldNotBeInNew.nonEmpty) {
+      if (shouldNotBeInNew.nonEmpty) {
         message += s"should not be in new result: ${shouldNotBeInNew.mkString(",")}\n"
       }
 
@@ -315,13 +335,13 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   test("random and compare") {
     // runs DistinctVarExpand and VarExpand side-by-side and checks that the reachable nodes are the same
     val POPULATION: Int = 1 * 1000
-    val seed = System.currentTimeMillis()
-    val nodes = setUpGraph(seed, POPULATION, 20)
-    val r = new Random
+    val seed            = System.currentTimeMillis()
+    val nodes           = setUpGraph(seed, POPULATION, 20)
+    val r               = new Random
 
     val start = System.currentTimeMillis()
 
-    while(System.currentTimeMillis() - start < 10000) {
+    while (System.currentTimeMillis() - start < 10000) {
       withClue("seed used: " + seed) {
         testNode(nodes(r.nextInt(POPULATION)), r)
       }
@@ -338,20 +358,29 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
                          outgoing: SemanticDirection,
                          relationshipPredicate: Predicate,
                          nodePredicate: Predicate) = {
-    PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
-        row("to") = node
-        val result = nodePredicate.isTrue(row)(state)
-        row.remove("to")
-        result
-      }
+    PruningVarLengthExpandPipe(
+      src,
+      "from",
+      "to",
+      types,
+      outgoing,
+      min,
+      max,
+      new VarLengthPredicate {
+        override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
+          row("to") = node
+          val result = nodePredicate.isTrue(row)(state)
+          row.remove("to")
+          result
+        }
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = {
-        row("r") = rel
-        val result = relationshipPredicate.isTrue(row)(state)
-        row.remove("r")
-        result
+        override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = {
+          row("r") = rel
+          val result = relationshipPredicate.isTrue(row)(state)
+          row.remove("r")
+          result
+        }
       }
-    })()
+    )()
   }
 }

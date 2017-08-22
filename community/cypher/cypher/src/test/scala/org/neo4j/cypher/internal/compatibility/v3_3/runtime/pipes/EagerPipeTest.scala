@@ -27,8 +27,8 @@ class EagerPipeTest extends CypherFunSuite {
   test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty
     val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
-    val src = new FakePipe(lazyIterator)
-    val eager = new EagerPipe(src)()
+    val src          = new FakePipe(lazyIterator)
+    val eager        = new EagerPipe(src)()
     lazyIterator should not be empty
 
     // When

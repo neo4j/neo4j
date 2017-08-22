@@ -21,14 +21,16 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1
-import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhaseEvent, CompilationPhase => v3_1Phase}
+import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.CompilationPhaseEvent
+import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhase => v3_1Phase}
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration => CypherCompilerConfiguration3_1}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
@@ -45,20 +47,21 @@ object helpers {
       config.errorIfShortestPathFallbackUsedAtRuntime,
       config.errorIfShortestPathHasCommonNodesAtRuntime,
       config.legacyCsvQuoteEscaping,
-      config.nonIndexedLabelWarningThreshold)
+      config.nonIndexedLabelWarningThreshold
+    )
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
   def as3_1(tracer: CompilationPhaseTracer): v3_1.CompilationPhaseTracer = {
     new v3_1.CompilationPhaseTracer {
       override def beginPhase(phase: v3_1.CompilationPhaseTracer.CompilationPhase) = {
         val wrappedPhase = phase match {
-          case v3_1Phase.AST_REWRITE => v3_3Phase.AST_REWRITE
-          case v3_1Phase.CODE_GENERATION => v3_3Phase.CODE_GENERATION
+          case v3_1Phase.AST_REWRITE      => v3_3Phase.AST_REWRITE
+          case v3_1Phase.CODE_GENERATION  => v3_3Phase.CODE_GENERATION
           case v3_1Phase.LOGICAL_PLANNING => v3_3Phase.LOGICAL_PLANNING
-          case v3_1Phase.PARSING => v3_3Phase.PARSING
-          case v3_1Phase.PIPE_BUILDING => v3_3Phase.PIPE_BUILDING
-          case v3_1Phase.SEMANTIC_CHECK => v3_3Phase.SEMANTIC_CHECK
-          case _ => throw new InternalException(s"Cannot handle $phase in 3.1")
+          case v3_1Phase.PARSING          => v3_3Phase.PARSING
+          case v3_1Phase.PIPE_BUILDING    => v3_3Phase.PIPE_BUILDING
+          case v3_1Phase.SEMANTIC_CHECK   => v3_3Phase.SEMANTIC_CHECK
+          case _                          => throw new InternalException(s"Cannot handle $phase in 3.1")
         }
 
         val wrappedEvent = tracer.beginPhase(wrappedPhase)

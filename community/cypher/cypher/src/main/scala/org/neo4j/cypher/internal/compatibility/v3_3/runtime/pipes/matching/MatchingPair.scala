@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.Map
 
@@ -30,24 +31,29 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
 
   override def toString = patternElement.key + "=" + entity
 
-  def matchesBoundEntity(boundNodes: Map[String, Set[MatchingPair]]): Boolean = boundNodes.get(patternElement.key)
-  match {
-    case Some(pinnedNodeSet) => pinnedNodeSet.forall(pinnedNode => (entity, pinnedNode.entity) match {
-      case (a: NodeValue, b: NodeValue)                                                       => a == b
-      case (a: SingleGraphRelationship, b: EdgeValue)                            => a.rel == b
-      case (a: EdgeValue, b: SingleGraphRelationship)                            => a == b.rel
-      case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
-      case (a: VariableLengthGraphRelationship, _)                                  => false
-      case (a, _: VariableLengthGraphRelationship)                                  => false
+  def matchesBoundEntity(boundNodes: Map[String, Set[MatchingPair]]): Boolean =
+    boundNodes.get(patternElement.key) match {
+      case Some(pinnedNodeSet) =>
+        pinnedNodeSet.forall(pinnedNode =>
+          (entity, pinnedNode.entity) match {
+            case (a: NodeValue, b: NodeValue)                                             => a == b
+            case (a: SingleGraphRelationship, b: EdgeValue)                               => a.rel == b
+            case (a: EdgeValue, b: SingleGraphRelationship)                               => a == b.rel
+            case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
+            case (a: VariableLengthGraphRelationship, _)                                  => false
+            case (a, _: VariableLengthGraphRelationship)                                  => false
 
-    })
-    case None             => true
-  }
+        })
+      case None => true
+    }
 
-  def getGraphRelationships(pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
+  def getGraphRelationships(pRel: PatternRelationship,
+                            state: QueryState,
+                            f: => ExecutionContext): Seq[GraphRelationship] =
     patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[NodeValue], pRel, state, f)
 
-  def getPatternAndGraphPoint: (PatternNode, NodeValue) = (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[NodeValue])
+  def getPatternAndGraphPoint: (PatternNode, NodeValue) =
+    (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[NodeValue])
 
   def patternNode = patternElement.asInstanceOf[PatternNode]
 }

@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{EMPTY_STRING, stringValue}
+import org.neo4j.values.storable.Values.EMPTY_STRING
+import org.neo4j.values.storable.Values.stringValue
 
 class StringFunctionsTest extends CypherFunSuite {
 
@@ -71,7 +72,8 @@ class StringFunctionsTest extends CypherFunSuite {
 
   test("substringTests") {
     def substring(orig: Any, from: Any, to: Any) =
-      SubstringFunction(Literal(orig), Literal(from), Some(Literal(to))).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+      SubstringFunction(Literal(orig), Literal(from), Some(Literal(to)))
+        .apply(ExecutionContext.empty)(QueryStateHelper.empty)
     def substringFrom(orig: Any, from: Any) =
       SubstringFunction(Literal(orig), Literal(from), None).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 

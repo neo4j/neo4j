@@ -17,14 +17,16 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable.FoldableAny
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, hasAggregateButIsNotAggregate}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.hasAggregateButIsNotAggregate
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
 case object aggregationsAreIsolated extends Condition {
 
   def apply(that: Any): Seq[String] = that.treeFold(Seq.empty[String]) {
     case expr: Expression if hasAggregateButIsNotAggregate(expr) =>
-      acc => (acc :+ s"Expression $expr contains child expressions which are aggregations", None)
+      acc =>
+        (acc :+ s"Expression $expr contains child expressions which are aggregations", None)
   }
 
   override def name: String = productPrefix

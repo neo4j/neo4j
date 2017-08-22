@@ -33,29 +33,35 @@ sealed trait MutatingPattern {
 }
 
 sealed trait NoSymbols {
-  self : MutatingPattern =>
+  self: MutatingPattern =>
   override def coveredIds = Set.empty[IdName]
 }
 
 sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
 
-case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
-  override def dependencies: Set[IdName] = (entityExpression.dependencies ++ expression.dependencies).map(IdName.fromVariable)
+case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression)
+    extends SetMutatingPattern {
+  override def dependencies: Set[IdName] =
+    (entityExpression.dependencies ++ expression.dependencies).map(IdName.fromVariable)
 }
 
-case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
+case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression)
+    extends SetMutatingPattern {
   override def dependencies: Set[IdName] = deps(expression) + idName
 }
 
-case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
+case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean)
+    extends SetMutatingPattern {
   override def dependencies: Set[IdName] = deps(expression) + idName
 }
 
-case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean)
+    extends SetMutatingPattern {
   override def dependencies: Set[IdName] = deps(expression) + idName
 }
 
-case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
+case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression)
+    extends SetMutatingPattern {
   override def dependencies: Set[IdName] = deps(expression) + idName
 }
 
@@ -67,20 +73,28 @@ case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends Mu
   override def dependencies: Set[IdName] = Set(idName)
 }
 
-case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern {
+case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression])
+    extends MutatingPattern {
   override def coveredIds = Set(nodeName)
 
   override def dependencies: Set[IdName] = deps(properties)
 }
 
-case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType: RelTypeName, rightNode: IdName,
-                                     properties: Option[Expression], direction: SemanticDirection) extends  MutatingPattern {
+case class CreateRelationshipPattern(relName: IdName,
+                                     leftNode: IdName,
+                                     relType: RelTypeName,
+                                     rightNode: IdName,
+                                     properties: Option[Expression],
+                                     direction: SemanticDirection)
+    extends MutatingPattern {
   def startNode = inOrder._1
 
   def endNode = inOrder._2
 
   //WHEN merging we can have an undirected CREATE, it is interpreted left-to-right
-  def inOrder =  if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode) else (rightNode, leftNode)
+  def inOrder =
+    if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode)
+    else (rightNode, leftNode)
 
   override def coveredIds = Set(relName)
 
@@ -92,28 +106,40 @@ case class DeleteExpression(expression: Expression, forced: Boolean) extends Mut
 }
 
 sealed trait MergePattern {
-  self : MutatingPattern =>
+  self: MutatingPattern =>
   def matchGraph: QueryGraph
 }
 
-case class MergeNodePattern(createNodePattern: CreateNodePattern, matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern],
-                            onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+case class MergeNodePattern(createNodePattern: CreateNodePattern,
+                            matchGraph: QueryGraph,
+                            onCreate: Seq[SetMutatingPattern],
+                            onMatch: Seq[SetMutatingPattern])
+    extends MutatingPattern
+    with MergePattern {
   override def coveredIds = matchGraph.allCoveredIds
 
-  override def dependencies: Set[IdName] = createNodePattern.dependencies ++ onCreate.flatMap(_.dependencies) ++ onMatch.flatMap(_.dependencies)
+  override def dependencies: Set[IdName] =
+    createNodePattern.dependencies ++ onCreate.flatMap(_.dependencies) ++ onMatch.flatMap(_.dependencies)
 }
 
-case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern], createRelPatterns: Seq[CreateRelationshipPattern],
-                                    matchGraph: QueryGraph, onCreate: Seq[SetMutatingPattern], onMatch: Seq[SetMutatingPattern]) extends MutatingPattern with MergePattern {
+case class MergeRelationshipPattern(createNodePatterns: Seq[CreateNodePattern],
+                                    createRelPatterns: Seq[CreateRelationshipPattern],
+                                    matchGraph: QueryGraph,
+                                    onCreate: Seq[SetMutatingPattern],
+                                    onMatch: Seq[SetMutatingPattern])
+    extends MutatingPattern
+    with MergePattern {
   override def coveredIds = matchGraph.allCoveredIds
 
   override def dependencies: Set[IdName] =
     createNodePatterns.flatMap(_.dependencies).toSet ++
-    createRelPatterns.flatMap(_.dependencies).toSet ++
+      createRelPatterns.flatMap(_.dependencies).toSet ++
       onCreate.flatMap(_.dependencies) ++
       onMatch.flatMap(_.dependencies)
 }
 
-case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery) extends MutatingPattern with NoSymbols {
+case class ForeachPattern(variable: IdName, expression: Expression, innerUpdates: PlannerQuery)
+    extends MutatingPattern
+    with NoSymbols {
   override def dependencies: Set[IdName] = deps(expression) ++ innerUpdates.dependencies
 }

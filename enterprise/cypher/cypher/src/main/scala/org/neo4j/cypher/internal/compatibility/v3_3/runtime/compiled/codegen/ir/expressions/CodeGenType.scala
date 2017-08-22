@@ -31,14 +31,14 @@ trait CodeGenType {
 }
 
 object CodeGenType {
-  val Any = CypherCodeGenType(symbols.CTAny, ReferenceType)
-  val primitiveNode = CypherCodeGenType(symbols.CTNode, LongType)
-  val primitiveRel = CypherCodeGenType(symbols.CTRelationship, LongType)
-  val primitiveInt = CypherCodeGenType(symbols.CTInteger, LongType)
+  val Any            = CypherCodeGenType(symbols.CTAny, ReferenceType)
+  val primitiveNode  = CypherCodeGenType(symbols.CTNode, LongType)
+  val primitiveRel   = CypherCodeGenType(symbols.CTRelationship, LongType)
+  val primitiveInt   = CypherCodeGenType(symbols.CTInteger, LongType)
   val primitiveFloat = CypherCodeGenType(symbols.CTFloat, FloatType)
-  val primitiveBool = CypherCodeGenType(symbols.CTBoolean, BoolType)
-  val javaInt = JavaCodeGenType(IntType)
-  val javaLong = JavaCodeGenType(LongType)
+  val primitiveBool  = CypherCodeGenType(symbols.CTBoolean, BoolType)
+  val javaInt        = JavaCodeGenType(IntType)
+  val javaLong       = JavaCodeGenType(LongType)
 }
 
 case class JavaCodeGenType(repr: RepresentationType) extends CodeGenType {

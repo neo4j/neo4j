@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-class ToStringTest extends FunctionTestBase("toString")  {
+class ToStringTest extends FunctionTestBase("toString") {
 
   test("should accept correct types or types that could be correct at runtime") {
     testValidTypes(CTString)(CTString)

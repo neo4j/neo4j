@@ -39,7 +39,8 @@ case class LabelName(name: String)(val position: InputPosition) extends Symbolic
 }
 
 case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicNameWithId[PropertyKeyId] {
-  def id(implicit semanticTable: SemanticTable): Option[PropertyKeyId] = semanticTable.resolvedPropertyKeyNames.get(name)
+  def id(implicit semanticTable: SemanticTable): Option[PropertyKeyId] =
+    semanticTable.resolvedPropertyKeyNames.get(name)
 }
 
 case class RelTypeName(name: String)(val position: InputPosition) extends SymbolicNameWithId[RelTypeId] {

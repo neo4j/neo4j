@@ -30,19 +30,18 @@ trait ParserTest[T, J] extends CypherFunSuite {
     def or(other: ResultCheck) = new ResultCheck(actuals ++ other.actuals, text)
 
     def shouldGive(expected: J) {
-      actuals foreach {
-        actual =>
-          actual should equal(expected)
+      actuals foreach { actual =>
+        actual should equal(expected)
       }
     }
 
     def shouldGive(expected: ((InputPosition) => J)) {
-      shouldGive(expected(InputPosition(0,0,0)))
+      shouldGive(expected(InputPosition(0, 0, 0)))
     }
 
     def shouldMatch(expected: PartialFunction[J, Unit]) {
-      actuals foreach {
-        actual => expected.isDefinedAt(actual) should equal(true)
+      actuals foreach { actual =>
+        expected.isDefinedAt(actual) should equal(true)
       }
     }
 
@@ -65,13 +64,17 @@ trait ParserTest[T, J] extends CypherFunSuite {
 
   private def convertResult(r: ParsingResult[T], input: String) = r.result match {
     case Some(t) => new ResultCheck(Seq(convert(t)), input)
-    case None    => fail(s"'$input' failed with: " + r.parseErrors.map {
-      case error: InvalidInputError =>
-        val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-        val message = new InvalidInputErrorFormatter().format(error)
-        s"$message ($position)"
-      case error                    =>
-        error.getClass.getSimpleName
-    }.mkString(","))
+    case None =>
+      fail(
+        s"'$input' failed with: " + r.parseErrors
+          .map {
+            case error: InvalidInputError =>
+              val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
+              val message  = new InvalidInputErrorFormatter().format(error)
+              s"$message ($position)"
+            case error =>
+              error.getClass.getSimpleName
+          }
+          .mkString(","))
   }
 }

@@ -21,10 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PeriodicCommitInfo, PlanFingerprint, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PeriodicCommitInfo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PlanFingerprint
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, ProfileMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -41,23 +46,23 @@ object ExecutionPlanBuilder {
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 
-          override def get(): InternalPlanDescription = description.map {
-            plan: InternalPlanDescription =>
-              val data = tracer.get(plan.id)
+          override def get(): InternalPlanDescription = description.map { plan: InternalPlanDescription =>
+            val data = tracer.get(plan.id)
 
-              plan.
-                addArgument(Arguments.Runtime(CompiledRuntimeName.toTextOutput)).
-                addArgument(Arguments.DbHits(data.dbHits())).
-                addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
-                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
-                addArgument(Arguments.Rows(data.rows())).
-                addArgument(Arguments.Time(data.time()))
+            plan
+              .addArgument(Arguments.Runtime(CompiledRuntimeName.toTextOutput))
+              .addArgument(Arguments.DbHits(data.dbHits()))
+              .addArgument(Arguments.PageCacheHits(data.pageCacheHits()))
+              .addArgument(Arguments.PageCacheMisses(data.pageCacheMisses()))
+              .addArgument(Arguments.Rows(data.rows()))
+              .addArgument(Arguments.Time(data.time()))
           }
         }, Some(tracer))
-    case _ => (description: InternalPlanDescription) =>
-      (new Provider[InternalPlanDescription] {
-        override def get(): InternalPlanDescription = description
-      }, None)
+    case _ =>
+      (description: InternalPlanDescription) =>
+        (new Provider[InternalPlanDescription] {
+          override def get(): InternalPlanDescription = description
+        }, None)
   }
 }
 

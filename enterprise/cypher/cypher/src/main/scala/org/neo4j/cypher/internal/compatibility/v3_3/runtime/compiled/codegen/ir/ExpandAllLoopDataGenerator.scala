@@ -20,30 +20,39 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
-case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: SemanticDirection,
-                   types: Map[String, String], toVar: Variable, relVar: Variable)
-  extends LoopDataGenerator {
+case class ExpandAllLoopDataGenerator(opName: String,
+                                      fromVar: Variable,
+                                      dir: SemanticDirection,
+                                      types: Map[String, String],
+                                      toVar: Variable,
+                                      relVar: Variable)
+    extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.createRelExtractor(relVar.name)
     types.foreach {
-      case (typeVar,relType) => generator.lookupRelationshipTypeId(typeVar, relType)
+      case (typeVar, relType) => generator.lookupRelationshipTypeId(typeVar, relType)
     }
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-    if(types.isEmpty)
+    if (types.isEmpty)
       generator.nodeGetRelationshipsWithDirection(iterVar, fromVar.name, fromVar.codeGenType, dir)
     else
-      generator.nodeGetRelationshipsWithDirectionAndTypes(iterVar, fromVar.name, fromVar.codeGenType, dir, types.keys.toIndexedSeq)
+      generator.nodeGetRelationshipsWithDirectionAndTypes(iterVar,
+                                                          fromVar.name,
+                                                          fromVar.codeGenType,
+                                                          dir,
+                                                          types.keys.toIndexedSeq)
     generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(
+      implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nextRelationshipAndNode(toVar.name, iterVar, dir, fromVar.name, relVar.name)
   }

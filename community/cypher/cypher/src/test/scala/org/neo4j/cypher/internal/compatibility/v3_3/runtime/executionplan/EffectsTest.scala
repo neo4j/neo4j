@@ -24,55 +24,60 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class EffectsTest extends CypherFunSuite {
 
   test("testAsLeafEffects") {
-    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).asLeafEffects
+    val actual: Effects   = Effects(CreatesAnyNode, ReadsAllRelationships).asLeafEffects
     val expected: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships))
 
     actual should equal(expected)
   }
 
   test("testLeafEffectsAsOptional") {
-    val actual: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships)).leafEffectsAsOptional
+    val actual: Effects   = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships)).leafEffectsAsOptional
     val expected: Effects = Effects(OptionalLeafEffect(CreatesAnyNode), OptionalLeafEffect(ReadsAllRelationships))
 
     actual should equal(expected)
   }
 
   test("testWriteEffects") {
-    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).writeEffects
+    val actual: Effects   = Effects(CreatesAnyNode, ReadsAllRelationships).writeEffects
     val expected: Effects = Effects(CreatesAnyNode)
 
     actual should equal(expected)
   }
 
   test("testContainsWrites") {
-    Effects(CreatesAnyNode, ReadsAllRelationships).containsWrites shouldBe(right = true)
-    Effects().containsWrites shouldBe(right = false)
-    Effects(ReadsNodesWithLabels("foo", "bar")).containsWrites shouldBe(right = false)
+    Effects(CreatesAnyNode, ReadsAllRelationships).containsWrites shouldBe (right = true)
+    Effects().containsWrites shouldBe (right = false)
+    Effects(ReadsNodesWithLabels("foo", "bar")).containsWrites shouldBe (right = false)
   }
 
   test("testRegardlessOfOptionalEffects") {
-    val actual = Effects(CreatesAnyNode, LeafEffect(DeletesNode), OptionalLeafEffect(SetLabel("Label"))).regardlessOfOptionalEffects
+    val actual =
+      Effects(CreatesAnyNode, LeafEffect(DeletesNode), OptionalLeafEffect(SetLabel("Label"))).regardlessOfOptionalEffects
     val expected = Effects(CreatesAnyNode, LeafEffect(DeletesNode), SetLabel("Label"))
 
     actual should equal(expected)
   }
 
   test("testContains") {
-    Effects().contains(DeletesRelationship) shouldBe(right = false)
-    Effects(CreatesNodesWithLabels("foo")).contains(CreatesNodesWithLabels("bar")) shouldBe(right = false)
-    Effects(CreatesAnyNode, DeletesRelationship).contains(CreatesAnyNode) shouldBe(right = true)
+    Effects().contains(DeletesRelationship) shouldBe (right = false)
+    Effects(CreatesNodesWithLabels("foo")).contains(CreatesNodesWithLabels("bar")) shouldBe (right = false)
+    Effects(CreatesAnyNode, DeletesRelationship).contains(CreatesAnyNode) shouldBe (right = true)
   }
 
   test("testRegardlessOfLeafEffects") {
-    val expected: Effects = Effects(CreatesAnyNode, DeletesRelationship, OptionalLeafEffect(ReadsNodesWithLabels("foo")))
-    val actual: Effects = Effects(CreatesAnyNode, LeafEffect(DeletesRelationship), OptionalLeafEffect(ReadsNodesWithLabels("foo"))).regardlessOfLeafEffects
+    val expected: Effects =
+      Effects(CreatesAnyNode, DeletesRelationship, OptionalLeafEffect(ReadsNodesWithLabels("foo")))
+    val actual: Effects = Effects(CreatesAnyNode,
+                                  LeafEffect(DeletesRelationship),
+                                  OptionalLeafEffect(ReadsNodesWithLabels("foo"))).regardlessOfLeafEffects
 
     actual should equal(expected)
   }
 
   test("test$plus$plus") {
     Effects() ++ Effects() should equal(Effects())
-    Effects(CreatesRelationshipBoundNodes) ++ Effects(CreatesRelationshipBoundNodes, DeletesNode) should equal(Effects(CreatesRelationshipBoundNodes, DeletesNode))
+    Effects(CreatesRelationshipBoundNodes) ++ Effects(CreatesRelationshipBoundNodes, DeletesNode) should equal(
+      Effects(CreatesRelationshipBoundNodes, DeletesNode))
   }
 
 }

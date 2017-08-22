@@ -21,17 +21,20 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Ascending
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.SortDescription
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AscSortItem, PatternExpression}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AscSortItem
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternExpression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
-  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
+  val x: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("110") _
+  val y: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("10") _
+  val variableSortItem: AscSortItem    = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -91,7 +94,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // then
     result should equal(Sort(startPlan, Seq(sortDescription))(solved))
 
-    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
+    result.solved.horizon should equal(
+      RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
 
   test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
@@ -106,7 +110,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    val sorted = Sort(startPlan, Seq(sortDescription))(solved)
+    val sorted  = Sort(startPlan, Seq(sortDescription))(solved)
     val skipped = Skip(sorted, y)(solved)
     val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
 
@@ -116,13 +120,14 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos)))
+    : (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
       shuffle = QueryShuffle(sortItems, skip, limit)
     )
 
-    val qg = QueryGraph(patternNodes = Set(IdName("n")))
+    val qg    = QueryGraph(patternNodes = Set(IdName("n")))
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
     val context = newMockedLogicalPlanningContext(
@@ -130,9 +135,9 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val plan =
-      newMockedLogicalPlanWithSolved(Set(IdName("n")),
-        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0))
-      )
+      newMockedLogicalPlanWithSolved(
+        Set(IdName("n")),
+        CardinalityEstimation.lift(RegularPlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n"))), Cardinality(0)))
 
     (query, context, plan)
   }

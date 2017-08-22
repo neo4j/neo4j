@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, ListSupport}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{ArrayValue, Value, Values}
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
 import scala.collection.JavaConverters._
@@ -31,8 +35,8 @@ object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
 
   def apply(a: AnyValue): Value = a match {
     case value: Value => value
-    case IsList(l) => transformTraversableToArray(l)
-    case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
+    case IsList(l)    => transformTraversableToArray(l)
+    case _            => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
   /*
   This method finds the type that we can use for the primitive array that Neo4j wants
@@ -43,7 +47,7 @@ object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
     if (a.storable()) {
       a.toStorableArray
     } else if (a.isEmpty) {
-      Values.stringArray(Array.empty[String]:_*)
+      Values.stringArray(Array.empty[String]: _*)
     } else {
       val typeValue = a.iterator().asScala.reduce(CastSupport.merge)
       val converter = CastSupport.getConverter(typeValue)

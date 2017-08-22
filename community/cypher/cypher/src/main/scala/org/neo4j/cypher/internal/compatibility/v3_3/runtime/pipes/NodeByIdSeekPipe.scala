@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters._
 
@@ -34,9 +35,9 @@ sealed trait SeekArgs {
 
 object SeekArgs {
   object empty extends SeekArgs {
-    def expressions(ctx: ExecutionContext, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
+    def expressions(ctx: ExecutionContext, state: QueryState): ListValue = VirtualValues.EMPTY_LIST
 
-    override def registerOwningPipe(pipe: Pipe){}
+    override def registerOwningPipe(pipe: Pipe) {}
   }
 }
 
@@ -59,13 +60,12 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
   override def registerOwningPipe(pipe: Pipe): Unit = coll.registerOwningPipe(pipe)
 }
 
-case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val id: Id = new Id) extends Pipe {
+case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)(val id: Id = new Id) extends Pipe {
 
   nodeIdsExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val ctx = state.createOrGetInitialContext()
+    val ctx     = state.createOrGetInitialContext()
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
     new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator().asScala)
   }

@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
   override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = value match {

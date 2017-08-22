@@ -26,24 +26,39 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LegacyPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument => Argument3_3}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{
+  InternalPlanDescription => InternalPlanDescription3_3
+}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, _}
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.Argument
+import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v2_3.PlannerName
+import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.frontend.v2_3
-import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.frontend.v2_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.LegacyPlannerNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.PlannerUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v2_3.notification._
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.frontend.v3_3
-import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
+import org.neo4j.cypher.internal.QueryStatistics
+import org.neo4j.cypher.internal.compatibility
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
-import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.neo4j.values.result.QueryResult
 import org.neo4j.values.result.QueryResult.Record
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 import scala.collection.JavaConverters._
 
@@ -52,12 +67,14 @@ object ExecutionResultWrapper {
   def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName)] = v match {
     case closing: ClosingExecutionResult => unapply(closing.inner)
     case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime))
-    case _ => None
+    case _                               => None
   }
 
-   def asKernelNotification(offset : Option[v2_3.InputPosition])(notification: InternalNotification): org.neo4j.graphdb.Notification = notification match {
+  def asKernelNotification(offset: Option[v2_3.InputPosition])(
+      notification: InternalNotification): org.neo4j.graphdb.Notification = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition,
+                                                      NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LegacyPlannerNotification =>
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
@@ -85,11 +102,14 @@ object ExecutionResultWrapper {
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
+      NotificationCode.MISSING_LABEL
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      NotificationCode.MISSING_REL_TYPE
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
+      NotificationCode.MISSING_PROPERTY_NAME
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
       NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
   }
@@ -101,10 +121,12 @@ object ExecutionResultWrapper {
 
 }
 
-class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
+class ExecutionResultWrapper(val inner: InternalExecutionResult,
+                             val planner: PlannerName,
+                             val runtime: RuntimeName,
                              preParsingNotifications: Set[org.neo4j.graphdb.Notification],
-                             offset : Option[v2_3.InputPosition])
-  extends org.neo4j.cypher.internal.InternalExecutionResult {
+                             offset: Option[v2_3.InputPosition])
+    extends org.neo4j.cypher.internal.InternalExecutionResult {
 
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
 
@@ -114,19 +136,20 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()
-    QueryStatistics(nodesCreated = i.nodesCreated,
-                    relationshipsCreated = i.relationshipsCreated,
-                    propertiesSet = i.propertiesSet,
-                    nodesDeleted = i.nodesDeleted,
-                    relationshipsDeleted = i.relationshipsDeleted,
-                    labelsAdded = i.labelsAdded,
-                    labelsRemoved = i.labelsRemoved,
-                    indexesAdded = i.indexesAdded,
-                    indexesRemoved = i.indexesRemoved,
-                    uniqueConstraintsAdded = i.uniqueConstraintsAdded,
-                    uniqueConstraintsRemoved = i.uniqueConstraintsRemoved,
-                    existenceConstraintsAdded = i.existenceConstraintsAdded,
-                    existenceConstraintsRemoved = i.existenceConstraintsRemoved
+    QueryStatistics(
+      nodesCreated = i.nodesCreated,
+      relationshipsCreated = i.relationshipsCreated,
+      propertiesSet = i.propertiesSet,
+      nodesDeleted = i.nodesDeleted,
+      relationshipsDeleted = i.relationshipsDeleted,
+      labelsAdded = i.labelsAdded,
+      labelsRemoved = i.labelsRemoved,
+      indexesAdded = i.indexesAdded,
+      indexesRemoved = i.indexesRemoved,
+      uniqueConstraintsAdded = i.uniqueConstraintsAdded,
+      uniqueConstraintsRemoved = i.uniqueConstraintsRemoved,
+      existenceConstraintsAdded = i.existenceConstraintsAdded,
+      existenceConstraintsRemoved = i.existenceConstraintsRemoved
     )
   }
 
@@ -137,41 +160,44 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
   def executionPlanDescription(): InternalPlanDescription3_3 =
-    convert(inner.executionPlanDescription().
-      addArgument(Version("CYPHER 2.3")).
-      addArgument(Planner(planner.toTextOutput)).
-      addArgument(PlannerImpl(planner.name)).
-      addArgument(Runtime(runtime.toTextOutput)).
-      addArgument(RuntimeImpl(runtime.name)))
+    convert(
+      inner
+        .executionPlanDescription()
+        .addArgument(Version("CYPHER 2.3"))
+        .addArgument(Planner(planner.toTextOutput))
+        .addArgument(PlannerImpl(planner.name))
+        .addArgument(Runtime(runtime.toTextOutput))
+        .addArgument(RuntimeImpl(runtime.name)))
 
   private def convert(i: InternalPlanDescription): InternalPlanDescription3_3 = exceptionHandler.runSafely {
     LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
   }
 
   private def convert(args: Seq[Argument]): Seq[Argument3_3] = args.collect {
-    case Arguments.LabelName(label) => InternalPlanDescription3_3.Arguments.LabelName(label)
-    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_3.Arguments.ColumnsLeft(value)
-    case Arguments.DbHits(value) => InternalPlanDescription3_3.Arguments.DbHits(value)
+    case Arguments.LabelName(label)     => InternalPlanDescription3_3.Arguments.LabelName(label)
+    case Arguments.ColumnsLeft(value)   => InternalPlanDescription3_3.Arguments.ColumnsLeft(value)
+    case Arguments.DbHits(value)        => InternalPlanDescription3_3.Arguments.DbHits(value)
     case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, varLength) =>
       val dir3_3 = direction match {
         case INCOMING => v3_3.SemanticDirection.INCOMING
         case OUTGOING => v3_3.SemanticDirection.OUTGOING
-        case BOTH => v3_3.SemanticDirection.BOTH
+        case BOTH     => v3_3.SemanticDirection.BOTH
       }
       InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
 
     case Arguments.Index(label, propertyKey) => InternalPlanDescription3_3.Arguments.Index(label, Seq(propertyKey))
-    case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.LegacyIndex(value)
-    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments
-      .InequalityIndex(label, propertyKey, bounds)
-    case Arguments.Planner(value) => InternalPlanDescription3_3.Arguments.Planner(value)
-    case Arguments.PlannerImpl(value) => InternalPlanDescription3_3.Arguments.PlannerImpl(value)
-    case Arguments.Runtime(value) => InternalPlanDescription3_3.Arguments.Runtime(value)
-    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_3.Arguments.RuntimeImpl(value)
-    case Arguments.KeyNames(keys) => InternalPlanDescription3_3.Arguments.KeyNames(keys)
+    case Arguments.LegacyIndex(value)        => InternalPlanDescription3_3.Arguments.LegacyIndex(value)
+    case Arguments.InequalityIndex(label, propertyKey, bounds) =>
+      InternalPlanDescription3_3.Arguments
+        .InequalityIndex(label, propertyKey, bounds)
+    case Arguments.Planner(value)      => InternalPlanDescription3_3.Arguments.Planner(value)
+    case Arguments.PlannerImpl(value)  => InternalPlanDescription3_3.Arguments.PlannerImpl(value)
+    case Arguments.Runtime(value)      => InternalPlanDescription3_3.Arguments.Runtime(value)
+    case Arguments.RuntimeImpl(value)  => InternalPlanDescription3_3.Arguments.RuntimeImpl(value)
+    case Arguments.KeyNames(keys)      => InternalPlanDescription3_3.Arguments.KeyNames(keys)
     case Arguments.MergePattern(start) => InternalPlanDescription3_3.Arguments.MergePattern(start)
-    case Arguments.Version(value) => InternalPlanDescription3_3.Arguments.Version(value)
+    case Arguments.Version(value)      => InternalPlanDescription3_3.Arguments.Version(value)
   }
 
   override def hasNext: Boolean = inner.hasNext
@@ -181,13 +207,14 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def close(): Unit = inner.close()
 
   def queryType: InternalQueryType = inner.executionType.queryType() match {
-    case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY
-    case QueryExecutionType.QueryType.WRITE => WRITE
-    case QueryExecutionType.QueryType.READ_WRITE => READ_WRITE
+    case QueryExecutionType.QueryType.READ_ONLY    => READ_ONLY
+    case QueryExecutionType.QueryType.WRITE        => WRITE
+    case QueryExecutionType.QueryType.READ_WRITE   => READ_WRITE
     case QueryExecutionType.QueryType.SCHEMA_WRITE => SCHEMA_WRITE
   }
 
-  def notifications: Iterable[Notification] = inner.notifications.map(asKernelNotification(offset)) ++ preParsingNotifications
+  def notifications: Iterable[Notification] =
+    inner.notifications.map(asKernelNotification(offset)) ++ preParsingNotifications
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = inner.accept(visitor)
 
@@ -205,8 +232,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit =
     inner.accept(new ResultVisitor[E] {
-      override def visit(row: Result.ResultRow): Boolean = visitor.visit(new Record {
-        override def fields(): Array[AnyValue] = fieldNames().map(k => AnyValues.of(row.get(k)))
-      })
+      override def visit(row: Result.ResultRow): Boolean =
+        visitor.visit(new Record {
+          override def fields(): Array[AnyValue] = fieldNames().map(k => AnyValues.of(row.get(k)))
+        })
     })
 }

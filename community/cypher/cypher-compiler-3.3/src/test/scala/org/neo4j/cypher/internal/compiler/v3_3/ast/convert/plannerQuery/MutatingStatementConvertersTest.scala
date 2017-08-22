@@ -30,37 +30,43 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("setting a node property: MATCH (n) SET n.prop = 42 RETURN n") {
     val query = buildPlannerQuery("MATCH (n) SET n.prop = 42 RETURN n")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("n" -> varFor("n"))
+      ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
-    query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))
-    ))
+    query.queryGraph.mutatingPatterns should equal(
+      List(
+        SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))
+      ))
   }
 
   test("removing a node property should look like setting a property to null") {
     val query = buildPlannerQuery("MATCH (n) REMOVE n.prop RETURN n")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("n" -> varFor("n"))
+      ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
-    query.queryGraph.mutatingPatterns should equal(List(
-      SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), Null()(pos))
-    ))
+    query.queryGraph.mutatingPatterns should equal(
+      List(
+        SetNodePropertyPattern(IdName("n"), PropertyKeyName("prop")(pos), Null()(pos))
+      ))
   }
 
   test("setting a relationship property: MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r") {
     val query = buildPlannerQuery("MATCH (a)-[r]->(b) SET r.prop = 42 RETURN r")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("r" -> varFor("r"))
+      ))
 
-    query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
-    ))
+    query.queryGraph.patternRelationships should equal(
+      Set(
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
+      ))
     query.queryGraph.mutatingPatterns should equal(List(
       SetRelationshipPropertyPattern(IdName("r"), PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))
     ))
@@ -68,38 +74,49 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("removing a relationship property should look like setting a property to null") {
     val query = buildPlannerQuery("MATCH (a)-[r]->(b) REMOVE r.prop RETURN r")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("r" -> varFor("r"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("r" -> varFor("r"))
+      ))
 
-    query.queryGraph.patternRelationships should equal(Set(
-      PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
-    ))
-    query.queryGraph.mutatingPatterns should equal(List(
-      SetRelationshipPropertyPattern(IdName("r"), PropertyKeyName("prop")(pos), Null()(pos))
-    ))
+    query.queryGraph.patternRelationships should equal(
+      Set(
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), OUTGOING, List(), SimplePatternLength)
+      ))
+    query.queryGraph.mutatingPatterns should equal(
+      List(
+        SetRelationshipPropertyPattern(IdName("r"), PropertyKeyName("prop")(pos), Null()(pos))
+      ))
   }
 
   test("Query with single CREATE clause") {
     val query = buildPlannerQuery("CREATE (a), (b), (a)-[r:X]->(b) RETURN a, r, b")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("a" -> varFor("a"), "r" -> varFor("r"), "b" -> varFor("b"))
+      ))
 
-    query.queryGraph.mutatingPatterns should equal(Seq(
-      CreateNodePattern(IdName("a"), Seq.empty, None),
-      CreateNodePattern(IdName("b"), Seq.empty, None),
-      CreateRelationshipPattern(IdName("r"), IdName("a"), RelTypeName("X")(pos), IdName("b"), None, SemanticDirection.OUTGOING)
-    ))
+    query.queryGraph.mutatingPatterns should equal(
+      Seq(
+        CreateNodePattern(IdName("a"), Seq.empty, None),
+        CreateNodePattern(IdName("b"), Seq.empty, None),
+        CreateRelationshipPattern(IdName("r"),
+                                  IdName("a"),
+                                  RelTypeName("X")(pos),
+                                  IdName("b"),
+                                  None,
+                                  SemanticDirection.OUTGOING)
+      ))
 
-    query.queryGraph.containsReads should be (false)
+    query.queryGraph.containsReads should be(false)
   }
 
   test("Read write and read again") {
     val query = buildPlannerQuery("MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(RegularQueryProjection(
-      projections = Map("n" -> varFor("n"), "m" -> varFor("m"))
-    ))
+    query.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("n" -> varFor("n"), "m" -> varFor("m"))
+      ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
     query.queryGraph.mutatingPatterns should equal(Seq(CreateNodePattern(IdName("m"), Seq.empty, None)))
@@ -112,7 +129,8 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
   test("Unwind, read write and read again") {
     val query = buildPlannerQuery("UNWIND [1] as i MATCH (n) CREATE (m) WITH * MATCH (o) RETURN *")
-    query.horizon should equal(UnwindProjection(IdName("i"), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)))
+    query.horizon should equal(
+      UnwindProjection(IdName("i"), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)))
     query.queryGraph shouldBe 'isEmpty
 
     val second = query.tail.get
@@ -131,12 +149,23 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     query.queryGraph shouldBe 'isEmpty
     val second = query.tail.get
     second.queryGraph.mutatingPatterns should equal(
-      Seq(ForeachPattern(IdName("i"),
+      Seq(
+        ForeachPattern(
+          IdName("i"),
           ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos),
-          RegularPlannerQuery(QueryGraph(Set.empty, Set.empty, Set(IdName("i")),
-                                         Selections(Set.empty), Vector.empty, Set.empty, Set.empty,
-                                         Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),
-                              RegularQueryProjection(Map("i" -> Variable("i")(pos))), None)))
+          RegularPlannerQuery(
+            QueryGraph(Set.empty,
+                       Set.empty,
+                       Set(IdName("i")),
+                       Selections(Set.empty),
+                       Vector.empty,
+                       Set.empty,
+                       Set.empty,
+                       Seq(CreateNodePattern(IdName("a"), Seq.empty, None))),
+            RegularQueryProjection(Map("i" -> Variable("i")(pos))),
+            None
+          )
+        ))
     )
   }
 }

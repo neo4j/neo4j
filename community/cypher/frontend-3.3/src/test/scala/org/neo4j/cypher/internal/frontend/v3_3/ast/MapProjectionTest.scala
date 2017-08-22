@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Expressions
+import org.neo4j.cypher.internal.frontend.v3_3.parser.ParserTest
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
 
@@ -29,23 +31,23 @@ class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
     parsing("abc{}") shouldGive ast.MapProjection(ast.Variable("abc")(t), Seq.empty)(t)
 
     parsing("abc{.id}") shouldGive
-      ast.MapProjection(ast.Variable("abc")(t),
-        Seq(ast.PropertySelector(ast.Variable("id")(t))(t)))(t)
+      ast.MapProjection(ast.Variable("abc")(t), Seq(ast.PropertySelector(ast.Variable("id")(t))(t)))(t)
 
     parsing("abc{id}") shouldGive
-      ast.MapProjection(ast.Variable("abc")(t),
-        Seq(ast.VariableSelector(ast.Variable("id")(t))(t)))(t)
+      ast.MapProjection(ast.Variable("abc")(t), Seq(ast.VariableSelector(ast.Variable("id")(t))(t)))(t)
 
     parsing("abc { id : 42 }") shouldGive
       ast.MapProjection(ast.Variable("abc")(t),
-        Seq(ast.LiteralEntry(ast.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t)
+                        Seq(ast.LiteralEntry(ast.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t)
 
     parsing("abc { `a p a` : 42 }") shouldGive
-      ast.MapProjection(ast.Variable("abc")(t),
+      ast.MapProjection(
+        ast.Variable("abc")(t),
         Seq(ast.LiteralEntry(ast.PropertyKeyName("a p a")(t), SignedDecimalIntegerLiteral("42")(t))(t)))(t)
 
     parsing("abc { id : 42, .foo, bar }") shouldGive
-      ast.MapProjection(ast.Variable("abc")(t),
+      ast.MapProjection(
+        ast.Variable("abc")(t),
         Seq(
           ast.LiteralEntry(ast.PropertyKeyName("id")(t), SignedDecimalIntegerLiteral("42")(t))(t),
           ast.PropertySelector(ast.Variable("foo")(t))(t),

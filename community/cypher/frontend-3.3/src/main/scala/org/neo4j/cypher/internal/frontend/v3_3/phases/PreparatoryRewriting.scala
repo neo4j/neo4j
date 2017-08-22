@@ -16,7 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.phases
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandCallWhere, normalizeReturnClauses, normalizeWithClauses, replaceAliasedFunctionInvocations}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.expandCallWhere
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeWithClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.replaceAliasedFunctionInvocations
 import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
@@ -24,11 +27,13 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      normalizeReturnClauses(context.exceptionCreator),
-      normalizeWithClauses(context.exceptionCreator),
-      expandCallWhere,
-      replaceAliasedFunctionInvocations))
+    val rewrittenStatement = from
+      .statement()
+      .endoRewrite(
+        inSequence(normalizeReturnClauses(context.exceptionCreator),
+                   normalizeWithClauses(context.exceptionCreator),
+                   expandCallWhere,
+                   replaceAliasedFunctionInvocations))
 
     from.withStatement(rewrittenStatement)
   }

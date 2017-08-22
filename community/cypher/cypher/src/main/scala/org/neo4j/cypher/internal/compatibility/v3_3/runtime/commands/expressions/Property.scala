@@ -26,25 +26,24 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
-case class Property(mapExpr: Expression, propertyKey: KeyToken)
-  extends Expression with Product with Serializable
-{
+case class Property(mapExpr: Expression, propertyKey: KeyToken) extends Expression with Product with Serializable {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = mapExpr(ctx) match {
     case n if n == Values.NO_VALUE => Values.NO_VALUE
     case n: NodeValue =>
       propertyKey.getOptId(state.query) match {
-        case None => Values.NO_VALUE
+        case None         => Values.NO_VALUE
         case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId)
       }
     case r: EdgeValue =>
       propertyKey.getOptId(state.query) match {
-        case None => Values.NO_VALUE
+        case None         => Values.NO_VALUE
         case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
       }
     case IsMap(mapFunc) => mapFunc(state.query).get(propertyKey.name)
-    case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
+    case other          => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 
   def rewrite(f: (Expression) => Expression) = f(Property(mapExpr.rewrite(f), propertyKey.rewrite(f)))

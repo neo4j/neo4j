@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 trait Pipe {
   self: Pipe =>
 
-  def createResults(state: QueryState) : Iterator[ExecutionContext] = {
+  def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
-    val innerResult = internalCreateResults(decoratedState)
+    val innerResult    = internalCreateResults(decoratedState)
     state.decorator.decorate(self, innerResult)
   }
 
@@ -59,12 +59,12 @@ abstract class PipeWithSource(source: Pipe) extends Pipe {
     val sourceResult = source.createResults(state)
 
     val decoratedState = state.decorator.decorate(this, state)
-    val result = internalCreateResults(sourceResult, decoratedState)
+    val result         = internalCreateResults(sourceResult, decoratedState)
     state.decorator.decorate(this, result)
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     throw new UnsupportedOperationException("This method should never be called on PipeWithSource")
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext]
 }

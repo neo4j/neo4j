@@ -22,8 +22,11 @@ package org.neo4j.cypher.internal.ir.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 
-final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
-                                     types: Seq[RelTypeName], length: PatternLength) {
+final case class PatternRelationship(name: IdName,
+                                     nodes: (IdName, IdName),
+                                     dir: SemanticDirection,
+                                     types: Seq[RelTypeName],
+                                     length: PatternLength) {
 
   def directionRelativeTo(node: IdName): SemanticDirection = if (node == left) dir else dir.reversed
 
@@ -37,12 +40,14 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
 
   def inOrder = dir match {
     case SemanticDirection.INCOMING => (right, left)
-    case _ => (left, right)
+    case _                          => (left, right)
   }
 }
 
 object PatternRelationship {
-  implicit val byName = Ordering.by { (patternRel: PatternRelationship) => patternRel.name }
+  implicit val byName = Ordering.by { (patternRel: PatternRelationship) =>
+    patternRel.name
+  }
 }
 
 trait PatternLength {

@@ -17,20 +17,23 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.parboiled.common.StringUtils
-import org.parboiled.errors.{DefaultInvalidInputErrorFormatter, InvalidInputError}
-import org.parboiled.matchers.{Matcher, TestNotMatcher}
-import org.parboiled.support.{Chars, MatcherPath}
+import org.parboiled.errors.DefaultInvalidInputErrorFormatter
+import org.parboiled.errors.InvalidInputError
+import org.parboiled.matchers.Matcher
+import org.parboiled.matchers.TestNotMatcher
+import org.parboiled.support.Chars
+import org.parboiled.support.MatcherPath
 
 import scala.collection.JavaConversions._
 
 class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
 
-  override def format(error: InvalidInputError) : String = {
+  override def format(error: InvalidInputError): String = {
     if (error == null)
       ""
     else {
       val len = error.getEndIndex - error.getStartIndex
-      val sb = new StringBuilder()
+      val sb  = new StringBuilder()
       if (len > 0) {
         val char = error.getInputBuffer.charAt(error.getStartIndex)
         if (char == Chars.EOI) {
@@ -51,37 +54,45 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
     }
   }
 
-  override def getExpectedString(error: InvalidInputError) : String = {
+  override def getExpectedString(error: InvalidInputError): String = {
     val pathStartIndex = error.getStartIndex - error.getIndexDelta
 
-    val labels = error.getFailedMatchers.toList.flatMap(path => {
-      val labelMatcher = findProperLabelMatcher(path, pathStartIndex)
-      if (labelMatcher == null) {
-        List()
-      } else {
-        getLabels(labelMatcher).filter(_ != null).flatMap(_.trim match {
-          case l@"','" => Seq(l)
-          case "" => Seq()
-          case l => l.split(",").map(_.trim)
-        })
-      }
-    }).distinct
+    val labels = error.getFailedMatchers.toList
+      .flatMap(path => {
+        val labelMatcher = findProperLabelMatcher(path, pathStartIndex)
+        if (labelMatcher == null) {
+          List()
+        } else {
+          getLabels(labelMatcher)
+            .filter(_ != null)
+            .flatMap(_.trim match {
+              case l @ "','" => Seq(l)
+              case ""        => Seq()
+              case l         => l.split(",").map(_.trim)
+            })
+        }
+      })
+      .distinct
 
     join(labels)
   }
 
-  private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int) : Matcher = {
-    val elements = unfoldRight(path) { p => if (p == null) None else Some(p.element -> p.parent) }.reverse
+  private def findProperLabelMatcher(path: MatcherPath, errorIndex: Int): Matcher = {
+    val elements = unfoldRight(path) { p =>
+      if (p == null) None else Some(p.element -> p.parent)
+    }.reverse
 
-    val matcher = for (element <- elements.takeWhile(!_.matcher.isInstanceOf[TestNotMatcher]).find(e => {
-      e.startIndex == errorIndex && e.matcher.hasCustomLabel
-    })) yield element.matcher
+    val matcher = for (element <- elements
+                         .takeWhile(!_.matcher.isInstanceOf[TestNotMatcher])
+                         .find(e => {
+                           e.startIndex == errorIndex && e.matcher.hasCustomLabel
+                         })) yield element.matcher
 
     matcher.orNull
   }
 
   private def unfoldRight[A, B](seed: B)(f: B => Option[(A, B)]): List[A] = f(seed) match {
     case Some((a, b)) => a :: unfoldRight(b)(f)
-    case None => Nil
+    case None         => Nil
   }
 }

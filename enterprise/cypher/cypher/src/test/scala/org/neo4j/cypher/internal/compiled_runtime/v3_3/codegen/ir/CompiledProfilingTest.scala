@@ -23,25 +23,35 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.{AcceptVisitor, ScanAllNodes, WhileLoop}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.AcceptVisitor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.ScanAllNodes
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.WhileLoop
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.NodeProjection
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.security.AnonymousContext
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
+import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.NodeProxy
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
@@ -51,18 +61,19 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val variable = Variable("name", CodeGenType.primitiveNode)
+    val variable    = Variable("name", CodeGenType.primitiveNode)
     val projectNode = NodeProjection(variable)
-    val compiled = compile(Seq(WhileLoop(variable,
-      ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
-      Seq("n"), Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
+    val compiled = compile(Seq(WhileLoop(variable, ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
+                           Seq("n"),
+                           Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
-    val readOps = mock[ReadOperations]
-    val entityAccessor = mock[NodeManager]
-    val queryContext = mock[QueryContext]
+    val readOps              = mock[ReadOperations]
+    val entityAccessor       = mock[NodeManager]
+    val queryContext         = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
     when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[QueryTransactionalContext])
-    when(transactionalContext.kernelStatisticProvider).thenReturn(new DelegatingKernelStatisticProvider(new DefaultPageCursorTracer))
+    when(transactionalContext.kernelStatisticProvider)
+      .thenReturn(new DelegatingKernelStatisticProvider(new DefaultPageCursorTracer))
     when(transactionalContext.readOperations).thenReturn(readOps)
     when(entityAccessor.newNodeProxyById(anyLong())).thenReturn(mock[NodeProxy])
     when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
@@ -79,7 +90,11 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
 
     val provider = new Provider[InternalPlanDescription] {
       override def get(): InternalPlanDescription =
-        PlanDescriptionImpl(id2, "accept", SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)), Seq.empty, Set.empty)
+        PlanDescriptionImpl(id2,
+                            "accept",
+                            SingleChild(PlanDescriptionImpl(id1, "scanallnodes", NoChildren, Seq.empty, Set.empty)),
+                            Seq.empty,
+                            Set.empty)
     }
 
     // when
@@ -101,21 +116,21 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
       val graphDb = new GraphDatabaseCypherService(database)
-      val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
+      val tx      = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
       graphDb.createNode()
       graphDb.createNode()
       tx.success()
       tx.close()
 
-      val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-      val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+      val solved     = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+      val lhs        = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val rhs        = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val join       = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
       val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-      val plan = plans.ProduceResult(List("foo"), projection)
+      val plan       = plans.ProduceResult(List("foo"), projection)
 
       // when
-      val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
+      val result      = compileAndExecute(plan, graphDb, mode = ProfileMode)
       val description = result.executionPlanDescription()
 
       // then

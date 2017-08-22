@@ -24,12 +24,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.flatMap {
-      (outerContext: ExecutionContext) =>
-        val original = outerContext.createClone()
-        val innerState = state.withInitialContext(outerContext)
-        val innerResults = inner.createResults(innerState)
-        innerResults.map { context => context mergeWith original }
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
+    input.flatMap { (outerContext: ExecutionContext) =>
+      val original     = outerContext.createClone()
+      val innerState   = state.withInitialContext(outerContext)
+      val innerResults = inner.createResults(innerState)
+      innerResults.map { context =>
+        context mergeWith original
+      }
     }
 }

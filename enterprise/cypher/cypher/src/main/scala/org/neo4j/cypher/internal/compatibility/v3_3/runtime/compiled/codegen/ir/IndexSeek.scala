@@ -21,15 +21,20 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
-case class IndexSeek(opName: String, labelName: String, propNames: Seq[String], descriptorVar: String,
-                     expression: CodeGenExpression) extends LoopDataGenerator {
+case class IndexSeek(opName: String,
+                     labelName: String,
+                     propNames: Seq[String],
+                     descriptorVar: String,
+                     expression: CodeGenExpression)
+    extends LoopDataGenerator {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     assert(propNames.length == 1)
     expression.init(generator)
-    val labelVar = context.namer.newVarName()
+    val labelVar   = context.namer.newVarName()
     val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)
     generator.lookupPropertyKey(propNames.head, propKeyVar)
@@ -37,12 +42,12 @@ case class IndexSeek(opName: String, labelName: String, propNames: Seq[String], 
   }
 
   override def produceIterator[E](iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-      generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator), expression.codeGenType)
-      generator.incrementDbHits()
+    generator.indexSeek(iterVar, descriptorVar, expression.generateExpression(generator), expression.codeGenType)
+    generator.incrementDbHits()
   }
 
-  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])
-                             (implicit context: CodeGenContext) = {
+  override def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(
+      implicit context: CodeGenContext) = {
     generator.incrementDbHits()
     generator.nextNode(nextVar.name, iterVar)
   }

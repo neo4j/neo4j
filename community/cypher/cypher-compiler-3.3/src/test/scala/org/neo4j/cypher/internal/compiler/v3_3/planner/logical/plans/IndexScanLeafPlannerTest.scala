@@ -22,24 +22,25 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.indexScanLeafPlanner
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{functions, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName = IdName("n")
+  val idName                = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
+  val property: Expression  = Property(varFor("n"), PropertyKeyName("prop") _) _
 
-  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
+  val existsPredicate: Expression     = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
-  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
-  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
-  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12") _) _
-  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny") _) _
-  val stringLiteral: Expression = StringLiteral("apa") _
-  val containsPredicate: Expression = Contains(property, stringLiteral) _
+  val ltPredicate: Expression         = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
+  val neqPredicate: Expression        = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
+  val eqPredicate: Expression         = Equals(property, SignedDecimalIntegerLiteral("12") _) _
+  val regexPredicate: Expression      = RegexMatch(property, StringLiteral("Johnny") _) _
+  val stringLiteral: Expression       = StringLiteral("apa") _
+  val containsPredicate: Expression   = Contains(property, stringLiteral) _
 
   test("does not plan index scan when no index exist") {
     new given {
@@ -139,10 +140,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, startsWithPredicate)))
           }
       }
     }
@@ -158,7 +160,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
@@ -177,10 +179,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, neqPredicate)))
           }
       }
     }
@@ -196,7 +199,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
@@ -215,10 +218,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, regexPredicate)))
           }
       }
     }

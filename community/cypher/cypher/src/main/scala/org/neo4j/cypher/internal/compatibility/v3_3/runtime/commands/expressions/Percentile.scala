@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.{PercentileContFunction, PercentileDiscFunction}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.PercentileContFunction
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.PercentileDiscFunction
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case class PercentileCont(anInner: Expression, percentile: Expression) extends AggregationWithInnerExpression(anInner) {

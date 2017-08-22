@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
+import org.neo4j.collection.primitive.Primitive
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.values.AnyValues
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
-case class FullPruningVarLengthExpandPipe(source: Pipe,
-                                          fromName: String,
-                                          toName: String,
-                                          types: LazyTypes,
-                                          dir: SemanticDirection,
-                                          min: Int,
-                                          max: Int,
-                                          filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                         (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
+case class FullPruningVarLengthExpandPipe(
+    source: Pipe,
+    fromName: String,
+    toName: String,
+    types: LazyTypes,
+    dir: SemanticDirection,
+    min: Int,
+    max: Int,
+    filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with Pipe {
   self =>
 
   assert(min <= max)
@@ -84,12 +89,12 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
                    row: ExecutionContext,
                    expandMap: PrimitiveLongObjectMap[NodeState],
                    prevLocalRelIndex: Int,
-                   prevNodeState: NodeState
-  ) extends CheckPath {
+                   prevNodeState: NodeState)
+      extends CheckPath {
 
     import NodeState.UNINITIALIZED
 
-    var relationshipCursor = 0
+    var relationshipCursor   = 0
     var nodeState: NodeState = UNINITIALIZED
 
     def nextEndNode(): NodeValue = {
@@ -103,22 +108,23 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
         while (hasRelationship) {
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingStepsBefore(currentRelIdx)) {
-            val rel = nodeState.rels(currentRelIdx)
+            val rel   = nodeState.rels(currentRelIdx)
             val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
               val nextNode = rel.otherNode(node)
               path(pathLength) = relId
-              val endNode = state.push( new PruningDFS(
-                                      state = state,
-                                      node = nextNode,
-                                      path = path,
-                                      pathLength = pathLength + 1,
-                                      queryState = queryState,
-                                      row = row,
-                                      expandMap = expandMap,
-                                      prevLocalRelIndex = currentRelIdx,
-                                      prevNodeState = nodeState
-                ) )
+              val endNode = state.push(
+                new PruningDFS(
+                  state = state,
+                  node = nextNode,
+                  path = path,
+                  pathLength = pathLength + 1,
+                  queryState = queryState,
+                  row = row,
+                  expandMap = expandMap,
+                  prevLocalRelIndex = currentRelIdx,
+                  prevNodeState = nodeState
+                ))
               if (endNode != null)
                 return endNode
               else
@@ -154,7 +160,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     }
 
     def updatePrevFullExpandDepth() = {
-      if ( pathLength > 0 ) {
+      if (pathLength > 0) {
         val requiredStepsFromPrev = math.max(0, self.min - pathLength + 1)
         if (requiredStepsFromPrev <= 1 || nodeState.isEmitted) {
           prevNodeState.updateFullExpandDepth(prevLocalRelIndex, currentOutgoingFullExpandDepth() + 1)
@@ -202,8 +208,8 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     val UNINITIALIZED: NodeState = null
 
     val NOOP = new NodeState() {
-      override def minOutgoingDepth(incomingRelId: Long): Int = 0
-      override def updateFullExpandDepth(relIndex:Int, depth:Int ) = {}
+      override def minOutgoingDepth(incomingRelId: Long): Int       = 0
+      override def updateFullExpandDepth(relIndex: Int, depth: Int) = {}
     }
   }
 
@@ -214,7 +220,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     // All relationships that connect to this node, filtered by the var-length predicates
     var rels: Array[EdgeValue] = _
     // The fully expanded depth for each relationship in rels
-    var depths:Array[Byte] = _
+    var depths: Array[Byte] = _
     // True if this node has been emitted before
     var isEmitted = false
 
@@ -226,7 +232,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       */
     def minOutgoingDepth(incomingRelId: Long): Int = {
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
-      var i = 0
+      var i   = 0
       while (i < rels.length) {
         if (rels(i).id() != incomingRelId) {
           min = math.min(depths(i), min)
@@ -236,7 +242,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       min
     }
 
-    def updateFullExpandDepth(relIndex:Int, depth:Int ): Unit = {
+    def updateFullExpandDepth(relIndex: Int, depth: Int): Unit = {
       depths(relIndex) = depth.toByte
     }
 
@@ -244,12 +250,16 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       * If not already done, list all relationships of a node, given the predicates of this pipe.
       */
     def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: NodeValue) = {
-      if ( rels == null ) {
-        val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query)).map(AnyValues.asEdgeValue)
-        rels = allRels.filter(r => {
-          filteringStep.filterRelationship(row, queryState)(r) &&
+      if (rels == null) {
+        val allRels = queryState.query
+          .getRelationshipsForIds(node.id(), dir, types.types(queryState.query))
+          .map(AnyValues.asEdgeValue)
+        rels = allRels
+          .filter(r => {
+            filteringStep.filterRelationship(row, queryState)(r) &&
             filteringStep.filterNode(row, queryState)(r.otherNode(node))
-        }).toArray
+          })
+          .toArray
         depths = new Array[Byte](rels.length)
       }
     }
@@ -258,13 +268,13 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
   /**
     * The overall state of the full pruning var expand. Mostly manages stack of PruningDFS nodes.
     */
-  class FullPruneState(queryState:QueryState ) {
-    var inputRow:ExecutionContext = _
-    val nodeState = new Array[PruningDFS](self.max + 1)
-    val path = new Array[Long](max)
-    var depth = -1
+  class FullPruneState(queryState: QueryState) {
+    var inputRow: ExecutionContext = _
+    val nodeState                  = new Array[PruningDFS](self.max + 1)
+    val path                       = new Array[Long](max)
+    var depth                      = -1
 
-    def startRow( inputRow:ExecutionContext ) = {
+    def startRow(inputRow: ExecutionContext) = {
       this.inputRow = inputRow
       depth = -1
     }
@@ -272,19 +282,21 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     def next(): ExecutionContext = {
       val endNode =
         if (depth == -1) {
-          push( new PruningDFS(
-                                state = this,
-                                node = getNodeFromRow(inputRow),
-                                path = path,
-                                pathLength = 0,
-                                queryState = queryState,
-                                row = inputRow,
-                                expandMap = Primitive.longObjectMap[NodeState](),
-                                prevLocalRelIndex = -1,
-                                prevNodeState = NodeState.NOOP) )
+          push(
+            new PruningDFS(
+              state = this,
+              node = getNodeFromRow(inputRow),
+              path = path,
+              pathLength = 0,
+              queryState = queryState,
+              row = inputRow,
+              expandMap = Primitive.longObjectMap[NodeState](),
+              prevLocalRelIndex = -1,
+              prevNodeState = NodeState.NOOP
+            ))
         } else {
           var maybeEndNode: NodeValue = null
-          while ( depth >= 0 && maybeEndNode == null ) {
+          while (depth >= 0 && maybeEndNode == null) {
             maybeEndNode = nodeState(depth).nextEndNode()
             if (maybeEndNode == null) pop()
           }
@@ -293,11 +305,10 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       if (endNode == null) {
         inputRow = null
         null
-      }
-      else inputRow.newWith1(self.toName, endNode)
+      } else inputRow.newWith1(self.toName, endNode)
     }
 
-    def push( pruningDFS: PruningDFS ): NodeValue = {
+    def push(pruningDFS: PruningDFS): NodeValue = {
       depth += 1
       nodeState(depth) = pruningDFS
       pruningDFS.nextEndNode()
@@ -313,13 +324,13 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
   }
 
   class FullyPruningIterator(
-                       private val input: Iterator[ExecutionContext],
-                       val queryState: QueryState
+      private val input: Iterator[ExecutionContext],
+      val queryState: QueryState
   ) extends Iterator[ExecutionContext] {
 
-    var outputRow:ExecutionContext = _
-    var fullPruneState:FullPruneState = new FullPruneState( queryState )
-    var hasPrefetched = false
+    var outputRow: ExecutionContext    = _
+    var fullPruneState: FullPruneState = new FullPruneState(queryState)
+    var hasPrefetched                  = false
 
     override def hasNext = {
       prefetch()
@@ -360,12 +371,12 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       null
     }
 
-
     private def getNodeFromRow(row: ExecutionContext): NodeValue =
       row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
     new FullyPruningIterator(input, state)
   }
 }

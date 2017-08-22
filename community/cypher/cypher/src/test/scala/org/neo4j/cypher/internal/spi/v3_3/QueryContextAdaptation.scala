@@ -22,15 +22,21 @@ package org.neo4j.cypher.internal.spi.v3_3
 import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expander
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.KernelPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.UserDefinedAggregator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -59,7 +65,12 @@ trait QueryContextAdaptation {
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = ???
 
-  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
+  override def singleShortestPath(left: Long,
+                                  right: Long,
+                                  depth: Int,
+                                  expander: Expander,
+                                  pathPredicate: KernelPredicate[Path],
+                                  filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
 
   override def asObject(value: AnyValue): AnyRef = ???
 
@@ -73,7 +84,12 @@ trait QueryContextAdaptation {
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
 
   // Legacy dependency between kernel and compiler
-  override def variableLengthPathExpand(node: PatternNode, realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): scala.Iterator[Path] = ???
+  override def variableLengthPathExpand(node: PatternNode,
+                                        realNode: Long,
+                                        minHops: Option[Int],
+                                        maxHops: Option[Int],
+                                        direction: SemanticDirection,
+                                        relTypes: Seq[String]): scala.Iterator[Path] = ???
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
 
@@ -87,11 +103,16 @@ trait QueryContextAdaptation {
 
   override def indexSeek(index: IndexDescriptor, value: Seq[Any]): scala.Iterator[Node] = ???
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): scala.Iterator[Relationship] = ???
+  override def getRelationshipsForIds(node: Long,
+                                      dir: SemanticDirection,
+                                      types: Option[Seq[Int]]): scala.Iterator[Relationship] = ???
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator = ???
+  override def getRelationshipsForIdsPrimitive(node: Long,
+                                               dir: SemanticDirection,
+                                               types: Option[Seq[Int]]): RelationshipIterator = ???
 
-  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship = ???
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =
+    ???
 
   override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???
 
@@ -104,7 +125,12 @@ trait QueryContextAdaptation {
 
   override def transactionalContext: QueryTransactionalContext = ???
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = ???
+  override def allShortestPath(left: Long,
+                               right: Long,
+                               depth: Int,
+                               expander: Expander,
+                               pathPredicate: KernelPredicate[Path],
+                               filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = ???
 
   override def nodeOps: Operations[Node] = ???
 
@@ -142,18 +168,24 @@ trait QueryContextAdaptation {
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node] = ???
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadOnlyProcedure(name: QualifiedName,
+                                     args: Seq[Any],
+                                     allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
+  override def callReadWriteProcedure(name: QualifiedName,
+                                      args: Seq[Any],
+                                      allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callSchemaWriteProcedure(name: QualifiedName,
+                                        args: Seq[Any],
+                                        allowed: Array[String]): Iterator[Array[AnyRef]] = ???
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = ???
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+    ???
 
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]): AnyRef = ???
 
-  override def aggregateFunction(name: QualifiedName,
-                                 allowed: Array[String]): UserDefinedAggregator = ???
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator = ???
 
   override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
 

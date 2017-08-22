@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class EagerPipe(src: Pipe)(val id: Id = new Id)
-  extends PipeWithSource(src) {
+case class EagerPipe(src: Pipe)(val id: Id = new Id) extends PipeWithSource(src) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
     input.toIndexedSeq.toIterator
 }

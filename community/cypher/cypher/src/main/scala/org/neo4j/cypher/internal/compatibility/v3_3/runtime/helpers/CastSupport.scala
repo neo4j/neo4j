@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.values.storable.{ArrayValue, _}
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual._
-import org.neo4j.values.{AnyValue, AnyValueWriter}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValueWriter
 
 import scala.reflect.ClassTag
 
@@ -44,14 +46,14 @@ object CastSupport {
 
   def castOrFail[A](value: Any)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
-    case _ => throw new CypherTypeException(
-      s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
+    case _ =>
+      throw new CypherTypeException(
+        s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
   }
 
   def castOrFail[A >: AnyValue](value: AnyValue)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
-    case _ => throw new CypherTypeException(
-      s"Expected $value to be a Number, but it was a String")
+    case _    => throw new CypherTypeException(s"Expected $value to be a Number, but it was a String")
   }
 
   /*
@@ -61,40 +63,40 @@ object CastSupport {
    */
   def merge(a: AnyValue, b: AnyValue): AnyValue = {
     (a, b) match {
-      case (_: TextValue, _: TextValue) => a
+      case (_: TextValue, _: TextValue)       => a
       case (_: BooleanValue, _: BooleanValue) => a
 
-      case (_: ByteValue, _: ByteValue) => a
-      case (_: ByteValue, _: ShortValue) => b
-      case (_: ByteValue, _: IntValue) => b
-      case (_: ByteValue, _: LongValue) => b
-      case (_: ByteValue, _: FloatValue) => b
+      case (_: ByteValue, _: ByteValue)   => a
+      case (_: ByteValue, _: ShortValue)  => b
+      case (_: ByteValue, _: IntValue)    => b
+      case (_: ByteValue, _: LongValue)   => b
+      case (_: ByteValue, _: FloatValue)  => b
       case (_: ByteValue, _: DoubleValue) => b
 
-      case (_: ShortValue, _: IntValue) => b
-      case (_: ShortValue, _: LongValue) => b
-      case (_: ShortValue, _: FloatValue) => b
+      case (_: ShortValue, _: IntValue)    => b
+      case (_: ShortValue, _: LongValue)   => b
+      case (_: ShortValue, _: FloatValue)  => b
       case (_: ShortValue, _: DoubleValue) => b
       case (_: ShortValue, _: NumberValue) => a
 
-      case (_: IntValue, _: LongValue) => b
-      case (_: IntValue, _: FloatValue) => b
+      case (_: IntValue, _: LongValue)   => b
+      case (_: IntValue, _: FloatValue)  => b
       case (_: IntValue, _: DoubleValue) => b
       case (_: IntValue, _: NumberValue) => a
 
-      case (_: LongValue, _: FloatValue) => b
+      case (_: LongValue, _: FloatValue)  => b
       case (_: LongValue, _: DoubleValue) => b
       case (_: LongValue, _: NumberValue) => a
 
-      case (_: FloatValue, _: DoubleValue) => b
-      case (_: FloatValue, _: NumberValue) => a
+      case (_: FloatValue, _: DoubleValue)  => b
+      case (_: FloatValue, _: NumberValue)  => a
       case (_: DoubleValue, _: NumberValue) => a
 
-      case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE => throw new CypherTypeException(
-        "Collections containing null values can not be stored in properties.")
+      case (a, b) if a == Values.NO_VALUE || b == Values.NO_VALUE =>
+        throw new CypherTypeException("Collections containing null values can not be stored in properties.")
 
-      case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] => throw new CypherTypeException(
-        "Collections containing collections can not be stored in properties.")
+      case (a, b) if a.isInstanceOf[ListValue] || b.isInstanceOf[ListValue] =>
+        throw new CypherTypeException("Collections containing collections can not be stored in properties.")
 
       case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof.")
     }
@@ -105,15 +107,30 @@ object CastSupport {
 
   /*Returns a converter given a type value*/
   def getConverter(x: AnyValue): Converter = x match {
-    case _: CharValue => Converter(transform(new ArrayConverterWriter(classOf[Char], a => Values.charArray(a.asInstanceOf[Array[Char]]))))
-    case _: TextValue => Converter(transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]:_*))))
-    case _: BooleanValue => Converter(transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
-    case _: ByteValue => Converter(transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
-    case _: ShortValue => Converter(transform(new ArrayConverterWriter(classOf[Short], a => Values.shortArray(a.asInstanceOf[Array[Short]]))))
-    case _: IntValue => Converter(transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
-    case _: LongValue => Converter(transform(new ArrayConverterWriter(classOf[Long], a => Values.longArray(a.asInstanceOf[Array[Long]]))))
-    case _: FloatValue => Converter(transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
-    case _: DoubleValue => Converter(transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
+    case _: CharValue =>
+      Converter(transform(new ArrayConverterWriter(classOf[Char], a => Values.charArray(a.asInstanceOf[Array[Char]]))))
+    case _: TextValue =>
+      Converter(
+        transform(
+          new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]: _*))))
+    case _: BooleanValue =>
+      Converter(
+        transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
+    case _: ByteValue =>
+      Converter(transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
+    case _: ShortValue =>
+      Converter(
+        transform(new ArrayConverterWriter(classOf[Short], a => Values.shortArray(a.asInstanceOf[Array[Short]]))))
+    case _: IntValue =>
+      Converter(transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
+    case _: LongValue =>
+      Converter(transform(new ArrayConverterWriter(classOf[Long], a => Values.longArray(a.asInstanceOf[Array[Long]]))))
+    case _: FloatValue =>
+      Converter(
+        transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
+    case _: DoubleValue =>
+      Converter(
+        transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -121,13 +138,14 @@ object CastSupport {
     value.writeTo(writer)
     writer.array
   }
-  private class ArrayConverterWriter(typ: Class[_], transformer: (AnyRef) => ArrayValue) extends AnyValueWriter[RuntimeException] {
+  private class ArrayConverterWriter(typ: Class[_], transformer: (AnyRef) => ArrayValue)
+      extends AnyValueWriter[RuntimeException] {
 
     private var _array: AnyRef = null
-    private var index = 0
+    private var index          = 0
 
-    private def fail() = throw new CypherTypeException(
-      "Property values can only be of primitive types or arrays thereof")
+    private def fail() =
+      throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
 
     private def write(value: Any) = {
       java.lang.reflect.Array.set(_array, index, value)
@@ -141,12 +159,14 @@ object CastSupport {
 
     override def writeNodeReference(nodeId: Long): Unit = fail()
 
-    override def writeNode(nodeId: Long, labels: TextArray,
-                           properties: MapValue): Unit = fail()
+    override def writeNode(nodeId: Long, labels: TextArray, properties: MapValue): Unit = fail()
 
     override def writeEdgeReference(edgeId: Long): Unit = fail()
 
-    override def writeEdge(edgeId: Long, startNodeId: Long, endNodeId: Long, `type`: TextValue,
+    override def writeEdge(edgeId: Long,
+                           startNodeId: Long,
+                           endNodeId: Long,
+                           `type`: TextValue,
                            properties: MapValue): Unit = fail()
 
     override def beginMap(size: Int): Unit = fail()
@@ -157,8 +177,7 @@ object CastSupport {
 
     override def endList(): Unit = {}
 
-    override def writePath(nodes: Array[NodeValue],
-                           edges: Array[EdgeValue]): Unit = fail()
+    override def writePath(nodes: Array[NodeValue], edges: Array[EdgeValue]): Unit = fail()
 
     override def beginPoint(coordinateReferenceSystem: CoordinateReferenceSystem): Unit = fail()
 
@@ -184,7 +203,8 @@ object CastSupport {
 
     override def writeString(value: Char): Unit = write(value)
 
-    override def writeString(value: Array[Char], offset: Int, length: Int): Unit = write(new String(value, offset, length))
+    override def writeString(value: Array[Char], offset: Int, length: Int): Unit =
+      write(new String(value, offset, length))
 
     override def beginUTF8(size: Int): Unit = fail()
 

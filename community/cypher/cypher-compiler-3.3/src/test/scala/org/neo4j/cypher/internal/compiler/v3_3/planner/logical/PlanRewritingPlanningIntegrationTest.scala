@@ -20,21 +20,21 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{AllNodesScan, Projection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Projection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_3.ast.GetDegree
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class PlanRewritingPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should use GetDegree to compute the degree of a node") {
-    val result = (new given {
-    } getLogicalPlanFor  "MATCH (n) RETURN length((n)-->()) AS deg")._2
+    val result = (new given {} getLogicalPlanFor "MATCH (n) RETURN length((n)-->()) AS deg")._2
 
     result should equal(
       Projection(
         AllNodesScan("n", Set.empty)(solved),
-        Map("deg" -> GetDegree(varFor("n"), None, OUTGOING)_)
+        Map("deg" -> GetDegree(varFor("n"), None, OUTGOING) _)
       )(result.solved)
     )
   }

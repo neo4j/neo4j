@@ -27,11 +27,12 @@ import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 
-case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)
-                            (val id: Id = new Id)
-  extends PipeWithSource(left) {
+case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expression, left: Pipe, right: Pipe)(val id: Id =
+                                                                                                              new Id)
+    extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
     implicit val x = state
     if (input.isEmpty)
       return Iterator.empty
@@ -46,13 +47,14 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey = rhsExpression(context) if joinKey != Values.NO_VALUE}
-      yield {
+    val result = for {
+      context: ExecutionContext <- rhsIterator
+      joinKey = rhsExpression(context) if joinKey != Values.NO_VALUE
+    } yield {
 
-        val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-        seq.map(context.mergeWith)
-      }
+      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
+      seq.map(context.mergeWith)
+    }
 
     result.flatten
   }

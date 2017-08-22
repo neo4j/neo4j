@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-
 sealed abstract class UpdateStrategy {
   def name: String
   def toTextOutput: String = name
@@ -41,10 +40,11 @@ case object defaultUpdateStrategy extends UpdateStrategy {
 object UpdateStrategy {
 
   def apply(name: String): UpdateStrategy = name.toUpperCase match {
-    case eagerUpdateStrategy.name => eagerUpdateStrategy
+    case eagerUpdateStrategy.name   => eagerUpdateStrategy
     case defaultUpdateStrategy.name => defaultUpdateStrategy
 
-    case n => throw new IllegalArgumentException(
-      s"$n is not a valid update strategy, valid options are ${defaultUpdateStrategy.name} and ${eagerUpdateStrategy.name}")
+    case n =>
+      throw new IllegalArgumentException(
+        s"$n is not a valid update strategy, valid options are ${defaultUpdateStrategy.name} and ${eagerUpdateStrategy.name}")
   }
 }

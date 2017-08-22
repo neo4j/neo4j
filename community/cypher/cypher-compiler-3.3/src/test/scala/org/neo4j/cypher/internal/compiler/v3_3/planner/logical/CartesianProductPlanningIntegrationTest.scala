@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -39,13 +40,13 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case (_: Selection, _) => 1000.0
+        case (_: Selection, _)       => 1000.0
         case (_: NodeByLabelScan, _) => 20.0
       }
       cardinality = mapCardinality {
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.selections.predicates.size == 1 => 10
       }
-    } getLogicalPlanFor  "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
+    } getLogicalPlanFor "MATCH (n), (m) WHERE n.prop = 12 AND m:Label RETURN n, m")._2 should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
     }
   }

@@ -32,7 +32,8 @@ import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query._
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
@@ -52,7 +53,8 @@ trait GraphIcing {
 
   implicit class RichGraphDatabaseQueryService(graphService: GraphDatabaseQueryService) {
 
-    private val graph: GraphDatabaseFacade = graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
+    private val graph: GraphDatabaseFacade =
+      graphService.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def getAllNodes() = graph.getAllNodes
 
@@ -105,20 +107,23 @@ trait GraphIcing {
     def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
 
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
-    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+    private val javaValues                      = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
-    private def createTransactionalContext(txType: Type, queryText: String, params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
-      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
-      val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
-      val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
-        locker)
-      val transactionalContext = contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, javaParams)
+    private def createTransactionalContext(
+        txType: Type,
+        queryText: String,
+        params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
+      val tx             = graph.beginTransaction(txType, AUTH_DISABLED)
+      val javaParams     = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
+      val contextFactory = Neo4jTransactionalContextFactory.create(graphService, locker)
+      val transactionalContext =
+        contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, javaParams)
       (tx, transactionalContext)
     }
 
     def transactionalContext(txType: Type = Type.`implicit`, query: (String, Map[String, Any])): TransactionalContext = {
       val (queryText, params) = query
-      val (_, context) = createTransactionalContext(txType, queryText, params)
+      val (_, context)        = createTransactionalContext(txType, queryText, params)
       context
     }
 
@@ -147,11 +152,15 @@ trait GraphIcing {
       }
     }
 
-    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledBackTransactions, txMonitor.getNumberOfActiveTransactions)
+    def txCounts =
+      TxCounts(txMonitor.getNumberOfCommittedTransactions,
+               txMonitor.getNumberOfRolledBackTransactions,
+               txMonitor.getNumberOfActiveTransactions)
 
     private def txMonitor: TransactionStats = graph.getDependencyResolver.resolveDependency(classOf[TransactionStats])
 
-    private def txBridge: ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+    private def txBridge: ThreadToStatementContextBridge =
+      graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
   }
 }
 

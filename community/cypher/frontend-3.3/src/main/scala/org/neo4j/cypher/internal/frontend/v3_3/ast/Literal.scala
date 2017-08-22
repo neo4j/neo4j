@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, _}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
@@ -34,7 +35,7 @@ sealed trait IntegerLiteral extends NumberLiteral {
   def value: java.lang.Long
 }
 
-sealed trait SignedIntegerLiteral extends IntegerLiteral
+sealed trait SignedIntegerLiteral   extends IntegerLiteral
 sealed trait UnsignedIntegerLiteral extends IntegerLiteral
 
 sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
@@ -46,7 +47,7 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
     when(!(try {
       value.isInstanceOf[Any]
     } catch {
-      case e:java.lang.NumberFormatException => false
+      case e: java.lang.NumberFormatException => false
     })) {
       if (stringVal matches "^-?[1-9][0-9]*$")
         SemanticError("integer is too large", position)
@@ -56,8 +57,12 @@ sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLi
 
 }
 
-case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral
-case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
+case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition)
+    extends DecimalIntegerLiteral(stringVal)
+    with SignedIntegerLiteral
+case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition)
+    extends DecimalIntegerLiteral(stringVal)
+    with UnsignedIntegerLiteral
 
 sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
   lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal, 8)
@@ -68,7 +73,7 @@ sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLite
     when(!(try {
       value.isInstanceOf[Any]
     } catch {
-      case e:java.lang.NumberFormatException => false
+      case e: java.lang.NumberFormatException => false
     })) {
       if (stringVal matches "^-?0[0-7]+$")
         SemanticError("integer is too large", position)
@@ -77,7 +82,9 @@ sealed abstract class OctalIntegerLiteral(stringVal: String) extends IntegerLite
     } chain super.semanticCheck(ctx)
 }
 
-case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition) extends OctalIntegerLiteral(stringVal) with SignedIntegerLiteral
+case class SignedOctalIntegerLiteral(stringVal: String)(val position: InputPosition)
+    extends OctalIntegerLiteral(stringVal)
+    with SignedIntegerLiteral
 
 sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
   lazy val value: java.lang.Long =
@@ -92,7 +99,7 @@ sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLitera
     when(!(try {
       value.isInstanceOf[Any]
     } catch {
-      case e:java.lang.NumberFormatException => false
+      case e: java.lang.NumberFormatException => false
     })) {
       if (stringVal matches "^-?0x[0-9a-fA-F]+$")
         SemanticError("integer is too large", position)
@@ -101,14 +108,17 @@ sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLitera
     } chain super.semanticCheck(ctx)
 }
 
-case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPosition) extends HexIntegerLiteral(stringVal) with SignedIntegerLiteral
-
+case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPosition)
+    extends HexIntegerLiteral(stringVal)
+    with SignedIntegerLiteral
 
 sealed trait DoubleLiteral extends NumberLiteral {
   def value: java.lang.Double
 }
 
-case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral with SimpleTyping {
+case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition)
+    extends DoubleLiteral
+    with SimpleTyping {
   lazy val value: java.lang.Double = java.lang.Double.parseDouble(stringVal)
 
   protected def possibleTypes = CTFloat
@@ -117,7 +127,7 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
     when(!(try {
       value.isInstanceOf[Any]
     } catch {
-      case e:java.lang.NumberFormatException => false
+      case e: java.lang.NumberFormatException => false
     })) {
       SemanticError("invalid literal number", position)
     } ifOkChain when(value.isInfinite) {

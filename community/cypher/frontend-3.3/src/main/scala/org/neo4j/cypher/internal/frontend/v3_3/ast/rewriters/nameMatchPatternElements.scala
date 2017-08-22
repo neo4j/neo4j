@@ -16,8 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Match}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Match
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object nameMatchPatternElements extends Rewriter {
 

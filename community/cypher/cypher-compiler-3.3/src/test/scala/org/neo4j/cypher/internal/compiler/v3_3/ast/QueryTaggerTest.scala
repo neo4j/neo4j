@@ -121,7 +121,8 @@ class QueryTaggerTest extends CypherFunSuite {
   }
 
   test(queryTag(LoadCSVTag)) {
-    val tags = QueryTagger("LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })")
+    val tags = QueryTagger(
+      "LOAD CSV WITH HEADERS FROM \"http://somewhere/file.csv\" AS csvLine\nCREATE (p:Person { id: toInt(csvLine.id), name: csvLine.name })")
     tags should contain(LoadCSVTag)
     tags should contain(UpdatesTag)
   }
@@ -240,13 +241,8 @@ class QueryTaggerTest extends CypherFunSuite {
   }
 
   test("Supports combining tags") {
-    QueryTagger("MATCH n RETURN n") should be(Set(
-      MatchTag,
-      RegularMatchTag,
-      SingleNodePatternTag,
-      ReturnTag,
-      VariableExpressionTag)
-    )
+    QueryTagger("MATCH n RETURN n") should be(
+      Set(MatchTag, RegularMatchTag, SingleNodePatternTag, ReturnTag, VariableExpressionTag))
   }
 
   private def queryTag(tag: QueryTag) = tag.toString

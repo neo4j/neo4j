@@ -20,9 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen, QueryStatisticsTestSupport}
-import org.neo4j.graphdb.{ResourceIterator, Result}
-import org.scalacheck.{Gen, Shrink}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.PatternGen
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.Result
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 /*
  * Tests merge on random patterns.
@@ -30,7 +35,10 @@ import org.scalacheck.{Gen, Shrink}
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
 class SemanticMergeAcceptanceTest
-  extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport with QueryStatisticsTestSupport {
+    extends ExecutionEngineFunSuite
+    with PatternGen
+    with NewPlannerTestSupport
+    with QueryStatisticsTestSupport {
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)
@@ -90,12 +98,18 @@ class SemanticMergeAcceptanceTest
 
   override protected def numberOfTestRuns: Int = 20
 
-  override def relGen = Gen
-    .oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
+  override def relGen =
+    Gen
+      .oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
 
-  override def nodeGen = Gen
-    .oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen, labeledWithPropertiesNodeGen,
-      namedLabeledWithPropertiesNodeGen)
+  override def nodeGen =
+    Gen
+      .oneOf(emptyNodeGen,
+             namedNodeGen,
+             labeledNodeGen,
+             namedLabeledNodeGen,
+             labeledWithPropertiesNodeGen,
+             namedLabeledWithPropertiesNodeGen)
 
   override def relDirection = Gen.oneOf(SemanticDirection.INCOMING, SemanticDirection.OUTGOING)
 }

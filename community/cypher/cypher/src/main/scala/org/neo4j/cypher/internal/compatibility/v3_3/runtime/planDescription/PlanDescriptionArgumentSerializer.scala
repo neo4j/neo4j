@@ -23,53 +23,55 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator._
 
-
 object PlanDescriptionArgumentSerializer {
-  private val SEPARATOR = ", "
+  private val SEPARATOR       = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
-  private val DEDUP_PATTERN =   """  (.+)@\d+""".r
+  private val DEDUP_PATTERN   = """  (.+)@\d+""".r
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
       case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
-      case Expression(expr) => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
-      case Expressions(expressions) => expressions.map({
-        case (k, v) if v != null => s"$k : ${v.asCanonicalStringVal}"
-        case (k, _) => s"$k : null"
-      }).mkString("{", ", ", "}")
-      case UpdateActionName(action) => action
-      case MergePattern(startPoint) => s"MergePattern($startPoint)"
-      case LegacyIndex(index) => index
-      case Index(label, properties) => s":$label(${properties.mkString(",")})"
-      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${p.asCanonicalStringVal})"
+      case Expression(expr)     => if (expr == null) "" else removeGeneratedNames(expr.asCanonicalStringVal)
+      case Expressions(expressions) =>
+        expressions
+          .map({
+            case (k, v) if v != null => s"$k : ${v.asCanonicalStringVal}"
+            case (k, _)              => s"$k : null"
+          })
+          .mkString("{", ", ", "}")
+      case UpdateActionName(action)                 => action
+      case MergePattern(startPoint)                 => s"MergePattern($startPoint)"
+      case LegacyIndex(index)                       => index
+      case Index(label, properties)                 => s":$label(${properties.mkString(",")})"
+      case PrefixIndex(label, property, p)          => s":$label($property STARTS WITH ${p.asCanonicalStringVal})"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
-      case LabelName(label) => s":$label"
-      case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
-      case KeyExpressions(expressions) => expressions.mkString(SEPARATOR)
-      case DbHits(value) => Long.box(value)
-      case PageCacheHits(value) => Long.box(value)
-      case PageCacheMisses(value) => Long.box(value)
-      case PageCacheHitRatio(value) => Double.box(value)
-      case _: EntityByIdRhs => arg.toString
-      case Rows(value) => Long.box(value)
-      case Time(value) => Long.box(value)
-      case EstimatedRows(value) => Double.box(value)
-      case Version(version) => version
-      case Planner(planner) => planner
-      case PlannerImpl(plannerName) => plannerName
-      case Runtime(runtime) => runtime
-      case SourceCode(className, sourceCode) => sourceCode
-      case ByteCode(className, byteCode) => byteCode
-      case RuntimeImpl(runtimeName) => runtimeName
+      case LabelName(label)                         => s":$label"
+      case KeyNames(keys)                           => keys.map(removeGeneratedNames).mkString(SEPARATOR)
+      case KeyExpressions(expressions)              => expressions.mkString(SEPARATOR)
+      case DbHits(value)                            => Long.box(value)
+      case PageCacheHits(value)                     => Long.box(value)
+      case PageCacheMisses(value)                   => Long.box(value)
+      case PageCacheHitRatio(value)                 => Double.box(value)
+      case _: EntityByIdRhs                         => arg.toString
+      case Rows(value)                              => Long.box(value)
+      case Time(value)                              => Long.box(value)
+      case EstimatedRows(value)                     => Double.box(value)
+      case Version(version)                         => version
+      case Planner(planner)                         => planner
+      case PlannerImpl(plannerName)                 => plannerName
+      case Runtime(runtime)                         => runtime
+      case SourceCode(className, sourceCode)        => sourceCode
+      case ByteCode(className, byteCode)            => byteCode
+      case RuntimeImpl(runtimeName)                 => runtimeName
       case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, min, max) =>
-        val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
+        val left  = if (dir == SemanticDirection.INCOMING) "<-" else "-"
         val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
         val types = typeNames.mkString(":", "|:", "")
         val lengthDescr = (min, max) match {
           case (1, Some(1)) => ""
-          case (1, None) => "*"
+          case (1, None)    => "*"
           case (1, Some(m)) => s"*..$m"
-          case _ => s"*$min..${max.getOrElse("")}"
+          case _            => s"*$min..${max.getOrElse("")}"
         }
         val relInfo = if (lengthDescr == "" && typeNames.isEmpty && rel.unnamed) "" else s"[$rel$types$lengthDescr]"
         s"($from)$left$relInfo$right($to)"
@@ -78,11 +80,11 @@ object PlanDescriptionArgumentSerializer {
         s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
       case CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) =>
         val start = startLabel.map(l => ":" + l).mkString
-        val end = endLabel.map(l => ":" + l).mkString
+        val end   = endLabel.map(l => ":" + l).mkString
         val types = typeNames.mkString(":", "|:", "")
         s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
       case Signature(procedureName, args, results) =>
-        val argString = args.mkString(", ")
+        val argString    = args.mkString(", ")
         val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
         s"$procedureName($argString) :: ($resultString)"
 
@@ -91,7 +93,7 @@ object PlanDescriptionArgumentSerializer {
     }
   }
 
-   def removeGeneratedNames(s: String) = {
+  def removeGeneratedNames(s: String) = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
     DEDUP_PATTERN.replaceAllIn(named, _.group(1))
   }

@@ -19,15 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexLeafPlan, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexLeafPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryPlannerKit
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 trait JoinDisconnectedQueryGraphComponents {
-  def apply(componentPlans: Set[PlannedComponent], fullQG: QueryGraph)
-           (implicit context: LogicalPlanningContext, kit: QueryPlannerKit,
-            singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent]
+  def apply(componentPlans: Set[PlannedComponent], fullQG: QueryGraph)(
+      implicit context: LogicalPlanningContext,
+      kit: QueryPlannerKit,
+      singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent]
 }
 
 case class PlannedComponent(queryGraph: QueryGraph, plan: LogicalPlan)
@@ -43,8 +46,10 @@ one. This process can then be repeated until a single plan remains.
  */
 case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComponents {
 
-  def apply(plans: Set[PlannedComponent], qg: QueryGraph)(implicit context: LogicalPlanningContext, kit: QueryPlannerKit,
-                                                          singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
+  def apply(plans: Set[PlannedComponent], qg: QueryGraph)(
+      implicit context: LogicalPlanningContext,
+      kit: QueryPlannerKit,
+      singleComponentPlanner: SingleComponentPlannerTrait): Set[PlannedComponent] = {
 
     assert(plans.size > 1, "Can't build cartesian product with less than two input plans")
 
@@ -66,13 +71,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     } else if (plans.size < 8) {
       val cartesianProducts = produceCartesianProducts(plans, qg)
       pickTheBest(plans, kit, cartesianProducts)
-    }
-    else {
+    } else {
       planLotsOfCartesianProducts(plans, qg)
     }
   }
 
-  private def pickTheBest(plans: Set[PlannedComponent], kit: QueryPlannerKit, joins: Map[PlannedComponent, (PlannedComponent, PlannedComponent)]): Set[PlannedComponent] = {
+  private def pickTheBest(plans: Set[PlannedComponent],
+                          kit: QueryPlannerKit,
+                          joins: Map[PlannedComponent, (PlannedComponent, PlannedComponent)]): Set[PlannedComponent] = {
     val bestPlan = kit.pickBest(joins.map(_._1.plan)).get
     val bestQG: QueryGraph = joins.collectFirst {
       case (PlannedComponent(fqg, pl), _) if bestPlan == pl => fqg
@@ -85,8 +91,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   /**
     * Plans a large amount of query parts together. Produces a left deep tree sorted by the cost of the query parts.
     */
-  private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)
-                                         (implicit context: LogicalPlanningContext, kit: QueryPlannerKit): Set[PlannedComponent] = {
+  private def planLotsOfCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)(
+      implicit context: LogicalPlanningContext,
+      kit: QueryPlannerKit): Set[PlannedComponent] = {
     val allPlans = plans.toList.sortBy(c => context.cost.apply(c.plan, context.input))
     val onePlanToRuleThemAll = allPlans.tail.foldLeft(allPlans.head) {
       case (l, r) =>
@@ -96,27 +103,29 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     Set(onePlanToRuleThemAll)
   }
 
-  private def produceCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)
-                                      (implicit context: LogicalPlanningContext, kit: QueryPlannerKit):
-  Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
-    (for (t1@PlannedComponent(qg1, p1) <- plans; t2@PlannedComponent(qg2, p2) <- plans if p1 != p2) yield {
+  private def produceCartesianProducts(plans: Set[PlannedComponent], qg: QueryGraph)(
+      implicit context: LogicalPlanningContext,
+      kit: QueryPlannerKit): Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
+    (for (t1 @ PlannedComponent(qg1, p1) <- plans; t2 @ PlannedComponent(qg2, p2) <- plans if p1 != p2) yield {
       val crossProduct = kit.select(context.logicalPlanProducer.planCartesianProduct(p1, p2), qg)
       (PlannedComponent(qg1 ++ qg2, crossProduct), (t1, t2))
     }).toMap
   }
 
-  private def produceJoinVariations(plans: Set[PlannedComponent], qg: QueryGraph)
-                                   (implicit context: LogicalPlanningContext, kit: QueryPlannerKit,
-                                    singleComponentPlanner: SingleComponentPlannerTrait):
-                                   Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
+  private def produceJoinVariations(plans: Set[PlannedComponent], qg: QueryGraph)(
+      implicit context: LogicalPlanningContext,
+      kit: QueryPlannerKit,
+      singleComponentPlanner: SingleComponentPlannerTrait)
+    : Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
     (for {
-      join <- qg.selections.valueJoins
-      t1@PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs)
-      t2@PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
+      join                              <- qg.selections.valueJoins
+      t1 @ PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs)
+      t2 @ PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
       plans = planA -> planB
     } yield {
       val hashJoinAB = kit.select(context.logicalPlanProducer.planValueHashJoin(planA, planB, join, join), qg)
-      val hashJoinBA = kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg)
+      val hashJoinBA =
+        kit.select(context.logicalPlanProducer.planValueHashJoin(planB, planA, join.switchSides, join), qg)
       val nestedIndexJoinAB = planNIJ(planA, planB, qgA, qgB, qg, join)
       val nestedIndexJoinBA = planNIJ(planB, planA, qgB, qgA, qg, join)
 
@@ -137,22 +146,25 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       Apply
     LHS  Index Seek
    */
-  private def planNIJ(lhsPlan: LogicalPlan, rhsInputPlan: LogicalPlan,
-                      lhsQG: QueryGraph, rhsQG: QueryGraph,
-                      fullQG: QueryGraph, predicate: Expression)
-                     (implicit context: LogicalPlanningContext,
-                      kit: QueryPlannerKit,
-                      singleComponentPlanner: SingleComponentPlannerTrait) = {
+  private def planNIJ(lhsPlan: LogicalPlan,
+                      rhsInputPlan: LogicalPlan,
+                      lhsQG: QueryGraph,
+                      rhsQG: QueryGraph,
+                      fullQG: QueryGraph,
+                      predicate: Expression)(implicit context: LogicalPlanningContext,
+                                             kit: QueryPlannerKit,
+                                             singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
+    val containsOptionals  = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
 
     if (notSingleComponent || containsOptionals) None
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
-      val ids = rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(predicate)
+      val ids =
+        rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(predicate)
       val rhsPlan = singleComponentPlanner.planComponent(ids)
-      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
+      val result  = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and

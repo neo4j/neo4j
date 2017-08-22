@@ -22,13 +22,15 @@ package org.neo4j.cypher.internal.spi.v3_3
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.ProfileKernelStatisticProvider
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
-import org.neo4j.graphdb.{Lock, PropertyContainer}
+import org.neo4j.graphdb.Lock
+import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.txstate.TxStateHolder
-import org.neo4j.kernel.api.{ReadOperations, Statement}
+import org.neo4j.kernel.api.ReadOperations
+import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -69,7 +71,8 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def notifyPlanningCompleted(plan: ExecutionPlan): Unit = tc.executingQuery().planningCompleted(plan.plannerInfo)
 
-  def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  def kernelStatisticProvider: KernelStatisticProvider =
+    new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
 }

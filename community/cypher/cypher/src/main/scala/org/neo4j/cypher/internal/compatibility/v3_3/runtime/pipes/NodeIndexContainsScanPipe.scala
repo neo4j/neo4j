@@ -24,15 +24,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
-import org.neo4j.values.storable.{TextValue, Values}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
                                                propertyKey: PropertyKeyToken,
-                                               valueExpr: Expression) extends Pipe {
+                                               valueExpr: Expression)
+    extends Pipe {
 
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -40,12 +43,12 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
-    val value = valueExpr(baseContext)(state)
+    val value       = valueExpr(baseContext)(state)
 
     val resultNodes = value match {
       case value: TextValue =>
-        queryContextCall(state, descriptor, value.stringValue()).
-          map(node => baseContext.newWith1(ident, AnyValues.asNodeValue(node)))
+        queryContextCall(state, descriptor, value.stringValue()).map(node =>
+          baseContext.newWith1(ident, AnyValues.asNodeValue(node)))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
@@ -61,9 +64,8 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
-                                     valueExpr: Expression)
-                                    (val id: Id = new Id)
-  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
+                                     valueExpr: Expression)(val id: Id = new Id)
+    extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
     state.query.indexScanByContains(indexDescriptor, value)
@@ -72,9 +74,8 @@ case class NodeIndexContainsScanPipe(ident: String,
 case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      propertyKey: PropertyKeyToken,
-                                     valueExpr: Expression)
-                                    (val id: Id = new Id)
-  extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
+                                     valueExpr: Expression)(val id: Id = new Id)
+    extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
     state.query.indexScanByEndsWith(indexDescriptor, value)

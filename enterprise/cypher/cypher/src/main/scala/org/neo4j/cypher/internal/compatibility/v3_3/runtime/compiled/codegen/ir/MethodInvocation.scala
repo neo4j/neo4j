@@ -23,9 +23,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
 case class MethodInvocation(override val operatorId: Set[String],
-                            symbol:JoinTableMethod,
+                            symbol: JoinTableMethod,
                             methodName: String,
-                            statements: Seq[Instruction]) extends Instruction {
+                            statements: Seq[Instruction])
+    extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 

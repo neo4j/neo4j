@@ -29,7 +29,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
-  var db: GraphDatabaseCypherService = null
+  var db: GraphDatabaseCypherService                       = null
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = null
 
   override protected def beforeAll(): Unit = {
@@ -59,12 +59,11 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   }
 
   private def createNode(): Unit = {
-    val tx = db.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() )
+    val tx = db.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
     try {
       db.createNode()
       tx.success()
-    }
-    finally {
+    } finally {
       tx.close()
     }
   }

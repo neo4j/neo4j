@@ -19,13 +19,11 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
-trait Query extends Parser
-  with Clauses
-  with Base {
+trait Query extends Parser with Clauses with Base {
 
   def Query: Rule1[ast.Query] = (
-      RegularQuery
-    | BulkImportQuery
+    RegularQuery
+      | BulkImportQuery
   )
 
   def RegularQuery: Rule1[ast.Query] = rule {
@@ -45,27 +43,27 @@ trait Query extends Parser
   }
 
   def Clause: Rule1[ast.Clause] = (
-      LoadCSV
-    | FromGraph
-    | IntoGraph
-    | Start
-    | Match
-    | Unwind
-    | Merge
-    | Create
-    | SetClause
-    | Delete
-    | Remove
-    | Foreach
-    | With
-    | Call
-    | ReturnGraph
-    | Return
-    | Pragma
+    LoadCSV
+      | FromGraph
+      | IntoGraph
+      | Start
+      | Match
+      | Unwind
+      | Merge
+      | Create
+      | SetClause
+      | Delete
+      | Remove
+      | Foreach
+      | With
+      | Call
+      | ReturnGraph
+      | Return
+      | Pragma
   )
 
-  def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION") (
-      keyword("UNION ALL") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionAll(q, sq)(p))
-    | keyword("UNION") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionDistinct(q, sq)(p))
+  def Union: ReductionRule1[ast.QueryPart, ast.QueryPart] = rule("UNION")(
+    keyword("UNION ALL") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionAll(q, sq)(p))
+      | keyword("UNION") ~>> position ~~ SingleQuery ~~> ((q: ast.QueryPart, p, sq) => ast.UnionDistinct(q, sq)(p))
   )
 }

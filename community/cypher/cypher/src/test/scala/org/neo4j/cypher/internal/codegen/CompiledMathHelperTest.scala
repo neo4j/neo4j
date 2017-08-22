@@ -23,51 +23,53 @@ import java.util
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.scalatest.prop.TableDrivenPropertyChecks
-import org.scalatest.{Assertions, Matchers, PropSpec}
+import org.scalatest.Assertions
+import org.scalatest.Matchers
+import org.scalatest.PropSpec
 
 import scala.collection.JavaConverters._
 
 class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks with Matchers with Assertions {
 
   val values: Seq[AnyRef] =
-  // The exclamation mark casts the expression to a AnyRef instead of a primitive
-  // To be as exhaustive as possible, the strategy is to do a cartesian product of all test values,
-  // and ensure that either we have defined behaviour, or that a runtime type exception is thrown
+    // The exclamation mark casts the expression to a AnyRef instead of a primitive
+    // To be as exhaustive as possible, the strategy is to do a cartesian product of all test values,
+    // and ensure that either we have defined behaviour, or that a runtime type exception is thrown
     Seq(
       1 !,
       6789 !,
       3.14 !,
       null,
       "a",
-      List(1,2,3).asJava,
+      List(1, 2, 3).asJava,
       true !,
       false !
     )
 
   property("+") {
     forAll(getTable(CompiledMathHelper.add)) {
-      case (null,                 _,                    Right(result)) => result should equal(null)
-      case (_,                    null,                 Right(result)) => result should equal(null)
+      case (null, _, Right(result)) => result should equal(null)
+      case (_, null, Right(result)) => result should equal(null)
 
-      case (l: java.lang.Double,  r: Number,            Right(result)) => result should equal(l + r.doubleValue())
-      case (l: Number,            r: java.lang.Double,  Right(result)) => result should equal(l.doubleValue() + r)
-      case (l: java.lang.Float,   r: Number,            Right(result)) => result should equal(l + r.doubleValue())
-      case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() + r)
-      case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() + r.longValue())
+      case (l: java.lang.Double, r: Number, Right(result)) => result should equal(l + r.doubleValue())
+      case (l: Number, r: java.lang.Double, Right(result)) => result should equal(l.doubleValue() + r)
+      case (l: java.lang.Float, r: Number, Right(result))  => result should equal(l + r.doubleValue())
+      case (l: Number, r: java.lang.Float, Right(result))  => result should equal(l.doubleValue() + r)
+      case (l: Number, r: Number, Right(result))           => result should equal(l.longValue() + r.longValue())
 
-      case (l: Number,            r: String,            Right(result)) => result should equal(l.toString + r)
-      case (l: String,            r: Number,            Right(result)) => result should equal(l.toString + r)
-      case (l: String,            r: String,            Right(result)) => result should equal(l + r)
-      case (l: String,            r: java.lang.Boolean, Right(result)) => result should equal(l + r)
-      case (l: java.lang.Boolean, r: String,            Right(result)) => result should equal(l + r)
+      case (l: Number, r: String, Right(result))            => result should equal(l.toString + r)
+      case (l: String, r: Number, Right(result))            => result should equal(l.toString + r)
+      case (l: String, r: String, Right(result))            => result should equal(l + r)
+      case (l: String, r: java.lang.Boolean, Right(result)) => result should equal(l + r)
+      case (l: java.lang.Boolean, r: String, Right(result)) => result should equal(l + r)
 
-      case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number, _: java.lang.Boolean, Left(exception))            => exception shouldBe a[CypherTypeException]
+      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a[CypherTypeException]
+      case (_: java.lang.Boolean, _: Number, Left(exception))            => exception shouldBe a[CypherTypeException]
 
       case (l1: util.List[_], l2: util.List[_], Right(result)) => result should equal(concat(l1, l2))
-      case (x, l: util.List[_], Right(result)) => result should equal(prepend(x, l))
-      case (l: util.List[_], x, Right(result)) => result should equal(append(x, l))
+      case (x, l: util.List[_], Right(result))                 => result should equal(prepend(x, l))
+      case (l: util.List[_], x, Right(result))                 => result should equal(append(x, l))
 
       case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 + $v2 => $v3")
     }
@@ -75,35 +77,35 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
   property("-") {
     forAll(getTable(CompiledMathHelper.subtract)) {
-      case (null, _, Right( result )) => result should equal( null )
-      case (_, null, Right( result )) => result should equal( null )
+      case (null, _, Right(result)) => result should equal(null)
+      case (_, null, Right(result)) => result should equal(null)
 
-      case (l: java.lang.Double,  r: Number,            Right(result)) => result should equal(l - r.doubleValue())
-      case (l: Number,            r: java.lang.Double,  Right(result)) => result should equal(l.doubleValue() - r)
-      case (l: java.lang.Float,   r: Number,            Right(result)) => result should equal(l - r.doubleValue())
-      case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() - r)
-      case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() - r.longValue())
+      case (l: java.lang.Double, r: Number, Right(result)) => result should equal(l - r.doubleValue())
+      case (l: Number, r: java.lang.Double, Right(result)) => result should equal(l.doubleValue() - r)
+      case (l: java.lang.Float, r: Number, Right(result))  => result should equal(l - r.doubleValue())
+      case (l: Number, r: java.lang.Float, Right(result))  => result should equal(l.doubleValue() - r)
+      case (l: Number, r: Number, Right(result))           => result should equal(l.longValue() - r.longValue())
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l: Number, r: String, Left(exception))            => exception shouldBe a[CypherTypeException]
+      case (l: String, r: Number, Left(exception))            => exception shouldBe a[CypherTypeException]
+      case (l: String, r: String, Left(exception))            => exception shouldBe a[CypherTypeException]
+      case (l: String, r: java.lang.Boolean, Left(exception)) => exception shouldBe a[CypherTypeException]
+      case (l: java.lang.Boolean, r: String, Left(exception)) => exception shouldBe a[CypherTypeException]
 
-      case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (_: java.lang.Boolean, _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number, _: java.lang.Boolean, Left(exception))            => exception shouldBe a[CypherTypeException]
+      case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a[CypherTypeException]
+      case (_: java.lang.Boolean, _: Number, Left(exception))            => exception shouldBe a[CypherTypeException]
 
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a[CypherTypeException]
+      case (x, l: util.List[_], Left(exception))                 => exception shouldBe a[CypherTypeException]
+      case (l: util.List[_], x, Left(exception))                 => exception shouldBe a[CypherTypeException]
 
       case (v1, v2, v3) => fail(s"Unspecified behaviour: $v1 + $v2 => $v3")
     }
   }
 
-  implicit class I(i: Int) { def ! = i: java.lang.Integer }
-  implicit class D(i: Double) { def ! = i: java.lang.Double }
+  implicit class I(i: Int)     { def ! = i: java.lang.Integer }
+  implicit class D(i: Double)  { def ! = i: java.lang.Double  }
   implicit class Z(i: Boolean) { def ! = i: java.lang.Boolean }
 
   private def getTable(f: (AnyRef, AnyRef) => AnyRef) = {

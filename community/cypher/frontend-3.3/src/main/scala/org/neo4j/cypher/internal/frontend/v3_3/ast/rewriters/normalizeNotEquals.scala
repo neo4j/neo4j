@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Not, NotEquals}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Equals
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Not
+import org.neo4j.cypher.internal.frontend.v3_3.ast.NotEquals
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 case object normalizeNotEquals extends Rewriter {
 
@@ -25,6 +28,6 @@ case object normalizeNotEquals extends Rewriter {
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     case p @ NotEquals(lhs, rhs) =>
-      Not(Equals(lhs, rhs)(p.position))(p.position)   // not(1 = 2)  <!===!>     1 != 2
+      Not(Equals(lhs, rhs)(p.position))(p.position) // not(1 = 2)  <!===!>     1 != 2
   })
 }

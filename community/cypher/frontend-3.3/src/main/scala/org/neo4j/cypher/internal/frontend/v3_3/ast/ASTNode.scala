@@ -20,10 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-trait ASTNode
-  extends Product
-  with Foldable
-  with Rewritable {
+trait ASTNode extends Product with Foldable with Rewritable {
 
   self =>
 
@@ -35,13 +32,13 @@ trait ASTNode
     if (children.iterator eqElements this.children)
       this
     else {
-      val constructor = this.copyConstructor
-      val params = constructor.getParameterTypes
-      val args = children.toVector
-      val hasExtraParam = params.length == args.length + 1
+      val constructor    = this.copyConstructor
+      val params         = constructor.getParameterTypes
+      val args           = children.toVector
+      val hasExtraParam  = params.length == args.length + 1
       val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
-      val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
-      val duped = constructor.invoke(this, ctorArgs: _*)
+      val ctorArgs       = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
+      val duped          = constructor.invoke(this, ctorArgs: _*)
       duped.asInstanceOf[self.type]
     }
 
@@ -49,11 +46,15 @@ trait ASTNode
 
 }
 
-sealed trait ASTNodeType { self: ASTNode => }
+sealed trait ASTNodeType { self: ASTNode =>
+}
 
-trait ASTExpression extends ASTNodeType { self: ASTNode => }
-trait ASTParticle extends ASTNodeType { self: ASTNode => }
-trait ASTPhrase extends ASTNodeType { self: ASTNode => }
+trait ASTExpression extends ASTNodeType { self: ASTNode =>
+}
+trait ASTParticle extends ASTNodeType { self: ASTNode =>
+}
+trait ASTPhrase extends ASTNodeType { self: ASTNode =>
+}
 
 // Skip/Limit
 trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
@@ -73,15 +74,16 @@ trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
     if (deps.nonEmpty) {
       val id = deps.toSeq.sortBy(_.position).head
       SemanticError(s"It is not allowed to refer to variables in $name", id.position)
-    }
-    else SemanticCheckResult.success
+    } else SemanticCheckResult.success
   }
 
   private def literalShouldBeUnsignedInteger: SemanticCheck = {
     expression match {
-      case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
+      case _: UnsignedDecimalIntegerLiteral               => SemanticCheckResult.success
       case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
-      case lit: Literal => SemanticError(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, must be a positive integer", lit.position)
+      case lit: Literal =>
+        SemanticError(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, must be a positive integer",
+                      lit.position)
       case _ => SemanticCheckResult.success
     }
   }

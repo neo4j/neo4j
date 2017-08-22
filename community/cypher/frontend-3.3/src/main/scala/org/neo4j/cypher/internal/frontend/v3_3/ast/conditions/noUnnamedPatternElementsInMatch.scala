@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Match, NodePattern, RelationshipPattern}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Match
+import org.neo4j.cypher.internal.frontend.v3_3.ast.NodePattern
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipPattern
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
 case object noUnnamedPatternElementsInMatch extends Condition {
@@ -27,14 +29,14 @@ case object noUnnamedPatternElementsInMatch extends Condition {
 
   private def unnamedRelationshipPatterns(that: Any): Seq[String] = {
     collectNodesOfType[RelationshipPattern].apply(that).collect {
-      case rel@RelationshipPattern(None, _, _, _, _, _) =>
+      case rel @ RelationshipPattern(None, _, _, _, _, _) =>
         s"RelationshipPattern at ${rel.position} is unnamed"
     }
   }
 
   private def unnamedNodePatterns(that: Any): Seq[String] = {
     collectNodesOfType[NodePattern].apply(that).collect {
-      case node@NodePattern(None, _, _) =>
+      case node @ NodePattern(None, _, _) =>
         s"NodePattern at ${node.position} is unnamed"
     }
   }

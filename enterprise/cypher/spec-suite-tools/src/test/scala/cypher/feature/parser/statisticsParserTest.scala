@@ -59,11 +59,8 @@ class statisticsParserTest extends ParsingTestSupport {
   }
 
   test("should parse a mix of stats") {
-    statisticsParser(tableOf(Seq("-properties", "1"),
-                             Seq("+nodes", "3"),
-                             Seq("+labels", "42"))) should accept(QueryStatistics(propertiesSet = 1,
-                                                                                                  nodesCreated = 3,
-                                                                                                  labelsAdded = 42))
+    statisticsParser(tableOf(Seq("-properties", "1"), Seq("+nodes", "3"), Seq("+labels", "42"))) should accept(
+      QueryStatistics(propertiesSet = 1, nodesCreated = 3, labelsAdded = 42))
   }
 
   private def singleRow(strings: String*): DataTable = {

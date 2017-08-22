@@ -36,16 +36,16 @@ class UnionIteratorTest extends CypherFunSuite {
   test("single_element") {
     // GIVEN
     val singleMap = Map("x" -> 1)
-    val union = createUnion(Iterator(singleMap), Iterator.empty)
+    val union     = createUnion(Iterator(singleMap), Iterator.empty)
 
     //THEN
-    union.toList should equal(List( Map("x" -> intValue(1))))
+    union.toList should equal(List(Map("x" -> intValue(1))))
   }
 
   test("two_elements") {
     //GIVEN
-    val aMap = Map("x" -> 1)
-    val bMap = Map("x" -> 2)
+    val aMap  = Map("x" -> 1)
+    val bMap  = Map("x" -> 2)
     val union = createUnion(Iterator(aMap), Iterator(bMap))
 
     //THEN

@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
-
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 /*
 Triadic selection is used to solve a common query pattern:
@@ -58,12 +59,15 @@ With a plan that looks like:
 |
 +<source>         (a)
  */
-case class TriadicSelection(positivePredicate: Boolean /*false means NOT(pattern)*/ ,
-                            left: LogicalPlan /*produces rows with 'source' and 'seen'*/ ,
-                            sourceId: IdName, seenId: IdName, targetId: IdName,
-                            right: LogicalPlan /*given rows with 'source' and 'seen', produces rows with 'target'*/)
-                           (val solved: PlannerQuery with CardinalityEstimation)
-extends LogicalPlan with LazyLogicalPlan {
+case class TriadicSelection(positivePredicate: Boolean /*false means NOT(pattern)*/,
+                            left: LogicalPlan /*produces rows with 'source' and 'seen'*/,
+                            sourceId: IdName,
+                            seenId: IdName,
+                            targetId: IdName,
+                            right: LogicalPlan /*given rows with 'source' and 'seen', produces rows with 'target'*/ )(
+    val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(left)
 
   override def rhs: Option[LogicalPlan] = Some(right)

@@ -42,10 +42,10 @@ class SplittingPredicateTest extends CypherFunSuite {
 
   test("more_complex_splitting") {
     val x = And(
-      Equals(
-        Literal(1), Literal(2)),
+      Equals(Literal(1), Literal(2)),
       Or(
-        True(), Not(True())
+        True(),
+        Not(True())
       )
     )
 

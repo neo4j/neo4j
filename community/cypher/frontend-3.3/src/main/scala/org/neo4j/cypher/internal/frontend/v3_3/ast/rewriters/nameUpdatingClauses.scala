@@ -16,23 +16,27 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Create, CreateUnique, Expression, Merge}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Create
+import org.neo4j.cypher.internal.frontend.v3_3.ast.CreateUnique
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Merge
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object nameUpdatingClauses extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val findingRewriter: Rewriter = Rewriter.lift {
-    case createUnique@CreateUnique(pattern) =>
+    case createUnique @ CreateUnique(pattern) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       createUnique.copy(pattern = rewrittenPattern)(createUnique.position)
 
-    case create@Create(pattern) =>
+    case create @ Create(pattern) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       create.copy(pattern = rewrittenPattern)(create.position)
 
-    case merge@Merge(pattern, _) =>
+    case merge @ Merge(pattern, _) =>
       val rewrittenPattern = pattern.endoRewrite(nameAllPatternElements.namingRewriter)
       merge.copy(pattern = rewrittenPattern)(merge.position)
   }

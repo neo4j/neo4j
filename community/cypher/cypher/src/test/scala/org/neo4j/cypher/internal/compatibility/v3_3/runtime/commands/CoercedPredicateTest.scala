@@ -20,14 +20,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Not, True}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{QueryState, QueryStateHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Not
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CoercedPredicateTest extends CypherFunSuite {
 
-  val ctx: ExecutionContext = null
+  val ctx: ExecutionContext      = null
   implicit val state: QueryState = QueryStateHelper.empty
 
   test("should_coerce_non_empty_collection_to_true") {

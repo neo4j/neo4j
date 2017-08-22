@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 case class LockNodes(source: LogicalPlan, nodesToLock: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+    extends LogicalPlan
+    with LazyLogicalPlan {
   override def lhs: Option[LogicalPlan] = Some(source)
 
   override def rhs: Option[LogicalPlan] = None

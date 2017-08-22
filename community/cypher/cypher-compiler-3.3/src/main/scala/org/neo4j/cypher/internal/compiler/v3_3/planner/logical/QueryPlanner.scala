@@ -20,14 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
-import org.neo4j.cypher.internal.ir.v3_3.{Cost, PeriodicCommit, PlannerQuery, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_3.Cost
+import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
-case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
+case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery())
+    extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
 
   override def phase = LOGICAL_PLANNING
 
@@ -55,13 +61,14 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
     from.copy(maybePeriodicCommit = Some(perCommit), maybeLogicalPlan = Some(logicalPlan))
   }
 
-  private def getMetricsFrom(context: CompilerContext) = if (context.debugOptions.contains("inverse_cost")) {
-    context.metrics.copy(cost = new CostModel {
-      override def apply(v1: LogicalPlan, v2: QueryGraphSolverInput): Cost = -context.metrics.cost(v1, v2)
-    })
-  } else {
-    context.metrics
-  }
+  private def getMetricsFrom(context: CompilerContext) =
+    if (context.debugOptions.contains("inverse_cost")) {
+      context.metrics.copy(cost = new CostModel {
+        override def apply(v1: LogicalPlan, v2: QueryGraphSolverInput): Cost = -context.metrics.cost(v1, v2)
+      })
+    } else {
+      context.metrics
+    }
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext): (Option[PeriodicCommit], LogicalPlan) =
     unionQuery match {
@@ -70,8 +77,8 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
         (periodicCommitHint, createProduceResultOperator(plan, unionQuery))
     }
 
-  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
-                                         (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
     val columns = unionQuery.returns.map(_.name)
     ProduceResult(columns, in)
   }
@@ -94,7 +101,7 @@ case object planPart extends ((PlannerQuery, LogicalPlanningContext) => LogicalP
   def apply(query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
-      case _ => context
+      case _                                                      => context
     }
     ctx.strategy.plan(query.queryGraph)(ctx)
   }

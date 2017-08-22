@@ -20,7 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -63,8 +64,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
   test("bug found when binding to already existing variables") {
 
-    innerExecute(
-      """create
+    innerExecute("""create
         |(_0:`Decision`  {`id`:"d1"}),
         |(_1:`FilterValue`  {`value`:500}),
         |(_2:`FilterCharacteristic`  {`id`:"c1"}),
@@ -86,10 +86,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
-    result.toList should equal(
-      List(
-        Map("childD.id" -> "d1"),
-        Map("childD.id" -> "d2")))
+    result.toList should equal(List(Map("childD.id" -> "d1"), Map("childD.id" -> "d2")))
   }
 
   test("pattern comprehension nested in function call") {
@@ -126,7 +123,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r = relate(n1, n2)
+    val r  = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
 
@@ -139,7 +136,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
     val n3 = createLabeledNode("NotEnd")
-    val r = relate(n1, n2)
+    val r  = relate(n1, n2)
     relate(n2, n3)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
@@ -153,7 +150,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
     val n3 = createLabeledNode("NotEnd")
-    val r = relate(n1, n2)
+    val r  = relate(n1, n2)
     relate(n2, n3)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
@@ -166,7 +163,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path and shadowed variable in predicate") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r = relate(n1, n2)
+    val r  = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
 
@@ -178,7 +175,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path and shadowed variable in projection") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r = relate(n1, n2)
+    val r  = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
 
@@ -200,12 +197,14 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n5)
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-->(other) | other.x] as coll")
+    val result =
+      executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-->(other) | other.x] as coll")
 
-    result.toList should equal(List(
-      Map("n.x" -> 1, "coll" -> Seq(5, 4, 3)),
-      Map("n.x" -> 2, "coll" -> Seq(5, 4))
-    ))
+    result.toList should equal(
+      List(
+        Map("n.x" -> 1, "coll" -> Seq(5, 4, 3)),
+        Map("n.x" -> 2, "coll" -> Seq(5, 4))
+      ))
     result should use("RollUpApply")
   }
 
@@ -224,32 +223,38 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n6)
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-->(other) WHERE other.x % 2 = 0 | other.x] as coll")
-    result.toList should equal(List(
-      Map("n.x" -> 1, "coll" -> Seq(6, 4)),
-      Map("n.x" -> 2, "coll" -> Seq(6, 4))
-    ))
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      "match (n:START) return n.x, [(n)-->(other) WHERE other.x % 2 = 0 | other.x] as coll")
+    result.toList should equal(
+      List(
+        Map("n.x" -> 1, "coll" -> Seq(6, 4)),
+        Map("n.x" -> 2, "coll" -> Seq(6, 4))
+      ))
     result should use("RollUpApply")
   }
 
   test("find self relationships") {
     val n1 = createLabeledNode(Map("x" -> 1), "START")
 
-    relate(n1, n1, "x"->"A")
-    relate(n1, n1, "x"->"B")
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-[r]->(n) | r.x] as coll")
+    relate(n1, n1, "x" -> "A")
+    relate(n1, n1, "x" -> "B")
+    val result =
+      executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return n.x, [(n)-[r]->(n) | r.x] as coll")
 
-    result.toList should equal(List(
-      Map("n.x" -> 1, "coll" -> Seq("B", "A"))
-    ))
+    result.toList should equal(
+      List(
+        Map("n.x" -> 1, "coll" -> Seq("B", "A"))
+      ))
     result should use("RollUpApply")
   }
 
   test("pattern comprehension built on a null yields null") {
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("optional match (n:MISSING) return [(n)-->(n) | n.x] as coll")
-    result.toList should equal(List(
-      Map("coll" -> null)
-    ))
+    val result =
+      executeWithCostPlannerAndInterpretedRuntimeOnly("optional match (n:MISSING) return [(n)-->(n) | n.x] as coll")
+    result.toList should equal(
+      List(
+        Map("coll" -> null)
+      ))
     result should use("RollUpApply")
   }
 
@@ -266,15 +271,14 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(b, createNode("x" -> 4))
     relate(b, createNode("x" -> 6))
 
-
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      """match (n:START)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("""match (n:START)
         |where [(n)-->(other) | other.x] = [3,2,1]
         |return n""".stripMargin)
 
-    result.toList should equal(List(
-      Map("n" -> a)
-    ))
+    result.toList should equal(
+      List(
+        Map("n" -> a)
+      ))
     result should use("RollUpApply")
   }
 
@@ -293,10 +297,12 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n5)
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("match (n:START) return count(*), [(n)-->(other) | other.x] as coll")
-    result.toList should equal(List(
-      Map("count(*)" -> 2, "coll" -> Seq(5, 4, 3))
-    ))
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      "match (n:START) return count(*), [(n)-->(other) | other.x] as coll")
+    result.toList should equal(
+      List(
+        Map("count(*)" -> 2, "coll" -> Seq(5, 4, 3))
+      ))
     result should use("RollUpApply")
   }
 
@@ -316,12 +322,12 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     relate(n2, n4)
     relate(n2, n6)
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      """match (n:START)
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("""match (n:START)
         |return collect( [(n)-->(other) | other.x] ) as coll""".stripMargin)
-    result.toList should equal(List(
-      Map("coll" -> Seq(Seq(5, 4, 3), Seq(6, 4, 3)))
-    ))
+    result.toList should equal(
+      List(
+        Map("coll" -> Seq(Seq(5, 4, 3), Seq(6, 4, 3)))
+      ))
   }
 
   test("simple expansion using pattern comprehension") {
@@ -352,13 +358,13 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   }
 
   test("pattern comprehension inside list comprehension") {
-    val a = createLabeledNode("X", "A")
+    val a  = createLabeledNode("X", "A")
     val m1 = createLabeledNode("Y")
     relate(a, m1)
     relate(m1, createLabeledNode("Y"))
     relate(m1, createLabeledNode("Y"))
 
-    val b = createLabeledNode("X", "B")
+    val b  = createLabeledNode("X", "B")
     val m2 = createNode()
     relate(b, m2)
     relate(m2, createLabeledNode("Y"))
@@ -367,10 +373,11 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val query = """MATCH p = (n:X)-->() RETURN n, [x IN nodes(p) | size([(x)-->(y:Y) | 1])] AS list"""
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    result.toSet should equal(Set(
-      Map("n" -> a, "list" -> Seq(1, 2)),
-      Map("n" -> b, "list" -> Seq(0, 1))
-    ))
+    result.toSet should equal(
+      Set(
+        Map("n" -> a, "list" -> Seq(1, 2)),
+        Map("n" -> b, "list" -> Seq(0, 1))
+      ))
   }
 
   test("pattern comprehension in RETURN following a WITH") {
@@ -380,7 +387,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   }
 
   test("pattern comprehension play nice with map projections") {
-    val movie = createLabeledNode(Map("title" -> "The Shining"), "Movie")
+    val movie  = createLabeledNode(Map("title" -> "The Shining"), "Movie")
     val actor1 = createNode("name" -> "Actor1")
     val actor2 = createNode("name" -> "Actor2")
     relate(actor1, movie, "ACTED_IN")
@@ -406,11 +413,12 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
         |return a.name as name,  [(a)-[:DIRECTED]->(dirMovie:Movie) | dirMovie.title] as dirMovie""".stripMargin
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    result.toList should equal(List(
-      Map("name" -> "Tom Cruise", "dirMovie" -> Seq()),
-      Map("name" -> "Ron Howard", "dirMovie" -> Seq("Cocoon")),
-      Map("name" -> "Keanu Reeves", "dirMovie" -> Seq())
-    ))
+    result.toList should equal(
+      List(
+        Map("name" -> "Tom Cruise", "dirMovie"   -> Seq()),
+        Map("name" -> "Ron Howard", "dirMovie"   -> Seq("Cocoon")),
+        Map("name" -> "Keanu Reeves", "dirMovie" -> Seq())
+      ))
   }
 
 }

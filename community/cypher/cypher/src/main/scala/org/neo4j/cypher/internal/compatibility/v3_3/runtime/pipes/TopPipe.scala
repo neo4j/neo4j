@@ -33,19 +33,18 @@ import scala.math._
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
-  extends PipeWithSource(source)  {
+abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription]) extends PipeWithSource(source) {
 
   val sortItems: Array[SortDescription] = sortDescription.toArray
-  private val sortItemsCount: Int = sortItems.length
+  private val sortItemsCount: Int       = sortItems.length
 
   type SortDataWithContext = (Array[AnyValue], ExecutionContext)
 
-  class LessThanComparator()(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
+  class LessThanComparator()(implicit qtx: QueryState) extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
       val v1 = a._1
       val v2 = b._1
-      var i = 0
+      var i  = 0
       while (i < sortItemsCount) {
         val res = sortItems(i).compareAny(v1(i), v2(i))
 
@@ -57,20 +56,23 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
     }
   }
 
-  def binarySearch(array: Array[SortDataWithContext], comparator: Comparator[SortDataWithContext])(key: SortDataWithContext) = {
+  def binarySearch(array: Array[SortDataWithContext], comparator: Comparator[SortDataWithContext])(
+      key: SortDataWithContext) = {
     java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]], key, comparator)
   }
 
-  def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext =
+  def arrayEntry(ctx: ExecutionContext)(implicit qtx: QueryState): SortDataWithContext =
     (sortItems.map(column => ctx(column.id)), ctx)
 }
 
-case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
-                   (val id: Id = new Id) extends TopPipe(source, sortDescription) {
+case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)(val id: Id =
+                                                                                                         new Id)
+    extends TopPipe(source, sortDescription) {
 
   countExpression.registerOwningPipe(this)
 
-  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected override def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
@@ -87,31 +89,30 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
 
         var result = new Array[SortDataWithContext](count)
         result(0) = arrayEntry(first)
-        var last : Int = 0
+        var last: Int = 0
 
-        while ( last < count - 1 && input.hasNext ) {
+        while (last < count - 1 && input.hasNext) {
           last += 1
           result(last) = arrayEntry(input.next())
         }
 
         val lessThan = new LessThanComparator()
         if (input.isEmpty) {
-          result.slice(0,last + 1).sorted(lessThan).iterator.map(_._2)
+          result.slice(0, last + 1).sorted(lessThan).iterator.map(_._2)
         } else {
           result = result.sorted(lessThan)
 
           val search = binarySearch(result, lessThan) _
-          input.foreach {
-            ctx =>
-              val next = arrayEntry(ctx)
-              if (lessThan.compare(next, result(last)) < 0) {
-                val idx = search(next)
-                val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
-                if (insertPosition >= 0 && insertPosition < count) {
-                  Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
-                  result(insertPosition) = next
-                }
+          input.foreach { ctx =>
+            val next = arrayEntry(ctx)
+            if (lessThan.compare(next, result(last)) < 0) {
+              val idx            = search(next)
+              val insertPosition = if (idx < 0) -idx - 1 else idx + 1
+              if (insertPosition >= 0 && insertPosition < count) {
+                Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
+                result(insertPosition) = next
               }
+            }
           }
           result.toIterator.map(_._2)
         }
@@ -124,12 +125,11 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
-                   (val id: Id = new Id)
-  extends TopPipe(source, sortDescription) {
+case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])(val id: Id = new Id)
+    extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
-                                      state: QueryState): Iterator[ExecutionContext] = {
+                                               state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
     if (input.isEmpty)
       Iterator.empty
@@ -139,15 +139,14 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
 
       val lessThan = new LessThanComparator()
 
-      val first = input.next()
+      val first  = input.next()
       var result = arrayEntry(first)
 
-      input.foreach {
-        ctx =>
-          val next = arrayEntry(ctx)
-          if (lessThan.compare(next, result) < 0) {
-            result = next
-          }
+      input.foreach { ctx =>
+        val next = arrayEntry(ctx)
+        if (lessThan.compare(next, result) < 0) {
+          result = next
+        }
       }
       Iterator.single(result._2)
     }
@@ -157,9 +156,8 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
-case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
-                           (val id: Id = new Id)
-  extends TopPipe(source, sortDescription) {
+case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])(val id: Id = new Id)
+    extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
@@ -169,22 +167,21 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
     else {
       val lessThan = new LessThanComparator()
 
-      val first = input.next()
-      var best = arrayEntry(first)
+      val first        = input.next()
+      var best         = arrayEntry(first)
       var matchingRows = init(best)
 
-      input.foreach {
-        ctx =>
-          val next = arrayEntry(ctx)
-          val comparison = lessThan.compare(next, best)
-          if (comparison < 0) { // Found a new best
-            best = next
-            matchingRows = init(next)
-          }
+      input.foreach { ctx =>
+        val next       = arrayEntry(ctx)
+        val comparison = lessThan.compare(next, best)
+        if (comparison < 0) { // Found a new best
+          best = next
+          matchingRows = init(next)
+        }
 
-          if (comparison == 0) {  // Found a tie
-            matchingRows += next._2
-          }
+        if (comparison == 0) { // Found a tie
+          matchingRows += next._2
+        }
       }
       matchingRows.result().iterator
     }

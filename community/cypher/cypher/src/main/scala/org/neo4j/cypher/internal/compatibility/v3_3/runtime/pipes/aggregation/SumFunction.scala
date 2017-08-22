@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 class SumFunction(val value: Expression)
-  extends AggregationFunction
-  with TypeSafeMathSupport
-  with NumericExpressionOnly {
+    extends AggregationFunction
+    with TypeSafeMathSupport
+    with NumericExpressionOnly {
 
   def name = "SUM"
 
-  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
+  private var sum: OverflowAwareSum[_]             = OverflowAwareSum(0L)
   def result(implicit state: QueryState): AnyValue = asNumberValue(sum.value)
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {

@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
@@ -90,7 +92,12 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   }
 
   override def getArguments: util.Map[String, AnyRef] =
-    arguments.map { arg => arg.name -> PlanDescriptionArgumentSerializer.serialize(arg) }.toMap.asJava
+    arguments
+      .map { arg =>
+        arg.name -> PlanDescriptionArgumentSerializer.serialize(arg)
+      }
+      .toMap
+      .asJava
 
   override def getIdentifiers: util.Set[String] = orderedVariables.toSet.asJava
 
@@ -162,9 +169,8 @@ object InternalPlanDescription {
 
     case class EstimatedRows(value: Double) extends Argument
 
-    case class Signature(procedureName: QualifiedName,
-                         args: Seq[ast.Expression],
-                         results: Seq[(String, CypherType)]) extends Argument
+    case class Signature(procedureName: QualifiedName, args: Seq[ast.Expression], results: Seq[(String, CypherType)])
+        extends Argument
 
     case class Version(value: String) extends Argument {
 
@@ -191,13 +197,22 @@ object InternalPlanDescription {
       override def name = "runtime-impl"
     }
 
-    case class ExpandExpression(from: String, relName: String, relTypes: Seq[String], to: String,
-                                direction: SemanticDirection, minLength: Int, maxLength: Option[Int]) extends Argument
+    case class ExpandExpression(from: String,
+                                relName: String,
+                                relTypes: Seq[String],
+                                to: String,
+                                direction: SemanticDirection,
+                                minLength: Int,
+                                maxLength: Option[Int])
+        extends Argument
 
     case class CountNodesExpression(ident: String, labels: List[Option[String]]) extends Argument
 
-    case class CountRelationshipsExpression(ident: String, startLabel: Option[String],
-                                            typeNames: Seq[String], endLabel: Option[String]) extends Argument
+    case class CountRelationshipsExpression(ident: String,
+                                            startLabel: Option[String],
+                                            typeNames: Seq[String],
+                                            endLabel: Option[String])
+        extends Argument
 
     case class SourceCode(className: String, sourceCode: String) extends Argument {
 
@@ -257,19 +272,20 @@ final case class PlanDescriptionImpl(id: Id,
                                      name: String,
                                      children: Children,
                                      arguments: Seq[Argument],
-                                     variables: Set[String]) extends InternalPlanDescription {
+                                     variables: Set[String])
+    extends InternalPlanDescription {
 
   def find(name: String): Seq[InternalPlanDescription] =
     children.find(name) ++ (if (this.name == name)
-      Some(this)
-    else {
-      None
-    })
+                              Some(this)
+                            else {
+                              None
+                            })
 
   def addArgument(argument: Argument): InternalPlanDescription = copy(arguments = arguments :+ argument)
 
-  def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(
-    copy(children = children.map(f)))
+  def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription =
+    f(copy(children = children.map(f)))
 
   def toIndexedSeq: Seq[InternalPlanDescription] = this +: children.toIndexedSeq
 
@@ -299,11 +315,13 @@ final case class PlanDescriptionImpl(id: Id,
   }
 
   private def renderSources = {
-    arguments.flatMap {
-      case SourceCode(className, sourceCode) => Some(s"=== Java Source: $className ===$NL$sourceCode")
-      case ByteCode(className, byteCode) => Some(s"=== Bytecode: $className ===$NL$byteCode")
-      case _ => None
-    }.mkString(NL, NL, "")
+    arguments
+      .flatMap {
+        case SourceCode(className, sourceCode) => Some(s"=== Java Source: $className ===$NL$sourceCode")
+        case ByteCode(className, byteCode)     => Some(s"=== Bytecode: $className ===$NL$byteCode")
+        case _                                 => None
+      }
+      .mkString(NL, NL, "")
   }
 }
 
@@ -324,26 +342,27 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
   override def children: Children = similar.last.children
 
   override val arguments: Seq[Argument] = {
-    var dbHits: Option[Long] = None
-    var pageCacheHits: Option[Long] = None
-    var pageCacheMisses: Option[Long] = None
+    var dbHits: Option[Long]              = None
+    var pageCacheHits: Option[Long]       = None
+    var pageCacheMisses: Option[Long]     = None
     var pageCacheHitRatio: Option[Double] = None
-    var time: Option[Long] = None
-    var rows: Option[Long] = None
+    var time: Option[Long]                = None
+    var rows: Option[Long]                = None
 
-    similar.foldLeft(Set.empty[Argument]) {
-      (acc, plan) =>
+    similar
+      .foldLeft(Set.empty[Argument]) { (acc, plan) =>
         val args = plan.arguments.filter {
-          case DbHits(v) => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
-          case PageCacheHits(v) => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
-          case PageCacheMisses(v) => pageCacheMisses = Some(pageCacheMisses.map(_ + v).getOrElse(v)); false
+          case DbHits(v)            => dbHits = Some(dbHits.map(_ + v).getOrElse(v)); false
+          case PageCacheHits(v)     => pageCacheHits = Some(pageCacheHits.map(_ + v).getOrElse(v)); false
+          case PageCacheMisses(v)   => pageCacheMisses = Some(pageCacheMisses.map(_ + v).getOrElse(v)); false
           case PageCacheHitRatio(v) => pageCacheHitRatio = Some(pageCacheHitRatio.map(_ + v).getOrElse(v)); false
-          case Time(v) => time = Some(time.map(_ + v).getOrElse(v)); false
-          case Rows(v) => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
-          case _ => true
+          case Time(v)              => time = Some(time.map(_ + v).getOrElse(v)); false
+          case Rows(v)              => rows = Some(rows.map(o => Math.max(o, v)).getOrElse(v)); false
+          case _                    => true
         }
         acc ++ args
-    }.toIndexedSeq ++ dbHits.map(DbHits.apply) ++ pageCacheHits.map(PageCacheHits.apply) ++
+      }
+      .toIndexedSeq ++ dbHits.map(DbHits.apply) ++ pageCacheHits.map(PageCacheHits.apply) ++
       pageCacheMisses.map(PageCacheMisses.apply) ++ pageCacheHitRatio.map(PageCacheHitRatio.apply) ++
       time.map(Time.apply) ++ rows.map(Rows.apply)
   }
@@ -354,14 +373,16 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
 
   override def addArgument(argument: Argument): InternalPlanDescription = ???
 
-  override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(copy
-                                                                                                       (similar = similar
-                                                                                                         .map(f)))
+  override def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription =
+    f(
+      copy(
+        similar = similar
+          .map(f)))
 
 }
 
 final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq.empty, variables: Set[String])
-  extends InternalPlanDescription {
+    extends InternalPlanDescription {
 
   def children = NoChildren
 
@@ -383,8 +404,8 @@ final case class SingleRowPlanDescription(id: Id, arguments: Seq[Argument] = Seq
 final case class LegacyPlanDescription(name: String,
                                        arguments: Seq[Argument],
                                        variables: Set[String],
-                                       stringRep: String
-                                      ) extends InternalPlanDescription {
+                                       stringRep: String)
+    extends InternalPlanDescription {
 
   override def id: Id = new Id
 
@@ -392,7 +413,8 @@ final case class LegacyPlanDescription(name: String,
 
   override def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = this
 
-  override def find(searchedName: String): Seq[InternalPlanDescription] = if (searchedName == name) Seq(this) else Seq.empty
+  override def find(searchedName: String): Seq[InternalPlanDescription] =
+    if (searchedName == name) Seq(this) else Seq.empty
 
   override def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 }

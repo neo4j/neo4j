@@ -16,19 +16,23 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticChecking, SemanticError, _}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticChecking
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3._
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
-  extends Statement with SemanticChecking {
+    extends Statement
+    with SemanticChecking {
 
   override def returnColumns = part.returnColumns
 
   override def semanticCheck =
     part.semanticCheck chain
-    periodicCommitHint.semanticCheck chain
-    when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
-      SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
-    }
+      periodicCommitHint.semanticCheck chain
+      when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
+        SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
+      }
 }
 
 sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
@@ -42,20 +46,20 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   override def containsUpdates =
     clauses.exists {
       case call: CallClause => !call.containsNoUpdates
-      case _: UpdateClause => true
-      case _               => false
+      case _: UpdateClause  => true
+      case _                => false
     }
 
   override def returnColumns = clauses.last.returnColumns
 
   override def semanticCheck =
     checkStandaloneCall chain
-    checkOrder chain
-    checkClauses chain
-    checkIndexHints
+      checkOrder chain
+      checkClauses chain
+      checkIndexHints
 
   private def checkIndexHints: SemanticCheck = s => {
-    val hints = clauses.collect { case m: Match => m.hints }.flatten
+    val hints          = clauses.collect { case m: Match => m.hints }.flatten
     val hasStartClause = clauses.exists(_.isInstanceOf[Start])
     if (hints.nonEmpty && hasStartClause) {
       SemanticCheckResult.error(s, SemanticError("Cannot use planner hints with start clause", hints.head.position))
@@ -67,7 +71,10 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   private def checkStandaloneCall: SemanticCheck = s => {
     clauses match {
       case Seq(call: UnresolvedCall, where: With) =>
-        SemanticCheckResult.error(s, SemanticError("Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)", where.position))
+        SemanticCheckResult.error(
+          s,
+          SemanticError("Cannot use standalone call with WHERE (instead use: `CALL ... WITH * WHERE ... RETURN *`)",
+                        where.position))
       case _ =>
         SemanticCheckResult.success(s)
     }
@@ -80,9 +87,16 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case Seq(_: With, _: Start) =>
             None
           case Seq(clause, start: Start) =>
-            Some(SemanticError(s"WITH is required between ${clause.name} and ${start.name}", clause.position, start.position))
+            Some(
+              SemanticError(s"WITH is required between ${clause.name} and ${start.name}",
+                            clause.position,
+                            start.position))
           case Seq(match1: Match, match2: Match) if match1.optional && !match2.optional =>
-            Some(SemanticError(s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)", match2.position, match1.position))
+            Some(
+              SemanticError(
+                s"${match2.name} cannot follow OPTIONAL ${match1.name} (perhaps use a WITH clause between them)",
+                match2.position,
+                match1.position))
           case Seq(clause: Return, _) =>
             Some(SemanticError(s"${clause.name} can only be used at the end of the query", clause.position))
           case Seq(_: UpdateClause, _: UpdateClause) =>
@@ -92,7 +106,10 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
           case Seq(_: UpdateClause, _: Return) =>
             None
           case Seq(update: UpdateClause, clause) =>
-            Some(SemanticError(s"WITH is required between ${update.name} and ${clause.name}", clause.position, update.position))
+            Some(
+              SemanticError(s"WITH is required between ${update.name} and ${clause.name}",
+                            clause.position,
+                            update.position))
           case _ =>
             None
         }
@@ -100,28 +117,32 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
     val lastError = lastPair.last match {
-      case _: UpdateClause => None
-      case _: Return => None
-      case _: ReturnGraph => None
+      case _: UpdateClause                    => None
+      case _: Return                          => None
+      case _: ReturnGraph                     => None
       case _: CallClause if clauses.size == 1 => None
       case clause =>
-        Some(SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)", clause.position))
+        Some(
+          SemanticError(s"Query cannot conclude with ${clause.name} (must be RETURN or an update clause)",
+                        clause.position))
     }
 
     SemanticCheckResult(s, errors ++ lastError)
   }
 
   private def checkClauses: SemanticCheck = s => {
-    val result = clauses.foldLeft(SemanticCheckResult.success(s.newChildScope))((lastResult, clause) => clause match {
-      case c: HorizonClause =>
-        val closingResult = c.semanticCheck(lastResult.state)
-        val nextState = closingResult.state.newSiblingScope
-        val continuationResult = c.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
-        SemanticCheckResult(continuationResult.state, lastResult.errors ++ closingResult.errors ++ continuationResult.errors)
+    val result = clauses.foldLeft(SemanticCheckResult.success(s.newChildScope))((lastResult, clause) =>
+      clause match {
+        case c: HorizonClause =>
+          val closingResult      = c.semanticCheck(lastResult.state)
+          val nextState          = closingResult.state.newSiblingScope
+          val continuationResult = c.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
+          SemanticCheckResult(continuationResult.state,
+                              lastResult.errors ++ closingResult.errors ++ continuationResult.errors)
 
-      case _ =>
-        val result = clause.semanticCheck(lastResult.state)
-        SemanticCheckResult(result.state, lastResult.errors ++ result.errors)
+        case _ =>
+          val result = clause.semanticCheck(lastResult.state)
+          SemanticCheckResult(result.state, lastResult.errors ++ result.errors)
     })
     SemanticCheckResult(result.state.popScope, result.errors)
   }
@@ -133,13 +154,13 @@ sealed trait Union extends QueryPart with SemanticChecking {
 
   def returnColumns = query.returnColumns
 
-  def containsUpdates:Boolean = part.containsUpdates || query.containsUpdates
+  def containsUpdates: Boolean = part.containsUpdates || query.containsUpdates
 
   def semanticCheck: SemanticCheck =
     checkUnionAggregation chain
-    withScopedState(part.semanticCheck) chain
-    withScopedState(query.semanticCheck) chain
-    checkColumnNamesAgree
+      withScopedState(part.semanticCheck) chain
+      withScopedState(query.semanticCheck) chain
+      checkColumnNamesAgree
 
   private def checkColumnNamesAgree: SemanticCheck = (state: SemanticState) => {
     val rootScope: Scope = state.currentScope.scope
@@ -176,5 +197,5 @@ sealed trait Union extends QueryPart with SemanticChecking {
   }
 }
 
-final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union
+final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition)      extends Union
 final case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union

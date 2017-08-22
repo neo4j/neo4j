@@ -26,14 +26,15 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
-  var transactionalContext: QueryTransactionalContext = _
-  var resource: ExternalCSVResource = _
-  val url: URL = new URL("file:///tmp/something.csv")
+  var transactionalContext: QueryTransactionalContext  = _
+  var resource: ExternalCSVResource                    = _
+  val url: URL                                         = new URL("file:///tmp/something.csv")
 
   test("writing should not trigger tx restart until next csv line is fetched") {
     // Given
@@ -50,9 +51,9 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
-    when(resource.getCsvIterator(Matchers.eq(url), any(), any())).
-      thenReturn(Iterator(Array("yo"))).
-      thenReturn(Iterator(Array("yo")))
+    when(resource.getCsvIterator(Matchers.eq(url), any(), any()))
+      .thenReturn(Iterator(Array("yo")))
+      .thenReturn(Iterator(Array("yo")))
     val iterator1 = resourceUnderTest.getCsvIterator(url, None, false)
     val iterator2 = resourceUnderTest.getCsvIterator(url, None, false)
 

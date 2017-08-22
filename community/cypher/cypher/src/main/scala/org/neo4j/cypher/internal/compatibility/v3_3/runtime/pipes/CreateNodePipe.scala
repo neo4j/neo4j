@@ -24,18 +24,24 @@ import java.util.function.BiConsumer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidSemanticsException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
+    extends PipeWithSource(src)
+    with GraphElementPropertyFunctions {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
     input.map(createNode(_, state))
 
   private def createNode(context: ExecutionContext, state: QueryState): ExecutionContext = {
@@ -79,16 +85,18 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
   }
 }
 
-case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                         (val id: Id = new Id) extends BaseCreateNodePipe(src, key, labels, properties) {
+case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(val id: Id =
+                                                                                                            new Id)
+    extends BaseCreateNodePipe(src, key, labels, properties) {
 
   override protected def handleNull(key: String) {
     // do nothing
   }
 }
 
-case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                              (val id: Id = new Id) extends BaseCreateNodePipe(src, key, labels, properties) {
+case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])(
+    val id: Id = new Id)
+    extends BaseCreateNodePipe(src, key, labels, properties) {
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")

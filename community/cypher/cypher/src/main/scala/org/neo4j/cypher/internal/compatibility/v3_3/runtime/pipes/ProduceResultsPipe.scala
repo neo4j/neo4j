@@ -22,20 +22,18 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
-                             (val id: Id = new Id) extends PipeWithSource(source) {
+case class ProduceResultsPipe(source: Pipe, columns: Seq[String])(val id: Id = new Id) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
 
-    input.map {
-      original =>
-        val m = MutableMaps.create(columns.size)
-        columns.foreach {
-          case (name) => m.put(name, original(name))
-        }
+    input.map { original =>
+      val m = MutableMaps.create(columns.size)
+      columns.foreach {
+        case (name) => m.put(name, original(name))
+      }
 
-        ExecutionContext(m)
+      ExecutionContext(m)
     }
   }
 }

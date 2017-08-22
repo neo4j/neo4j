@@ -19,15 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 case class NodeIndexSeek(idName: IdName,
                          label: LabelToken,
                          propertyKeys: Seq[PropertyKeyToken],
                          valueExpr: QueryExpression[Expression],
-                         argumentIds: Set[IdName])
-                        (val solved: PlannerQuery with CardinalityEstimation) extends IndexLeafPlan {
+                         argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+    extends IndexLeafPlan {
 
   def availableSymbols = argumentIds + idName
 }

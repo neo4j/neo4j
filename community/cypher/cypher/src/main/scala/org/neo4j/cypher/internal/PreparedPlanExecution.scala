@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.Result
 
-case class PreparedPlanExecution(plan: ExecutionPlan, executionMode: CypherExecutionMode, extractedParams: Map[String, Any]) {
+case class PreparedPlanExecution(plan: ExecutionPlan,
+                                 executionMode: CypherExecutionMode,
+                                 extractedParams: Map[String, Any]) {
   def execute(transactionalContext: TransactionalContextWrapper, params: Map[String, Any]): Result =
     plan.run(transactionalContext, executionMode, params ++ extractedParams)
 

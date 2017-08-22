@@ -23,13 +23,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Cod
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
 trait Instruction {
-  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit = children.foreach(_.init(generator))
+  def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit =
+    children.foreach(_.init(generator))
   def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
   protected def children: Seq[Instruction]
 
   private def treeView: Seq[Instruction] = {
-    children.foldLeft(Seq(this)) { (acc, child) => acc ++ child.treeView }
+    children.foldLeft(Seq(this)) { (acc, child) =>
+      acc ++ child.treeView
+    }
   }
 
   // Aggregating methods -- final to prevent overriding

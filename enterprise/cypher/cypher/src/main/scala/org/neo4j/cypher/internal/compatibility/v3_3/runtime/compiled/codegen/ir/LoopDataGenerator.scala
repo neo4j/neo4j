@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 // Generates the code that moves data into local variables from the iterator being consumed
 trait LoopDataGenerator {
@@ -29,7 +30,8 @@ trait LoopDataGenerator {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 
-  def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
+  def produceNext[E](nextVar: Variable, iterVar: String, generator: MethodStructure[E])(
+      implicit context: CodeGenContext): Unit
 
   def produceIterator[E](iterVarName: String, generator: MethodStructure[E])(implicit context: CodeGenContext): Unit
 

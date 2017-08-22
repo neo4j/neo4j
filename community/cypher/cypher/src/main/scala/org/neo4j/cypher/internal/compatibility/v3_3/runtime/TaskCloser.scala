@@ -24,12 +24,12 @@ import scala.collection.mutable.ListBuffer
 class TaskCloser {
 
   private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
-  private var closed = false
+  private var closed                              = false
 
   /**
-   *
-   * @param task This task will be called, with true if the query went OK, and a false if an error occurred
-   */
+    *
+    * @param task This task will be called, with true if the query went OK, and a false if an error occurred
+    */
   def addTask(task: Boolean => Unit) {
     _tasks += task
   }
@@ -37,14 +37,13 @@ class TaskCloser {
   def close(success: Boolean) {
     if (!closed) {
       closed = true
-      val errors = _tasks.flatMap {
-        f =>
-          try {
-            f(success)
-            None
-          } catch {
-            case e: Throwable => Some(e)
-          }
+      val errors = _tasks.flatMap { f =>
+        try {
+          f(success)
+          None
+        } catch {
+          case e: Throwable => Some(e)
+        }
       }
 
       errors.map(e => throw e)

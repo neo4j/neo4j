@@ -33,15 +33,15 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values.AnyValue
 
 class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
-  val symbols = SymbolTable(Map("a" -> CTNode))
+  val symbols                        = SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
-  val rightNode = patternRelationship.right
+  val rightNode                      = patternRelationship.right
 
   test("should_handle_a_single_relationship_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val aNode        = createNode()
 
     // When
     val result = withQueryState { queryState =>
@@ -55,9 +55,9 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
   test("should_handle_a_single_relationship_with_1_match") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
-    val aNode = createNode()
-    val bNode = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val aNode        = createNode()
+    val bNode        = createNode()
     val relationship = relate(aNode, bNode)
 
     // When
@@ -76,9 +76,9 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
     val patternGraph = buildPatternGraph(symbols, Seq(r1, r2))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(), Set("a", "r1", "b", "r2", "c"))
-    val n0 = createNode()
-    val n1 = createNode()
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq(), Set("a", "r1", "b", "r2", "c"))
+    val n0           = createNode()
+    val n1           = createNode()
     relate(n0, n1)
 
     // When
@@ -95,12 +95,12 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     // This matcher is responsible for (b)--(c), and should exclude matches from the previous step
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
-    val symbolTable = symbols.add("b", CTNode).add("r1", CTRelationship)
+    val symbolTable  = symbols.add("b", CTNode).add("r1", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(), Set("a", "r1", "b", "r2", "c"))
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq(), Set("a", "r1", "b", "r2", "c"))
 
-    val n0 = createNode()
-    val n1 = createNode()
+    val n0  = createNode()
+    val n1  = createNode()
     val rel = relate(n0, n1)
 
     val startingState = ExecutionContext.empty.newWith(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
@@ -118,12 +118,12 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     // Given MATCH (b)-[r2]-(c), in scope is (a), [r1]
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, SemanticDirection.BOTH)
 
-    val symbolTable = symbols.add("b", CTNode).add("r1", CTRelationship)
+    val symbolTable  = symbols.add("b", CTNode).add("r1", CTRelationship)
     val patternGraph = buildPatternGraph(symbolTable, Seq(r2))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq(), Set("b", "r2", "c"))
+    val matcher      = new PatternMatchingBuilder(patternGraph, Seq(), Set("b", "r2", "c"))
 
-    val n0 = createNode()
-    val n1 = createNode()
+    val n0  = createNode()
+    val n1  = createNode()
     val rel = relate(n0, n1)
 
     val startingState = ExecutionContext.empty.newWith(Seq("a" -> n0, "b" -> n1, "r1" -> rel))
@@ -139,10 +139,10 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
   test("should_handle_a_single_relationship_with_node_with_properties_no_matches") {
     // Given pattern MATCH (a)-[]->(b {prop: 42})
-    val nodeWithProps = rightNode.copy(properties = Map("prop" -> Literal(42)))
+    val nodeWithProps           = rightNode.copy(properties = Map("prop" -> Literal(42)))
     val patternRelWithNodeProps = patternRelationship.copy(right = nodeWithProps)
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val patternGraph            = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
+    val matcher                 = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
 
     // Given graph
     val aNode = createNode()
@@ -160,10 +160,10 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
   test("should_handle_a_single_relationship_with_node_with_properties_no_matches2") {
     // Given pattern MATCH (a)-[]->(b {prop: 42})
-    val nodeWithProps = rightNode.copy(properties = Map("prop" -> Literal(42)))
+    val nodeWithProps           = rightNode.copy(properties = Map("prop" -> Literal(42)))
     val patternRelWithNodeProps = patternRelationship.copy(right = nodeWithProps)
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val patternGraph            = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
+    val matcher                 = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
 
     // Given graph
     val aNode = createNode()
@@ -181,10 +181,10 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
   test("should_handle_a_single_relationship_with_node_with_properties_no_matches3") {
     // Given pattern MATCH (a)-[]->(b {prop: 42})
-    val nodeWithProps = rightNode.copy(properties = Map("prop" -> Literal(42)))
+    val nodeWithProps           = rightNode.copy(properties = Map("prop" -> Literal(42)))
     val patternRelWithNodeProps = patternRelationship.copy(right = nodeWithProps)
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val patternGraph            = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
+    val matcher                 = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
 
     // Given graph
     val aNode = createNode("prop" -> 666) //Set the property on the wrong node, to make sure the property id exists on the graph
@@ -202,15 +202,15 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
 
   test("should_handle_a_single_relationship_with_node_with_properties_1_match") {
     // Given pattern MATCH (a)-[]->(b {prop: 42})
-    val nodeWithProps = rightNode.copy(properties = Map("prop" -> Literal(42)))
+    val nodeWithProps           = rightNode.copy(properties = Map("prop" -> Literal(42)))
     val patternRelWithNodeProps = patternRelationship.copy(right = nodeWithProps)
-    val patternGraph = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
-    val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
+    val patternGraph            = buildPatternGraph(symbols, Seq(patternRelWithNodeProps))
+    val matcher                 = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
 
     // Given graph
     val aNode = createNode()
     val bNode = createNode("prop" -> 42)
-    val rel = relate(aNode, bNode)
+    val rel   = relate(aNode, bNode)
 
     // When
     val result = withQueryState { queryState =>

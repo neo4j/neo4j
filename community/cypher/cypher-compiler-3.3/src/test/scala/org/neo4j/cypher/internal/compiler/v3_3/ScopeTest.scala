@@ -35,26 +35,33 @@ class ScopeTest extends CypherFunSuite {
   }
 
   test("Should find all scopes") {
-    val child11 = scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 111))()
+    val child11 = scope(stringSymbol("name", 31, 93),
+                        nodeSymbol("root", 6, 69),
+                        nodeSymbol("tag", 83),
+                        nodeSymbol("book", 18, 111))()
     val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 124))(child11)
     val child2 = scope(nodeSymbol("book", 18, 124))()
-    val given = scope()(child1, child2)
+    val given  = scope()(child1, child2)
 
     given.allScopes should equal(Seq(given, child1, child11, child2))
   }
 
   test("Should find all definitions") {
-    val child11 = scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 111))()
+    val child11 = scope(stringSymbol("name", 31, 93),
+                        nodeSymbol("root", 6, 69),
+                        nodeSymbol("tag", 83),
+                        nodeSymbol("book", 18, 111))()
     val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 24, 124))(child11)
     val child2 = scope(nodeSymbol("book", 18, 124))()
-    val given = scope()(child1, child2)
+    val given  = scope()(child1, child2)
 
-    given.allSymbolDefinitions should equal(Map(
-      "name" -> Set(symUse("name", 31)),
-      "root" -> Set(symUse("root", 6)),
-      "tag" -> Set(symUse("tag", 83)),
-      "book" -> Set(symUse("book", 18), symUse("book", 24))
-    ))
+    given.allSymbolDefinitions should equal(
+      Map(
+        "name" -> Set(symUse("name", 31)),
+        "root" -> Set(symUse("root", 6)),
+        "tag"  -> Set(symUse("tag", 83)),
+        "book" -> Set(symUse("book", 18), symUse("book", 24))
+      ))
   }
 
   test("Should build variable map for simple scope tree") {
@@ -62,34 +69,39 @@ class ScopeTest extends CypherFunSuite {
 
     val actual = given.variableDefinitions
 
-    actual should equal(Map(
-      symUse("a", 1) -> symUse("a", 1),
-      symUse("a", 2) -> symUse("a", 1),
-      symUse("b", 2) -> symUse("b", 2)
-    ))
+    actual should equal(
+      Map(
+        symUse("a", 1) -> symUse("a", 1),
+        symUse("a", 2) -> symUse("a", 1),
+        symUse("b", 2) -> symUse("b", 2)
+      ))
   }
 
   test("Should build variable map for complex scope tree with shadowing") {
     val given = scope()(
       scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 111))(
-        scope(stringSymbol("name", 31, 93), nodeSymbol("root", 6, 69), nodeSymbol("tag", 83), nodeSymbol("book", 18, 124))()
+        scope(stringSymbol("name", 31, 93),
+              nodeSymbol("root", 6, 69),
+              nodeSymbol("tag", 83),
+              nodeSymbol("book", 18, 124))()
       ),
       scope(nodeSymbol("book", 200, 300))()
     )
 
     val actual = given.allVariableDefinitions
 
-    actual should equal(Map(
-      symUse("root", 6) -> symUse("root", 6),
-      symUse("root", 69) -> symUse("root", 6),
-      symUse("book", 18) -> symUse("book", 18),
-      symUse("book", 111) -> symUse("book", 18),
-      symUse("book", 124) -> symUse("book", 18),
-      symUse("book", 200) -> symUse("book", 200),
-      symUse("book", 300) -> symUse("book", 200),
-      symUse("name", 31) -> symUse("name", 31),
-      symUse("name", 93) -> symUse("name", 31),
-      symUse("tag", 83) -> symUse("tag", 83)
-    ))
+    actual should equal(
+      Map(
+        symUse("root", 6)   -> symUse("root", 6),
+        symUse("root", 69)  -> symUse("root", 6),
+        symUse("book", 18)  -> symUse("book", 18),
+        symUse("book", 111) -> symUse("book", 18),
+        symUse("book", 124) -> symUse("book", 18),
+        symUse("book", 200) -> symUse("book", 200),
+        symUse("book", 300) -> symUse("book", 200),
+        symUse("name", 31)  -> symUse("name", 31),
+        symUse("name", 93)  -> symUse("name", 31),
+        symUse("tag", 83)   -> symUse("tag", 83)
+      ))
   }
 }

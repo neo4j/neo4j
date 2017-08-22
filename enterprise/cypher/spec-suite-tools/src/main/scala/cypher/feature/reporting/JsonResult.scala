@@ -19,8 +19,9 @@
  */
 package cypher.feature.reporting
 
-
-import com.novus.salat.annotations.{Ignore, Key, Persist}
+import com.novus.salat.annotations.Ignore
+import com.novus.salat.annotations.Key
+import com.novus.salat.annotations.Persist
 import org.neo4j.cypher.internal.compiler.v3_3.ast.QueryTag
 
 import scala.annotation.meta.getter
@@ -28,7 +29,7 @@ import scala.annotation.meta.getter
 object Outcome {
   def from(value: String) = value match {
     case "passed" => Success
-    case _ => Failure
+    case _        => Failure
   }
 }
 
@@ -44,10 +45,10 @@ object Failure extends Outcome {
 
 case class JsonResult(query: String, @Ignore tags: Set[QueryTag], @Ignore outcome: Outcome) {
   @Key("tags")
-  @(Persist@getter)
+  @(Persist @getter)
   val prettyTags: Set[String] = tags.map(_.toString)
 
   @Key("outcome")
-  @(Persist@getter)
+  @(Persist @getter)
   val prettyOutcome = outcome.toString
 }

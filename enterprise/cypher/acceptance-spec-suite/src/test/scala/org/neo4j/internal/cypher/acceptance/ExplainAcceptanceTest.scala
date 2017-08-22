@@ -39,7 +39,6 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     result should be(empty)
   }
 
-
   test("EXPLAIN for Cypher 3.1") {
     val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
     result.resultAsString()
@@ -68,7 +67,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
     val result = succeedWith(Configs.CommunityInterpreted, query)
-    val plan = result.executionPlanDescription().toString
+    val plan   = result.executionPlanDescription().toString
     result.close()
 
     plan.toString should include("NestedPlanExpression(VarExpand-Argument)")

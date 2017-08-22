@@ -19,26 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LockNodes, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LockNodes
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ContainerIndex, PathExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ContainerIndex
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PathExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.ir.v3_3._
 
 /*
  * This coordinates PlannerQuery planning of updates.
  */
-case object PlanUpdates
-  extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
+case object PlanUpdates extends LogicalPlanningFunction3[PlannerQuery, LogicalPlan, Boolean, LogicalPlan] {
 
-  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)
-                    (implicit context: LogicalPlanningContext): LogicalPlan = {
+  override def apply(query: PlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean)(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
-    val plan = if (firstPlannerQuery)
-      Eagerness.headReadWriteEagerize(in, query)
-    else
-    //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
-      Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
+    val plan =
+      if (firstPlannerQuery)
+        Eagerness.headReadWriteEagerize(in, query)
+      else
+        //// NOTE: tailReadWriteEagerizeRecursive is done after updates, below
+        Eagerness.tailReadWriteEagerizeNonRecursive(in, query)
 
     val updatePlan = query.queryGraph.mutatingPatterns.foldLeft(plan) {
       case (acc, pattern) => planUpdate(acc, pattern, firstPlannerQuery)
@@ -51,13 +55,15 @@ case object PlanUpdates
     }
   }
 
-  private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean)
-                        (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planUpdate(source: LogicalPlan, pattern: MutatingPattern, first: Boolean)(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
 
     def planAllUpdatesRecursively(query: PlannerQuery, plan: LogicalPlan): LogicalPlan = {
-      query.allPlannerQueries.foldLeft((plan, true)) {
-        case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst), false)
-      }._1
+      query.allPlannerQueries
+        .foldLeft((plan, true)) {
+          case ((accPlan, innerFirst), plannerQuery) => (this.apply(plannerQuery, accPlan, innerFirst), false)
+        }
+        ._1
     }
 
     pattern match {
@@ -74,20 +80,20 @@ case object PlanUpdates
       case p: CreateRelationshipPattern => context.logicalPlanProducer.planCreateRelationship(source, p)
       //MERGE ()
       case p: MergeNodePattern =>
-        val mergePlan = planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate,
-          p.onMatch, first)
+        val mergePlan =
+          planMerge(source, p.matchGraph, Seq(p.createNodePattern), Seq.empty, p.onCreate, p.onMatch, first)
         //we have to force the plan to solve what we actually solve
-        val solved = context.logicalPlanProducer.estimatePlannerQuery(
-          source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
+        val solved =
+          context.logicalPlanProducer.estimatePlannerQuery(source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
         mergePlan.updateSolved(solved)
 
       //MERGE (a)-[:T]->(b)
       case p: MergeRelationshipPattern =>
-        val mergePlan = planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate,
-          p.onMatch, first)
+        val mergePlan =
+          planMerge(source, p.matchGraph, p.createNodePatterns, p.createRelPatterns, p.onCreate, p.onMatch, first)
         //we have to force the plan to solve what we actually solve
-        val solved = context.logicalPlanProducer.estimatePlannerQuery(
-          source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
+        val solved =
+          context.logicalPlanProducer.estimatePlannerQuery(source.solved.amendQueryGraph(u => u.addMutatingPatterns(p)))
         mergePlan.updateSolved(solved)
       //SET n:Foo:Bar
       case pattern: SetLabelPattern => context.logicalPlanProducer.planSetLabel(source, pattern)
@@ -154,22 +160,27 @@ case object PlanUpdates
    * Note also that merge uses a special leaf planner to enforce the correct behavior
    * when having uniqueness constraints, and unnestApply will remove a lot of the extra Applies
    */
-  def planMerge(source: LogicalPlan, matchGraph: QueryGraph, createNodePatterns: Seq[CreateNodePattern],
-                createRelationshipPatterns: Seq[CreateRelationshipPattern], onCreatePatterns: Seq[SetMutatingPattern],
-                onMatchPatterns: Seq[SetMutatingPattern], first: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planMerge(source: LogicalPlan,
+                matchGraph: QueryGraph,
+                createNodePatterns: Seq[CreateNodePattern],
+                createRelationshipPatterns: Seq[CreateRelationshipPattern],
+                onCreatePatterns: Seq[SetMutatingPattern],
+                onMatchPatterns: Seq[SetMutatingPattern],
+                first: Boolean)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val producer: LogicalPlanProducer = context.logicalPlanProducer
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
     val leafPlannerList = LeafPlannerList(IndexedSeq(mergeUniqueIndexSeekLeafPlanner))
-    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
+    val leafPlanners    = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
       context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))
 
     val ids: Seq[IdName] = createNodePatterns.map(_.nodeName) ++ createRelationshipPatterns.map(_.relName)
 
-    val mergeMatch = mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
+    val mergeMatch =
+      mergeMatchPart(source, matchGraph, producer, createNodePatterns, createRelationshipPatterns, innerContext, ids)
 
     //            condApply
     //             /   \
@@ -214,7 +225,8 @@ case object PlanUpdates
     def mergeRead(ctx: LogicalPlanningContext) = {
       val mergeReadPart = ctx.strategy.plan(matchGraph)(ctx)
       if (mergeReadPart.solved.queryGraph != matchGraph)
-        throw new InternalException(s"The planner was unable to successfully plan the MERGE read:\n${mergeReadPart.solved.queryGraph}\n not equal to \n$matchGraph")
+        throw new InternalException(
+          s"The planner was unable to successfully plan the MERGE read:\n${mergeReadPart.solved.queryGraph}\n not equal to \n$matchGraph")
       producer.planOptional(mergeReadPart, matchGraph.argumentIds)(ctx)
     }
 

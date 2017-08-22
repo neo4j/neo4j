@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 
 case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  def shouldExitWhen = true
+  def shouldExitWhen                                     = true
   def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
@@ -33,8 +33,8 @@ case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPred
 case class Or(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m)
 
-  override def toString: String = s"($a OR $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
+  override def toString: String              = s"($a OR $b)"
+  def containsIsNull                         = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Or(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)

@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, MapExecutionContext}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.MapExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable
 
-case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
-                       (val id: Id = new Id) extends PipeWithSource(source) {
+case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   val keyNames: Seq[String] = expressions.keys.toIndexedSeq
 

@@ -27,12 +27,15 @@ case object RewriterTaskBuilder {
       copy(previousName = Some(name), tasks = allTasks :+ RunRewriter(name, rewriter))
     def +(condition: RewriterCondition) = copy(conditions = conditions + condition)
     def -(condition: RewriterCondition) = copy(conditions = conditions - condition)
-    def allTasks = if (conditions.isEmpty) tasks else tasks :+ RunConditions(previousName, conditions)
+    def allTasks                        = if (conditions.isEmpty) tasks else tasks :+ RunConditions(previousName, conditions)
   }
 
-  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = steps.foldLeft(State()) {
-    case (state, ApplyRewriter(name, rewriter)) => state +(name, rewriter)
-    case (state, EnableRewriterCondition(condition)) => state + condition
-    case (state, DisableRewriterCondition(condition)) => state - condition
-  }.allTasks
+  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] =
+    steps
+      .foldLeft(State()) {
+        case (state, ApplyRewriter(name, rewriter))       => state + (name, rewriter)
+        case (state, EnableRewriterCondition(condition))  => state + condition
+        case (state, DisableRewriterCondition(condition)) => state - condition
+      }
+      .allTasks
 }

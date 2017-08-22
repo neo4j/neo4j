@@ -23,4 +23,3 @@ trait Statement extends ASTNode with ASTPhrase {
 
   def returnColumns: List[String]
 }
-

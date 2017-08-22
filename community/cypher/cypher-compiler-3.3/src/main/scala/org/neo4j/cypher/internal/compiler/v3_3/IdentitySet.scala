@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
 
 object IdentitySet {
   private val PRESENT = new Object
-  def empty[T] = IdentitySet(IdentityMap.empty[T, AnyRef])
+  def empty[T]        = IdentitySet(IdentityMap.empty[T, AnyRef])
 }
 
 case class IdentitySet[T] private (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)
-  extends Set[T] with ((T) => Boolean) {
+    extends Set[T]
+    with ((T) => Boolean) {
   self =>
 
   override def apply(elem: T): Boolean = contains(elem)

@@ -21,21 +21,25 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 
-case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: PipelineInformation)
-                                   (val id: Id = new Id) extends Pipe {
+case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: PipelineInformation)(val id: Id = new Id)
+    extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
-      val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context)
-      context.setLongAt(offset, nodeId)
-      context
-    })
+    PrimitiveLongHelper.map(
+      state.query.nodeOps.allPrimitive, { nodeId =>
+        val context = PrimitiveExecutionContext(pipelineInformation)
+        state.copyArgumentStateTo(context)
+        context.setLongAt(offset, nodeId)
+        context
+      }
+    )
   }
 }

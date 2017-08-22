@@ -28,13 +28,13 @@ import scala.collection.mutable.ArrayBuffer
 
 final class PathValueBuilder {
 
-  private val nodes = ArrayBuffer.empty[NodeValue]
-  private val rels = ArrayBuffer.empty[EdgeValue]
-  private var nulled = false
+  private val nodes                   = ArrayBuffer.empty[NodeValue]
+  private val rels                    = ArrayBuffer.empty[EdgeValue]
+  private var nulled                  = false
   private var previousNode: NodeValue = null
-  def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
+  def result(): AnyValue              = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
 
-  def clear(): PathValueBuilder =  {
+  def clear(): PathValueBuilder = {
     nodes.clear()
     rels.clear()
     nulled = false
@@ -69,15 +69,13 @@ final class PathValueBuilder {
 
   def addIncomingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
     val iterator = rels.iterator
-    while (iterator.hasNext)
-      addIncomingRelationship(iterator.next().asInstanceOf[EdgeValue])
+    while (iterator.hasNext) addIncomingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
   def addOutgoingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
     val iterator = rels.iterator
-    while (iterator.hasNext)
-      addOutgoingRelationship(iterator.next().asInstanceOf[EdgeValue])
+    while (iterator.hasNext) addOutgoingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
@@ -85,12 +83,10 @@ final class PathValueBuilder {
     val relIterator = rels.iterator
 
     def consumeIterator(i: Iterator[AnyValue]) =
-      while (i.hasNext)
-        addUndirectedRelationship(i.next().asInstanceOf[EdgeValue])
-
+      while (i.hasNext) addUndirectedRelationship(i.next().asInstanceOf[EdgeValue])
 
     if (relIterator.hasNext) {
-      val first = relIterator.next().asInstanceOf[EdgeValue]
+      val first          = relIterator.next().asInstanceOf[EdgeValue]
       val rightDirection = first.startNode() == previousNode || first.endNode() == previousNode
 
       if (rightDirection) {
@@ -104,7 +100,7 @@ final class PathValueBuilder {
     this
   }
 
-  private def nullCheck[A](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
+  private def nullCheck[A](value: A)(f: => PathValueBuilder): PathValueBuilder = value match {
     case null =>
       nulled = true
       this

@@ -21,20 +21,23 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
+class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
-    def lhs: Option[LogicalPlan] = ???
+    def lhs: Option[LogicalPlan]      = ???
     def availableSymbols: Set[IdName] = ???
-    def rhs: Option[LogicalPlan] = ???
-    def strictness = ???
+    def rhs: Option[LogicalPlan]      = ???
+    def strictness                    = ???
   }
 
   test("updating the planner query works well, thank you very much") {
     val initialPlan = TestPlan()(solved)
 
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery =
+      CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
 
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
@@ -50,7 +53,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("apply with two singlerows should return them both") {
     val singleRow1 = Argument(Set(IdName("a")))(solved)()
     val singleRow2 = SingleRow()(solved)
-    val apply = Apply(singleRow1, singleRow2)(solved)
+    val apply      = Apply(singleRow1, singleRow2)(solved)
 
     apply.leaves should equal(Seq(singleRow1, singleRow2))
   }
@@ -60,16 +63,17 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     val singleRow2 = SingleRow()(solved)
     val singleRow3 = Argument(Set(IdName("b")))(solved)()
     val singleRow4 = SingleRow()(solved)
-    val apply1 = Apply(singleRow1, singleRow2)(solved)
-    val apply2 = Apply(singleRow3, singleRow4)(solved)
-    val metaApply = Apply(apply1, apply2)(solved)
+    val apply1     = Apply(singleRow1, singleRow2)(solved)
+    val apply2     = Apply(singleRow3, singleRow4)(solved)
+    val metaApply  = Apply(apply1, apply2)(solved)
 
     metaApply.leaves should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
   }
 
   test("calling updateSolved on argument should work") {
     val argument = Argument(Set(IdName("a")))(solved)()
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery =
+      CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
     val newPlan = argument.updateSolved(updatedPlannerQuery)
     newPlan.solved should equal(updatedPlannerQuery)
   }

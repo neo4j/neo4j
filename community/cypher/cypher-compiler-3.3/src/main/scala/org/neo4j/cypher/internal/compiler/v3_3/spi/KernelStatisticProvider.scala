@@ -23,6 +23,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.spi
   * Expose various query execution kernel statistics
   */
 trait KernelStatisticProvider {
+
   /**
     * @return observed page cache hits that was caused by particular query execution
     */

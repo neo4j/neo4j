@@ -22,14 +22,15 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_3.AstRewritingMonitor
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
-  var rewriter: Rewriter = _
+  var rewriter: Rewriter                       = _
   var astRewritingMonitor: AstRewritingMonitor = _
 
   test("should not touch a simple predicate") {
@@ -69,15 +70,15 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     produces a sub-optimal plan instead.
      */
 
-    val p1 = anExp("p1")
-    val p2 = anExp("p2")
-    val p3 = anExp("p3")
-    val p4 = anExp("p4")
-    val p5 = anExp("p5")
-    val p6 = anExp("p6")
-    val p7 = anExp("p7")
-    val p8 = anExp("p8")
-    val p9 = anExp("p9")
+    val p1  = anExp("p1")
+    val p2  = anExp("p2")
+    val p3  = anExp("p3")
+    val p4  = anExp("p4")
+    val p5  = anExp("p5")
+    val p6  = anExp("p6")
+    val p7  = anExp("p7")
+    val p8  = anExp("p8")
+    val p9  = anExp("p9")
     val p10 = anExp("p10")
     val p11 = anExp("p11")
     val p12 = anExp("p12")
@@ -92,20 +93,10 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
     val bigPredicate =
       or(
-        or(
-          or(
-            or(
-              and(p1, p2),
-              and(p3, p4)), or(
-              and(p5, p6),
-              and(p7, p8))), or(
-            or(
-              and(p9, p10),
-              and(p11, p12)), or(
-              and(p13, p14),
-              and(p15, p16)))), or(
-          and(p17, p18),
-          and(p19, p20)))
+        or(or(or(and(p1, p2), and(p3, p4)), or(and(p5, p6), and(p7, p8))),
+           or(or(and(p9, p10), and(p11, p12)), or(and(p13, p14), and(p15, p16)))),
+        or(and(p17, p18), and(p19, p20))
+      )
 
     // When
     bigPredicate.rewrite(rewriter)

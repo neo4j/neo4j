@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
-  extends Expression {
+    extends Expression {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = expression(ctx)
@@ -35,7 +35,7 @@ case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Exp
 
     matchingExpression match {
       case Some(resultExpression) => resultExpression(ctx)
-      case None => default.getOrElse(Null()).apply(ctx)
+      case None                   => default.getOrElse(Null()).apply(ctx)
     }
   }
 

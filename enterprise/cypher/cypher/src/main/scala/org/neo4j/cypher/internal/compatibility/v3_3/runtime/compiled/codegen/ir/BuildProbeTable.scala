@@ -37,15 +37,18 @@ sealed trait BuildProbeTable extends Instruction {
 
 object BuildProbeTable {
 
-  def apply(id: String, name: String, nodes: Set[Variable], valueSymbols: Map[String, Variable])(implicit context: CodeGenContext): BuildProbeTable = {
+  def apply(id: String, name: String, nodes: Set[Variable], valueSymbols: Map[String, Variable])(
+      implicit context: CodeGenContext): BuildProbeTable = {
     if (valueSymbols.isEmpty) BuildCountingProbeTable(id, name, nodes)
     else BuildRecordingProbeTable(id, name, nodes, valueSymbols)
   }
 }
 
-case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variable], valueSymbols: Map[String, Variable])
-                                   (implicit context: CodeGenContext)
-  extends BuildProbeTable {
+case class BuildRecordingProbeTable(id: String,
+                                    name: String,
+                                    nodes: Set[Variable],
+                                    valueSymbols: Map[String, Variable])(implicit context: CodeGenContext)
+    extends BuildProbeTable {
 
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(id, Some(this.getClass.getSimpleName)) { body =>
@@ -60,7 +63,8 @@ case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variabl
   override protected def operatorId = Set(id)
 
   private val fieldToVarName = valueSymbols.map {
-    case (variable, incoming) => (context.namer.newVarName(), VariableData(variable, incoming,  incoming.copy(name = context.namer.newVarName())))
+    case (variable, incoming) =>
+      (context.namer.newVarName(), VariableData(variable, incoming, incoming.copy(name = context.namer.newVarName())))
   }
 
   private val varNameToField = fieldToVarName.map {
@@ -69,8 +73,9 @@ case class BuildRecordingProbeTable(id: String, name: String, nodes: Set[Variabl
 
   private val tupleDescriptor = SimpleTupleDescriptor(fieldToVarName.mapValues(c => c.outgoing.codeGenType))
 
-  override val tableType = if (nodes.size == 1) LongToListTable(tupleDescriptor, varNameToField)
-                           else LongsToListTable(tupleDescriptor, varNameToField)
+  override val tableType =
+    if (nodes.size == 1) LongToListTable(tupleDescriptor, varNameToField)
+    else LongsToListTable(tupleDescriptor, varNameToField)
 
   val joinData: JoinData = JoinData(fieldToVarName, name, tableType, id)
 }

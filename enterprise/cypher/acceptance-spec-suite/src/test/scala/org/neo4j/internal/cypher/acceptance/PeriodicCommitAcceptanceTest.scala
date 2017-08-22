@@ -22,7 +22,10 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner, PlannerImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.PageCacheHits
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.PageCacheMisses
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.PlannerImpl
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts
@@ -30,22 +33,25 @@ import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
-class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
-  with TxCountsTrackingTestSupport with QueryStatisticsTestSupport
-  with CreateTempFileTestSupport {
+class PeriodicCommitAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with TxCountsTrackingTestSupport
+    with QueryStatisticsTestSupport
+    with CreateTempFileTestSupport {
 
   def unwrapLoadCSVStatus[T](f: => T) = {
     try {
       f
-    }
-    catch {
+    } catch {
       case e: LoadCsvStatusWrapCypherException => throw e.getCause
     }
   }
 
   def createTempCSVFile(numberOfLines: Int): String =
     createTempFileURL("file", ".csv") { writer: PrintWriter =>
-      1.to(numberOfLines).foreach { n: Int => writer.println(n.toString) }
+      1.to(numberOfLines).foreach { n: Int =>
+        writer.println(n.toString)
+      }
     }
 
   private def createFile(f: PrintWriter => Unit) = createTempFileURL("cypher", ".csv")(f).cypherEscape
@@ -78,14 +84,15 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     // to make sure the property key id is created before the tx in order to not mess up with the tx counts
     createNode(Map("id" -> 42))
 
-    val txIdStore = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
+    val txIdStore  = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
     val beforeTxId = txIdStore.getLastClosedTransactionId
-    val result = execute(s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
+    val result = execute(
+      s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
     val arguments = result.executionPlanDescription().arguments
     arguments should contain(PlannerImpl("IDP"))
-    arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
-    arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
-    result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))
+    arguments.find(_.isInstanceOf[PageCacheHits]) shouldBe defined
+    arguments.find(_.isInstanceOf[PageCacheMisses]) shouldBe defined
+    result.columnAs[Long]("id").toList should equal(List("1", "2", "3", "4", "5"))
     val afterTxId = txIdStore.getLastClosedTransactionId
     result.close()
 
@@ -97,8 +104,8 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val url = createTempCSVFile(5)
     val queryText =
       "USING PERIODIC COMMIT 2 " +
-      s"LOAD CSV FROM '$url' AS line " +
-      "CREATE ()"
+        s"LOAD CSV FROM '$url' AS line " +
+        "CREATE ()"
 
     // when
     val (result, txCounts) = executeAndTrackTxCounts(queryText)
@@ -115,8 +122,8 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val url = createTempCSVFile(4)
     val queryText =
       "USING PERIODIC COMMIT 3 " +
-      s"LOAD CSV FROM '$url' AS line " +
-      "CREATE ()"
+        s"LOAD CSV FROM '$url' AS line " +
+        "CREATE ()"
 
     // when
     val (result, txCounts) = executeAndTrackTxCounts(queryText)
@@ -130,13 +137,14 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
   test("should abort first tx when failing on first batch during periodic commit") {
     // given
-    val url = createTempCSVFile(20)
+    val url       = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: (toInt(line[0]) - 8)/0})"
 
     // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](
-      unwrapLoadCSVStatus(executeScalar[Number](queryText))
-    ))
+    val (_, txCounts) = prepareAndTrackTxCounts(
+      intercept[ArithmeticException](
+        unwrapLoadCSVStatus(executeScalar[Number](queryText))
+      ))
 
     // then
     txCounts should equal(TxCounts(rollbacks = 1))
@@ -144,7 +152,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
   test("should not mistakenly use closed statements") {
     // given
-    val url = createTempCSVFile(20)
+    val url       = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line MERGE (:Label);"
 
     // when
@@ -156,13 +164,14 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
 
   test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
     // given
-    val url = createTempCSVFile(20)
+    val url       = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: 1 / (toInt(line[0]) - 16)})"
 
     // when
-    val (_, txCounts) = prepareAndTrackTxCounts(intercept[ArithmeticException](
-      unwrapLoadCSVStatus(executeScalar[Number](queryText))
-    ))
+    val (_, txCounts) = prepareAndTrackTxCounts(
+      intercept[ArithmeticException](
+        unwrapLoadCSVStatus(executeScalar[Number](queryText))
+      ))
 
     // then
     txCounts should equal(TxCounts(commits = 1, rollbacks = 1))
@@ -189,7 +198,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     // given
     intercept[PeriodicCommitInOpenTransactionException] {
       val url = createTempCSVFile(3)
-      graph.inTx( {
+      graph.inTx({
         execute(s"USING PERIODIC COMMIT LOAD CSV FROM '$url' AS line CREATE ()")
       }, KernelTransaction.Type.explicit)
     }
@@ -212,6 +221,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val e = intercept[CypherException](execute(queryText))
 
     // then
-    e.getMessage should include("on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
+    e.getMessage should include(
+      "on line 3. Possibly the last row committed during import is line 2. Note that this information might not be accurate.")
   }
 }

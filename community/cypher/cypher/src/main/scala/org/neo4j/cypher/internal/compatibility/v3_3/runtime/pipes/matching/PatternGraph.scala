@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, RelatedTo}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsRelationshipsWithTypes}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.Pattern
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Effects
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ReadsRelationshipsWithTypes
 import org.neo4j.cypher.internal.frontend.v3_3.PatternException
 
 case class PatternGraph(patternNodes: Map[String, PatternNode],
@@ -36,8 +38,8 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   def effects: Effects = {
     val effects = patternsContained.map {
-      case pattern: RelatedTo => Effects(ReadsRelationshipsWithTypes(pattern.relTypes:_*))
-      case _ => Effects()
+      case pattern: RelatedTo => Effects(ReadsRelationshipsWithTypes(pattern.relTypes: _*))
+      case _                  => Effects()
     }
     effects.foldLeft(Effects())(_ ++ _) //++ Effects(ReadsRelationshipBoundNodes)
   }
@@ -45,7 +47,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
   val (patternGraph, containsLoops) = validatePattern(patternNodes, patternRels)
 
   lazy val hasBoundRelationships: Boolean = boundElements.exists(patternRels.keys.toIndexedSeq.contains)
-  lazy val hasVarLengthPaths: Boolean = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
+  lazy val hasVarLengthPaths: Boolean     = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
 
   def apply(key: String) = patternGraph(key)
 
@@ -55,9 +57,9 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   def keySet = patternGraph.keySet
 
-  private def validatePattern(patternNodes: Map[String, PatternNode],
-                              patternRels: Map[String, Seq[PatternRelationship]]):
-  (Map[String, Seq[PatternElement]], Boolean) = {
+  private def validatePattern(
+      patternNodes: Map[String, PatternNode],
+      patternRels: Map[String, Seq[PatternRelationship]]): (Map[String, Seq[PatternElement]], Boolean) = {
 
     if (isEmpty)
       return (Map(), false)
@@ -80,7 +82,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   private def checkIfWeHaveLoops(boundPatternElements: Seq[PatternElement], allPatternElements: Seq[PatternElement]) = {
     var visited = Seq[PatternElement]()
-    var loop = false
+    var loop    = false
 
     def follow(element: PatternElement) = element match {
       case n: PatternNode         => true
@@ -105,14 +107,17 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
     loop
   }
 
-  override def toString = if(patternRels.isEmpty && patternNodes.isEmpty) {
+  override def toString =
+    if (patternRels.isEmpty && patternNodes.isEmpty) {
       "[EMPTY PATTERN]"
-  } else {
-      patternRels.flatMap(tuple => {
-        val patternRels = tuple._2
-        patternRels.map(r => "(%s)-['%s']-(%s)".format(r.startNode.key, r, r.endNode.key))
-      }).mkString(",")
-  }
+    } else {
+      patternRels
+        .flatMap(tuple => {
+          val patternRels = tuple._2
+          patternRels.map(r => "(%s)-['%s']-(%s)".format(r.startNode.key, r, r.endNode.key))
+        })
+        .mkString(",")
+    }
 }
 
 case class Relationships(closestRel: String, oppositeRel: String)

@@ -28,7 +28,7 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
   test("flatten behaves like expected for plan with two children") {
     val child1 = PlanDescriptionImpl(ID, "child1", NoChildren, Seq.empty, Set())
     val child2 = PlanDescriptionImpl(ID, "child2", NoChildren, Seq.empty, Set())
-    val top = PlanDescriptionImpl(ID, "top", TwoChildren(child1, child2), Seq.empty, Set())
+    val top    = PlanDescriptionImpl(ID, "top", TwoChildren(child1, child2), Seq.empty, Set())
 
     top.flatten should equal(Seq(top, child1, child2))
   }
@@ -60,7 +60,7 @@ class InternalPlanDescriptionTest extends CypherFunSuite {
     val C1 = PlanDescriptionImpl(ID, "C1", NoChildren, Seq.empty, Set())
     val B2 = PlanDescriptionImpl(ID, "B2", TwoChildren(C3, C4), Seq.empty, Set())
     val B1 = PlanDescriptionImpl(ID, "B1", TwoChildren(C1, C2), Seq.empty, Set())
-    val A  = PlanDescriptionImpl(ID, "A" , TwoChildren(B1, B2), Seq.empty, Set())
+    val A  = PlanDescriptionImpl(ID, "A", TwoChildren(B1, B2), Seq.empty, Set())
 
     A.flatten should equal(Seq(A, B1, C1, C2, B2, C3, C4))
   }

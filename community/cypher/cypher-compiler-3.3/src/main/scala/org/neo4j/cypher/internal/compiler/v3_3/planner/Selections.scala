@@ -23,12 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.ir.v3_3.Selections
 
-
-
 object unsolvedPreds extends ((Selections, LogicalPlan) => Seq[Expression]) {
   def apply(s: Selections, l: LogicalPlan): Seq[Expression] =
     s.scalarPredicatesGiven(l.availableSymbols)
-    .filterNot(predicate => l.solved.exists(_.queryGraph.selections.contains(predicate)))
+      .filterNot(predicate => l.solved.exists(_.queryGraph.selections.contains(predicate)))
 }
-
-

@@ -24,12 +24,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.BuildCompil
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_3.{CostBasedPlannerName, HardcodedGraphStatistics, NotImplementedPlanContext}
+import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
+import org.neo4j.cypher.internal.compiler.v3_3.HardcodedGraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.NotImplementedPlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.kernel.monitoring.Monitors
 
@@ -40,7 +46,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   test("should tell the monitor when building works") {
     // Given
     val monitors = WrappedMonitors(new Monitors)
-    val monitor = new SpyingMonitor
+    val monitor  = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
     // When
@@ -53,7 +59,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   test("should tell the monitor when building does not work") {
     // Given
     val monitors = WrappedMonitors(new Monitors)
-    val monitor = new SpyingMonitor
+    val monitor  = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
     process(monitors, SingleRow()(solved))
@@ -67,20 +73,25 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
       monitors = monitors,
       planContext = new NotImplementedPlanContext {
         override def statistics: GraphStatistics = HardcodedGraphStatistics
-      }, codeStructure = GeneratedQueryStructure)
+      },
+      codeStructure = GeneratedQueryStructure
+    )
 
-    val state = LogicalPlanState("apa", None, CostBasedPlannerName.default,
-                                 maybeLogicalPlan = Some(plan), maybeSemanticTable = Some(new SemanticTable()))
+    val state = LogicalPlanState("apa",
+                                 None,
+                                 CostBasedPlannerName.default,
+                                 maybeLogicalPlan = Some(plan),
+                                 maybeSemanticTable = Some(new SemanticTable()))
 
     // When
     BuildCompiledExecutionPlan.process(state, context)
   }
 
   class SpyingMonitor extends NewRuntimeSuccessRateMonitor {
-    var successfullyPlanned = false
+    var successfullyPlanned                           = false
     override def newPlanSeen(plan: LogicalPlan): Unit = successfullyPlanned = true
 
-    var failedToPlan = false
+    var failedToPlan                                                                            = false
     override def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException): Unit = failedToPlan = true
   }
 }

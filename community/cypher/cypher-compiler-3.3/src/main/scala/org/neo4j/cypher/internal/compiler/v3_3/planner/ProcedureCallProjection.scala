@@ -24,13 +24,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.ir.v3_3._
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result =>
+    IdName.fromVariable(result.variable)
+  }
 
   override def dependingExpressions = call.callArguments
 
   override def preferredStrictness = call.signature.accessMode match {
-    case _:ProcedureReadOnlyAccess => Some(LazyMode)
-    case _ => Some(EagerMode)
+    case _: ProcedureReadOnlyAccess => Some(LazyMode)
+    case _                          => Some(EagerMode)
   }
 
   override def readOnly = call.containsNoUpdates

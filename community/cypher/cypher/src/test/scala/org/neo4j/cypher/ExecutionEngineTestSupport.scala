@@ -25,22 +25,26 @@ import java.util.concurrent.TimeUnit
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeScalaValueConverter
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.logging.LogProvider
+import org.neo4j.logging.NullLogProvider
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
+import scala.concurrent.Future
 
 case class ExpectedException[T <: Throwable](e: T) {
   def messageContains(s: String) = assertThat(e.getMessage, containsString(s))
@@ -56,14 +60,15 @@ trait ExecutionEngineTestSupport extends CypherTestSupport with ExecutionEngineH
     eengine = createEngine(graph)
   }
 
-  def runAndFail[T <: Throwable : Manifest](q: String): ExpectedException[T] =
+  def runAndFail[T <: Throwable: Manifest](q: String): ExpectedException[T] =
     ExpectedException(intercept[T](execute(q)))
 
-  override def executeScalar[T](q: String, params: (String, Any)*): T = try {
-    super.executeScalar[T](q, params: _*)
-  } catch {
-    case e: ScalarFailureException => fail(e.getMessage)
-  }
+  override def executeScalar[T](q: String, params: (String, Any)*): T =
+    try {
+      super.executeScalar[T](q, params: _*)
+    } catch {
+      case e: ScalarFailureException => fail(e.getMessage)
+    }
 
   protected def timeOutIn(length: Int, timeUnit: TimeUnit)(f: => Unit) {
     val future = Future {
@@ -85,11 +90,12 @@ object ExecutionEngineHelper {
     createEngine(service, NullLogProvider.getInstance())
   }
 
-  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
-    val resolver = graphDatabaseCypherService.getDependencyResolver
-    val kernel = resolver.resolveDependency(classOf[KernelAPI])
+  def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService,
+                   logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
+    val resolver                       = graphDatabaseCypherService.getDependencyResolver
+    val kernel                         = resolver.resolveDependency(classOf[KernelAPI])
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
-    val compatibilityFactory = resolver.resolveDependency( classOf[CompatibilityFactory] )
+    val compatibilityFactory           = resolver.resolveDependency(classOf[CompatibilityFactory])
 
     new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
   }

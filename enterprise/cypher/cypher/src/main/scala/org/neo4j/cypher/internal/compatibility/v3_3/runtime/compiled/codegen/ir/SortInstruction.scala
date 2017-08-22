@@ -22,12 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
-case class SortInstruction(opName: String,
-                           sortTableInfo: SortTableInfo)
-  extends Instruction {
+case class SortInstruction(opName: String, sortTableInfo: SortTableInfo) extends Instruction {
 
-  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
-  }
+  override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>

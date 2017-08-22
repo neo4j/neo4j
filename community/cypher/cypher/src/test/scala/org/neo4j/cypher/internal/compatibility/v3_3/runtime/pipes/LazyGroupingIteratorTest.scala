@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.collection.primitive.{PrimitiveLongIterable, PrimitiveLongSet}
+import org.neo4j.collection.primitive.PrimitiveLongIterable
+import org.neo4j.collection.primitive.PrimitiveLongSet
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LazyGroupingIteratorTest extends CypherFunSuite {
@@ -34,10 +35,8 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
 
   test("should update state per key group in input") {
     // given
-    val iterator = new LazyGroupingRowIterator(
-      new Row("a", 1), new Row("a", 3),
-      new Row("b", 3), new Row("b", 2),
-      new Row("c", 4))
+    val iterator =
+      new LazyGroupingRowIterator(new Row("a", 1), new Row("a", 3), new Row("b", 3), new Row("b", 2), new Row("c", 4))
 
     // then
 
@@ -101,7 +100,7 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
 
   def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
-    val iter = in.iterator()
+    val iter    = in.iterator()
     while (iter.hasNext) {
       builder += iter.next()
     }

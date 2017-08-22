@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.InequalitySeekRange
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.values.AnyValue
 
-case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])
-  extends Expression {
+case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression]) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = throw new
-      InternalException("This should never be called")
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    throw new InternalException("This should never be called")
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 

@@ -31,7 +31,8 @@ case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) 
     case IsMap(map) => map(state.query).keys()
 
     case x =>
-      throw new CypherTypeException(s"Expected $expr to be a node, a relationship, or a literal map, but it was ${x.getClass.getSimpleName}")
+      throw new CypherTypeException(
+        s"Expected $expr to be a node, a relationship, or a literal map, but it was ${x.getClass.getSimpleName}")
   }
 
   def rewrite(f: (Expression) => Expression) = f(KeysFunction(expr.rewrite(f)))

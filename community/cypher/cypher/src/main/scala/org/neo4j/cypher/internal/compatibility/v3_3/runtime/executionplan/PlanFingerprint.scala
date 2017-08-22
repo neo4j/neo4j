@@ -21,25 +21,29 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, GraphStatisticsSnapshot}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatisticsSnapshot
 
 case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 
-class PlanFingerprintReference(clock: Clock, minimalTimeToLive: Long, statsDivergenceThreshold : Double,
+class PlanFingerprintReference(clock: Clock,
+                               minimalTimeToLive: Long,
+                               statsDivergenceThreshold: Double,
                                private var fingerprint: Option[PlanFingerprint]) {
 
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
     fingerprint.fold(false) { f =>
       lazy val currentTimeMillis = clock.millis()
-      lazy val currentTxId = lastCommittedTxId()
+      lazy val currentTxId       = lastCommittedTxId()
 
       f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis &&
-      check(currentTxId != f.txId,
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
-      check(f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
-        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) })
+      check(currentTxId != f.txId, () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&
+      check(
+        f.snapshot.diverges(f.snapshot.recompute(statistics), statsDivergenceThreshold),
+        () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis, txId = currentTxId)) }
+      )
     }
   }
 
-  private def check(test: => Boolean, ifFalse: () => Unit ) = if (test) { true } else { ifFalse() ; false }
+  private def check(test: => Boolean, ifFalse: () => Unit) = if (test) { true } else { ifFalse(); false }
 }

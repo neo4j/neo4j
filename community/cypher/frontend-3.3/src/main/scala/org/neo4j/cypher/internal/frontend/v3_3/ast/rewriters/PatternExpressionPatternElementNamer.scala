@@ -18,21 +18,23 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_3.{IdentityMap, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 object PatternExpressionPatternElementNamer {
 
   def apply(expr: PatternExpression): (PatternExpression, Map[PatternElement, Variable]) = {
-    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
+    val unnamedMap   = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr = expr.copy(pattern = namedPattern)
+    val namedExpr    = expr.copy(pattern = namedPattern)
     (namedExpr, unnamedMap)
   }
 
   def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
-    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
+    val unnamedMap   = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr = expr.copy(pattern = namedPattern)(expr.position)
+    val namedExpr    = expr.copy(pattern = namedPattern)(expr.position)
     (namedExpr, unnamedMap)
   }
 
@@ -41,7 +43,7 @@ object PatternExpressionPatternElementNamer {
     IdentityMap(unnamedElements.map {
       case elem: NodePattern =>
         elem -> Variable(UnNamedNameGenerator.name(elem.position.bumped()))(elem.position)
-      case elem@RelationshipChain(_, relPattern, _) =>
+      case elem @ RelationshipChain(_, relPattern, _) =>
         elem -> Variable(UnNamedNameGenerator.name(relPattern.position.bumped()))(relPattern.position)
     }: _*)
   }
@@ -49,10 +51,12 @@ object PatternExpressionPatternElementNamer {
   private case object findPatternElements {
     def apply(astNode: ASTNode): Seq[PatternElement] = astNode.treeFold(Seq.empty[PatternElement]) {
       case patternElement: PatternElement =>
-        acc => (acc :+ patternElement, Some(identity))
+        acc =>
+          (acc :+ patternElement, Some(identity))
 
       case patternExpr: PatternExpression =>
-        acc => (acc, None)
+        acc =>
+          (acc, None)
     }
   }
 

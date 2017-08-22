@@ -20,26 +20,28 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  override def shouldExitWhen = false
-  override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
+  override def shouldExitWhen                                     = false
+  override def andWith(other: Predicate): Predicate               = Ands(predicates :+ other)
   override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
   override def toString = {
     predicates.foldLeft("") {
       case (acc, next) if acc.isEmpty => next.toString
-      case (acc, next) => s"$acc AND $next"
+      case (acc, next)                => s"$acc AND $next"
     }
   }
 }
 
 object Ands {
   def apply(predicates: Predicate*) = predicates.filterNot(_ == True()).toList match {
-    case Nil => True()
-    case single :: Nil => single
+    case Nil            => True()
+    case single :: Nil  => single
     case manyPredicates => new Ands(NonEmptyList.from(manyPredicates))
   }
 }
@@ -48,9 +50,9 @@ object Ands {
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
 
-  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
-  override def toString: String = s"($a AND $b)"
-  def containsIsNull = a.containsIsNull || b.containsIsNull
+  override def atoms: Seq[Predicate]         = a.atoms ++ b.atoms
+  override def toString: String              = s"($a AND $b)"
+  def containsIsNull                         = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
@@ -75,21 +77,23 @@ object And {
   }
 }
 
-case class AndedPropertyComparablePredicates(ident: Variable, prop: Property,
+case class AndedPropertyComparablePredicates(ident: Variable,
+                                             prop: Property,
                                              override val predicates: NonEmptyList[ComparablePredicate])
-  extends CompositeBooleanPredicate {
+    extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
   private def rewriteVariableIfNotTypeChanged(f: (Expression) => Expression) =
     ident.rewrite(f) match {
       case i: Variable => i
-      case _ => ident
+      case _           => ident
     }
 
   def rewrite(f: (Expression) => Expression): Expression =
-    f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
-      prop.rewrite(f).asInstanceOf[Property],
-      predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
+    f(
+      AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
+                                        prop.rewrite(f).asInstanceOf[Property],
+                                        predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))
 
   override def shouldExitWhen: Boolean = false
 }

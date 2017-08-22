@@ -42,8 +42,13 @@ class PrettifierParserTest extends ParserTest[Seq[SyntaxToken], Seq[SyntaxToken]
 
     // when then
     parsing(query) shouldGive
-      Seq(BreakingKeywords("create constraint on"), GroupToken("(", ")", Seq(AnyText("person:Person"))),
-        NonBreakingKeywords("assert"), AnyText("person.age"), NonBreakingKeywords("is unique"))
+      Seq(
+        BreakingKeywords("create constraint on"),
+        GroupToken("(", ")", Seq(AnyText("person:Person"))),
+        NonBreakingKeywords("assert"),
+        AnyText("person.age"),
+        NonBreakingKeywords("is unique")
+      )
   }
 
   test("shouldParseIndexAsKeyword") {
@@ -92,8 +97,16 @@ class PrettifierParserTest extends ParserTest[Seq[SyntaxToken], Seq[SyntaxToken]
 
     // when then
     parsing(input) shouldGive
-      Seq(BreakingKeywords("match"), AnyText("a-->b"), BreakingKeywords("where"), AnyText("b.name"), AnyText("="),
-          EscapedText("aha!"), BreakingKeywords("return"), AnyText("a.age"))
+      Seq(
+        BreakingKeywords("match"),
+        AnyText("a-->b"),
+        BreakingKeywords("where"),
+        AnyText("b.name"),
+        AnyText("="),
+        EscapedText("aha!"),
+        BreakingKeywords("return"),
+        AnyText("a.age")
+      )
   }
 
   test("shouldParseComplexExample2") {
@@ -121,10 +134,11 @@ class PrettifierParserTest extends ParserTest[Seq[SyntaxToken], Seq[SyntaxToken]
   test("shouldParseComplexGrouping") {
     val result = parsing("[(0,10)]")
     result shouldGive Seq(
-      GroupToken("[", "]", Seq(
-        GroupToken("(", ")", Seq(AnyText("0,10")))
-      )
-    ))
+      GroupToken("[",
+                 "]",
+                 Seq(
+                   GroupToken("(", ")", Seq(AnyText("0,10")))
+                 )))
   }
 
   test("shouldParseGroupingWithEscapedText") {

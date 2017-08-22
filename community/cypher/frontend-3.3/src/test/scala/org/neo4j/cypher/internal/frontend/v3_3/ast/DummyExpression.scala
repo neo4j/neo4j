@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 
 case class DummyExpression(possibleTypes: TypeSpec, position: InputPosition = DummyPosition(0))
-  extends Expression with SimpleTyping
+    extends Expression
+    with SimpleTyping

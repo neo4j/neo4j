@@ -19,7 +19,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 object containsAggregate extends (Expression => Boolean) {
   def apply(expr: Expression) = {
     expr.treeFold[Boolean](false) {
-      case IsAggregate(_) => acc => (true, None)
+      case IsAggregate(_) =>
+        acc =>
+          (true, None)
     }
   }
 }

@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{NonEmpty, True}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.NonEmpty
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.values.storable.Values.{FALSE, TRUE}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.TRUE
 import org.neo4j.values.virtual.PathValue
 import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
@@ -50,7 +52,8 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       allowZeroLength = false,
       maxDepth = None,
       single = true,
-      relIterator = None)
+      relIterator = None
+    )
 
     val expression = ShortestPathExpression(pattern)
 
@@ -72,9 +75,14 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"),
+                            SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))),
+                            "  UNNAMED2",
+                            Seq.empty,
+                            SemanticDirection.OUTGOING,
+                            Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
+    val m          = ExecutionContext.from("a" -> a)
 
     // WHEN
     val result = withQueryState { state =>
@@ -92,9 +100,14 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     relate(a, b)
 
-    val pattern = RelatedTo(SingleNode("a"), SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))), "  UNNAMED2", Seq.empty, SemanticDirection.OUTGOING, Map.empty)
+    val pattern = RelatedTo(SingleNode("a"),
+                            SingleNode("  UNNAMED1", Seq(UnresolvedLabel("Foo"))),
+                            "  UNNAMED2",
+                            Seq.empty,
+                            SemanticDirection.OUTGOING,
+                            Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m = ExecutionContext.from("a" -> a)
+    val m          = ExecutionContext.from("a" -> a)
 
     // WHEN
     val result = withQueryState { state =>

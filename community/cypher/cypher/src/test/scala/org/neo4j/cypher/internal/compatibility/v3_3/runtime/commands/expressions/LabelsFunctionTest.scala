@@ -40,7 +40,7 @@ class LabelsFunctionTest extends CypherFunSuite {
     when(queryContext.getLabelName(42)).thenReturn("bambi")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext() += ("n" -> node)
+    val ctx   = ExecutionContext() += ("n" -> node)
 
     // WHEN
     val result = LabelsFunction(Variable("n"))(ctx)(state)

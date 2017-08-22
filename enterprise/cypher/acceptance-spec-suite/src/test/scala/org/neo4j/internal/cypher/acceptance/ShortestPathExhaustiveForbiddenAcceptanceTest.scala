@@ -19,8 +19,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbiddenException, NewPlannerTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.{
+  ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException
+}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.ExhaustiveShortestPathForbiddenException
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -53,18 +57,17 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
     // then
     result.notifications.toSeq should equal(
-      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(18, 1, 19))
-      )
+      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(18, 1, 19)))
     )
   }
 
-  val dim = 4
-  val dMax = dim - 1
-  val topLeft = "CELL00"
-  val topRight = s"CELL0${dMax}"
-  val bottomLeft = s"CELL${dMax}0"
-  val bottomRight = s"CELL${dMax}${dMax}"
-  val middle = s"CELL${dMax / 2}${dMax / 2}"
+  val dim                                    = 4
+  val dMax                                   = dim - 1
+  val topLeft                                = "CELL00"
+  val topRight                               = s"CELL0${dMax}"
+  val bottomLeft                             = s"CELL${dMax}0"
+  val bottomRight                            = s"CELL${dMax}${dMax}"
+  val middle                                 = s"CELL${dMax / 2}${dMax / 2}"
   val nodesByName: mutable.Map[String, Node] = mutable.Map[String, Node]()
 
   override protected def initTest(): Unit = {
@@ -72,8 +75,8 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
     0 to dMax foreach { row =>
       0 to dMax foreach { col =>
         val name = s"$row$col"
-        val node = createLabeledNode(Map("name" -> name, "row" -> row, "col" -> col), s"CELL$row$col", s"ROW$row",
-                                     s"COL$col")
+        val node =
+          createLabeledNode(Map("name" -> name, "row" -> row, "col" -> col), s"CELL$row$col", s"ROW$row", s"COL$col")
         nodesByName(name) = node
         if (row > 0) {
           relate(nodesByName(s"${row - 1}$col"), nodesByName(name), "DOWN", s"r${row - 1}-${row}c$col")

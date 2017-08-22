@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality
-import org.scalautils.{Equality, Tolerance, TripleEquals}
+import org.scalautils.Equality
+import org.scalautils.Tolerance
+import org.scalautils.TripleEquals
 
 object CardinalitySupport {
 
@@ -30,7 +32,7 @@ object CardinalitySupport {
   implicit object Eq extends Equality[Cardinality] {
     def areEqual(a: Cardinality, b: Any): Boolean = b match {
       case b: Cardinality => a.amount === (b.amount +- tolerance(a))
-      case _ => false
+      case _              => false
     }
 
     private def tolerance(a: Cardinality) = Math.max(5e-3, a.amount * 5e-3) // .5% off is acceptable

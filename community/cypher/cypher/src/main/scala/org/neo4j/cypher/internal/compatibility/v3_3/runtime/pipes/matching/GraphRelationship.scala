@@ -28,15 +28,16 @@ abstract class GraphRelationship {
 case class SingleGraphRelationship(rel: EdgeValue) extends GraphRelationship {
   def getOtherNode(node: NodeValue): NodeValue = rel.otherNode(node)
 
-  override def canEqual(that: Any) = that.isInstanceOf[SingleGraphRelationship] ||
-    that.isInstanceOf[EdgeValue] ||
-    that.isInstanceOf[VariableLengthGraphRelationship]
+  override def canEqual(that: Any) =
+    that.isInstanceOf[SingleGraphRelationship] ||
+      that.isInstanceOf[EdgeValue] ||
+      that.isInstanceOf[VariableLengthGraphRelationship]
 
   override def equals(obj: Any) = obj match {
     case VariableLengthGraphRelationship(p) => p.edges().contains(rel)
 
     case p: PathValue => p.edges().contains(rel)
-    case x => x == this || x == rel
+    case x            => x == this || x == rel
   }
 
   override def toString = rel.toString
@@ -49,16 +50,17 @@ case class VariableLengthGraphRelationship(path: PathValue) extends GraphRelatio
     else throw new IllegalArgumentException("Node is not start nor end of path.")
   }
 
-  override def canEqual(that: Any) = that.isInstanceOf[VariableLengthGraphRelationship] ||
-    that.isInstanceOf[PathValue] ||
-    that.isInstanceOf[SingleGraphRelationship]
+  override def canEqual(that: Any) =
+    that.isInstanceOf[VariableLengthGraphRelationship] ||
+      that.isInstanceOf[PathValue] ||
+      that.isInstanceOf[SingleGraphRelationship]
 
   override def equals(obj: Any) = obj match {
     case r: EdgeValue => path.edges().contains(r)
-    case x => obj == this || (obj == path && path.size() > 0)
+    case x            => obj == this || (obj == path && path.size() > 0)
   }
 
-  def relationships: ListValue = VirtualValues.list(path.edges():_*)
+  def relationships: ListValue = VirtualValues.list(path.edges(): _*)
 
   override def toString = path.toString
 }

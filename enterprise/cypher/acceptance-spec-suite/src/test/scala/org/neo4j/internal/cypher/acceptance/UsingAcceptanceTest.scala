@@ -20,11 +20,17 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{CartesianProduct, NodeIndexSeek}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{Node, QueryExecutionException}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.kernel.api.exceptions.Status
 
 class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
@@ -47,7 +53,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   }
 
   test("should use index on literal map expression") {
-    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
     graph.createIndex("Foo", "id")
     val query =
       """
@@ -85,7 +91,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN & THEN
     intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode(
+        "start n=node(*) using index n:Person(name) where n:Person and n.name = 'kabam' return n"))
   }
 
   test("fail if using a variable with label not used in match") {
@@ -94,7 +101,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode(
+        "match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using an hint for a non existing index") {
@@ -102,7 +110,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[IndexHintException](
-      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode(
+        "match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -111,7 +120,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
+      executeWithAllPlannersAndCompatibilityMode(
+        "match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -120,8 +130,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     graph.createIndex("Food", "name")
 
     // WHEN
-    intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+    intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode(
+      "match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 
   test("scan hints are handled by ronja") {
@@ -134,7 +144,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     // WHEN
     intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
+      executeWithAllPlannersAndCompatibilityMode(
+        "match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
   }
 
   test("correct status code when no index") {
@@ -154,79 +165,82 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING INDEX' which can be fulfilled") {
-    runWithConfig() {
-      db =>
-        db.execute("CREATE INDEX ON :Person(name)")
-        db.execute("CALL db.awaitIndex(':Person(name)')")
-        shouldHaveNoWarnings(
-          db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        )
+    runWithConfig() { db =>
+      db.execute("CREATE INDEX ON :Person(name)")
+      db.execute("CALL db.awaitIndex(':Person(name)')")
+      shouldHaveNoWarnings(
+        db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+      )
     }
   }
 
   test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled") {
-    runWithConfig() {
-      db =>
-        shouldHaveWarning(db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.IndexNotFound)
+    runWithConfig() { db =>
+      shouldHaveWarning(
+        db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"),
+        Status.Schema.IndexNotFound)
     }
   }
 
-  test("should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") {
-      db =>
-        shouldHaveWarning(db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"), Status.Schema.IndexNotFound)
+  test(
+    "should generate a warning if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned off") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "false") { db =>
+      shouldHaveWarning(
+        db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n"),
+        Status.Schema.IndexNotFound)
     }
   }
 
-  test("should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        intercept[QueryExecutionException](
-          db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
+  test(
+    "should generate an error if executing a query using EXPLAIN and a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") { db =>
+      intercept[QueryExecutionException](
+        db.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+      ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
     }
   }
 
-  test("should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        intercept[QueryExecutionException](
-          db.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
+  test(
+    "should generate an error if executing a query using a 'USING INDEX' which cannot be fulfilled, and hint errors are turned on") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") { db =>
+      intercept[QueryExecutionException](
+        db.execute(s"MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n")
+      ).getStatusCode should equal("Neo.ClientError.Schema.IndexNotFound")
     }
   }
 
-  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
-    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") {
-      db =>
-        db.execute("CREATE INDEX ON :Person(email)")
-        intercept[QueryExecutionException](
-          db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+  test(
+    "should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, and hint errors are turned on") {
+    runWithConfig(GraphDatabaseSettings.cypher_hints_error -> "true") { db =>
+      db.execute("CREATE INDEX ON :Person(email)")
+      intercept[QueryExecutionException](
+        db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
+      ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
-  test("should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
-    runWithConfig() {
-      db =>
-        db.execute("CREATE INDEX ON :Person(email)")
-        intercept[QueryExecutionException](
-          db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+  test(
+    "should generate an error if executing a query using a 'USING INDEX' for an existing index but which cannot be fulfilled for the query, even when hint errors are not turned on") {
+    runWithConfig() { db =>
+      db.execute("CREATE INDEX ON :Person(email)")
+      intercept[QueryExecutionException](
+        db.execute(s"MATCH (n:Person) USING INDEX n:Person(email) WHERE n.name = 'John' RETURN n")
+      ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
   test("should be able to use index hints on IN expressions") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
@@ -235,14 +249,15 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN collections with duplicates") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
@@ -251,14 +266,15 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN a null value") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
     //THEN
     result.toList should equal(List())
@@ -267,14 +283,16 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN a collection parameter") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n",
+      "coll" -> List("Jacob"))
 
     //THEN
     result.toList should equal(List(Map("n" -> jake)))
@@ -284,7 +302,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     // GIVEN
     graph.createIndex("Entity", "source")
     graph.createIndex("Person", "first_name")
-    createNode("source" -> "form1")
+    createNode("source"     -> "form1")
     createNode("first_name" -> "John")
 
     // WHEN THEN
@@ -341,37 +359,36 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     // GIVEN
 
     // WHEN
-    intercept[SyntaxException](
-      executeWithAllPlannersAndCompatibilityMode("MATCH n-->() USING SCAN n:Person return n"))
+    intercept[SyntaxException](executeWithAllPlannersAndCompatibilityMode("MATCH n-->() USING SCAN n:Person return n"))
   }
 
   test("should succeed (i.e. no warnings or errors) if executing a query using a 'USING SCAN'") {
-    runWithConfig() {
-      engine =>
-        shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
-        )
+    runWithConfig() { engine =>
+      shouldHaveNoWarnings(
+        engine.execute(s"EXPLAIN MATCH (n:Person) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
+      )
     }
   }
 
   test("should succeed if executing a query using both 'USING SCAN' and 'USING INDEX' if index exists") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        engine.execute("CALL db.awaitIndex(':Person(name)')")
-        shouldHaveNoWarnings(
-          engine.execute(s"EXPLAIN MATCH (n:Person), (c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
-        )
+    runWithConfig() { engine =>
+      engine.execute("CREATE INDEX ON :Person(name)")
+      engine.execute("CALL db.awaitIndex(':Person(name)')")
+      shouldHaveNoWarnings(
+        engine.execute(
+          s"EXPLAIN MATCH (n:Person), (c:Company) USING INDEX n:Person(name) USING SCAN c:Company WHERE n.name = 'John' RETURN n")
+      )
     }
   }
 
-  test("should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
-    runWithConfig() {
-      engine =>
-        engine.execute("CREATE INDEX ON :Person(name)")
-        intercept[QueryExecutionException](
-          engine.execute(s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
-        ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
+  test(
+    "should fail outright if executing a query using a 'USING SCAN' and 'USING INDEX' on the same variable, even if index exists") {
+    runWithConfig() { engine =>
+      engine.execute("CREATE INDEX ON :Person(name)")
+      intercept[QueryExecutionException](
+        engine.execute(
+          s"EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) USING SCAN n:Person WHERE n.name = 'John' RETURN n")
+      ).getStatusCode should equal("Neo.ClientError.Statement.SyntaxError")
     }
   }
 
@@ -386,7 +403,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val result = executeWithAllPlannersAndRuntimes(query)
     result.executionPlanDescription() should includeOnlyOneHashJoinOn("a")
-    result.toList should equal (List(Map("res" -> "foo")))
+    result.toList should equal(List(Map("res" -> "foo")))
   }
 
   test("should handle join hint on the end node of a single hop pattern") {
@@ -400,19 +417,16 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
     val result = executeWithAllPlannersAndRuntimes(query)
     result.executionPlanDescription() should includeOnlyOneHashJoinOn("b")
-    result.toList should equal (List(Map("res" -> "bar")))
+    result.toList should equal(List(Map("res" -> "bar")))
   }
 
   val plannersThatSupportJoinHints = Seq(IDPPlannerName)
 
   plannersThatSupportJoinHints.foreach { planner =>
-
     val plannerName = planner.name.toLowerCase
 
     test(s"$plannerName should fail when join hint is applied to an undefined node") {
-      val error = intercept[SyntaxException](
-        executeWithCostPlannerAndInterpretedRuntimeOnly(
-          s"""
+      val error = intercept[SyntaxException](executeWithCostPlannerAndInterpretedRuntimeOnly(s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)-->(b:B)<--(c:C)
              |USING JOIN ON d
@@ -423,9 +437,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     }
 
     test(s"$plannerName should fail when join hint is applied to a single node") {
-      val error = intercept[SyntaxException](
-        executeWithCostPlannerAndInterpretedRuntimeOnly(
-          s"""
+      val error = intercept[SyntaxException](executeWithCostPlannerAndInterpretedRuntimeOnly(s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)
              |USING JOIN ON a
@@ -436,9 +448,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     }
 
     test(s"$plannerName should fail when join hint is applied to a relationship") {
-      val error = intercept[SyntaxException](
-        executeWithCostPlannerAndInterpretedRuntimeOnly(
-          s"""
+      val error = intercept[SyntaxException](executeWithCostPlannerAndInterpretedRuntimeOnly(s"""
              |CYPHER planner=$plannerName
              |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
              |USING JOIN ON r1
@@ -449,9 +459,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     }
 
     test(s"$plannerName should fail when join hint is applied to a path") {
-      val error = intercept[SyntaxException](
-        executeWithCostPlannerAndInterpretedRuntimeOnly(
-          s"""
+      val error = intercept[SyntaxException](executeWithCostPlannerAndInterpretedRuntimeOnly(s"""
              |CYPHER planner=$plannerName
              |MATCH p=(a:A)-->(b:B)-->(c:C)
              |USING JOIN ON p
@@ -473,8 +481,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWithCostPlannerAndCompiledRuntimeOnly(
-        s"""
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(s"""
            |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON c
@@ -497,8 +504,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       relate(c, d, "X")
       relate(e, d, "Y")
 
-      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-        s"""
+      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(s"""
            |CYPHER planner=$plannerName
            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
            |USING JOIN ON b
@@ -521,8 +527,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWithCostPlannerAndCompiledRuntimeOnly(
-        s"""
+      val result = executeWithCostPlannerAndCompiledRuntimeOnly(s"""
            |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON b
@@ -621,7 +626,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       result.executionPlanDescription().toString should not include "AllNodesScan"
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where using index hints on a and b") {
+    test(
+      s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where using index hints on a and b") {
       graph.createIndex("Person", "name")
 
       val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
@@ -729,11 +735,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.executionPlanDescription().toString should not include "AllNodesScan"
   }
 
-  test("Using index hints with two indexes should produce cartesian product"){
+  test("Using index hints with two indexes should produce cartesian product") {
     val startNode = createLabeledNode(Map("name" -> "Neo"), "Person")
-    val endNode = createLabeledNode(Map("name" -> "Trinity"), "Person")
+    val endNode   = createLabeledNode(Map("name" -> "Trinity"), "Person")
     relate(startNode, endNode, "knows")
-    graph.createIndex("Person","name")
+    graph.createIndex("Person", "name")
 
     val query =
       """MATCH (k:Person {name: 'Neo'}), (t:Person {name: 'Trinity'})
@@ -753,8 +759,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("USING INDEX hint should not clash with used variables") {
     graph.createIndex("PERSON", "id")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      """MATCH (actor:PERSON {id: 1})
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""MATCH (actor:PERSON {id: 1})
         |USING INDEX actor:PERSON(id)
         |WITH 14 as id
         |RETURN 13 as id""".stripMargin)
@@ -764,7 +769,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("should accept two hints on a single relationship") {
     val startNode = createLabeledNode(Map("prop" -> 1), "PERSON")
-    val endNode = createLabeledNode(Map("prop" -> 2), "PERSON")
+    val endNode   = createLabeledNode(Map("prop" -> 2), "PERSON")
     relate(startNode, endNode)
     graph.createIndex("PERSON", "prop")
 
@@ -792,7 +797,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
           |RETURN b.prop AS res""".stripMargin
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
-    result.toList should equal (List(Map("res" -> "bar")))
+    result.toList should equal(List(Map("res" -> "bar")))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
   }

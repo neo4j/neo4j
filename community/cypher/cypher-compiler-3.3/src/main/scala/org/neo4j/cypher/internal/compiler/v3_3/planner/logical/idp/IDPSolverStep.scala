@@ -27,7 +27,7 @@ object IDPSolverStep {
 }
 
 trait SolverStep[S, P, C] {
-  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C):  Iterator[P]
+  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P])(implicit context: C): Iterator[P]
 }
 
 trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {

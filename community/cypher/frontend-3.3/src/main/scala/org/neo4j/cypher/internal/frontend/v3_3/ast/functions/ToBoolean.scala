@@ -17,9 +17,13 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Function, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 case object ToBoolean extends Function {
 
@@ -32,7 +36,7 @@ case object ToBoolean extends Function {
       invocation.specifyType(CTBoolean)
 
   private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
-    val argument = invocation.args.head
+    val argument      = invocation.args.head
     val specifiedType = s.expressionType(argument).specified
     val correctType = Seq(CTString, CTBoolean, CTAny).foldLeft(false) {
       case (acc, t) => acc || specifiedType.contains(t)

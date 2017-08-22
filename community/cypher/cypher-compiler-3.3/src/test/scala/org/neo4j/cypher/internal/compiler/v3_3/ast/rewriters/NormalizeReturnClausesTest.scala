@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val mkException                 = new SyntaxExceptionCreator("<Query>", Some(pos))
   val rewriterUnderTest: Rewriter = normalizeReturnClauses(mkException)
 
   test("alias RETURN clause items") {
@@ -36,7 +37,8 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
       """.stripMargin,
       """MATCH (n)
         |RETURN n AS `n`, n.foo AS foo, n.bar AS `n.bar`
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("introduce WITH clause for ORDER BY") {
@@ -45,7 +47,8 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
         |RETURN n.foo AS foo, n.bar ORDER BY foo SKIP 2 LIMIT 5""".stripMargin,
       """MATCH (n)
         |WITH n.foo AS `  FRESHID19`, n.bar AS `  FRESHID33` ORDER BY `  FRESHID19` SKIP 2 LIMIT 5
-        |RETURN `  FRESHID19` AS foo, `  FRESHID33` AS `n.bar`""".stripMargin)
+        |RETURN `  FRESHID19` AS foo, `  FRESHID33` AS `n.bar`""".stripMargin
+    )
   }
 
   test("introduce WITH clause for ORDER BY where returning all IDs") {
@@ -54,7 +57,8 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
         |RETURN * ORDER BY n.foo SKIP 2 LIMIT 5""".stripMargin,
       """MATCH (n)
         |WITH * ORDER BY n.foo SKIP 2 LIMIT 5
-        |RETURN *""".stripMargin)
+        |RETURN *""".stripMargin
+    )
   }
 
   test("match (n) return n, count(*) as c order by c") {
@@ -62,20 +66,21 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
       "match (n) return n, count(*) as c order by c",
       """match (n)
         |with n as `  FRESHID17`, count(*) as `  FRESHID20` order by `  FRESHID20`
-        |return `  FRESHID17` as n, `  FRESHID20` as c""".stripMargin)
+        |return `  FRESHID17` as n, `  FRESHID20` as c""".stripMargin
+    )
   }
 
   test("rejects use of aggregation in ORDER BY if aggregation is not used in associated RETURN") {
     // Note: aggregations in ORDER BY that don't also appear in WITH are invalid
     try {
-      rewrite(parseForRewriting(
-        """MATCH (n)
+      rewrite(parseForRewriting("""MATCH (n)
           |RETURN n.prop AS prop ORDER BY max(n.foo)
         """.stripMargin))
       fail("We shouldn't get here")
     } catch {
       case (e: SyntaxException) =>
-        e.getMessage should equal("Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 10))")
+        e.getMessage should equal(
+          "Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding RETURN (line 2, column 1 (offset: 10))")
     }
   }
 
@@ -97,13 +102,14 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
         |RETURN n as n, count(n) as count ORDER BY count(n)""".stripMargin,
       """MATCH (n)
         |WITH n AS `  FRESHID17`, count(n) AS `  FRESHID25` ORDER BY `  FRESHID25`
-        |RETURN `  FRESHID17` AS n, `  FRESHID25` as count""".stripMargin)
+        |RETURN `  FRESHID17` AS n, `  FRESHID25` as count""".stripMargin
+    )
   }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
-    val result = endoRewrite(original)
+    val result   = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
 

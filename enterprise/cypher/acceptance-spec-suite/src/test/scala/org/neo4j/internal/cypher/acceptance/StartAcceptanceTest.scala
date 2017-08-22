@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
 class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
@@ -31,7 +33,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index(key = "value") RETURN n""").toList
 
-    result should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n" -> node)))
   }
 
   test("START n=node:index(\"key:value\") RETURN n") {
@@ -42,11 +44,11 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") RETURN n""").toList
 
-    result should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n" -> node)))
   }
 
   test("start + where") {
-    val node = createNode(Map("prop" -> 42))
+    val node      = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
 
     graph.inTx {
@@ -54,14 +56,15 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index().forNodes("index").add(otherNode, "key", "value")
     }
 
-    val result = executeWithAllPlannersAndCompatibilityMode("""START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """START n=node:index("key:value") WHERE n.prop = 42 RETURN n""").toList
 
-    result should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n" -> node)))
   }
 
   test("Relationship legacy index") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -69,10 +72,10 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "START r=relationship:relIndex('key:*') RETURN r"
+    val query  = "START r=relationship:relIndex('key:*') RETURN r"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result.toList should equal(List(Map("r"-> relationship)))
+    result.toList should equal(List(Map("r" -> relationship)))
   }
 
   test("START n=node(0) RETURN n") {
@@ -80,7 +83,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0) RETURN n").toList
 
-    result should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n" -> node)))
   }
 
   test("START n=node({id}) RETURN n") {
@@ -88,12 +91,12 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("START n=node({id}) RETURN n", "id" -> node.getId).toList
 
-    result should equal(List(Map("n"-> node)))
+    result should equal(List(Map("n" -> node)))
   }
 
   test("START n=node(0,1) RETURN n") {
-    val node1 = createNode()
-    val node2 = createNode()
+    val node1  = createNode()
+    val node2  = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("START n=node(0,1) RETURN n").toList
 
     result should equal(List(Map("n" -> node1), Map("n" -> node2)))
@@ -110,35 +113,36 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("START n=node(0),m=node(1) RETURN n") {
-    val node1 = createNode()
-    val node2 = createNode()
+    val node1  = createNode()
+    val node2  = createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(0),m=node(1) RETURN n,m").toList
 
-    result should equal(List(Map("n"-> node1, "m" -> node2)))
+    result should equal(List(Map("n" -> node1, "m" -> node2)))
   }
 
   test("START n=node({id1}),m=node({id2}) RETURN n") {
     val node1 = createNode()
     val node2 = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("START n=node({id1}),m=node({id2}) RETURN n,m",
-                                                                       "id1" -> node1.getId, "id2" -> node2.getId).toList
+                                                            "id1" -> node1.getId,
+                                                            "id2" -> node2.getId).toList
 
-    result should equal(List(Map("n"-> node1, "m" -> node2)))
+    result should equal(List(Map("n" -> node1, "m" -> node2)))
   }
 
   test("START n=node(*) RETURN n") {
-    val node1 = createNode()
-    val node2 = createNode()
+    val node1  = createNode()
+    val node2  = createNode()
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START n=node(*) RETURN n").toList
 
-    result should equal(List(Map("n"-> node1), Map("n" -> node2)))
+    result should equal(List(Map("n" -> node1), Map("n" -> node2)))
   }
 
   test("START r=rel(0) RETURN r") {
-    val rel = relate(createNode(), createNode()).getId
+    val rel    = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0) RETURN id(r)").toList
 
-    result should equal(List(Map("id(r)"-> rel)))
+    result should equal(List(Map("id(r)" -> rel)))
   }
 
   test("START r=rel({id}) RETURN r") {
@@ -146,53 +150,55 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id}) RETURN id(r)", "id" -> rel).toList
 
-    result should equal(List(Map("id(r)"-> rel)))
+    result should equal(List(Map("id(r)" -> rel)))
   }
 
   test("START r=rel(0,1) RETURN r") {
-    val rel1 = relate(createNode(), createNode()).getId
-    val rel2 = relate(createNode(), createNode()).getId
+    val rel1   = relate(createNode(), createNode()).getId
+    val rel2   = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0,1) RETURN id(r)").toList
 
-    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+    result should equal(List(Map("id(r)" -> rel1), Map("id(r)" -> rel2)))
   }
 
   test("START r=rel({id}) RETURN r, id -> [0,1]") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
-    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id}) RETURN id(r)", "id" -> List(rel1,rel2)).toList
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("START r=rel({id}) RETURN id(r)", "id" -> List(rel1, rel2)).toList
 
-    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+    result should equal(List(Map("id(r)" -> rel1), Map("id(r)" -> rel2)))
   }
 
   test("START r=rel(0),rr=rel(1) RETURN r") {
-    val rel1 = relate(createNode(), createNode()).getId
-    val rel2 = relate(createNode(), createNode()).getId
+    val rel1   = relate(createNode(), createNode()).getId
+    val rel2   = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0),rr=rel(1) RETURN id(r), id(rr)").toList
 
-    result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
+    result should equal(List(Map("id(r)" -> rel1, "id(rr)" -> rel2)))
   }
 
   test("START r=rel({id1}),rr=rel({id2}) RETURN r") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndCompatibilityMode("START r=rel({id1}),rr=rel({id2}) RETURN id(r), id(rr)",
-                                                            "id1" -> rel1, "id2" -> rel2).toList
+                                                            "id1" -> rel1,
+                                                            "id2" -> rel2).toList
 
-    result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
+    result should equal(List(Map("id(r)" -> rel1, "id(rr)" -> rel2)))
   }
 
   test("START r=rel(*) RETURN r") {
-    val rel1 = relate(createNode(), createNode()).getId
-    val rel2 = relate(createNode(), createNode()).getId
+    val rel1   = relate(createNode(), createNode()).getId
+    val rel2   = relate(createNode(), createNode()).getId
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("START r=rel(*) RETURN id(r)").toList
 
-    result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
+    result should equal(List(Map("id(r)" -> rel1), Map("id(r)" -> rel2)))
   }
 
   test("Relationship legacy index mk II") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -200,18 +206,19 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "START r=relationship:relIndex('key:*') MATCH (a)-[r]-(b) RETURN r"
+    val query  = "START r=relationship:relIndex('key:*') MATCH (a)-[r]-(b) RETURN r"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result.toList should equal(List(
-      Map("r"-> relationship),
-      Map("r"-> relationship)
-    ))
+    result.toList should equal(
+      List(
+        Map("r" -> relationship),
+        Map("r" -> relationship)
+      ))
   }
 
   test("Relationship legacy index mk III") {
-    val node = createNode(Map("prop" -> 42))
-    val otherNode = createNode(Map("prop" -> 21))
+    val node         = createNode(Map("prop" -> 42))
+    val otherNode    = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -219,21 +226,21 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query = "START r=relationship:relIndex('key:*') MATCH (a)-[r]->(b) RETURN r"
+    val query  = "START r=relationship:relIndex('key:*') MATCH (a)-[r]->(b) RETURN r"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
-    result.toList should equal(List(
-      Map("r"-> relationship)
-    ))
+    result.toList should equal(
+      List(
+        Map("r" -> relationship)
+      ))
   }
   test("Should return unique relationship on rel-id") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    val ab = relate(a, b)
-    val ac = relate(a, c)
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """start a=node(0), ab=relationship(0)
+    val a      = createNode()
+    val b      = createNode()
+    val c      = createNode()
+    val ab     = relate(a, b)
+    val ac     = relate(a, c)
+    val result = executeWithAllPlannersAndCompatibilityMode("""start a=node(0), ab=relationship(0)
         |match (a)-[ab]->(b)
         |return b
       """.stripMargin)
@@ -242,13 +249,12 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("Should return unique node on node-id") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    val ab = relate(a, b)
-    val ac = relate(a, c)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      """start a=node(0), b=node(1)
+    val a      = createNode()
+    val b      = createNode()
+    val c      = createNode()
+    val ab     = relate(a, b)
+    val ac     = relate(a, c)
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""start a=node(0), b=node(1)
         |match (a)-[ab]->(b)
         |return b
       """.stripMargin)
@@ -257,17 +263,16 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("Should return unique relationship on multiple rel-id") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    val d = createNode()
-    val e = createNode()
-    val ab = relate(a, b)
-    val ac = relate(a, c)
-    val bd = relate(b, d)
-    val ce = relate(c, e)
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """start a=node(0), ab=relationship(0), bd=relationship(2)
+    val a      = createNode()
+    val b      = createNode()
+    val c      = createNode()
+    val d      = createNode()
+    val e      = createNode()
+    val ab     = relate(a, b)
+    val ac     = relate(a, c)
+    val bd     = relate(b, d)
+    val ce     = relate(c, e)
+    val result = executeWithAllPlannersAndCompatibilityMode("""start a=node(0), ab=relationship(0), bd=relationship(2)
         |match (a)-[ab]->(b)-[bd]->(d)
         |return b, d
       """.stripMargin)
@@ -276,15 +281,14 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("Should return unique relationship on rel-ids") {
-    val a = createNode()
-    val b = createNode()
-    val c = createNode()
-    val d = createNode()
-    val ab = relate(a, b)
-    val ac = relate(a, c)
-    val ad = relate(a, d)
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """start a=node(0), ab=relationship(0, 1)
+    val a      = createNode()
+    val b      = createNode()
+    val c      = createNode()
+    val d      = createNode()
+    val ab     = relate(a, b)
+    val ac     = relate(a, c)
+    val ad     = relate(a, d)
+    val result = executeWithAllPlannersAndCompatibilityMode("""start a=node(0), ab=relationship(0, 1)
         |match (a)-[ab]->(b)
         |return b
       """.stripMargin)
@@ -293,9 +297,9 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("should return correct results on combined node and relationship index starts") {
-    val node = createNode()
+    val node       = createNode()
     val resultNode = createNode()
-    val rel = relate(node, resultNode)
+    val rel        = relate(node, resultNode)
     relate(node, createNode())
 
     graph.inTx {

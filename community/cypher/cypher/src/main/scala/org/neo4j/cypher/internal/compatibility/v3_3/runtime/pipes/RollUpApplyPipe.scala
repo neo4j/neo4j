@@ -24,22 +24,24 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
-case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
-                          (val id: Id = new Id)
-  extends PipeWithSource(lhs) {
+case class RollUpApplyPipe(lhs: Pipe,
+                           rhs: Pipe,
+                           collectionName: String,
+                           identifierToCollect: String,
+                           nullableIdentifiers: Set[String])(val id: Id = new Id)
+    extends PipeWithSource(lhs) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
-    input.map {
-      ctx =>
-        if (nullableIdentifiers.map(ctx).contains(NO_VALUE)) {
-          ctx += collectionName -> NO_VALUE
-        } else {
-          val original = ctx.createClone()
-          val innerState = state.withInitialContext(ctx)
-          val innerResults = rhs.createResults(innerState)
-          val collection = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray:_*)
-          original += collectionName -> collection
-        }
+    input.map { ctx =>
+      if (nullableIdentifiers.map(ctx).contains(NO_VALUE)) {
+        ctx += collectionName -> NO_VALUE
+      } else {
+        val original     = ctx.createClone()
+        val innerState   = state.withInitialContext(ctx)
+        val innerResults = rhs.createResults(innerState)
+        val collection   = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray: _*)
+        original += collectionName -> collection
+      }
     }
   }
 }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class NodeExpression(nodeIdVar: Variable) extends CodeGenExpression {
 

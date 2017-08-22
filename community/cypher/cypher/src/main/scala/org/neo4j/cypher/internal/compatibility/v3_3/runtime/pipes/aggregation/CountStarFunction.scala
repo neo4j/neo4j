@@ -25,7 +25,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.AnyValue
 
 class CountStarFunction extends AggregationFunction {
-  var count:Long = 0
+  var count: Long = 0
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     count += 1
@@ -33,4 +33,3 @@ class CountStarFunction extends AggregationFunction {
 
   def result(implicit state: QueryState): AnyValue = Values.longValue(count)
 }
-

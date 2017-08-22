@@ -19,15 +19,15 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import java.util.regex.Pattern._
 
 /**
- * Converts [[ParsedLikePattern]] into a regular expression string
- */
+  * Converts [[ParsedLikePattern]] into a regular expression string
+  */
 case object convertLikePatternToRegex {
   def apply(in: ParsedLikePattern, caseInsensitive: Boolean = false): String =
     in.ops.map(convert).mkString(if (caseInsensitive) "(?i)" else "", "", "")
 
   private def convert(in: LikePatternOp): String = in match {
     case MatchText(s) => quote(s)
-    case MatchMany => ".*"
-    case MatchSingle => "."
+    case MatchMany    => ".*"
+    case MatchSingle  => "."
   }
 }

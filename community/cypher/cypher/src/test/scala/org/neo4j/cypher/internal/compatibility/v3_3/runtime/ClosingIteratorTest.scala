@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.intValue
 
 class ClosingIteratorTest extends CypherFunSuite {
-  var taskCloser: TaskCloser = _
+  var taskCloser: TaskCloser                                 = _
   val exceptionDecorator: CypherException => CypherException = identity
 
   override def beforeEach() {

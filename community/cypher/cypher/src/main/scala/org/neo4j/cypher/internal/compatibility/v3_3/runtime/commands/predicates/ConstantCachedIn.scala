@@ -38,16 +38,19 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
-    val inChecker = state.cachedIn.getOrElseUpdate(list, {
-      val listValue = list(ctx)
-      val checker = if (listValue == Values.NO_VALUE)
-        NullListChecker
-      else {
-        val input = makeTraversable(listValue)
-        if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input)
+    val inChecker = state.cachedIn.getOrElseUpdate(
+      list, {
+        val listValue = list(ctx)
+        val checker =
+          if (listValue == Values.NO_VALUE)
+            NullListChecker
+          else {
+            val input = makeTraversable(listValue)
+            if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input)
+          }
+        new InCheckContainer(checker)
       }
-      new InCheckContainer(checker)
-    })
+    )
 
     inChecker.contains(value(ctx))
   }
@@ -72,12 +75,12 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val listValue: AnyValue = list(ctx)
 
-    if(listValue == Values.NO_VALUE)
+    if (listValue == Values.NO_VALUE)
       return None
 
     val traversable = makeTraversable(listValue)
 
-    if(traversable.isEmpty)
+    if (traversable.isEmpty)
       return Some(false)
 
     val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
@@ -99,9 +102,9 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
 
 object CachedIn {
   def unapply(arg: Expression): Option[(Expression, Expression)] = arg match {
-    case DynamicCachedIn(value, list) => Some((value, list))
+    case DynamicCachedIn(value, list)  => Some((value, list))
     case ConstantCachedIn(value, list) => Some((value, list))
-    case _ => None
+    case _                             => None
   }
 }
 

@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{AllNodesScan, Apply}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Apply
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class LogicalPlanIdentificationBuilderTest extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
@@ -36,8 +40,8 @@ class LogicalPlanIdentificationBuilderTest extends CypherFunSuite {
   }
 
   test("plan and it's children are identified") {
-    val A = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val B = AllNodesScan(IdName("b"), Set.empty)(solved)
+    val A  = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val B  = AllNodesScan(IdName("b"), Set.empty)(solved)
     val AB = Apply(A, B)(solved)
 
     val map = LogicalPlanIdentificationBuilder(AB)
@@ -47,12 +51,12 @@ class LogicalPlanIdentificationBuilderTest extends CypherFunSuite {
   }
 
   test("plan and decedents") {
-    val A = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val B = AllNodesScan(IdName("b"), Set.empty)(solved)
+    val A  = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val B  = AllNodesScan(IdName("b"), Set.empty)(solved)
     val AB = Apply(A, B)(solved)
 
-    val C = AllNodesScan(IdName("c"), Set.empty)(solved)
-    val D = AllNodesScan(IdName("d"), Set.empty)(solved)
+    val C  = AllNodesScan(IdName("c"), Set.empty)(solved)
+    val D  = AllNodesScan(IdName("d"), Set.empty)(solved)
     val CD = Apply(C, D)(solved)
 
     val ABCD = Apply(AB, CD)(solved)

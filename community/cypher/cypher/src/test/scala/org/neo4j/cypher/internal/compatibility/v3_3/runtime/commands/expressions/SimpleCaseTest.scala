@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 
 class SimpleCaseTest extends CypherFunSuite {
 
   test("case_with_single_alternative_works") {
     //GIVEN
-    val caseExpr = case_(1,
-      1 -> "one"
-    )
+    val caseExpr = case_(1, 1 -> "one")
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -41,10 +40,7 @@ class SimpleCaseTest extends CypherFunSuite {
 
   test("case_with_two_alternatives_picks_the_second") {
     //GIVEN
-    val caseExpr = case_(2,
-      1 -> "one",
-      2 -> "two"
-    )
+    val caseExpr = case_(2, 1 -> "one", 2 -> "two")
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -55,10 +51,7 @@ class SimpleCaseTest extends CypherFunSuite {
 
   test("case_with_no_match_returns_null") {
     //GIVEN
-    val caseExpr = case_(3,
-      1 -> "one",
-      2 -> "two"
-    )
+    val caseExpr = case_(3, 1 -> "one", 2 -> "two")
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -69,10 +62,7 @@ class SimpleCaseTest extends CypherFunSuite {
 
   test("case_with_no_match_returns_default") {
     //GIVEN
-    val caseExpr = case_(3,
-      1 -> "one",
-      2 -> "two"
-    ) defaultsTo "default"
+    val caseExpr = case_(3, 1 -> "one", 2 -> "two") defaultsTo "default"
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -83,10 +73,7 @@ class SimpleCaseTest extends CypherFunSuite {
 
   test("when_the_input_expression_is_null_return_the_else_case") {
     //GIVEN
-    val caseExpr = case_(null,
-      1 -> "one",
-      2 -> "two"
-    ) defaultsTo "default"
+    val caseExpr = case_(null, 1 -> "one", 2 -> "two") defaultsTo "default"
 
     //WHEN
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -103,7 +90,7 @@ class SimpleCaseTest extends CypherFunSuite {
     SimpleCase(Literal(in), mappedAlt, None)
   }
 
-  implicit class SimpleCasePimp(in:SimpleCase) {
-    def defaultsTo(a:Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(Literal(a)))
+  implicit class SimpleCasePimp(in: SimpleCase) {
+    def defaultsTo(a: Any): SimpleCase = SimpleCase(in.expression, in.alternatives, Some(Literal(a)))
   }
 }

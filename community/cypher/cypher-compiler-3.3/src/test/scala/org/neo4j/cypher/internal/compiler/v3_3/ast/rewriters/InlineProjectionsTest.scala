@@ -21,36 +21,37 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.AstRewritingTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.expandStar
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeWithClauses
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("should inline: MATCH a, b, c WITH c AS c, b AS a RETURN c") {
-    val result = projectionInlinedAst(
-      """MATCH (a), (b), (c)
+    val result = projectionInlinedAst("""MATCH (a), (b), (c)
         |WITH c AS c, b AS d
         |RETURN c
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a), (b), (c)
+    result should equal(ast("""MATCH (a), (b), (c)
         |WITH c AS c, b AS b
         |RETURN c AS c
       """.stripMargin))
   }
 
   test("should inline: WITH {b} AS tmp, {r} AS r WITH {a} AS b AS a, r LIMIT 1 MATCH (a)-[r]->(b) RETURN a, r, b") {
-    val result = projectionInlinedAst(
-      """WITH {a} AS b, {b} AS tmp, {r} AS r
+    val result = projectionInlinedAst("""WITH {a} AS b, {b} AS tmp, {r} AS r
         |WITH b AS a, r LIMIT 1
         |MATCH (a)-[r]->(b)
         |RETURN a, r, b
       """.stripMargin)
 
-    result should equal(ast( """
+    result should equal(ast("""
                                |WITH {a} AS b, {r} AS r
                                |WITH b AS a, r LIMIT 1
                                |MATCH (a)-[r]->(b)
@@ -59,57 +60,49 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should inline: MATCH a, b, c WITH c AS d, b AS a RETURN d") {
-    val result = projectionInlinedAst(
-      """MATCH a, b, c
+    val result = projectionInlinedAst("""MATCH a, b, c
         |WITH c AS d, b AS e
         |RETURN d
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH a, b, c
+    result should equal(ast("""MATCH a, b, c
         |WITH c AS c, b AS b
         |RETURN c AS d
       """.stripMargin))
   }
 
   test("should  inline: MATCH n WITH n AS m RETURN m => MATCH n RETURN n") {
-    val result = projectionInlinedAst(
-      """MATCH n
+    val result = projectionInlinedAst("""MATCH n
         |WITH n AS m
         |RETURN m
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH n
+    result should equal(ast("""MATCH n
         |WITH n
         |RETURN n AS m
       """.stripMargin))
   }
 
   test("should  inline: MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
-    val result = projectionInlinedAst(
-      """MATCH (a:Start)
+    val result = projectionInlinedAst("""MATCH (a:Start)
         |WITH a.prop AS property LIMIT 1
         |MATCH (b) WHERE id(b) = property
         |RETURN b, property
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a:Start) WITH a LIMIT 1
+    result should equal(ast("""MATCH (a:Start) WITH a LIMIT 1
         |MATCH (b) WHERE id(b) = a.prop
         |RETURN b, a.prop AS property
       """.stripMargin))
   }
 
   test("should inline: MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val result = projectionInlinedAst(
-      """MATCH (a)
+    val result = projectionInlinedAst("""MATCH (a)
         |WITH a WHERE TRUE
         |RETURN a
       """.stripMargin)
 
-    result should equal(parser.parse(
-      """MATCH (a)
+    result should equal(parser.parse("""MATCH (a)
         |WITH a AS a
         |WITH a AS a WHERE true
         |WITH a AS a
@@ -118,112 +111,101 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should inline pattern variables when possible") {
-    val result = projectionInlinedAst(
-      """MATCH (n)
+    val result = projectionInlinedAst("""MATCH (n)
         |WITH n
         |MATCH (n)-->(x)
         |RETURN x
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (n)
+    result should equal(ast("""MATCH (n)
         |WITH n
         |MATCH (n)-->(x)
         |RETURN x""".stripMargin))
   }
 
   test("should inline: WITH 1 AS x RETURN 1 + x => _PRAGMA WITH NONE RETURN 1 + 1") {
-    val result = projectionInlinedAst(
-      """WITH 1 AS x
+    val result = projectionInlinedAst("""WITH 1 AS x
         |RETURN 1 + x
       """.stripMargin)
 
-    result should equal(ast(
-      """_PRAGMA WITH NONE
+    result should equal(ast("""_PRAGMA WITH NONE
         |RETURN 1 + 1 AS `1 + x`
       """.stripMargin))
   }
 
   test("should inline: WITH 1 as b RETURN b => RETURN 1 AS `b`") {
-    val result = projectionInlinedAst(
-      """WITH 1 as b
+    val result = projectionInlinedAst("""WITH 1 as b
         |RETURN b
       """.stripMargin)
 
-    result should equal(ast(
-      """_PRAGMA WITH NONE
+    result should equal(ast("""_PRAGMA WITH NONE
         |RETURN 1 AS `b`
       """.stripMargin))
   }
 
-  test("should not inline aggregations: WITH 1 as b WITH DISTINCT b AS c RETURN c => WITH DISTINCT 1 AS c RETURN c AS c") {
-    val result = projectionInlinedAst(
-      """WITH 1 as b
+  test(
+    "should not inline aggregations: WITH 1 as b WITH DISTINCT b AS c RETURN c => WITH DISTINCT 1 AS c RETURN c AS c") {
+    val result = projectionInlinedAst("""WITH 1 as b
         |WITH DISTINCT b AS c
         |RETURN c
       """.stripMargin)
 
-    result should equal(ast(
-      """_PRAGMA WITH NONE
+    result should equal(ast("""_PRAGMA WITH NONE
         |WITH DISTINCT 1 AS `c`
         |RETURN c AS `c`
       """.stripMargin))
   }
 
-  test("should not inline variables into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
-    val result = projectionInlinedAst(
-      """WITH {node} as a
+  test(
+    "should not inline variables into patterns: WITH {node} as a MATCH (a) RETURN a => WITH {node} as a MATCH (a) RETURN a AS `a`") {
+    val result = projectionInlinedAst("""WITH {node} as a
         |MATCH (a)
         |RETURN a
       """.stripMargin)
 
-    result should equal(ast(
-      """WITH {node} as a
+    result should equal(ast("""WITH {node} as a
         |MATCH (a)
         |RETURN a AS `a`
       """.stripMargin))
   }
 
-  test("should inline multiple variables across multiple WITH clauses: WITH 1 as n WITH n+1 AS m RETURN m => RETURN 1+1 as m") {
-    val result = projectionInlinedAst(
-      """WITH 1 as n
+  test(
+    "should inline multiple variables across multiple WITH clauses: WITH 1 as n WITH n+1 AS m RETURN m => RETURN 1+1 as m") {
+    val result = projectionInlinedAst("""WITH 1 as n
         |WITH n + 1 AS m
         |RETURN m
       """.stripMargin)
 
-    result should equal(ast(
-      """_PRAGMA WITH NONE
+    result should equal(ast("""_PRAGMA WITH NONE
         |_PRAGMA WITH NONE
         |RETURN 1+1 as `m`
       """.stripMargin))
   }
 
-  test("should inline node patterns: MATCH (a) WITH a as b MATCH (b) RETURN b => MATCH (a) _PRAGMA WITH NONE MATCH (a) RETURN a as `b`") {
-    val result = projectionInlinedAst(
-      """MATCH (a)
+  test(
+    "should inline node patterns: MATCH (a) WITH a as b MATCH (b) RETURN b => MATCH (a) _PRAGMA WITH NONE MATCH (a) RETURN a as `b`") {
+    val result = projectionInlinedAst("""MATCH (a)
         |WITH a as b
         |MATCH (b)
         |RETURN b
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a)
+    result should equal(ast("""MATCH (a)
         |WITH a AS a
         |MATCH (a)
         |RETURN a as `b`
       """.stripMargin))
   }
 
-  test("should inline relationship patterns: MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b => MATCH ()-[a]->() _PRAGMA WITH NONE MATCH ()-[a]->() RETURN a as `b`") {
-    val result = projectionInlinedAst(
-      """MATCH ()-[a]->()
+  test(
+    "should inline relationship patterns: MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b => MATCH ()-[a]->() _PRAGMA WITH NONE MATCH ()-[a]->() RETURN a as `b`") {
+    val result = projectionInlinedAst("""MATCH ()-[a]->()
         |WITH a as b
         |MATCH ()-[b]->()
         |RETURN b
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH ()-[a]->()
+    result should equal(ast("""MATCH ()-[a]->()
         |WITH a AS a
         |MATCH ()-[a]->()
         |RETURN a as `b`
@@ -231,59 +213,54 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should not inline aggregations: MATCH (a)-[r]->() WITH a, count(r) as b RETURN b as `b`") {
-    val result = projectionInlinedAst(
-      """MATCH (a)-[r]->()
+    val result = projectionInlinedAst("""MATCH (a)-[r]->()
         |WITH a, count(r) as b
         |RETURN b as `b`
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a)-[r]->()
+    result should equal(ast("""MATCH (a)-[r]->()
         |WITH a, count(r) as b
         |RETURN b as `b`
       """.stripMargin))
   }
 
   test("should not inline aggregations: MATCH (a)-[r]->() RETURN a, count(r) as `b`") {
-    val result = projectionInlinedAst(
-      """MATCH (a)-[r]->()
+    val result = projectionInlinedAst("""MATCH (a)-[r]->()
         |RETURN a, count(r) as `b`
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a)-[r]->()
+    result should equal(ast("""MATCH (a)-[r]->()
         |RETURN a, count(r) as `b`
       """.stripMargin))
   }
 
   test("should not inline variables which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
-    intercept[AssertionError](projectionInlinedAst(
-      """WITH 1 as n
+    intercept[AssertionError](projectionInlinedAst("""WITH 1 as n
         |WITH 2 AS n
         |RETURN n
       """.stripMargin))
   }
 
-  test("should inline same variable across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
-    intercept[AssertionError](projectionInlinedAst(
-      """WITH 1 as n
+  test(
+    "should inline same variable across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
+    intercept[AssertionError](projectionInlinedAst("""WITH 1 as n
         |WITH n+1 AS n
         |RETURN n
       """.stripMargin))
   }
 
-  test("should inline same variable across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
-    intercept[AssertionError](projectionInlinedAst(
-      """WITH 1 as n
+  test(
+    "should inline same variable across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
+    intercept[AssertionError](projectionInlinedAst("""WITH 1 as n
         |WITH n+2 AS m
         |WITH n + m as n
         |RETURN n
       """.stripMargin))
   }
 
-  test("should not inline variables which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
-    intercept[AssertionError](projectionInlinedAst(
-      """WITH 1 as n
+  test(
+    "should not inline variables which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
+    intercept[AssertionError](projectionInlinedAst("""WITH 1 as n
         |MATCH (n)
         |WITH 2 AS n
         |RETURN n
@@ -292,23 +269,20 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
     evaluating {
-      projectionInlinedAst(
-        """CREATE (n)
+      projectionInlinedAst("""CREATE (n)
           |RETURN n
         """.stripMargin)
     } should produce[InternalException]
   }
 
   test("MATCH (n) WITH n.prop AS x WITH x LIMIT 10 RETURN x") {
-    val result = projectionInlinedAst(
-      """MATCH (n)
+    val result = projectionInlinedAst("""MATCH (n)
         |WITH n.prop AS x
         |WITH x LIMIT 10
         |RETURN x
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (n)
+    result should equal(ast("""MATCH (n)
         |WITH n AS n
         |WITH n AS n LIMIT 10
         |RETURN n.prop AS x
@@ -316,15 +290,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
-    val result = projectionInlinedAst(
-      """MATCH (a:Start)
+    val result = projectionInlinedAst("""MATCH (a:Start)
         |WITH a.prop AS property, count(*) AS count
         |MATCH (b) WHERE id(b) = property
         |RETURN b
       """.stripMargin)
 
-    result should equal(ast(
-      """MATCH (a:Start)
+    result should equal(ast("""MATCH (a:Start)
         |WITH a.prop AS property, count(*) AS `count`
         |MATCH (b) WHERE id(b) = property
         |RETURN b AS `b`
@@ -341,8 +313,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin
     val result = projectionInlinedAst(query)
 
-    result should equal(parser.parse(
-      """MATCH (owner)
+    result should equal(parser.parse("""MATCH (owner)
         |WITH owner AS `owner`, COUNT(*) AS xyz
         |WITH owner AS `owner`, xyz AS `xyz`
         |WITH owner AS `owner`, xyz AS `xyz`, owner AS `owner`
@@ -353,28 +324,26 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("WITH 1 as b RETURN b") {
-    val result = projectionInlinedAst(
-      """WITH 1 as b
+    val result = projectionInlinedAst("""WITH 1 as b
         |RETURN b
       """.stripMargin)
 
-    result should equal(ast(
-      """_PRAGMA WITH NONE
+    result should equal(ast("""_PRAGMA WITH NONE
         |RETURN 1 AS b
       """.stripMargin))
   }
 
-  test("match (n) where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
-    val result = projectionInlinedAst(
-      """match (n) where id(n) IN [0,1,2,3]
+  test(
+    "match (n) where id(n) IN [0,1,2,3] with n.division AS `n.division`, max(n.age) AS `max(n.age)` with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`") {
+    val result =
+      projectionInlinedAst("""match (n) where id(n) IN [0,1,2,3]
         |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
         |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
         |RETURN `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)` order by `max(n.age)`
       """.stripMargin.fixNewLines)
 
     val freshIdName = "`  FRESHID196`"
-    result should equal(ast(
-      s"""match (n) where id(n) IN [0,1,2,3]
+    result should equal(ast(s"""match (n) where id(n) IN [0,1,2,3]
          |with n.division AS `n.division`, max(n.age) AS `max(n.age)`
          |with `n.division` AS `n.division`, `max(n.age)` AS `max(n.age)`
          |with `n.division` AS `n.division`, `max(n.age)` AS $freshIdName order by $freshIdName
@@ -382,20 +351,19 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin.fixNewLines))
   }
 
-  test("should not inline expressions used many times: WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x => WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x") {
-    val result = projectionInlinedAst(
-      """WITH 1 as x
+  test(
+    "should not inline expressions used many times: WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x => WITH 1 as a MATCH (a) WHERE a.prop = x OR a.bar > x RETURN a, x") {
+    val result = projectionInlinedAst("""WITH 1 as x
         |MATCH (a) WHERE a.prop = x OR a.bar > x
         |RETURN a, x""".stripMargin)
 
-    result should equal(ast(
-      """WITH 1 as x
+    result should equal(ast("""WITH 1 as x
         |MATCH (a) WHERE a.prop = x OR a.bar > x
         |RETURN a, x""".stripMargin))
   }
 
   test("should not inline relationship variables if not inlinging expressions") {
-   val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
+    val result = projectionInlinedAst("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel")
 
     result should equal(ast("MATCH (u)-[r1]->(v) WITH r1 AS r2 MATCH (a)-[r2]->(b) RETURN r2 AS rel"))
   }
@@ -403,11 +371,11 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)
 
   private def ast(queryText: String) = {
-    val parsed = parser.parse(queryText)
+    val parsed      = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val normalized =
+      parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }
 }
-

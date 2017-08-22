@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.codegen
 
 import java.util
-import java.util.stream.{DoubleStream, IntStream, LongStream}
+import java.util.stream.DoubleStream
+import java.util.stream.IntStream
+import java.util.stream.LongStream
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
 import scala.collection.JavaConverters._
 
@@ -84,9 +87,9 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
   test("should be able to use a composite key in a hash map") {
     //given
-    val theKey = CompiledConversionUtils.compositeKey(1l, 2L, 11L)
+    val theKey    = CompiledConversionUtils.compositeKey(1l, 2L, 11L)
     val theObject = mock[Object]
-    val theMap = Map(theKey -> theObject)
+    val theMap    = Map(theKey -> theObject)
 
     //when/then
     theMap(theKey) should equal(theObject)
@@ -103,22 +106,21 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   }
 
   val testMakeSafe = Seq(
-    Array(1, 2, 3) -> classOf[Array[Int]],
-    Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3)) -> classOf[Array[java.lang.Byte]],
-    Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3)) -> classOf[Array[java.lang.Short]],
-    Array[AnyRef](Byte.box(1), Long.box(2), Short.box(3)) -> classOf[Array[java.lang.Long]],
+    Array(1, 2, 3)                                          -> classOf[Array[Int]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3))    -> classOf[Array[java.lang.Byte]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3))   -> classOf[Array[java.lang.Short]],
+    Array[AnyRef](Byte.box(1), Long.box(2), Short.box(3))   -> classOf[Array[java.lang.Long]],
     Array[AnyRef](Double.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Double]],
-    Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Float]],
-    Array[AnyRef]("foo", "bar", "baz") -> classOf[Array[java.lang.String]],
-    Array[AnyRef](Boolean.box(true), Boolean.box(false)) -> classOf[Array[java.lang.Boolean]],
-
-    List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava -> classOf[Array[java.lang.Byte]],
-    List(Byte.box(1), Byte.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Short]],
-    List(Byte.box(1), Long.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Long]],
-    List(Double.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Double]],
-    List(Byte.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Float]],
-    List("foo", "bar", "baz").asJava -> classOf[Array[java.lang.String]],
-    List(Boolean.box(true), Boolean.box(false)).asJava -> classOf[Array[java.lang.Boolean]]
+    Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3))   -> classOf[Array[java.lang.Float]],
+    Array[AnyRef]("foo", "bar", "baz")                      -> classOf[Array[java.lang.String]],
+    Array[AnyRef](Boolean.box(true), Boolean.box(false))    -> classOf[Array[java.lang.Boolean]],
+    List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava      -> classOf[Array[java.lang.Byte]],
+    List(Byte.box(1), Byte.box(2), Short.box(3)).asJava     -> classOf[Array[java.lang.Short]],
+    List(Byte.box(1), Long.box(2), Short.box(3)).asJava     -> classOf[Array[java.lang.Long]],
+    List(Double.box(1), Long.box(2), Float.box(3)).asJava   -> classOf[Array[java.lang.Double]],
+    List(Byte.box(1), Long.box(2), Float.box(3)).asJava     -> classOf[Array[java.lang.Float]],
+    List("foo", "bar", "baz").asJava                        -> classOf[Array[java.lang.String]],
+    List(Boolean.box(true), Boolean.box(false)).asJava      -> classOf[Array[java.lang.Boolean]]
   )
 
   testMakeSafe.foreach {
@@ -129,29 +131,26 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   }
 
   val testEquality = Seq(
-    (null, "foo") -> null,
-    (false, false) -> true,
-    (9007199254740993L, 9007199254740992D) -> false,
-    (9007199254740992D, 9007199254740993L) -> false,
-    (1, null) -> null,
-    ("foo", "foo") -> true,
-    ("foo", "bar") -> false,
-    (42L, 42) -> true,
-    (42, 43) -> false,
-    (Array(42, 43), Array(42, 43)) -> true,
-    (Array(42, 43), Array(42, 41)) -> false,
-    (Array(42, 43), Array(42, 43, 44)) -> false,
-
-    (Array(42, 43), util.Arrays.asList(42, 43)) -> true,
-    (Array(42, 43), util.Arrays.asList(42, 41)) -> false,
-    (Array(42, 43), util.Arrays.asList(42, 43, 44)) -> false,
-
-    (util.Arrays.asList(42, 43), Array(42, 43)) -> true,
-    (util.Arrays.asList(42, 43), Array(42, 41)) -> false,
-    (util.Arrays.asList(42, 43), Array(42, 43, 44)) -> false,
-
-    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43)) -> true,
-    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 41)) -> false,
+    (null, "foo")                                                -> null,
+    (false, false)                                               -> true,
+    (9007199254740993L, 9007199254740992D)                       -> false,
+    (9007199254740992D, 9007199254740993L)                       -> false,
+    (1, null)                                                    -> null,
+    ("foo", "foo")                                               -> true,
+    ("foo", "bar")                                               -> false,
+    (42L, 42)                                                    -> true,
+    (42, 43)                                                     -> false,
+    (Array(42, 43), Array(42, 43))                               -> true,
+    (Array(42, 43), Array(42, 41))                               -> false,
+    (Array(42, 43), Array(42, 43, 44))                           -> false,
+    (Array(42, 43), util.Arrays.asList(42, 43))                  -> true,
+    (Array(42, 43), util.Arrays.asList(42, 41))                  -> false,
+    (Array(42, 43), util.Arrays.asList(42, 43, 44))              -> false,
+    (util.Arrays.asList(42, 43), Array(42, 43))                  -> true,
+    (util.Arrays.asList(42, 43), Array(42, 41))                  -> false,
+    (util.Arrays.asList(42, 43), Array(42, 43, 44))              -> false,
+    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43))     -> true,
+    (util.Arrays.asList(42, 43), util.Arrays.asList(42, 41))     -> false,
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43, 44)) -> false
   )
 
@@ -163,14 +162,15 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   }
 
   val testOr = Seq(
-    (null, true) -> true,
-    (null, false) -> null,
-    (true, null) -> true,
-    (false, null) -> null,
-    (true, true) -> true,
-    (true, false) -> true,
-    (false, true) -> true,
-    (false, false) -> false)
+    (null, true)   -> true,
+    (null, false)  -> null,
+    (true, null)   -> true,
+    (false, null)  -> null,
+    (true, true)   -> true,
+    (true, false)  -> true,
+    (false, true)  -> true,
+    (false, false) -> false
+  )
 
   testOr.foreach {
     case (v, expected) =>

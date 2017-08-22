@@ -114,7 +114,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("redefine symbol in match") {
     executeAndEnsureError(
-      "match (a)-[r]-(r) return r", "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
+      "match (a)-[r]-(r) return r",
+      "Type mismatch: r already defined with conflicting type Relationship (expected Node) (line 1, column 16 (offset: 15))"
     )
   }
 
@@ -265,7 +266,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should fail when reduce used with wrong separator") {
-    executeAndEnsureError("""MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
+    executeAndEnsureError(
+      """MATCH topRoute = (s)<-[:CONNECTED_TO*1..3]-(e)
                             |WHERE id(s) = 1 AND id(e) = 2
                             |RETURN reduce(weight=0, r in relationships(topRoute) : weight+r.cost) AS score
                             |ORDER BY score ASC LIMIT 1
@@ -322,14 +324,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       "MATCH (n) USING INDEX n:Person(name) where n.name = \"Johan\" return n",
       "Cannot use index hint in this context. Must use label on node that hint is referring to. " +
-      "(line 1, column 11 (offset: 10))"
+        "(line 1, column 11 (offset: 10))"
     )
   }
 
   test("should fail if using a hint on a node and not using the property") {
     executeAndEnsureError(
       "MATCH (n:Person) USING INDEX n:Person(name) where n.lastname = \"Teleman\" return n",
-      "Cannot use index hint in this context. Index hints are only supported for the following "+
+      "Cannot use index hint in this context. Index hints are only supported for the following " +
         "predicates in WHERE (either directly or as part of a top-level AND or OR): equality comparison, " +
         "inequality (range) comparison, STARTS WITH, IN condition or checking property " +
         "existence. The comparison cannot be performed between two property values. Note that the " +
@@ -380,33 +382,26 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("aggregation inside looping queries is not allowed") {
 
     val mess = "Can't use aggregating expressions inside of expressions executing over lists"
-    executeAndEnsureError(
-      "MATCH (n) RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 27 (offset: 26))")
+    executeAndEnsureError("MATCH (n) RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
+                          s"$mess (line 1, column 27 (offset: 26))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 27 (offset: 26))")
+    executeAndEnsureError("MATCH (n) RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
+                          s"$mess (line 1, column 27 (offset: 26))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 28 (offset: 27))")
+    executeAndEnsureError("MATCH (n) RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+                          s"$mess (line 1, column 28 (offset: 27))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 30 (offset: 29))")
+    executeAndEnsureError("MATCH (n) RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
+                          s"$mess (line 1, column 30 (offset: 29))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
-      s"$mess (line 1, column 31 (offset: 30))")
+    executeAndEnsureError("MATCH (n) RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
+                          s"$mess (line 1, column 31 (offset: 30))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 30 (offset: 29))")
+    executeAndEnsureError("MATCH (n) RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
+                          s"$mess (line 1, column 30 (offset: 29))")
 
-    executeAndEnsureError(
-      "MATCH (n) RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
-      s"$mess (line 1, column 57 (offset: 56))")
+    executeAndEnsureError("MATCH (n) RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
+                          s"$mess (line 1, column 57 (offset: 56))")
   }
 
   test("error message should contain full query") {
@@ -416,21 +411,23 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     val first :: second :: third :: Nil = error.getMessage.lines.toList
     first should equal("Variable `o` not defined (line 1, column 37 (offset: 36))")
     second should equal(s""""$query"""")
-    third should startWith(" "*37 + "^")
+    third should startWith(" " * 37 + "^")
   }
 
   test("positions should not be cached") {
     executeAndEnsureError("EXPLAIN MATCH (m), (n) RETURN m, n, o LIMIT 25",
-      "Variable `o` not defined (line 1, column 37 (offset: 36))")
+                          "Variable `o` not defined (line 1, column 37 (offset: 36))")
     executeAndEnsureError("MATCH (m), (n) RETURN m, n, o LIMIT 25",
-      "Variable `o` not defined (line 1, column 29 (offset: 28))")
+                          "Variable `o` not defined (line 1, column 29 (offset: 28))")
   }
 
   test("give a nice error message when using unknown arguments in point") {
-    executeAndEnsureError("RETURN point({xxx: 2.3, yyy: 4.5}) as point",
-                          "A map with keys 'xxx', 'yyy' is not describing a valid point, a point is described either by " +
-                            "using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using geographic " +
-                            "coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}. (line 1, column 14 (offset: 13))")
+    executeAndEnsureError(
+      "RETURN point({xxx: 2.3, yyy: 4.5}) as point",
+      "A map with keys 'xxx', 'yyy' is not describing a valid point, a point is described either by " +
+        "using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using geographic " +
+        "coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}. (line 1, column 14 (offset: 13))"
+    )
   }
 
   // Below follows tests on integer overflow errors. Not sure if integers have bounds from a language POV -- is this TCK material?
@@ -452,7 +449,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       s"RETURN {t1} + {t2}",
       "result of 9223372036854775807 + 1 cannot be represented as an integer",
-      "t1" -> Long.MaxValue, "t2" -> 1
+      "t1" -> Long.MaxValue,
+      "t2" -> 1
     )
   }
 
@@ -467,7 +465,8 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       s"RETURN {t1} - {t2}",
       "result of -9223372036854775808 - 1 cannot be represented as an integer",
-      "t1" -> Long.MinValue, "t2" -> 1
+      "t1" -> Long.MinValue,
+      "t2" -> 1
     )
   }
 
@@ -482,17 +481,16 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     executeAndEnsureError(
       s"RETURN {t1} + {t2}",
       "result of 9223372036854775807 + 1 cannot be represented as an integer",
-      "t1" -> Long.MaxValue, "t2" -> 1
+      "t1" -> Long.MaxValue,
+      "t2" -> 1
     )
   }
 
   test("fail when parsing larger than 64 bit integers") {
-    executeAndEnsureError(
-      "RETURN toInt('10508455564958384115')",
-      "integer, 10508455564958384115, is too large")
+    executeAndEnsureError("RETURN toInt('10508455564958384115')", "integer, 10508455564958384115, is too large")
   }
 
-  private def executeAndEnsureError(query: String, expected: String, params: (String,Any)*) {
+  private def executeAndEnsureError(query: String, expected: String, params: (String, Any)*) {
     import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 
     import scala.collection.JavaConverters._

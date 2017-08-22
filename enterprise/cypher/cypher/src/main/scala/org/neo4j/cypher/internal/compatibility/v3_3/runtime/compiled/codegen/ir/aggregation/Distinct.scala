@@ -20,19 +20,24 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.Instruction
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{HashableTupleDescriptor, MethodStructure}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.HashableTupleDescriptor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class Distinct(opName: String, setName: String, vars: Iterable[Variable]) extends AggregateExpression {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.newDistinctSet(setName, vars.map(_.codeGenType))
 
-
   def update[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.distinctSetIfNotContains(setName,
-                                       vars.map(v => v.name -> (v.codeGenType ->
-                                         generator.loadVariable(v.name))).toMap)((_) => {})
+                                       vars
+                                         .map(
+                                           v =>
+                                             v.name -> (v.codeGenType ->
+                                               generator.loadVariable(v.name)))
+                                         .toMap)((_) => {})
   }
 
   override def continuation(instruction: Instruction): Instruction = new Instruction {
@@ -52,5 +57,3 @@ case class Distinct(opName: String, setName: String, vars: Iterable[Variable]) e
     }
   }
 }
-
-

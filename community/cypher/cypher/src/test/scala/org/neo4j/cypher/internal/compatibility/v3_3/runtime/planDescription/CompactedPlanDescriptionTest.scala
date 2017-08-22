@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Time}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Time
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
@@ -36,7 +38,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments shouldBe empty
   }
 
@@ -53,7 +55,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(DbHits(4)))
   }
 
@@ -70,7 +72,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(Time(2)))
   }
 
@@ -87,7 +89,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments should equal(Seq(Rows(30)))
   }
 
@@ -104,7 +106,7 @@ class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {
     val compactPlan = CompactedPlanDescription(Seq(planA, planB, planC))
 
     // Then
-    compactPlan shouldBe a [CompactedPlanDescription]
+    compactPlan shouldBe a[CompactedPlanDescription]
     compactPlan.arguments.toSet should equal(Set(Rows(30), DbHits(4), Time(3)))
   }
 }

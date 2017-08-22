@@ -21,21 +21,26 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{indexSeekLeafPlanner, mergeUniqueIndexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.mergeUniqueIndexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.uniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.Predicate
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.Selections
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
-  val idName = IdName("n")
+  val idName                = IdName("n")
   val hasLabels: Expression = hasLabels("n", "Awesome")
   val property1: Expression = prop("n", "prop")
-  val lit42: Expression = literalInt(42)
-  val lit6: Expression = literalInt(6)
+  val lit42: Expression     = literalInt(42)
+  val lit6: Expression      = literalInt(6)
 
-  val inCollectionValue = In(property1, ListLiteral(Seq(lit42))_)_
-  val predicate2 = propEquality("n", "prop2", 43)
+  val inCollectionValue = In(property1, ListLiteral(Seq(lit42)) _) _
+  val predicate2        = propEquality("n", "prop2", 43)
 
   private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
@@ -75,7 +80,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) =>  ()
+        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
     }
 
@@ -90,7 +95,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val x = cfg.x
+      val x           = cfg.x
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
@@ -102,8 +107,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new given { // MATCH a, x WHERE a.prop IN [x]
-       val x = varFor("x")
-      qg = queryGraph(In(property1, ListLiteral(Seq(x))_)_, hasLabels)
+      val x = varFor("x")
+      qg = queryGraph(In(property1, ListLiteral(Seq(x)) _) _, hasLabels)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -133,7 +138,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -155,7 +160,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -188,9 +193,12 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // then
       resultPlans should beLike {
-        case Seq(AssertSameNode(`idName`,
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
+        case Seq(
+            AssertSameNode(
+              `idName`,
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) =>
+          ()
       }
     }
   }
@@ -225,19 +233,25 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-        AssertSameNode(`idName`,
-          AssertSameNode(`idName`,
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _))) => ()
+            AssertSameNode(
+              `idName`,
+              AssertSameNode(
+                `idName`,
+                NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
+                NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _)),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _))) =>
+          ()
       }
     }
   }
 
   test("plans merge unique index seeks with AssertSameNode when there are four unique indexes") {
     new given {
-      qg = queryGraph(inCollectionValue, hasLabel("Awesome"), hasLabel("Awesomer"),
-        hasLabel("Awesomest"), hasLabel("Awesomestest"))
+      qg = queryGraph(inCollectionValue,
+                      hasLabel("Awesome"),
+                      hasLabel("Awesomer"),
+                      hasLabel("Awesomest"),
+                      hasLabel("Awesomestest"))
 
       uniqueIndexOn("Awesome", "prop")
       uniqueIndexOn("Awesomer", "prop")
@@ -250,13 +264,17 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-        AssertSameNode(`idName`,
-          AssertSameNode(`idName`,
-            AssertSameNode(`idName`,
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
-              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) => ()
+            AssertSameNode(
+              `idName`,
+              AssertSameNode(
+                `idName`,
+                AssertSameNode(
+                  `idName`,
+                  NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`lit42`), _),
+                  NodeUniqueIndexSeek(`idName`, LabelToken("Awesomest", _), _, SingleQueryExpression(`lit42`), _)),
+                NodeUniqueIndexSeek(`idName`, LabelToken("Awesomestest", _), _, SingleQueryExpression(`lit42`), _)),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesomer", _), _, SingleQueryExpression(`lit42`), _))) =>
+          ()
       }
     }
   }
@@ -266,9 +284,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Unique constraint on :X(prop1, prop2)
     // Unique constraint on :X(prop3)
 
-    val val1 = literalInt(44)
-    val val2 = literalInt(55)
-    val val3 = literalInt(66)
+    val val1  = literalInt(44)
+    val val2  = literalInt(55)
+    val val3  = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)
@@ -284,13 +302,16 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-          AssertSameNode(`idName`,
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)),
-              CompositeQueryExpression(Seq(
-                SingleQueryExpression(`val1`),
-                SingleQueryExpression(`val2`))), _),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _,
-              SingleQueryExpression(`val3`), _))) => ()
+            AssertSameNode(
+              `idName`,
+              NodeUniqueIndexSeek(`idName`,
+                                  LabelToken("Awesome", _),
+                                  Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)),
+                                  CompositeQueryExpression(
+                                    Seq(SingleQueryExpression(`val1`), SingleQueryExpression(`val2`))),
+                                  _),
+              NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), _, SingleQueryExpression(`val3`), _))) =>
+          ()
       }
     }
   }
@@ -300,9 +321,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Unique constraint on :X(prop1, prop2)
     // Unique constraint on :X(prop2, prop3)
 
-    val val1 = literalInt(44)
-    val val2 = literalInt(55)
-    val val3 = literalInt(66)
+    val val1  = literalInt(44)
+    val val2  = literalInt(55)
+    val val3  = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)
@@ -318,15 +339,20 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-          AssertSameNode(`idName`,
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)),
-              CompositeQueryExpression(Seq(
-                SingleQueryExpression(`val1`),
-                SingleQueryExpression(`val2`))), _),
-            NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _), Seq(PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)),
-              CompositeQueryExpression(Seq(
-                SingleQueryExpression(`val2`),
-                SingleQueryExpression(`val3`))), _))) => ()
+            AssertSameNode(`idName`,
+                           NodeUniqueIndexSeek(`idName`,
+                                               LabelToken("Awesome", _),
+                                               Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _)),
+                                               CompositeQueryExpression(
+                                                 Seq(SingleQueryExpression(`val1`), SingleQueryExpression(`val2`))),
+                                               _),
+                           NodeUniqueIndexSeek(`idName`,
+                                               LabelToken("Awesome", _),
+                                               Seq(PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)),
+                                               CompositeQueryExpression(
+                                                 Seq(SingleQueryExpression(`val2`), SingleQueryExpression(`val3`))),
+                                               _))) =>
+          ()
       }
     }
   }
@@ -335,9 +361,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // MERGE (a:X {prop1: 42, prop2: 444, prop3: 56})
     // Unique constraint on :X(prop1, prop2, prop3)
 
-    val val1 = literalInt(44)
-    val val2 = literalInt(55)
-    val val3 = literalInt(66)
+    val val1  = literalInt(44)
+    val val2  = literalInt(55)
+    val val3  = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)
@@ -352,13 +378,15 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // then
       resultPlans should beLike {
         case Seq(
-          NodeUniqueIndexSeek(`idName`, LabelToken("Awesome", _),
-            Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)),
-            CompositeQueryExpression(Seq(
-              SingleQueryExpression(`val1`),
-              SingleQueryExpression(`val2`),
-              SingleQueryExpression(`val3`))), _)
-        ) => ()
+            NodeUniqueIndexSeek(
+              `idName`,
+              LabelToken("Awesome", _),
+              Seq(PropertyKeyToken("prop1", _), PropertyKeyToken("prop2", _), PropertyKeyToken("prop3", _)),
+              CompositeQueryExpression(
+                Seq(SingleQueryExpression(`val1`), SingleQueryExpression(`val2`), SingleQueryExpression(`val3`))),
+              _)
+            ) =>
+          ()
       }
     }
   }

@@ -28,14 +28,14 @@ class TopDownWithStateTest extends CypherFunSuite {
   private def rewriterToTest(): Rewriter = {
     val stateChange: AnyRef => Option[Int] = {
       case NOOP(newState, _) => Some(newState)
-      case _ => None
+      case _                 => None
     }
 
     val rewriteCreator: Int => AnyRef => AnyRef = { (state: Int) =>
       val rewriter: AnyRef => AnyRef = {
-        case LIT(v) => LIT(v + state)
+        case LIT(v)       => LIT(v + state)
         case NOOP(_, src) => src
-        case x => x
+        case x            => x
       }
       rewriter
     }
@@ -44,44 +44,23 @@ class TopDownWithStateTest extends CypherFunSuite {
   }
 
   test("test 1") {
-    NOOP(value = 4,
-      ADD(
-        LIT(1),
-        LIT(2))).rewrite(rewriterToTest()) should equal(
-      ADD(
-        LIT(4 + 1),
-        LIT(4 + 2))
+    NOOP(value = 4, ADD(LIT(1), LIT(2))).rewrite(rewriterToTest()) should equal(
+      ADD(LIT(4 + 1), LIT(4 + 2))
     )
   }
 
   test("test 2") {
     val before =
-      NOOP(value = 0,
-        ADD(
-          NOOP(value = 4,
-            ADD(
-              LIT(1),
-              LIT(2))),
-          NOOP(value = 7,
-            ADD(
-              LIT(1),
-              LIT(2)))))
+      NOOP(value = 0, ADD(NOOP(value = 4, ADD(LIT(1), LIT(2))), NOOP(value = 7, ADD(LIT(1), LIT(2)))))
 
     val expected =
-        ADD(
-            ADD(
-              LIT(4 + 1),
-              LIT(4 + 2)),
-            ADD(
-              LIT(7 + 1),
-              LIT(7 + 2)))
-
+      ADD(ADD(LIT(4 + 1), LIT(4 + 2)), ADD(LIT(7 + 1), LIT(7 + 2)))
 
     before.rewrite(rewriterToTest()) should equal(expected)
   }
 }
 
 trait AST
-case class LIT(value: Int) extends AST
-case class ADD(lhs: AST, rhs: AST) extends AST
+case class LIT(value: Int)               extends AST
+case class ADD(lhs: AST, rhs: AST)       extends AST
 case class NOOP(value: Int, source: AST) extends AST

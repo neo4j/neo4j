@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
+import org.neo4j.values.storable.Values.FALSE
+import org.neo4j.values.storable.Values.TRUE
+import org.neo4j.values.storable.Values.intValue
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should only write let = true for the one that matches") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
@@ -35,18 +37,18 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> TRUE),
-      Map("a" -> intValue(2), "let" -> FALSE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> TRUE),
+        Map("a" -> intValue(2), "let" -> FALSE)
+      ))
   }
 
   test("should only write let = true for the one that not matches when negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
@@ -54,73 +56,73 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     })
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-      createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> FALSE),
-      Map("a" -> intValue(2), "let" -> TRUE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> FALSE),
+        Map("a" -> intValue(2), "let" -> TRUE)
+      ))
   }
 
   test("should not write let = true for anything if rhs is empty") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs = new FakePipe(Iterator.empty)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs     = new FakePipe(Iterator.empty)
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> FALSE),
-      Map("a" -> intValue(2), "let" -> FALSE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> FALSE),
+        Map("a" -> intValue(2), "let" -> FALSE)
+      ))
   }
 
   test("should write let = true for everything if rhs is empty and negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs = new FakePipe(Iterator.empty)
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs     = new FakePipe(Iterator.empty)
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> TRUE),
-      Map("a" -> intValue(2), "let" -> TRUE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> TRUE),
+        Map("a" -> intValue(2), "let" -> TRUE)
+      ))
   }
 
   test("should write let = true for everything if rhs is nonEmpty") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs     = new FakePipe(Iterator(Map("a" -> 1)))
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
-        createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> TRUE),
-      Map("a" -> intValue(2), "let" -> TRUE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> TRUE),
+        Map("a" -> intValue(2), "let" -> TRUE)
+      ))
   }
 
   test("should not write let = true for anything if rhs is nonEmpty and negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
+    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs     = new FakePipe(Iterator(Map("a" -> 1)))
 
     val result =
-      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
-      createResults(QueryStateHelper.empty).toList
+      LetSemiApplyPipe(lhs, rhs, "let", negated = true)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
-      Map("a" -> intValue(1), "let" -> FALSE),
-      Map("a" -> intValue(2), "let" -> FALSE)
-    ))
+    result should equal(
+      List(
+        Map("a" -> intValue(1), "let" -> FALSE),
+        Map("a" -> intValue(2), "let" -> FALSE)
+      ))
   }
 
   test("if lhs is empty, rhs should not be touched regardless if it is negated or not") {

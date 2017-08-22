@@ -40,36 +40,36 @@ class ResultMatcherTest extends ParsingTestSupport {
   }
 
   test("should match a result with two rows of results") {
-    val row1 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
-    val row2 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
+    val row1    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
+    val row2    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
     val matcher = new ResultMatcher(asList(row1, row2))
 
     matcher should accept(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
   }
 
   test("should not match a result with wrong number of rows") {
-    val row1 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
-    val row2 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
+    val row1    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
+    val row2    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
     val matcher = new ResultMatcher(asList(row1, row2))
 
     matcher shouldNot accept(result(Map("count" -> valueOf(10))))
   }
 
   test("should not match a result with wrong number of rows 2") {
-    val row = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
+    val row     = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
     val matcher = new ResultMatcher(asList(row))
 
     matcher shouldNot accept(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
   }
 
   test("should consider order properly") {
-    val row1 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
-    val row2 = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
+    val row1    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(100)).asJava)
+    val row2    = new RowMatcher(Map[String, ValueMatcher]("count" -> new IntegerMatcher(10)).asJava)
     val matcher = new ResultMatcher(asList(row1, row2))
 
-    matcher should accept(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
-    matcher shouldNot acceptOrdered(result(Map("count" -> valueOf(10)), Map("count" -> valueOf(100))))
-    matcher should acceptOrdered(result(Map("count" -> valueOf(100)), Map("count" -> valueOf(10))))
+    matcher should accept(result(Map("count"           -> valueOf(10)), Map("count"  -> valueOf(100))))
+    matcher shouldNot acceptOrdered(result(Map("count" -> valueOf(10)), Map("count"  -> valueOf(100))))
+    matcher should acceptOrdered(result(Map("count"    -> valueOf(100)), Map("count" -> valueOf(10))))
   }
 
 }

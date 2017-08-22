@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class Projection(projectionOpName: String, variables: Map[Variable, CodeGenExpression], action: Instruction)
-  extends Instruction {
+    extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     super.init(generator)
@@ -39,7 +41,8 @@ case class Projection(projectionOpName: String, variables: Map[Variable, CodeGen
       variables.foreach {
         case (variable, expr) =>
           body.declare(variable.name, variable.codeGenType)
-          if (variable.codeGenType == CodeGenType.Any) body.assign(variable.name, variable.codeGenType, body.materializeAny(expr.generateExpression(body)))
+          if (variable.codeGenType == CodeGenType.Any)
+            body.assign(variable.name, variable.codeGenType, body.materializeAny(expr.generateExpression(body)))
           else body.assign(variable.name, variable.codeGenType, expr.generateExpression(body))
       }
       action.body(body)

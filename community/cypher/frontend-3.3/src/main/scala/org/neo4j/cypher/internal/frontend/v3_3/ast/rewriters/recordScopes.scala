@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{MapProjection, PatternComprehension}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.MapProjection
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PatternComprehension
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 case class recordScopes(semanticState: SemanticState) extends Rewriter {
 

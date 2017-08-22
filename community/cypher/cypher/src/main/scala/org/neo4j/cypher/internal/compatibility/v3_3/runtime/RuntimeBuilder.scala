@@ -23,23 +23,27 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationSt
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Do
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Transformer
 
 trait RuntimeBuilder[T <: Transformer[_, _, _]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): T
 }
 
-object CommunityRuntimeBuilder extends RuntimeBuilder[Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] {
-  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState] =
+object CommunityRuntimeBuilder
+    extends RuntimeBuilder[Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] {
+  override def create(
+      runtimeName: Option[RuntimeName],
+      useErrorsOverWarnings: Boolean): Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState] =
     runtimeName match {
-    case None | Some(InterpretedRuntimeName) =>
-      BuildInterpretedExecutionPlan
-
-    case Some(x) if useErrorsOverWarnings =>
-      throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
-
-    case _ =>
-      Do((_: CompilerContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+      case None | Some(InterpretedRuntimeName) =>
         BuildInterpretedExecutionPlan
-  }
+
+      case Some(x) if useErrorsOverWarnings =>
+        throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
+
+      case _ =>
+        Do((_: CompilerContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
+          BuildInterpretedExecutionPlan
+    }
 }
