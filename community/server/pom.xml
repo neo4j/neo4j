@@ -57,6 +57,9 @@
     <!-- Run integration tests against a server that is started elsewhere. -->
     <neo-server.external>false</neo-server.external>
     <neo-server.external.url>http://localhost:7474</neo-server.external.url>
+    <test.runner.jvm.settings.additional>
+      -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=false
+    </test.runner.jvm.settings.additional>
   </properties>
 
   <scm>
