@@ -293,7 +293,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def Cost: TestConfiguration = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios
       .ForcedCostPlanner
 
-    def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1
+    def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1 + Version3_2
 
     def Procs: TestConfiguration = Scenarios.ProcedureOrSchema
 

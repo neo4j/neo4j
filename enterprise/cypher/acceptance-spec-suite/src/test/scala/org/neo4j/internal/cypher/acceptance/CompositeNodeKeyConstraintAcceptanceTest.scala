@@ -161,7 +161,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
 
     failWithError(
-      Configs.AbsolutelyAll - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      Configs.AbsolutelyAll - Configs.BackwardsCompatibility + Configs.Version3_2 - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%n" +
         "Both Node(0) and Node(1) have the label `Person` and properties `name` = 'A', `surname` = 'B'")
@@ -173,7 +173,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("name" -> "A"), "Person")
 
     failWithError(
-      Configs.AbsolutelyAll - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      Configs.AbsolutelyAll - Configs.BackwardsCompatibility + Configs.Version3_2 - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%n" +
         "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
@@ -182,7 +182,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("drop a non existent node key constraint") {
     failWithError(
-      Configs.AbsolutelyAll - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      Configs.AbsolutelyAll - Configs.BackwardsCompatibility + Configs.Version3_2 - Configs.AllRulePlanners,
       "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
       "No such constraint"
     )
@@ -215,7 +215,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE INDEX ON :Person(firstname, lastname)".fixNewLines)
 
     // then
-    failWithError(Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+    failWithError(Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility + Configs.Version3_2 - Configs.AllRulePlanners,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
       "There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
                   "A constraint cannot be created until the index has been dropped.")
@@ -227,7 +227,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // then
     failWithError(
-      Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      Configs.Interpreted + Configs.Compiled + Configs.Procs - Configs.BackwardsCompatibility + Configs.Version3_2 - Configs.AllRulePlanners,
       "CREATE INDEX ON :Person(firstname, lastname)",
       "Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
                   "so an index is already created that matches this.")
