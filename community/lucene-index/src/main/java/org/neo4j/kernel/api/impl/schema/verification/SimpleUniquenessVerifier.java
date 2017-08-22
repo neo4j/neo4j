@@ -67,19 +67,17 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                 Fields fields = leafReaderContext.reader().fields();
                 for ( String field : fields )
                 {
-                    if ( LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+                    if ( LuceneDocumentStructure.useFieldForUniquenessVerification( field ) )
                     {
-                        continue;
-                    }
-
-                    TermsEnum terms = LuceneDocumentStructure.originalTerms( fields.terms( field ), field );
-                    BytesRef termsRef;
-                    while ( (termsRef = terms.next()) != null )
-                    {
-                        if ( terms.docFreq() > 1 )
+                        TermsEnum terms = LuceneDocumentStructure.originalTerms( fields.terms( field ), field );
+                        BytesRef termsRef;
+                        while ( (termsRef = terms.next()) != null )
                         {
-                            collector.init( terms.docFreq() );
-                            searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                            if ( terms.docFreq() > 1 )
+                            {
+                                collector.init( terms.docFreq() );
+                                searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
+                            }
                         }
                     }
                 }

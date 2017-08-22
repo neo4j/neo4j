@@ -186,6 +186,16 @@ enum ValueEncoding
         return propertyNumber + key();
     }
 
+    static int fieldPropertyNumber( String fieldName )
+    {
+        int index = 0;
+        for ( int i = 0; i < fieldName.length() && Character.isDigit( fieldName.charAt( i ) ); i++ )
+        {
+            index++;
+        }
+        return index == 0 ? 0 : Integer.parseInt( fieldName.substring( 0, index ) );
+    }
+
     abstract boolean canEncode( Object value );
 
     abstract Field encodeField( String name, Object value );
