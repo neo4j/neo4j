@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.values.AnyValue
 
 case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
@@ -58,7 +59,7 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
 
           override def setLongAt(offset: Int, value: Long): Unit = longRows(offset + longIndexSnapshot) = value
 
-          override def setRefAt(offset: Int, value: Any): Unit = refRows(offset + refIndexSnapshot) = value
+          override def setRefAt(offset: Int, value: AnyValue): Unit = refRows(offset + refIndexSnapshot) = value
 
           // when called from PrimitiveExecutionContext#copyFrom the array creation is redundant, it occurs again in
           // PrimitiveExecutionContext#copyFrom
@@ -70,37 +71,37 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
             longs
           }
 
-          override def refs(): Array[Any] = {
-            val refs = new Array[Any](refColumnCount)
+          override def refs(): Array[AnyValue] = {
+            val refs = new Array[AnyValue](refColumnCount)
             System.arraycopy(refRows, refIndexSnapshot, refs, 0, refColumnCount)
             refs
           }
 
-          override def getRefAt(offset: Int): Any = refRows(offset + refIndexSnapshot)
+          override def getRefAt(offset: Int): AnyValue = refRows(offset + refIndexSnapshot)
 
           override def copyFrom(input: ExecutionContext): Unit = fail()
 
           override def getLongAt(offset: Int): Long = longRows(offset + longIndexSnapshot)
 
-          override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = fail()
+          override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
 
           override def createClone(): ExecutionContext = fail()
 
-          override def newWith1(key1: String, value1: Any): ExecutionContext = fail()
+          override def newWith1(key1: String, value1: AnyValue): ExecutionContext = fail()
 
-          override def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext = fail()
+          override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
 
-          override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext = fail()
+          override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
 
           override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
 
-          override def +=(kv: (String, Any)): this.type = fail()
+          override def +=(kv: (String, AnyValue)): this.type = fail()
 
           override def -=(key: String): this.type = fail()
 
-          override def iterator: Iterator[(String, Any)] = fail()
+          override def iterator: Iterator[(String, AnyValue)] = fail()
 
-          override def get(key: String): Option[Any] = fail()
+          override def get(key: String): Option[AnyValue] = fail()
 
           private def fail(): Nothing =
             throw new InternalException(s"Not supported in anonymous ${classOf[EagerRegisterPipe]} execution context")
@@ -117,8 +118,8 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
     override protected def newArray(size: Int): Array[Long] = new Array[Long](size)
   }
 
-  private class ResizableRefArray(initialSize: Int, growth: Int) extends ResizableArray[Any](initialSize, growth) {
-    override protected def newArray(size: Int): Array[Any] = new Array[Any](size)
+  private class ResizableRefArray(initialSize: Int, growth: Int) extends ResizableArray[AnyValue](initialSize, growth) {
+    override protected def newArray(size: Int): Array[AnyValue] = new Array[AnyValue](size)
   }
 
   private abstract class ResizableArray[T](initialSize: Int, growth: Int) {
