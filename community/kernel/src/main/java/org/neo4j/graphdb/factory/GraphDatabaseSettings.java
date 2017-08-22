@@ -413,6 +413,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> enable_native_schema_index =
             setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
 
+    // Bloom index
+    @Internal
+    public static final Setting<List<String>> bloom_indexed_properties =
+            setting( "unsupported.dbms.bloom_indexed_properties", STRING_LIST, TRUE );
+
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
