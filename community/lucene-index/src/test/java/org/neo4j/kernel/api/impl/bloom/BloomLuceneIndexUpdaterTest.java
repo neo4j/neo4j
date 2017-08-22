@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -39,7 +39,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class InsightLuceneIndexUpdaterTest
+public class BloomLuceneIndexUpdaterTest
 {
     @ClassRule
     public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -55,9 +55,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldFindNodeWithString() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -74,7 +74,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 assertEquals( firstID, reader.query( "hello" ).next() );
@@ -89,9 +89,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldRepresentPropertyChanges() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -117,7 +117,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -137,9 +137,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldNotFindRemovedNodes() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -164,7 +164,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -179,9 +179,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -198,7 +198,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -213,9 +213,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop", "prop2" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop", "prop2" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -236,7 +236,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "tomtar", "karl" );
@@ -251,9 +251,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "first", "last" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "first", "last" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstID;
             long secondID;
@@ -281,7 +281,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
@@ -297,9 +297,9 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
             long firstNodeID;
             long secondNodeID;
@@ -324,7 +324,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -336,7 +336,7 @@ public class InsightLuceneIndexUpdaterTest
                 PrimitiveLongIterator different = reader.query( "different" );
                 assertFalse( different.hasNext() );
             }
-            try ( InsightIndexReader reader = insightIndex.getRelationshipReader() )
+            try ( BloomIndexReader reader = bloomIndex.getRelationshipReader() )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );

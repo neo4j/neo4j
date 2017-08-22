@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -34,13 +34,13 @@ import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
-public class InsightIndex implements AutoCloseable
+public class BloomIndex implements AutoCloseable
 {
-    private final InsightLuceneIndex nodeIndex;
-    private final InsightLuceneIndex relationshipIndex;
+    private final BloomLuceneIndex nodeIndex;
+    private final BloomLuceneIndex relationshipIndex;
     private final String[] properties;
 
-    public InsightIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
+    public BloomIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
     {
         this.properties = properties;
         Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
@@ -50,30 +50,30 @@ public class InsightIndex implements AutoCloseable
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, this.properties );
+        nodeIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, this.properties );
         nodeIndex.open();
 
         storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        relationshipIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
+        relationshipIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, properties );
         relationshipIndex.open();
     }
 
-    public InsightIndexTransactionEventUpdater getUpdater() throws IOException
+    public BloomIndexTransactionEventUpdater getUpdater() throws IOException
     {
-        WritableDatabaseInsightIndex writableNodeIndex = new WritableDatabaseInsightIndex( nodeIndex );
-        WritableDatabaseInsightIndex writableRelationshipIndex = new WritableDatabaseInsightIndex( relationshipIndex );
-        return new InsightIndexTransactionEventUpdater( writableNodeIndex, writableRelationshipIndex, properties );
+        WritableDatabaseBloomIndex writableNodeIndex = new WritableDatabaseBloomIndex( nodeIndex );
+        WritableDatabaseBloomIndex writableRelationshipIndex = new WritableDatabaseBloomIndex( relationshipIndex );
+        return new BloomIndexTransactionEventUpdater( writableNodeIndex, writableRelationshipIndex, properties );
     }
 
-    public InsightIndexReader getNodeReader() throws IOException
+    public BloomIndexReader getNodeReader() throws IOException
     {
         return nodeIndex.getIndexReader();
     }
 
-    public InsightIndexReader getRelationshipReader() throws IOException
+    public BloomIndexReader getRelationshipReader() throws IOException
     {
         return relationshipIndex.getIndexReader();
     }

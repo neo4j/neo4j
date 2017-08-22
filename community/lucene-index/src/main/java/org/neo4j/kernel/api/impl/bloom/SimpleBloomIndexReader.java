@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
@@ -40,16 +40,16 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
- * @see PartitionedInsightIndexReader
+ * @see PartitionedBloomIndexReader
  */
-class SimpleInsightIndexReader implements InsightIndexReader
+class SimpleBloomIndexReader implements BloomIndexReader
 {
     private final PartitionSearcher partitionSearcher;
     private final EnglishAnalyzer analyzer;
     private String[] properties;
     private final QueryParser multiFieldQueryParser;
 
-    SimpleInsightIndexReader( PartitionSearcher partitionSearcher, String[] properties )
+    SimpleBloomIndexReader( PartitionSearcher partitionSearcher, String[] properties )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;

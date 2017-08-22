@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.document.Document;
 
@@ -31,13 +31,13 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
-public class InsightIndexTransactionEventUpdater implements TransactionEventHandler<Object>
+public class BloomIndexTransactionEventUpdater implements TransactionEventHandler<Object>
 {
-    private final WritableDatabaseInsightIndex nodeIndex;
-    private final WritableDatabaseInsightIndex relationshipIndex;
+    private final WritableDatabaseBloomIndex nodeIndex;
+    private final WritableDatabaseBloomIndex relationshipIndex;
     private final String[] properties;
 
-    InsightIndexTransactionEventUpdater( WritableDatabaseInsightIndex nodeIndex, WritableDatabaseInsightIndex relationshipIndex, String[] properties )
+    BloomIndexTransactionEventUpdater( WritableDatabaseBloomIndex nodeIndex, WritableDatabaseBloomIndex relationshipIndex, String[] properties )
     {
         this.nodeIndex = nodeIndex;
         this.relationshipIndex = relationshipIndex;
@@ -92,7 +92,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         deleteIndexData( data.deletedNodes(), nodeIndex );
     }
 
-    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state, WritableDatabaseInsightIndex nodeIndex )
+    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state, WritableDatabaseBloomIndex nodeIndex )
     {
         for ( PropertyEntry<Node> propertyEntry : propertyEntries )
         {
@@ -103,10 +103,10 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
                 return;
             }
 
-            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
+            Document document = BloomInsightDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
             try
             {
-                nodeIndex.getIndexWriter().updateDocument( LuceneInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
+                nodeIndex.getIndexWriter().updateDocument( BloomInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
             }
             catch ( IOException e )
             {
@@ -123,13 +123,13 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         }
     }
 
-    private void deleteIndexData( Iterable<Node> nodes, WritableDatabaseInsightIndex nodeIndex )
+    private void deleteIndexData( Iterable<Node> nodes, WritableDatabaseBloomIndex nodeIndex )
     {
         for ( Node node : nodes )
         {
             try
             {
-                nodeIndex.getIndexWriter().deleteDocuments( LuceneInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
+                nodeIndex.getIndexWriter().deleteDocuments( BloomInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
             }
             catch ( IOException e )
             {
