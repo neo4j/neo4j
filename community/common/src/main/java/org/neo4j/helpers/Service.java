@@ -33,9 +33,7 @@ import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
-import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static java.lang.Boolean.getBoolean;
 
 /**
  * A utility for locating services. This implements the same functionality as <a
@@ -119,7 +117,7 @@ public abstract class Service
      * Enabling this is useful for debugging why services aren't loaded where you would expect them to.
      */
     private static final boolean printServiceLoaderStackTraces =
-            flag( Service.class, "printServiceLoaderStackTraces", false );
+            getBoolean( Service.class.getCanonicalName() + ".printServiceLoaderStackTraces" );
 
     final Set<String> keys;
 
@@ -264,18 +262,26 @@ public abstract class Service
 
     private static <T> Iterable<T> filterExceptions( final Iterable<T> iterable )
     {
-        return () -> new PrefetchingIterator<T>()
+        return () -> new Iterator<T>()
         {
-            final Iterator<T> iterator = iterable.iterator();
+            private final Iterator<T> iterator = iterable.iterator();
+            private boolean hasFetchedNext;
+            private T next;
 
             @Override
-            protected T fetchNextOrNull()
+            public boolean hasNext()
             {
+                if ( hasFetchedNext )
+                {
+                    return next != null;
+                }
+
                 while ( iterator.hasNext() )
                 {
                     try
                     {
-                        return iterator.next();
+                        next = iterator.next();
+                        break;
                     }
                     catch ( Throwable e )
                     {
@@ -285,7 +291,26 @@ public abstract class Service
                         }
                     }
                 }
-                return null;
+                hasFetchedNext = true;
+                return next != null;
+            }
+
+            @Override
+            public T next()
+            {
+                if ( !hasNext() )
+                {
+                    throw new NoSuchElementException();
+                }
+                try
+                {
+                    return next;
+                }
+                finally
+                {
+                    next = null;
+                    hasFetchedNext = false;
+                }
             }
         };
     }
