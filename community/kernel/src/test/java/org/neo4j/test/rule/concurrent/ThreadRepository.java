@@ -30,6 +30,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.test.ThreadTestUtils;
+
 import static java.util.concurrent.locks.LockSupport.getBlocker;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -38,6 +40,11 @@ public class ThreadRepository implements TestRule
     public interface Task
     {
         void perform() throws Exception;
+
+        default ThreadInfo run( ThreadRepository repo )
+        {
+            return repo.execute( this );
+        }
     }
 
     public interface ThreadInfo
@@ -47,6 +54,8 @@ public class ThreadRepository implements TestRule
         Object blocker();
 
         Thread.State getState();
+
+        void waitUntilBlockedOrWaiting( long maxWaitMillis );
     }
 
     private Repository repository;
@@ -313,6 +322,12 @@ public class ThreadRepository implements TestRule
         public Object blocker()
         {
             return getBlocker( this );
+        }
+
+        @Override
+        public void waitUntilBlockedOrWaiting( long maxWaitMillis )
+        {
+            ThreadTestUtils.awaitThreadState( this, maxWaitMillis, State.BLOCKED, State.WAITING, State.TIMED_WAITING );
         }
     }
 

@@ -39,6 +39,16 @@ import java.lang.annotation.Target;
  */
 public class RepeatRule implements TestRule
 {
+    public RepeatRule()
+    {
+        defaultRepetitions = 0;
+    }
+
+    public RepeatRule( int defaultRepetitions )
+    {
+        this.defaultRepetitions = defaultRepetitions;
+    }
+
     @Retention( RetentionPolicy.RUNTIME )
     @Target(ElementType.METHOD)
     public @interface Repeat
@@ -46,6 +56,7 @@ public class RepeatRule implements TestRule
         int times();
     }
 
+    private final int defaultRepetitions;
     private int count;
 
     private class RepeatStatement extends Statement
@@ -76,6 +87,10 @@ public class RepeatRule implements TestRule
         if ( repeat != null )
         {
             return new RepeatStatement( repeat.times(), base );
+        }
+        if ( defaultRepetitions != 0 )
+        {
+            return new RepeatStatement( defaultRepetitions, base );
         }
         return base;
     }
