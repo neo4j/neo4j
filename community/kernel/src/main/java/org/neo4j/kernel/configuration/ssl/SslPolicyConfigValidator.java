@@ -55,9 +55,10 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
 
         Set<String> policyNames = new HashSet<>();
 
-        for ( String longKey : params.keySet() )
+        for ( Map.Entry<String,String> paramsEntry : params.entrySet() )
         {
-            Matcher matcher = groupSettingPattern.matcher( longKey );
+            String settingName = paramsEntry.getKey();
+            Matcher matcher = groupSettingPattern.matcher( settingName );
             if ( !matcher.matches() )
             {
                 continue;
@@ -68,10 +69,10 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
 
             if ( !validShortKeys.contains( shortKey ) )
             {
-                throw new InvalidSettingException( "Invalid setting name: " + longKey );
+                throw new InvalidSettingException( "Invalid setting name: " + settingName );
             }
 
-            validatedParams.put( longKey, params.get( longKey ) );
+            validatedParams.put( settingName, paramsEntry.getValue() );
         }
 
         for ( String policyName : policyNames )

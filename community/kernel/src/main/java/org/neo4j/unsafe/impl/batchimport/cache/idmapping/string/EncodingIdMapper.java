@@ -470,7 +470,7 @@ public class EncodingIdMapper implements IdMapper
         }
         workers.awaitAndThrowOnErrorStrict( RuntimeException.class );
 
-        int numberOfCollisions = 0;
+        long numberOfCollisions = 0;
         for ( DetectWorker detectWorker : workers )
         {
             numberOfCollisions += detectWorker.numberOfCollisions;
