@@ -41,7 +41,7 @@ class PointerChecking
      *
      * @param result result from {@link GenerationSafePointerPair#FLAG_READ} or
      * {@link GenerationSafePointerPair#write(PageCursor, long, long, long)}.
-     * @param allowNoNode If {@link TreeNodeV3#NO_NODE_FLAG} is allowed as pointer value.
+     * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
      */
     static void checkPointer( long result, boolean allowNoNode )
     {

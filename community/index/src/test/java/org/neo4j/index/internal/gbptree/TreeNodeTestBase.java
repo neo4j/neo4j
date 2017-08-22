@@ -511,7 +511,7 @@ public abstract class TreeNodeTestBase
         // WHEN
         try
         {
-            TreeNodes.instantiateTreeNode( TreeNodeV3.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
+            TreeNodes.instantiateTreeNode( node.keyOffset( 0 ) + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )

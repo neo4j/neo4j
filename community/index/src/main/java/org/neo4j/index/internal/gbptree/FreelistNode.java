@@ -35,7 +35,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  * </pre>
  *
  * A free-list node is a page in the same {@link org.neo4j.io.pagecache.PagedFile mapped page cache file}
- * as a {@link TreeNodeV3}. They distinguish themselves from one another by a "node type" one-byte header.
+ * as a {@link TreeNode}. They distinguish themselves from one another by a "node type" one-byte header.
  */
 class FreelistNode
 {

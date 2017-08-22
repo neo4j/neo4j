@@ -29,6 +29,7 @@
   </scm>
 
   <modules>
+    <module>index</module>
     <module>query-logging</module>
     <module>com</module>
     <module>cluster</module>

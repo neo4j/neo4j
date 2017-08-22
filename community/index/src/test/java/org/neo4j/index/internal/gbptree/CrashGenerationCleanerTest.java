@@ -431,7 +431,7 @@ public class CrashGenerationCleanerTest
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNodeV3<MutableLong,MutableLong>
+    class CorruptableTreeNode extends TreeNodeV2<MutableLong,MutableLong>
     {
         CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {

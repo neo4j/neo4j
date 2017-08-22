@@ -54,7 +54,7 @@ class KeySearch
      * Leaves cursor on same page as when called. No guarantees on offset.
      *
      * @param cursor {@link PageCursor} pinned to page with node (internal or leaf does not matter)
-     * @param bTreeNode {@link TreeNodeV3} that knows how to operate on KEY and VALUE
+     * @param bTreeNode {@link TreeNode} that knows how to operate on KEY and VALUE
      * @param key KEY to search for
      * @param readKey KEY to use as temporary storage during calculation.
      * @param keyCount number of keys in node when starting search
