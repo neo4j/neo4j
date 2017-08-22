@@ -28,10 +28,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
-import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.BUBBLE;
-import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.REPLACE;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_MID_CHILD;
 import static org.neo4j.index.internal.gbptree.StructurePropagation.UPDATE_RIGHT_CHILD;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.BUBBLE;
+import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceStrategy.REPLACE;
 
 /**
  * Implementation of GB+ tree insert/remove algorithms.
@@ -303,7 +303,7 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.goTo( cursor, "child", childId );
             level.treeNodeId = cursor.getCurrentPageId();
 
-            assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+            assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
         }
 
         assert TreeNode.isLeaf( cursor ) : "Ended up on a tree node which isn't a leaf after moving cursor towards " +
