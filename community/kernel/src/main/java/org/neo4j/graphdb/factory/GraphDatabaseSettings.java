@@ -567,7 +567,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> procedure_unrestricted =
             setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 
-    @Description("If dbms.killQueries give a verbose output, with information about whitch querys where not found." )
+    @Description("If dbms.killQueries give a verbose output, with information about which querys where not found." )
     public static final Setting<Boolean> kill_query_verbose =
             setting( "dbms.procedures.kill_query_verbose", BOOLEAN, FALSE );
 
