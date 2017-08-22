@@ -60,7 +60,7 @@ case class ExpandAllRegisterPipe(source: Pipe,
           PrimitiveLongHelper.map(relationships, relId => {
             relationships.relationshipVisit(relId, relVisitor)
             val outputRow = PrimitiveExecutionContext(pipelineInformation)
-            outputRow.copyFrom(inputRow)
+            inputRow.copyTo(outputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
             outputRow

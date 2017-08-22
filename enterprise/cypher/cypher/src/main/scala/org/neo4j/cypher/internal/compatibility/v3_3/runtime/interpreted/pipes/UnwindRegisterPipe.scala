@@ -58,7 +58,7 @@ case class UnwindRegisterPipe(source: Pipe, collection: Expression, offset: Int,
       nextItem = null
       if (unwindIterator != null && unwindIterator.hasNext) {
         nextItem = PrimitiveExecutionContext(pipeline)
-        nextItem.copyFrom(currentInputRow)
+        currentInputRow.copyTo(nextItem)
         nextItem.setRefAt(offset, unwindIterator.next())
       } else {
         if (input.hasNext) {

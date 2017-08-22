@@ -129,7 +129,13 @@ object PipelineInformation {
   }
 }
 
-class PipelineInformation(private var slots: Map[String, Slot], var numberOfLongs: Int, var numberOfReferences: Int) {
+class PipelineInformation(
+                           private var slots: Map[String, Slot],
+                           val initialNumberOfLongs: Int,
+                           val initialNumberOfReferences: Int) {
+
+  var numberOfLongs = initialNumberOfLongs
+  var numberOfReferences = initialNumberOfReferences
 
   def apply(key: String): Slot = slots.apply(key)
 
@@ -140,7 +146,7 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
     case RefSlot(_, nullable, typ, key) => newReference(key, nullable, typ)
   }
 
-  def deepClone(): PipelineInformation = {
+  def seedClone(): PipelineInformation = {
     new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
   }
 

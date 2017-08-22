@@ -41,7 +41,7 @@ class UnwindRegisterPipeTest extends CypherFunSuite {
       .newReference("x", nullable = false, CTAny)
 
     val outputPipeline = inputPipeline
-      .deepClone()
+      .seedClone()
       .newReference("y", nullable = true, CTAny)
 
     val x = inputPipeline.getReferenceOffsetFor("x")

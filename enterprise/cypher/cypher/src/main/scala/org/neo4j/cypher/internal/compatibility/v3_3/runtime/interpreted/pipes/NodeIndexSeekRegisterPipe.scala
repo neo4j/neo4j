@@ -53,7 +53,7 @@ case class NodeIndexSeekRegisterPipe(ident: String,
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
       val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context)
+      state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
       context.setLongAt(offset, node.getId)
       context
     }

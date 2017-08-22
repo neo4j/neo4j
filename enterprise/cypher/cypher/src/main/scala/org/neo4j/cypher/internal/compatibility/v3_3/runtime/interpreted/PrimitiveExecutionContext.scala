@@ -40,13 +40,25 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
     case _ => fail()
   }
 
-  def copyFrom(input: ExecutionContext): Unit = input match {
+  override def copyTo(target: ExecutionContext): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (otherPipeline.numberOfLongs > pipeline.numberOfLongs || otherPipeline.numberOfReferences > pipeline.numberOfReferences)
+      if (pipeline.numberOfLongs > otherPipeline.initialNumberOfLongs ||
+          pipeline.numberOfReferences > otherPipeline.initialNumberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
-        System.arraycopy(other.longs, 0, longs, 0, otherPipeline.numberOfLongs)
-        System.arraycopy(other.refs, 0, refs, 0, otherPipeline.numberOfReferences)
+        System.arraycopy(longs, 0, other.longs, 0, pipeline.numberOfLongs)
+        System.arraycopy(refs, 0, other.refs, 0, pipeline.numberOfReferences)
+      }
+    case _ => fail()
+  }
+
+  def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
+    case other@PrimitiveExecutionContext(otherPipeline) =>
+      if (nLongs > pipeline.numberOfLongs || nRefs > pipeline.numberOfReferences)
+        throw new InternalException("Tried to copy more data into less.")
+      else {
+        System.arraycopy(other.longs, 0, longs, 0, nLongs)
+        System.arraycopy(other.refs, 0, refs, 0, nRefs)
       }
     case _ => fail()
   }

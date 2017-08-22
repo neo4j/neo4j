@@ -88,7 +88,7 @@ object RegisterAllocation {
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
           planStack.push((nullable, current))
           val argumentPipeline = outputStack.top
-          argumentStack.push(argumentPipeline.deepClone())
+          argumentStack.push(argumentPipeline.seedClone())
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
@@ -149,13 +149,13 @@ object RegisterAllocation {
         newPipeline
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline.newLong(to, nullable, CTNode)
         newPipeline
 
       case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
-        val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline
 
@@ -178,18 +178,18 @@ object RegisterAllocation {
         incomingPipeline
 
       case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
-        val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
 
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
-        val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
-        case VarExpand(lhs: LogicalPlan,
+      case VarExpand(lhs: LogicalPlan,
                        IdName(from),
                        dir,
                        projectedDir,
@@ -203,16 +203,16 @@ object RegisterAllocation {
                        _,
                        _,
                        _) =>
-          val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
 
-          // We register these on the incoming pipeline after cloning it, since we don't need these slots in
-          // the produced rows
-          incomingPipeline.newLong(tempNode, nullable = false, CTNode)
-          incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+        // We register these on the incoming pipeline after cloning it, since we don't need these slots in
+        // the produced rows
+        incomingPipeline.newLong(tempNode, nullable = false, CTNode)
+        incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
 
-          newPipeline.newLong(to, nullable, CTNode)
-          newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-          newPipeline
+        newPipeline.newLong(to, nullable, CTNode)
+        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+        newPipeline
 
       case CreateNode(_, IdName(name), _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTNode)
@@ -230,7 +230,7 @@ object RegisterAllocation {
         incomingPipeline
 
       case UnwindCollection(_, IdName(variable), expression) =>
-        val newPipeline = incomingPipeline.deepClone()
+        val newPipeline = incomingPipeline.seedClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
@@ -245,8 +245,12 @@ object RegisterAllocation {
       case _: Apply =>
         rhsPipeline
 
+      case _: SemiApply |
+           _: AntiSemiApply =>
+        lhsPipeline
+
       case _:CartesianProduct =>
-        val cartesianProductPipeline = lhsPipeline.deepClone()
+        val cartesianProductPipeline = lhsPipeline.seedClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>
             cartesianProductPipeline.add(k, slot)

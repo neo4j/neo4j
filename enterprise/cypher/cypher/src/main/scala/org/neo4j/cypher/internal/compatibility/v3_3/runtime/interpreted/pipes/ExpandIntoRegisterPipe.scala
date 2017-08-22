@@ -66,7 +66,7 @@ case class ExpandIntoRegisterPipe(source: Pipe,
 
           PrimitiveLongHelper.map(relationships, (relId: Long) => {
             val outputRow = PrimitiveExecutionContext(pipelineInformation)
-            outputRow.copyFrom(inputRow)
+            inputRow.copyTo(outputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow
           })
