@@ -20,8 +20,34 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite}
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
 class ManualIndexProcsIT extends ExecutionEngineFunSuite {
+
+  override def databaseConfig(): Map[Setting[_], String] = Map(
+    GraphDatabaseSettings.node_auto_indexing -> "true",
+    GraphDatabaseSettings.node_keys_indexable -> "name,email",
+    GraphDatabaseSettings.relationship_auto_indexing -> "true",
+    GraphDatabaseSettings.relationship_keys_indexable -> "weight")
+
+  test("Auto-index node from exact key value match") {
+    val node = createNode(Map("name" -> "Anna"))
+
+    val result = execute( """CALL db.nodeManualIndexSeek('node_auto_index', 'name', 'Anna') YIELD node AS n RETURN n""").toList
+
+    result should equal(List(Map("n" -> node)))
+  }
+
+  test("Auto-index relationship from exact key value match") {
+    val a = createNode()
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val result = execute( """CALL db.relationshipManualIndexSeek('relationship_auto_index', 'weight', 12) YIELD relationship AS r RETURN r""").toList
+
+    result should equal(List(Map("r" -> rel)))
+  }
 
   test("Node from exact key value match") {
     val node = createNode()
