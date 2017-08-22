@@ -70,10 +70,6 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
                 channel.getCurrentPosition( positionMarker );
 
                 byte versionCode = channel.get();
-                if ( versionCode == 0 )
-                {
-                    return null;
-                }
                 byte typeCode = channel.get();
 
                 LogEntryVersion version = null;

@@ -29,28 +29,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
 {
-    EMPTY
-            {
-                @Override
-                public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
-                                       CommandReaderFactory commandReader ) throws IOException
-                {
-                    return null;
-                }
-
-                @Override
-                public byte byteCode()
-                {
-                    return LogEntryByteCodes.EMPTY;
-                }
-
-                @Override
-                public boolean skip()
-                {
-                    return false;
-                }
-            },
-
     TX_START
             {
                 @Override

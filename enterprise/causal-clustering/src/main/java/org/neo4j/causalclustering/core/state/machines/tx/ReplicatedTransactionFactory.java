@@ -71,10 +71,6 @@ public class ReplicatedTransactionFactory
             throw new RuntimeException( e );
         }
 
-        /*
-         * This trims down the array to send up to the actual index it was written. While sending additional zeroes
-         * is safe, since LogEntryReader stops reading once it sees a zero entry, it is wasteful.
-         */
         byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 
