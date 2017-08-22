@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.bloom;
 
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
@@ -45,22 +45,21 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 class SimpleBloomIndexReader implements BloomIndexReader
 {
     private final PartitionSearcher partitionSearcher;
-    private final EnglishAnalyzer analyzer;
+    private final Analyzer analyzer;
     private String[] properties;
-    private final QueryParser multiFieldQueryParser;
 
-    SimpleBloomIndexReader( PartitionSearcher partitionSearcher, String[] properties )
+    SimpleBloomIndexReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;
-        analyzer = new EnglishAnalyzer();
-        multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
+        this.analyzer = analyzer;
     }
 
     public PrimitiveLongIterator query( String... query )
     {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        QueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
         for ( String s : query )
         {
             for ( String property : properties )

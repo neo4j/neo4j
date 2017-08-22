@@ -34,13 +34,13 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
-class BloomInsightDocumentStructure
+class BloomDocumentStructure
 {
     static final String ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
-    private BloomInsightDocumentStructure()
+    private BloomDocumentStructure()
     {
     }
 
