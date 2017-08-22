@@ -58,7 +58,8 @@ import static java.lang.String.format;
  * <ol>
  * <li>Copy {@link PhysicalLogCommandReaderV3_0_2} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
- * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes</li>
+ * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes, version needs to be negative
+ * to detect log files from older versions of neo4j</li>
  * <li>Modify {@link StorageCommand#serialize(WritableChannel)}.
  * Also {@link LogEntryWriter} (if log entry layout has changed) with required changes</li>
  * <li>Change {@link #CURRENT} to point to the newly created version</li>
