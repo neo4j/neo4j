@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.bloom;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
@@ -41,12 +42,13 @@ class BloomLuceneIndex extends AbstractLuceneIndex
 {
 
     private String[] properties;
+    private final Analyzer analyzer;
 
-    BloomLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
-            String[] properties )
+    BloomLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer )
     {
         super( indexStorage, partitionFactory );
         this.properties = properties;
+        this.analyzer = analyzer;
     }
 
     private static final String KEY_STATUS = "status";
@@ -129,14 +131,14 @@ class BloomLuceneIndex extends AbstractLuceneIndex
     private SimpleBloomIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleBloomIndexReader( singlePartition.acquireSearcher(), properties );
+        return new SimpleBloomIndexReader( singlePartition.acquireSearcher(), properties, analyzer );
     }
 
     private PartitionedBloomIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
             throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedBloomIndexReader( searchers, properties );
+        return new PartitionedBloomIndexReader( searchers, properties, analyzer );
     }
 
 }

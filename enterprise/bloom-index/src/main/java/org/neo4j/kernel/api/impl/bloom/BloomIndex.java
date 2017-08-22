@@ -45,21 +45,24 @@ public class BloomIndex implements AutoCloseable
     public BloomIndex( FileSystemAbstraction fileSystem, File file, Config config ) throws IOException
     {
         this.properties = config.get( GraphDatabaseSettings.bloom_indexed_properties ).toArray( new String[0] );
-        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
+        EnglishAnalyzer analyzer = new EnglishAnalyzer();
+        Factory<IndexWriterConfig> population = () -> {
+            return IndexWriterConfigs.population( analyzer );
+        };
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        nodeIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, this.properties );
+        nodeIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, this.properties, analyzer);
         nodeIndex.open();
 
         storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        relationshipIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, properties );
+        relationshipIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, properties,  analyzer);
         relationshipIndex.open();
     }
 

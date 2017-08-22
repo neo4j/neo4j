@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.bloom;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
@@ -41,10 +43,9 @@ class PartitionedBloomIndexReader implements BloomIndexReader
 
     private final List<BloomIndexReader> indexReaders;
 
-    PartitionedBloomIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties )
+    PartitionedBloomIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleBloomIndexReader( partitionSearcher,
-                properties ) )
+        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleBloomIndexReader( partitionSearcher, properties, analyzer ) )
                 .collect( Collectors.toList() ) );
     }
 

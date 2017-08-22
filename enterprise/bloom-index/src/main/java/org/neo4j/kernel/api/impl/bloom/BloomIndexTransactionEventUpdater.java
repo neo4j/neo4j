@@ -103,10 +103,10 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
                 return;
             }
 
-            Document document = BloomInsightDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
+            Document document = BloomDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
             try
             {
-                nodeIndex.getIndexWriter().updateDocument( BloomInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
+                nodeIndex.getIndexWriter().updateDocument( BloomDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
             }
             catch ( IOException e )
             {
@@ -129,7 +129,7 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
         {
             try
             {
-                nodeIndex.getIndexWriter().deleteDocuments( BloomInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
+                nodeIndex.getIndexWriter().deleteDocuments( BloomDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
             }
             catch ( IOException e )
             {
