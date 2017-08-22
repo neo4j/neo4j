@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
-import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 
 /**
  * Schema Lucene index writer implementation that supports writing into multiple partitions and creates partitions
@@ -39,16 +37,16 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
  * {@link #MAXIMUM_PARTITION_SIZE}.
  * First observable partition that satisfy writer criteria is used for writing.
  */
-class PartitionedInsightIndexWriter
+class PartitionedInsightBloomWriter
 {
-    private final WritableDatabaseInsightIndex index;
+    private final WritableDatabaseBloomIndex index;
 
     // by default we still keep a spare of 10% to the maximum partition size: During concurrent updates
     // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
 
-    PartitionedInsightIndexWriter( WritableDatabaseInsightIndex index ) throws IOException
+    PartitionedInsightBloomWriter( WritableDatabaseBloomIndex index ) throws IOException
     {
         this.index = index;
     }

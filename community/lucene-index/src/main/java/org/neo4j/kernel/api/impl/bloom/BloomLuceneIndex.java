@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -37,12 +37,12 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 import static java.util.Collections.singletonMap;
 
-class InsightLuceneIndex extends AbstractLuceneIndex
+class BloomLuceneIndex extends AbstractLuceneIndex
 {
 
     private String[] properties;
 
-    InsightLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
+    BloomLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
             String[] properties )
     {
         super( indexStorage, partitionFactory );
@@ -55,13 +55,13 @@ class InsightLuceneIndex extends AbstractLuceneIndex
 
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
 
-    public PartitionedInsightIndexWriter getIndexWriter( WritableDatabaseInsightIndex writableIndex ) throws IOException
+    public PartitionedInsightBloomWriter getIndexWriter( WritableDatabaseBloomIndex writableIndex ) throws IOException
     {
         ensureOpen();
-        return new PartitionedInsightIndexWriter( writableIndex );
+        return new PartitionedInsightBloomWriter( writableIndex );
     }
 
-    public InsightIndexReader getIndexReader() throws IOException
+    public BloomIndexReader getIndexReader() throws IOException
     {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
@@ -126,17 +126,17 @@ class InsightLuceneIndex extends AbstractLuceneIndex
         indexStorage.storeIndexFailure( failure );
     }
 
-    private SimpleInsightIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+    private SimpleBloomIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleInsightIndexReader( singlePartition.acquireSearcher(), properties );
+        return new SimpleBloomIndexReader( singlePartition.acquireSearcher(), properties );
     }
 
-    private PartitionedInsightIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
+    private PartitionedBloomIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
             throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedInsightIndexReader( searchers, properties );
+        return new PartitionedBloomIndexReader( searchers, properties );
     }
 
 }

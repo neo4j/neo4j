@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values;
  * Enumeration representing all possible property types with corresponding encodings and query structures for Lucene
  * schema indexes.
  */
-enum InsightFieldEncoding
+enum BloomFieldEncoding
 {
     Number
             {
@@ -169,7 +169,7 @@ enum InsightFieldEncoding
 //                }
             };
 
-    private static final InsightFieldEncoding[] AllEncodings = values();
+    private static final BloomFieldEncoding[] AllEncodings = values();
 
     abstract String key();
 
@@ -178,9 +178,9 @@ enum InsightFieldEncoding
     abstract Field encodeField( String name, Value value );
 
 
-    public static InsightFieldEncoding forValue( Value value )
+    public static BloomFieldEncoding forValue( Value value )
     {
-        for ( InsightFieldEncoding encoding : AllEncodings )
+        for ( BloomFieldEncoding encoding : AllEncodings )
         {
             if ( encoding.canEncode( value ) )
             {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import java.io.IOException;
 import java.util.List;
@@ -25,22 +25,22 @@ import java.util.List;
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 
-class WritableDatabaseInsightIndex extends WritableAbstractDatabaseIndex<InsightLuceneIndex>
+class WritableDatabaseBloomIndex extends WritableAbstractDatabaseIndex<BloomLuceneIndex>
 {
-    private InsightLuceneIndex insightLuceneIndex;
+    private BloomLuceneIndex bloomLuceneIndex;
 
-    WritableDatabaseInsightIndex( InsightLuceneIndex insightLuceneIndex )
+    WritableDatabaseBloomIndex( BloomLuceneIndex bloomLuceneIndex )
     {
-        super( insightLuceneIndex );
-        this.insightLuceneIndex = insightLuceneIndex;
+        super( bloomLuceneIndex );
+        this.bloomLuceneIndex = bloomLuceneIndex;
     }
 
-    public PartitionedInsightIndexWriter getIndexWriter() throws IOException
+    public PartitionedInsightBloomWriter getIndexWriter() throws IOException
     {
-        return insightLuceneIndex.getIndexWriter( this );
+        return bloomLuceneIndex.getIndexWriter( this );
     }
 
-    public InsightIndexReader getIndexReader() throws IOException
+    public BloomIndexReader getIndexReader() throws IOException
     {
         return luceneIndex.getIndexReader();
     }

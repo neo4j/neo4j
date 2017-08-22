@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,13 +34,13 @@ import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
-class LuceneInsightDocumentStructure
+class BloomInsightDocumentStructure
 {
     static final String ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
-    private LuceneInsightDocumentStructure()
+    private BloomInsightDocumentStructure()
     {
     }
 
@@ -65,7 +65,7 @@ class LuceneInsightDocumentStructure
 
     static Field encodeValueField( String propertyKey, Value value )
     {
-        InsightFieldEncoding encoding = InsightFieldEncoding.forValue( value );
+        BloomFieldEncoding encoding = BloomFieldEncoding.forValue( value );
         return encoding.encodeField( propertyKey, value );
     }
 

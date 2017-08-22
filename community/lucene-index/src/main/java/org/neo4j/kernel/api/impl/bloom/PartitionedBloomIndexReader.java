@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.insight;
+package org.neo4j.kernel.api.impl.bloom;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,30 +26,29 @@ import java.util.stream.Collectors;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
- * Internally uses multiple {@link SimpleInsightIndexReader}s for individual partitions.
+ * Internally uses multiple {@link SimpleBloomIndexReader}s for individual partitions.
  *
- * @see SimpleInsightIndexReader
+ * @see SimpleBloomIndexReader
  */
-class PartitionedInsightIndexReader implements InsightIndexReader
+class PartitionedBloomIndexReader implements BloomIndexReader
 {
 
-    private final List<InsightIndexReader> indexReaders;
+    private final List<BloomIndexReader> indexReaders;
 
-    PartitionedInsightIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties )
+    PartitionedBloomIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleInsightIndexReader( partitionSearcher,
+        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleBloomIndexReader( partitionSearcher,
                 properties ) )
                 .collect( Collectors.toList() ) );
     }
 
-    private PartitionedInsightIndexReader( List<InsightIndexReader> readers )
+    private PartitionedBloomIndexReader( List<BloomIndexReader> readers )
     {
         this.indexReaders = readers;
     }
@@ -59,7 +58,7 @@ class PartitionedInsightIndexReader implements InsightIndexReader
         return partitionedOperation( reader -> innerQuery( reader, query ) );
     }
 
-    private PrimitiveLongIterator innerQuery( InsightIndexReader reader, String... query )
+    private PrimitiveLongIterator innerQuery( BloomIndexReader reader, String... query )
     {
 
         return reader.query( query );
@@ -79,7 +78,7 @@ class PartitionedInsightIndexReader implements InsightIndexReader
     }
 
     private PrimitiveLongIterator partitionedOperation(
-            Function<InsightIndexReader,PrimitiveLongIterator> readerFunction )
+            Function<BloomIndexReader,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections
                 .concat( indexReaders.parallelStream().map( readerFunction::apply ).collect( Collectors.toList() ) );
