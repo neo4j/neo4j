@@ -276,12 +276,17 @@ public class ListQueriesProcedureTest
             db.schema().indexFor( label( label ) ).on( property ).create();
             tx.success();
         }
+        ensureIndexesAreOnline();
+        shouldListUsedIndexes( label, property );
+    }
+
+    private void ensureIndexesAreOnline()
+    {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 5, SECONDS );
+            db.schema().awaitIndexesOnline( 60, SECONDS );
             tx.success();
         }
-        shouldListUsedIndexes( label, property );
     }
 
     @Test
@@ -295,6 +300,7 @@ public class ListQueriesProcedureTest
             db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( property ).create();
             tx.success();
         }
+        ensureIndexesAreOnline();
         shouldListUsedIndexes( label, property );
     }
 
@@ -308,11 +314,7 @@ public class ListQueriesProcedureTest
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
             tx.success();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 5, SECONDS );
-            tx.success();
-        }
+        ensureIndexesAreOnline();
         try ( Resource<Node> test = test( () ->
         {
             Node node = db.createNode( label( "Node" ) );
