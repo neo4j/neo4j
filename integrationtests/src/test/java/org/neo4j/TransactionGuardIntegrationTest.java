@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.KernelStatement;
@@ -102,6 +102,8 @@ public class TransactionGuardIntegrationTest
     public static CleanupRule cleanupRule = new CleanupRule();
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    private static final String BOLT_CONNECTOR_KEY = "bolt";
 
     private static final FakeClock fakeClock = Clocks.fakeClock();
     private TickingGuard tickingGuard = new TickingGuard( fakeClock, NullLog.getInstance(), 1, TimeUnit.SECONDS );
@@ -423,10 +425,10 @@ public class TransactionGuardIntegrationTest
     {
         if ( databaseWithTimeoutAndGuard == null )
         {
-            boltPortCustomGuard = PortAuthority.allocatePort();
-            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortCustomGuard );
+            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
             databaseWithTimeoutAndGuard =
                     startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
+            boltPortCustomGuard = getBoltConnectorPort( databaseWithTimeoutAndGuard );
         }
         return databaseWithTimeoutAndGuard;
     }
@@ -435,11 +437,18 @@ public class TransactionGuardIntegrationTest
     {
         if ( databaseWithTimeout == null )
         {
-            boltPortDatabaseWithTimeout = PortAuthority.allocatePort();
-            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortDatabaseWithTimeout );
+            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
             databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ), configMap );
+            boltPortDatabaseWithTimeout = getBoltConnectorPort( databaseWithTimeout );
         }
         return databaseWithTimeout;
+    }
+
+    private int getBoltConnectorPort( GraphDatabaseAPI databaseAPI )
+    {
+        ConnectorPortRegister connectorPortRegister = databaseAPI.getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
+        return connectorPortRegister.getLocalAddress( BOLT_CONNECTOR_KEY ).getPort();
     }
 
     private GraphDatabaseAPI startDatabaseWithoutTimeout()
@@ -465,7 +474,7 @@ public class TransactionGuardIntegrationTest
         if ( neoServer == null )
         {
             GuardingServerBuilder serverBuilder = new GuardingServerBuilder( database );
-            BoltConnector boltConnector = new BoltConnector( "bolt" );
+            BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
             serverBuilder.withProperty( boltConnector.type.name(), "BOLT" )
                     .withProperty( boltConnector.enabled.name(), "true" )
                     .withProperty( boltConnector.encryption_level.name(),
@@ -478,12 +487,12 @@ public class TransactionGuardIntegrationTest
         return neoServer;
     }
 
-    private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt( int boltPort )
+    private Map<Setting<?>,String> getSettingsWithTimeoutAndBolt()
     {
-        BoltConnector boltConnector = new BoltConnector( "bolt" );
+        BoltConnector boltConnector = new BoltConnector( BOLT_CONNECTOR_KEY );
         return MapUtil.genericMap(
                 transaction_timeout, DEFAULT_TIMEOUT,
-                boltConnector.address, "localhost:" + boltPort,
+                boltConnector.address, "localhost:0",
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
                 boltConnector.encryption_level, BoltConnector.EncryptionLevel.DISABLED.name(),
