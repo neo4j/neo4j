@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.values.AnyValue
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 
 case class UnwindRegisterPipe(source: Pipe, collection: Expression, offset: Int, pipeline: PipelineInformation)
                              (val id: Id = new Id) extends PipeWithSource(source) with ListSupport {
@@ -35,7 +37,7 @@ case class UnwindRegisterPipe(source: Pipe, collection: Expression, offset: Int,
 
   private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
     private var currentInputRow: ExecutionContext = _
-    private var unwindIterator: Iterator[Any] = _
+    private var unwindIterator: Iterator[AnyValue] = _
     private var nextItem: PrimitiveExecutionContext = _
 
     prefetch()
@@ -61,7 +63,8 @@ case class UnwindRegisterPipe(source: Pipe, collection: Expression, offset: Int,
       } else {
         if (input.hasNext) {
           currentInputRow = input.next()
-          unwindIterator = makeTraversable(collection(currentInputRow)(state)).iterator
+          val value: AnyValue = collection(currentInputRow)(state)
+          unwindIterator = makeTraversable(value).iterator.asScala
           prefetch()
         }
       }

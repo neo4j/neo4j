@@ -1,13 +1,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.ReferenceFromRegister
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.virtual.VirtualValues.list
 import org.scalatest.mock.MockitoSugar
+
+import scala.collection.JavaConverters._
 
 class UnwindRegisterPipeTest extends CypherFunSuite {
 
@@ -33,8 +38,8 @@ class UnwindRegisterPipeTest extends CypherFunSuite {
 
   test("should unwind collection of numbers") {
     unwindWithInput(List(Map("x" -> List(1, 2)))) should equal(List(
-      Map("y" -> 1, "x" -> List(1, 2)),
-      Map("y" -> 2, "x" -> List(1, 2))))
+      Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
+      Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
   }
 
   test("should handle null") {
@@ -44,15 +49,21 @@ class UnwindRegisterPipeTest extends CypherFunSuite {
   test("should handle collection of collections") {
 
     val listOfLists = List(
-      List(1, 2, 3),
-      List(4, 5, 6))
+      List(1, 2, 3).asJava,
+      List(4, 5, 6).asJava
+    ).asJava
+
+    val listValue = list(
+      list(intValue(1), intValue(2), intValue(3)),
+      list(intValue(4), intValue(5), intValue(6))
+    )
 
     unwindWithInput(List(Map(
       "x" -> listOfLists))) should equal(
 
       List(
-        Map("y" -> List(1, 2, 3), "x" -> listOfLists),
-        Map("y" -> List(4, 5, 6), "x" -> listOfLists)))
+        Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> listValue),
+        Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> listValue)))
   }
 }
 
@@ -73,7 +84,7 @@ case class FakeRegisterPipe(data: Iterator[Map[String, Any]], pipeline: Pipeline
               result.setLongAt(offset, value.asInstanceOf[Number].longValue())
 
             case RefSlot(offset, _, _, _) =>
-              result.setRefAt(offset, value)
+              result.setRefAt(offset, asValue(value))
           }
       }
       result

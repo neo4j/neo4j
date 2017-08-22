@@ -51,13 +51,15 @@ class UnwindPipeTest extends CypherFunSuite {
       List(1, 2, 3).asJava,
       List(4, 5, 6).asJava).asJava
 
+    val listValue = list(
+      list(intValue(1), intValue(2), intValue(3)),
+      list(intValue(4), intValue(5), intValue(6))
+    )
     unwindWithInput(List(Map(
       "x" -> listOfLists))) should equal(
 
       List(
-        Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
-                                                                            list(intValue(4), intValue(5), intValue(6)))),
-        Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
-                                                                            list(intValue(4), intValue(5), intValue(6))))))
+        Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> listValue),
+        Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> listValue)))
   }
 }
