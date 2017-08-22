@@ -62,7 +62,9 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
@@ -197,6 +199,26 @@ public class BoltCausalClusteringIT
             // then
             assertEquals( String.format( "Server at %s no longer accepts writes", leader.boltAdvertisedAddress() ),
                     sep.getMessage() );
+        }
+        finally
+        {
+            driver.close();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToGetClusterOverview() throws Exception
+    {
+        // given
+        cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
+
+        CoreClusterMember leader = cluster.awaitLeader();
+
+        Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
+        try ( Session session = driver.session() )
+        {
+            StatementResult overview = session.run( "CALL dbms.cluster.overview" );
+            assertThat(overview.list(), hasSize( 3 ));
         }
         finally
         {

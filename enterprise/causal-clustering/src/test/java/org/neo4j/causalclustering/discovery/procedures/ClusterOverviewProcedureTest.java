@@ -24,6 +24,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,17 +81,22 @@ public class ClusterOverviewProcedureTest
         LeaderLocator leaderLocator = mock( LeaderLocator.class );
         when( leaderLocator.getLeader() ).thenReturn( theLeader );
 
-        ClusterOverviewProcedure procedure = new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
+        ClusterOverviewProcedure procedure =
+                new ClusterOverviewProcedure( topologyService, leaderLocator, NullLogProvider.getInstance() );
 
         // when
         final RawIterator<Object[],ProcedureException> members = procedure.apply( null, new Object[0] );
 
         assertThat( members.next(), new IsRecord( theLeader.getUuid(), 5000, Role.LEADER, asSet( "core", "core0" ) ) );
-        assertThat( members.next(), new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );
-        assertThat( members.next(), new IsRecord( follower2.getUuid(), 5002, Role.FOLLOWER, asSet( "core", "core2" ) ) );
+        assertThat( members.next(),
+                new IsRecord( follower1.getUuid(), 5001, Role.FOLLOWER, asSet( "core", "core1" ) ) );
+        assertThat( members.next(),
+                new IsRecord( follower2.getUuid(), 5002, Role.FOLLOWER, asSet( "core", "core2" ) ) );
 
-        assertThat( members.next(), new IsRecord( replica4.getUuid(), 6004, Role.READ_REPLICA, asSet( "replica", "replica4" ) ) );
-        assertThat( members.next(), new IsRecord( replica5.getUuid(), 6005, Role.READ_REPLICA, asSet( "replica", "replica5" ) ) );
+        assertThat( members.next(),
+                new IsRecord( replica4.getUuid(), 6004, Role.READ_REPLICA, asSet( "replica", "replica4" ) ) );
+        assertThat( members.next(),
+                new IsRecord( replica5.getUuid(), 6005, Role.READ_REPLICA, asSet( "replica", "replica5" ) ) );
 
         assertFalse( members.hasNext() );
     }
@@ -123,9 +129,9 @@ public class ClusterOverviewProcedureTest
                 return false;
             }
 
-            String[] boltAddresses = new String[]{"bolt://localhost:" + boltPort};
+            List<String> boltAddresses = Collections.singletonList( "bolt://localhost:" + boltPort );
 
-            if ( !Arrays.equals( boltAddresses, (Object[]) record[1] ) )
+            if ( !boltAddresses.equals( record[1] ) )
             {
                 return false;
             }

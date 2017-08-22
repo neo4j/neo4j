@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -120,7 +122,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
         return map( ( endpoint ) -> new Object[]
                         {
                                 endpoint.memberId().toString(),
-                                endpoint.addresses().uriList().stream().map( URI::toString ).toArray(),
+                                endpoint.addresses().uriList().stream().map( URI::toString ).collect( Collectors.toList() ),
                                 endpoint.role().name(),
                                 endpoint.groups()
                         },
