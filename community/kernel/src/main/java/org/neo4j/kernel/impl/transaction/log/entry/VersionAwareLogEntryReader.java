@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
+
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -36,9 +37,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.byVers
 /**
  * Version aware implementation of LogEntryReader
  * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
- * different versions to exchange transaction data, either directly or via logical logs. This implementation of
- * LogEntryReader makes use of the version information to deserialize command entries that hold commands created
- * with previous versions of Neo4j.
+ * different versions to exchange transaction data, either directly or via logical logs.
  *
  * Read all about it at {@link LogEntryVersion}.
  */
@@ -70,24 +69,12 @@ public class VersionAwareLogEntryReader<SOURCE extends ReadableClosablePositionA
             {
                 channel.getCurrentPosition( positionMarker );
 
-                byte typeCode;
-                byte versionCode;
-                try
+                byte versionCode = channel.get();
+                if ( versionCode == 0 )
                 {
-                    typeCode = channel.get();
-                    versionCode = 0;
-                    if ( typeCode < 0 )
-                    {
-                        // if the read type is negative than it is actually the log entry version
-                        // so we need to read an extra byte which will contain the type
-                        versionCode = typeCode;
-                        typeCode = channel.get();
-                    }
+                    return null;
                 }
-                catch ( ReadPastEndException e )
-                {   // Make these exceptions slip by straight out to the outer handler
-                    throw e;
-                }
+                byte typeCode = channel.get();
 
                 LogEntryVersion version = null;
                 LogEntryParser<LogEntry> entryReader;

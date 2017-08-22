@@ -52,24 +52,6 @@ public class PhysicalLogCommandReadersTest
     private static final long OWNING_NODE = 42;
 
     @Test
-    public void readRelGroupWithHugeTypeInV2_0()
-    {
-        assertDoesNotKnowAboutRelGroups( new PhysicalLogCommandReaderV2_0() );
-    }
-
-    @Test
-    public void readRelGroupWithHugeTypeInV2_1() throws IOException
-    {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_1() );
-    }
-
-    @Test
-    public void readRelGroupWithHugeTypeInV2_2() throws IOException
-    {
-        assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2() );
-    }
-
-    @Test
     public void readRelGroupWithHugeTypeInV2_2_4() throws IOException
     {
         assertCanReadRelGroup( new PhysicalLogCommandReaderV2_2_4() );

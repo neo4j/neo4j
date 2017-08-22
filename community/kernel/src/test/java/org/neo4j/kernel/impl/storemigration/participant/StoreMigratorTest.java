@@ -26,7 +26,6 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -38,7 +37,6 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
-import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -51,7 +49,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
@@ -115,37 +112,6 @@ public class StoreMigratorTest
     }
 
     @Test
-    public void shouldExtractTransactionInformationFromLegacyLogsWhenCantFindInStore() throws Exception
-    {
-        // given
-        // ... variables
-        long txId = 42;
-        long checksum = 123456789123456789L;
-        long timestamp = 919191919191919191L;
-        TransactionId expected = new TransactionId( txId, checksum, timestamp );
-
-        // ... and files
-        File storeDir = directory.graphDbDir();
-        File neoStore = new File( storeDir, DEFAULT_NAME );
-        neoStore.createNewFile();
-
-        // ... and mocks
-        Config config = mock( Config.class );
-        LogService logService = mock( LogService.class );
-        LegacyLogs legacyLogs = mock( LegacyLogs.class );
-        when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.of( expected ) );
-
-        // when
-        // ... neoStore is empty and with migrator
-        StoreMigrator migrator =
-                new StoreMigrator( fileSystemRule.get(), pageCache, config, logService, legacyLogs );
-        TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
-
-        // then
-        assertEquals( expected, actual );
-    }
-
-    @Test
     public void shouldGenerateTransactionInformationWhenLogsNotPresent() throws Exception
     {
         // given
@@ -155,15 +121,12 @@ public class StoreMigratorTest
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        LegacyLogs legacyLogs = mock( LegacyLogs.class );
 
         // when
         // ... transaction info not in neo store
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
-        // ... and transaction not in log
-        when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );
@@ -184,15 +147,12 @@ public class StoreMigratorTest
         neoStore.createNewFile();
         Config config = mock( Config.class );
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
-        LegacyLogs legacyLogs = mock( LegacyLogs.class );
 
         // when
         // ... transaction info not in neo store
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_ID ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
-        // ... and transaction not in log
-        when( legacyLogs.getTransactionInformation( storeDir, txId ) ).thenReturn( Optional.empty() );
         // ... and with migrator
         StoreMigrator migrator = new StoreMigrator( fileSystemRule.get(), pageCache, config, logService );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, storeDir, txId );

@@ -51,6 +51,7 @@ public class LogEntryCommand extends AbstractLogEntry
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public <T extends LogEntry> T as()
     {
         return (T) this;

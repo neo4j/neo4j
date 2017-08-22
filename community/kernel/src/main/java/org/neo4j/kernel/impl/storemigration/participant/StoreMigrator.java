@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.io.fs.FileHandle;
@@ -78,7 +77,6 @@ import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogs;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -134,25 +132,17 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private final Config config;
     private final LogService logService;
-    private final LegacyLogs legacyLogs;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
 
     public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService )
     {
-        this( fileSystem, pageCache, config, logService, new LegacyLogs( fileSystem ) );
-    }
-
-    public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
-            LogService logService, LegacyLogs legacyLogs )
-    {
         super( "Store files" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
         this.logService = logService;
-        this.legacyLogs = legacyLogs;
     }
 
     @Override
@@ -290,15 +280,12 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         {
             return new TransactionId( lastTransactionId, checksum, commitTimestamp );
         }
-        // The legacy store we're migrating doesn't have this record in neostore so try to extract it from tx log
 
-        Optional<TransactionId> transactionInformation = legacyLogs
-                .getTransactionInformation( storeDir, lastTransactionId );
-        return transactionInformation.orElseGet( specificTransactionInformationSupplier( lastTransactionId ) );
+        return specificTransactionInformationSupplier( lastTransactionId );
     }
 
     /**
-     * In case if we can't find information about transaction in legacy logs we will create new transaction
+     * In case if we can't find information about transaction in logs we will create new transaction
      * information record.
      * Those should be used <b>only</b> in case if we do not have any transaction logs available during
      * migration.
@@ -313,9 +300,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
      * @param lastTransactionId last committed transaction id
      * @return supplier of custom id records.
      */
-    private Supplier<TransactionId> specificTransactionInformationSupplier( long lastTransactionId )
+    private TransactionId specificTransactionInformationSupplier( long lastTransactionId )
     {
-        return () -> lastTransactionId == TransactionIdStore.BASE_TX_ID
+        return lastTransactionId == TransactionIdStore.BASE_TX_ID
                                           ? new TransactionId( lastTransactionId, BASE_TX_CHECKSUM, BASE_TX_COMMIT_TIMESTAMP )
                                           : new TransactionId( lastTransactionId, UNKNOWN_TX_CHECKSUM, UNKNOWN_TX_COMMIT_TIMESTAMP );
     }
@@ -660,9 +647,6 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         {
             //This means that we had no files only present in the page cache, this is fine.
         }
-
-        // delete old logs
-        legacyLogs.deleteUnusedLogFiles( storeDir );
     }
 
     private void updateOrAddNeoStoreFieldsAsPartOfMigration( File migrationDir, File storeDir,
