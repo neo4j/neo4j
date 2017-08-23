@@ -19,24 +19,24 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection.Map
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 abstract class BaseRelationshipRegisterPipe(src: Pipe, RelationshipKey: String, startNode: Int, typ: LazyType, endNode: Int,
                                             pipelineInformation: PipelineInformation,
                                             properties: Option[Expression])
-  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src) {
 
   private val offset = pipelineInformation.getLongOffsetFor(RelationshipKey)
 
@@ -68,9 +68,11 @@ abstract class BaseRelationshipRegisterPipe(src: Pipe, RelationshipKey: String, 
         case _: Node | _: Relationship =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(f) =>
-          val propertiesMap: Map[String, Any] = f(state.query)
+          val propertiesMap: MapValue = f(state.query)
           propertiesMap.foreach {
-            case (k, v) => setProperty(relId, k, v, state.query)
+            new BiConsumer[String, AnyValue] {
+              override def accept(k: String, v: AnyValue): Unit = setProperty(relId, k, v, state.query)
+            }
           }
         case _ =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
@@ -78,7 +80,7 @@ abstract class BaseRelationshipRegisterPipe(src: Pipe, RelationshipKey: String, 
     }
   }
 
-  private def setProperty(relId: Long, key: String, value: Any, qtx: QueryContext) {
+  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext) {
     //do not set properties for null values
     if (value == null) {
       handleNull(key: String)
