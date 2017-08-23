@@ -27,6 +27,7 @@ import java.util.UUID;
 
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.assertThat;
@@ -47,7 +48,7 @@ public class TypicallyConnectToRandomReadReplicaStrategyTest
 
         TypicallyConnectToRandomReadReplicaStrategy connectionStrategy =
                 new TypicallyConnectToRandomReadReplicaStrategy();
-        connectionStrategy.inject( topologyService, null, null );
+        connectionStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
 
         List<MemberId> responses = new ArrayList<>();
 

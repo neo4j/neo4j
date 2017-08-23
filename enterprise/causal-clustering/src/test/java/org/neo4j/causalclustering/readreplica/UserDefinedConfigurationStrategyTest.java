@@ -41,8 +41,8 @@ import org.neo4j.causalclustering.discovery.ReadReplicaTopology;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static co.unruly.matchers.OptionalMatchers.empty;
@@ -68,7 +68,7 @@ public class UserDefinedConfigurationStrategyTest
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
         Config config = configWithFilter( "groups(east); groups(core); halt()" );
 
-        strategy.inject( topologyService, config, null );
+        strategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         //when
 
@@ -90,7 +90,7 @@ public class UserDefinedConfigurationStrategyTest
         String wantedGroup = noEastGroup.get( 1 );
         Config config = configWithFilter( "groups(" + wantedGroup + "); halt()" );
 
-        strategy.inject( topologyService, config, null );
+        strategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         //when
 
@@ -113,7 +113,7 @@ public class UserDefinedConfigurationStrategyTest
         String wantedGroup = eastGroup;
         Config config = configWithFilter( "groups(" + wantedGroup + "); halt()" );
 
-        strategy.inject( topologyService, config, null );
+        strategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         //when
 
@@ -133,7 +133,7 @@ public class UserDefinedConfigurationStrategyTest
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
         Config config = configWithFilter( "invalid filter specification" );
 
-        strategy.inject( topologyService, config, null );
+        strategy.inject( topologyService, config, NullLogProvider.getInstance(), null );
 
         //when
 
@@ -155,7 +155,7 @@ public class UserDefinedConfigurationStrategyTest
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
         Config config = configWithFilter( "groups(" + wantedGroup + "); halt()" );
 
-        strategy.inject( topologyService, config, readReplicaIds[0] );
+        strategy.inject( topologyService, config, NullLogProvider.getInstance(), readReplicaIds[0] );
 
         //when
 

@@ -27,11 +27,14 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
     protected TopologyService topologyService;
     protected Config config;
+    protected Log log;
     protected MemberId myself;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
@@ -39,11 +42,12 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         super( key, altKeys );
     }
 
-    // Service loaded can't inject this via the constructor
-    void inject( TopologyService topologyService, Config config, MemberId myself )
+    // Service loader can't inject via the constructor
+    void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
     {
         this.topologyService = topologyService;
         this.config = config;
+        this.log = logProvider.getLog( this.getClass() );
         this.myself = myself;
 
         init();

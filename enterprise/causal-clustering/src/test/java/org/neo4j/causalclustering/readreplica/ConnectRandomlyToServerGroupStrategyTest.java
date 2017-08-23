@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static org.hamcrest.Matchers.isIn;
@@ -52,7 +53,7 @@ public class ConnectRandomlyToServerGroupStrategyTest
                         Collections.singletonList( "your_server_group" ) );
 
         ConnectRandomlyToServerGroupStrategy strategy = new ConnectRandomlyToServerGroupStrategy();
-        strategy.inject( topologyService, configWithTargetServerGroup, targetGroupMemberIds[0] );
+        strategy.inject( topologyService, configWithTargetServerGroup, NullLogProvider.getInstance(), targetGroupMemberIds[0] );
 
         // when
         Optional<MemberId> result = strategy.upstreamDatabase();
