@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -60,8 +61,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -76,7 +76,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_BOOLEAN_ARRAY;
         }
@@ -138,8 +138,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -154,7 +153,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_BYTE_ARRAY;
         }
@@ -217,8 +216,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -233,7 +231,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_SHORT_ARRAY;
         }
@@ -295,8 +293,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -311,7 +308,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_CHAR_ARRAY;
         }
@@ -373,8 +370,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -389,7 +385,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_INT_ARRAY;
         }
@@ -452,8 +448,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -468,7 +463,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_LONG_ARRAY;
         }
@@ -531,8 +526,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -547,7 +541,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_FLOAT_ARRAY;
         }
@@ -610,8 +604,7 @@ public enum ShortArray
         }
 
         @Override
-        public
-        Value createArray( int length, Bits bits, int requiredBits )
+        public ArrayValue createArray( int length, Bits bits, int requiredBits )
         {
             if ( length == 0 )
             {
@@ -626,7 +619,7 @@ public enum ShortArray
         }
 
         @Override
-        public Value createEmptyArray()
+        public ArrayValue createEmptyArray()
         {
             return Values.EMPTY_DOUBLE_ARRAY;
         }
@@ -668,7 +661,7 @@ public enum ShortArray
         return type.intValue();
     }
 
-    public abstract Value createArray( int length, Bits bits, int requiredBits );
+    public abstract ArrayValue createArray( int length, Bits bits, int requiredBits );
 
     public static boolean encode( int keyId, Object array,
                                   PropertyBlock target, int payloadSizeInBytes )
@@ -818,5 +811,5 @@ public enum ShortArray
 
     public abstract void writeAll( Object array, int length, int requiredBits, Bits result );
 
-    public abstract Value createEmptyArray();
+    public abstract ArrayValue createEmptyArray();
 }

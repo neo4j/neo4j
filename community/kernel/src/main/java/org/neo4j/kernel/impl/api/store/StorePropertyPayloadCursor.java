@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.CharValue;
@@ -317,7 +318,7 @@ class StorePropertyPayloadCursor
         return ByteBuffer.allocate( newCapacity ).order( ByteOrder.LITTLE_ENDIAN );
     }
 
-    private static Value readArrayFromBuffer( ByteBuffer buffer )
+    private static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
     {
         if ( buffer.limit() <= 0 )
         {
