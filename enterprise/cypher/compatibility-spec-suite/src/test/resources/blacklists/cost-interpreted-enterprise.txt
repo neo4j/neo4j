@@ -52,6 +52,7 @@ Simple counting of nodes
 Start the result from the second row by param
 Start the result from the second row
 Support column renaming for aggregates as well
+Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
 Use multiple MATCH clauses to do a Cartesian product
@@ -371,7 +372,6 @@ Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
-WHERE after WITH should filter results
 WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
 WHERE on a DISTINCT column
