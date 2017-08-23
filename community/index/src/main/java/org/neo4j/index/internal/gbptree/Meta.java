@@ -19,9 +19,31 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-// todo javadoc and move reading and writing of entire meta page here. See TreeState for inspiration.
+/**
+ * About versioning (i.e. the format version {@code int}):
+ * The format version started out as one int controlling the entire version of the tree and its different types of formats.
+ * For compatibility reasons this int has been kept but used differently, i.e. split up into four individual versions,
+ * one {@code byte} each. These are:
+ *
+ * <pre>
+ *     <------- int ------>
+ * msb [ 3 ][ 2 ][ 1 ][ 0 ] lsb
+ *       ▲    ▲    ▲    ▲
+ *       │    │    │    │
+ *       │    │    │    └──────────── {@link TreeNode#formatIdentifier()}
+ *       │    │    └───────────────── {@link TreeNode#formatVersion()}
+ *       │    └────────────────────── {@link #CURRENT_STATE_VERSION}
+ *       └─────────────────────────── {@link #CURRENT_GBPTREE_VERSION}
+ * </pre>
+ *
+ * {@link #CURRENT_STATE_VERSION} and {@link #CURRENT_GBPTREE_VERSION} aren't used yet because they have
+ * never needed to be versioned yet, but remain reserved for future use. The are fixed at 0 a.t.m.
+ */
 class Meta
 {
+    static final byte CURRENT_STATE_VERSION = 0;
+    static final byte CURRENT_GBPTREE_VERSION = 0;
+
     private static final int MASK_BYTE = 0xFF;
 
     private static final int SHIFT_FORMAT_IDENTIFIER = Byte.SIZE * 0;
