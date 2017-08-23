@@ -43,7 +43,7 @@ public class ConsistencyCheckerTest
         // GIVEN
         int pageSize = 256;
         PageCursor cursor = new PageAwareByteArrayCursor( pageSize );
-        TreeNode<?,?> node = TreeNodes.instantiateTreeNode( pageSize, new SimpleLongLayout() );
+        TreeNode<?,?> node = TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat().instantiate( pageSize, new SimpleLongLayout() );
         long stableGeneration = MIN_GENERATION;
         long crashGeneration = stableGeneration + 1;
         long unstableGeneration = stableGeneration + 2;
@@ -79,7 +79,7 @@ public class ConsistencyCheckerTest
         // GIVEN
         int pageSize = 256;
         Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-        TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( pageSize, layout );
+        TreeNode<MutableLong,MutableLong> node = TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat().instantiate( pageSize, layout );
         long stableGeneration = GenerationSafePointer.MIN_GENERATION;
         long unstableGeneration = stableGeneration + 1;
         SimpleIdProvider idProvider = new SimpleIdProvider();

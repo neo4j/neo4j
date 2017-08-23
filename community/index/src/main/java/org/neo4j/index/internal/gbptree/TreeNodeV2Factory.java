@@ -20,30 +20,23 @@
 package org.neo4j.index.internal.gbptree;
 
 /**
- * Responsible for instantiating correct {@link TreeNode} based on a format version.
+ * Loads {@link TreeNodeV2} instances.
  */
-class TreeNodes
+public class TreeNodeV2Factory extends TreeNodeFactory
 {
-    static <KEY,VALUE> TreeNode<KEY,VALUE> instantiateTreeNode(
-            int pageSize, Layout<KEY,VALUE> layout )
+    static final int PRIORITY = 1;
+
+    /**
+     * Loads {@link TreeNodeV2} instances.
+     */
+    public TreeNodeV2Factory()
     {
-        return instantiateTreeNode( GBPTree.FORMAT_VERSION, pageSize, layout );
+        super( TreeNodeV2Factory.class.getName(), TreeNodeV2.FORMAT_IDENTIFIER, TreeNodeV2.FORMAT_VERSION, PRIORITY );
     }
 
-    static <KEY,VALUE> TreeNode<KEY,VALUE> instantiateTreeNode(
-            int formatVersion, int pageSize, Layout<KEY,VALUE> layout )
+    @Override
+    <KEY, VALUE> TreeNode<KEY,VALUE> instantiate( int pageSize, Layout<KEY,VALUE> layout )
     {
-        switch ( formatVersion )
-        {
-        case 2:
-            return new TreeNodeV2<>( pageSize, layout );
-        case 3:
-            return new TreeNodeV3<>( pageSize, layout );
-        default:
-            throw new IllegalArgumentException( "Tried to open a tree with unknown format version" );
-
-        }
+        return new TreeNodeV2<KEY,VALUE>( pageSize, layout );
     }
-
-    // TODO: method for migration too?
 }

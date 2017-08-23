@@ -79,7 +79,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
@@ -363,6 +362,7 @@ public class GBPTreeTest
         }
     }
 
+    // todo figure out what to do with this guy
     @Test
     public void shouldFailWhenTryingToOpenWithDifferentFormatVersion() throws Exception
     {
@@ -373,7 +373,7 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
         }
-        setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
+        setFormatVersion( pageCache, pageSize, -1 );
 
         try
         {
@@ -1473,7 +1473,8 @@ public class GBPTreeTest
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( pageSize, new SimpleLongLayout() );
+                TreeNode<MutableLong,MutableLong> node =
+                        TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat().instantiate( pageSize, new SimpleLongLayout() );
                 Pair<TreeState,TreeState> treeStates =
                         TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
                 TreeState newestState = TreeStatePair.selectNewestValidState( treeStates );

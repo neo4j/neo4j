@@ -83,6 +83,8 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
     static final int HEADER_LENGTH = OFFSET.get();
 
     private static final int DELTA_SECTION_SIZE = 32;
+    static final byte FORMAT_IDENTIFIER = 3;
+    static final byte FORMAT_VERSION = 0;
 
     private final int pageSize;
     private final int internalMaxKeyCount;
@@ -132,6 +134,18 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.offsetValueStart = offsetKeyEnd;
         this.offsetValueEnd = offsetValueStart + leafMaxKeyCount * valueSize;
         this.offsetChildStart = HEADER_LENGTH + internalMaxKeyCount * keySize;
+    }
+
+    @Override
+    byte formatIdentifier()
+    {
+        return FORMAT_IDENTIFIER;
+    }
+
+    @Override
+    byte formatVersion()
+    {
+        return FORMAT_VERSION;
     }
 
     @Override

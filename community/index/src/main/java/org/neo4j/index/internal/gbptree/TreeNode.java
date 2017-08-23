@@ -46,6 +46,12 @@ abstract class TreeNode<KEY,VALUE>
         return GenerationSafePointerPair.pointer( node ) != NO_NODE_FLAG;
     }
 
+    // META INFORMATION
+
+    abstract byte formatIdentifier();
+
+    abstract byte formatVersion();
+
     // HEADER AND POINTERS
 
     abstract void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration );

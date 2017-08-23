@@ -75,6 +75,9 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private static final int BYTE_POS_SUCCESSOR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
     private static final int HEADER_LENGTH = BYTE_POS_SUCCESSOR + SIZE_PAGE_REFERENCE;
 
+    static final byte FORMAT_VERSION = 0;
+    static final byte FORMAT_IDENTIFIER = 2;
+
     private final int pageSize;
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
@@ -109,6 +112,18 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
         this.mainContent = new MainSectionV2();
         this.deltaContent = new DeltaSectionV2();
+    }
+
+    @Override
+    byte formatIdentifier()
+    {
+        return FORMAT_IDENTIFIER;
+    }
+
+    @Override
+    byte formatVersion()
+    {
+        return FORMAT_VERSION;
     }
 
     @Override
