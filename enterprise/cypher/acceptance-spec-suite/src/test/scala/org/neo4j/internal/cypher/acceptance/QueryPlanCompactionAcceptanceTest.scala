@@ -545,7 +545,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |
         |Planner COST
         |
-        |Runtime INTERPRETED
+        |Runtime ENTERPRISE-INTERPRETED
         |
         |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+
         || Operator                | Estimated Rows | Variables                                                                                            |
@@ -743,7 +743,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |
         |Planner COST
         |
-        |Runtime INTERPRETED
+        |Runtime ENTERPRISE-INTERPRETED
         |
         |+------------------------+----------------+---------------------------------------------------------------------------------------------------+
         || Operator               | Estimated Rows | Variables                                                                                         |
