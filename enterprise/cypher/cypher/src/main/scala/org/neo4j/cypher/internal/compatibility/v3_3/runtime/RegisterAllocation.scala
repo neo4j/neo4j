@@ -122,13 +122,32 @@ object RegisterAllocation {
         result += (lp -> newPipeline)
         newPipeline
 
-      case VarExpand(source, IdName(from), dir, projectedDir, types, IdName(to), IdName(edge), length, ExpandAll, predicates) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(to, nullable, CTNode)
-        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-        result += (lp -> newPipeline)
-        newPipeline
+        case VarExpand(lhs: LogicalPlan,
+                       IdName(from),
+                       dir,
+                       projectedDir,
+                       types,
+                       IdName(to),
+                       IdName(edge),
+                       length,
+                       ExpandAll,
+                       IdName(tempNode),
+                       IdName(tempEdge),
+                       _,
+                       _,
+                       _) =>
+          val oldPipeline = allocate(lhs, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+
+          // We register these on the incoming pipeline after cloning it, since we don't need these slots in
+          // the produced rows
+          oldPipeline.newLong(tempNode, nullable = false, CTNode)
+          oldPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+
+          newPipeline.newLong(to, nullable, CTNode)
+          newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+          result += (lp -> newPipeline)
+          newPipeline
 
       case Skip(source, _) =>
         val pipeline = allocate(source, nullable, argument)

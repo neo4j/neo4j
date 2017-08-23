@@ -51,13 +51,16 @@ case class VarExpand(left: LogicalPlan,
                      relName: IdName,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
-                     predicates: Seq[(Variable, Expression)] = Seq.empty)
+                     tempNode: IdName,
+                     tempEdge: IdName,
+                     nodePredicate: Expression,
+                     edgePredicate: Expression,
+                     legacyPredicates: Seq[(Variable, Expression)])
                     (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan with LazyLogicalPlan {
-
   override val lhs = Some(left)
   override def rhs = None
 
-  override def availableSymbols = left.availableSymbols + relName + to
+  override def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
 case class PruningVarExpand(left: LogicalPlan,

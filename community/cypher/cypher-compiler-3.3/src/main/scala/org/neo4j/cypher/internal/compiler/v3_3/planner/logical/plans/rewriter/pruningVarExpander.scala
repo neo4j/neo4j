@@ -75,7 +75,6 @@ case object pruningVarExpander extends Rewriter {
       plan.rhs.foreach(p => planStack.push((p, newDeps)))
     }
 
-
     distinctSet.toSet
   }
 
@@ -96,7 +95,7 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, _, predicates) if distinctSet(expand) =>
+          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, _, _, _, _, _, predicates) if distinctSet(expand) =>
             if (length.min >= 4 && length.max.get >= 5)
               // These constants were selected by benchmarking on randomized graphs, with different
               // degrees of interconnection.

@@ -124,17 +124,35 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                     dir: SemanticDirection,
                     to: IdName,
                     pattern: PatternRelationship,
-                    predicates: Seq[(Variable, Expression)],
-                    allPredicates: Seq[Expression],
+                    temporaryNode: IdName,
+                    temporaryEdge: IdName,
+                    edgePredicate: Expression,
+                    nodePredicate: Expression,
+                    solvedPredicates: Seq[Expression],
+                    legacyPredicates: Seq[(Variable, Expression)] = Seq.empty,
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
       val projectedDir = projectedDirection(pattern, from, dir)
 
       val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
-        .addPredicates(allPredicates: _*)
+        .addPredicates(solvedPredicates: _*)
       )
-      VarExpand(left, from, dir, projectedDir, pattern.types, to, pattern.name, l, mode, predicates)(solved)
+      VarExpand(
+        left = left,
+        from = from,
+        dir = dir,
+        projectedDir = projectedDir,
+        types = pattern.types,
+        to = to,
+        relName = pattern.name,
+        length = l,
+        mode = mode,
+        tempNode = temporaryNode,
+        tempEdge = temporaryEdge,
+        nodePredicate = nodePredicate,
+        edgePredicate = edgePredicate,
+        legacyPredicates = legacyPredicates)(solved)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }

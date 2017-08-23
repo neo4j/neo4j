@@ -23,12 +23,12 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.EnterprisePipeBuilderFactory
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty, RelationshipProperty}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTList, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTNode, CTRelationship, CTList}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
@@ -297,25 +297,84 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val varLength = VarPatternLength(1, Some(15))
-    val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, z, r, varLength, ExpandAll)(solved)
+    val tempNode = IdName("r_NODES")
+    val tempEdge = IdName("r_EDGES")
+    val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty,
+      z, r, varLength, ExpandAll, tempNode, tempEdge, True()(pos), True()(pos), Seq())(solved)
 
     // when
     val pipe = build(expand)
 
     // then
     val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
+    val tempNodeSlot = LongSlot(1, nullable = false, CTNode, "r_NODES")
+    val tempRelSlot = LongSlot(2, nullable = false, CTRelationship, "r_EDGES")
     val zNodeSlot = LongSlot(1, nullable = false, CTNode, "z")
     val rRelSlot = RefSlot(0, nullable = false, CTList(CTRelationship), "r")
+
+    val allNodeScanPipelineInformation = PipelineInformation(Map(
+      "x" -> xNodeSlot,
+      "r_NODES" -> tempNodeSlot,
+      "r_EDGES" -> tempRelSlot), numberOfLongs = 3, numberOfReferences = 0)
+
+    val varExpandPipelineInformation = PipelineInformation(Map(
+      "x" -> xNodeSlot,
+      "r" -> rRelSlot,
+      "z" -> zNodeSlot), numberOfLongs = 2, numberOfReferences = 1)
+
     pipe should equal(VarLengthExpandRegisterPipe(
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
+      AllNodesScanRegisterPipe("x", allNodeScanPipelineInformation)(),
       xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
       SemanticDirection.INCOMING, SemanticDirection.INCOMING,
       LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = true,
-      VarLengthRegisterPredicate.NONE,
-      PipelineInformation(Map(
-        "x" -> xNodeSlot,
-        "r" -> rRelSlot,
-        "z" -> zNodeSlot), numberOfLongs = 2, numberOfReferences = 1)
+      varExpandPipelineInformation,
+      tempNodeSlot.offset, tempRelSlot.offset,
+      commands.predicates.True(), commands.predicates.True(), 1
+    )())
+  }
+
+  test("single node with varlength expand and a predicate") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val tempNode = IdName("r_NODES")
+    val tempEdge = IdName("r_EDGES")
+    val nodePredicate = Equals(prop(tempNode.name, "propertyKey"), literalInt(4))(pos)
+    val edgePredicate = Not(LessThan(prop(tempEdge.name, "propertyKey"), literalInt(4))(pos))(pos)
+
+    val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty,
+      z, r, varLength, ExpandAll, tempNode, tempEdge, nodePredicate, edgePredicate, Seq())(solved)
+
+    // when
+    val pipe = build(expand)
+
+    // then
+    val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
+    val tempNodeSlot = LongSlot(1, nullable = false, CTNode, "r_NODES")
+    val tempRelSlot = LongSlot(2, nullable = false, CTRelationship, "r_EDGES")
+    val zNodeSlot = LongSlot(1, nullable = false, CTNode, "z")
+    val rRelSlot = RefSlot(0, nullable = false, CTList(CTRelationship), "r")
+
+    val allNodeScanPipelineInformation = PipelineInformation(Map(
+      "x" -> xNodeSlot,
+      "r_NODES" -> tempNodeSlot,
+      "r_EDGES" -> tempRelSlot), numberOfLongs = 3, numberOfReferences = 0)
+
+    val varExpandPipelineInformation = PipelineInformation(Map(
+      "x" -> xNodeSlot,
+      "r" -> rRelSlot,
+      "z" -> zNodeSlot), numberOfLongs = 2, numberOfReferences = 1)
+
+    pipe should equal(VarLengthExpandRegisterPipe(
+      AllNodesScanRegisterPipe("x", allNodeScanPipelineInformation)(),
+      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      SemanticDirection.INCOMING, SemanticDirection.INCOMING,
+      LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = true,
+      varExpandPipelineInformation,
+      tempNodeSlot.offset, tempRelSlot.offset,
+      commands.predicates.Equals(NodeProperty(1, 0), Literal(4)),
+      commands.predicates.Not(
+        commands.predicates.LessThan(RelationshipProperty(2, 0), Literal(4))), 1
     )())
   }
 

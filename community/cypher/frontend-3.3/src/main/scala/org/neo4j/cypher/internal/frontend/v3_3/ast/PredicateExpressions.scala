@@ -26,6 +26,18 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   )
 }
 
+object Ands {
+  def create(exprs: Set[Expression]): Expression = {
+    val size = exprs.size
+    if(size == 0)
+      True()(InputPosition.NONE)
+    else if (size == 1)
+      exprs.head
+    else
+      Ands(exprs)(exprs.head.position)
+  }
+}
+
 case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression with MultiOperatorExpression {
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = {

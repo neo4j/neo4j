@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
 
 import scala.collection.mutable
 
@@ -60,12 +60,34 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         newPlan
 
-        // Temporary until we actually handle predicates on varlength paths
-      case varExpand: VarExpand =>
-        val information = pipelineInformation(varExpand)
-        newPipelineInfo += (varExpand -> information)
+      case oldPlan:VarExpand =>
+        /*
+        The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
+        We need to use the incoming pipeline info for predicate rewriting
+         */
 
-        varExpand
+        val incomingPipeline = pipelineInformation(oldPlan.left)
+        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+
+        val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)
+        val newEdgePredicate = oldPlan.edgePredicate.endoRewrite(rewriter)
+
+        val newPlan = oldPlan.copy(
+          nodePredicate = newNodePredicate,
+          edgePredicate = newEdgePredicate,
+          legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the register runtime
+        )(oldPlan.solved)
+
+        /*
+        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        outgoing pipeline info here
+         */
+        val outgoingPipeline = pipelineInformation(oldPlan)
+        newPipelineInfo += (newPlan -> outgoingPipeline)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
 
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
@@ -82,7 +104,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
     val resultPlan = in.endoRewrite(rewritePlanWithRegisters)
 
     // TODO: This should probably only run when -ea is enabled
-    resultPlan.findByAllClass[Variable].foreach(v => throw new InternalException(s"Failed to rewrite away $v\n$resultPlan"))
+    resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
 
     // re-apply the rewrites to the keys of the pipeline information
     val rewriter = createRewriterFrom(rewrites)
@@ -131,7 +153,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         pipelineInformation(n) match {
           case LongSlot(offset, false, CTNode, _) => GetDegreePrimitive(offset, maybeToken, direction)
           case LongSlot(offset, true, CTNode, _) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
-          case _ => throw new InternalException(s"Invalid slot for GetDegree: $n")
+          case _ => throw new CantCompileQueryException(s"Invalid slot for GetDegree: $n")
         }
 
       case Variable(k) =>
@@ -142,7 +164,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromRegister(offset, name))
           case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
           case _ =>
-            throw new InternalException("Did not find `" + k + "` in the pipeline information")
+            throw new CantCompileQueryException("Did not find `" + k + "` in the pipeline information")
         }
 
       case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
