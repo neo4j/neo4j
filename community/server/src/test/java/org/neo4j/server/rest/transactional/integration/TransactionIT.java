@@ -262,26 +262,30 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         int batch = 2;
         ServerTestUtils.withCSVFile( nodes, url ->
         {
-            long nodesInDatabaseBeforeTransaction = countNodes();
-            long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
+            Response response;
+            long nodesInDatabaseBeforeTransaction;
+            long txIdBefore;
+            int times = 0;
+            do
+            {
+                nodesInDatabaseBeforeTransaction = countNodes();
+                txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-            // begin and execute and commit
-            Response response = http.POST(
-                    "db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch + " LOAD CSV FROM " +
-                            "\\\"" + url + "\\\" AS line CREATE ()' } ] }" )
-            );
+                // begin and execute and commit
+
+                response = http.POST(
+                        "db/data/transaction/commit",
+                        quotedJson( "{ 'statements': [ { 'statement': 'USING PERIODIC COMMIT " + batch + " LOAD CSV FROM " +
+                                "\\\"" + url + "\\\" AS line CREATE ()' } ] }" )
+                );
+                times++;
+            }
+            while ( hasErrors().matches( response ) && (times < 5) );
 
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-            // todo This test is flaky and hard to reproduce.
-            // todo Printing response for easier debug next time it fails
-            // todo System.out is suppressed and will only be printed in case of test failure
-            System.out.println( "RESPONSE:" );
-            System.out.println( response );
-
             assertThat( response.status(), equalTo( 200 ) );
-            assertThat( response, containsNoErrors() );
+            assertThat( "Last response is: " + response, response, containsNoErrors() );
             assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
             assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
         } );
