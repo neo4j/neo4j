@@ -55,7 +55,7 @@ case object CypherPreParser extends Parser with Base {
   def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
-      | option("runtime", "enterprise-interpreted") ~ push(RegisterInterpretedRuntimeOption)
+      | option("runtime", "slotted") ~ push(SlottedRuntimeOption)
   )
 
   def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(

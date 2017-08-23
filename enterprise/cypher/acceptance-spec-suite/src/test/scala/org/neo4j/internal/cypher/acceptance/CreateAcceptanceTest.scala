@@ -76,8 +76,8 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     result.toList should equal(List(Map("type(r)" -> typ)))
   }
 
-  test("should create nodes with label and property with enterprise interpreted") {
-    //TODO: Remove this test once we can create relationships in enterprise interpreted
+  test("should create nodes with label and property with slotted runtime") {
+    //TODO: Remove this test once we can create relationships in slotted runtime
     val createdNumber = 1
 
     val query = "CREATE" + List.fill(createdNumber)("(:Bar{prop: 1})").mkString(", ")

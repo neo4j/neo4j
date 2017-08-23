@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, EnterpriseInterpretedRuntimeName, InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, SlottedRuntimeName, InterpretedRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
@@ -39,7 +39,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .withCypherVersion(CypherVersion.v3_3)
       .withRuntime(CompiledRuntimeName)
       .shouldHaveCypherVersion(CypherVersion.v3_3)
-      .shouldHaveRuntime(EnterpriseInterpretedRuntimeName)
+      .shouldHaveRuntime(SlottedRuntimeName)
   }
 
   test("query that should go through the compiled runtime") {

@@ -62,7 +62,7 @@ case class CostCompatibility[CONTEXT <: CommunityRuntimeContext,
   override val maybeRuntimeName: Option[RuntimeName] = runtime match {
     case CypherRuntime.default => None
     case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-    case CypherRuntime.registerInterpreted => Some(EnterpriseInterpretedRuntimeName)
+    case CypherRuntime.`slotted` => Some(SlottedRuntimeName)
     case CypherRuntime.compiled => Some(CompiledRuntimeName)
   }
 

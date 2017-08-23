@@ -118,10 +118,10 @@ public class CompatibilitySpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
-                    DB_CONFIG + "cost-interpreted-enterprise.json",
-                    HTML_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
-                    JSON_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
-                    BLACKLIST_PLUGIN + "cost-interpreted-enterprise.txt",
+                    DB_CONFIG + "cost-slotted.json",
+                    HTML_REPORT + SUITE_NAME + "/cost-slotted",
+                    JSON_REPORT + SUITE_NAME + "/cost-slotted",
+                    BLACKLIST_PLUGIN + "cost-slotted.txt",
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },

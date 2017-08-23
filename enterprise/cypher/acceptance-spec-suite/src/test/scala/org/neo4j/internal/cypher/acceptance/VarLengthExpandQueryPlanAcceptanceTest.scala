@@ -34,7 +34,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
         |
         |Planner COST
         |
-        |Runtime ENTERPRISE-INTERPRETED
+        |Runtime SLOTTED
         |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
         || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                            |
@@ -62,7 +62,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
         |
         |Planner COST
         |
-        |Runtime ENTERPRISE-INTERPRETED
+        |Runtime SLOTTED
         |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
         || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                          |
