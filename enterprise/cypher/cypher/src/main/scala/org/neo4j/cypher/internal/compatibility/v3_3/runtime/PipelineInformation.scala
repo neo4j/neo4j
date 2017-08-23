@@ -65,7 +65,7 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
   def getReferenceOffsetFor(name: String): Int = slots.get(name) match {
     case Some(s: RefSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
-    case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
+    case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
 
   def getLongOffsetFor(name: String): Int = slots.get(name) match {

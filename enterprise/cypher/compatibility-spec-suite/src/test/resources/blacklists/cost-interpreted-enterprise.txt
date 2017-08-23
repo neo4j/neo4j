@@ -61,10 +61,6 @@ Support ordering by a property after being distinct-ified
 Support sort and distinct
 Unwind does not prune context
 Unwinding a concatenation of lists
-Unwinding a list
-Unwinding list with duplicates
-Unwinding null
-Unwinding the empty list
 Use multiple MATCH clauses to do a Cartesian product
 Using aliased DISTINCT expression in ORDER BY
 `type()` on two relationships
