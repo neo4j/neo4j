@@ -74,7 +74,7 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
             new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )
                     .recoverCopiedStore( storeDirectory.storeDir() );
             ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
-                    new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( System.err ) );
+                    new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( NULL_OUTPUT_STREAM ) );
             if ( !result.isSuccessful() )
             {
                 throw new RuntimeException( "Not consistent database in " + storeDir );
