@@ -252,6 +252,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.security.listUsers", newSet( ADMIN ),
                 "dbms.security.listUsersForRole", newSet( ADMIN ),
                 "dbms.security.removeRoleFromUser", newSet( ADMIN ),
+                "dbms.security.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.suspendUser", newSet( ADMIN ),
                 "dbms.setTXMetaData", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ));
