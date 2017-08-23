@@ -42,6 +42,7 @@ public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSe
     {
         List<String> groups = config.get( CausalClusteringSettings.server_groups );
         strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService, myself );
+        log.warn( "Upstream selection strategy " + readableName + " is deprecated. Consider using " + ConnectRandomlyToServerGroupStrategy.NAME + " instead." );
     }
 
     @Override

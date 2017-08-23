@@ -21,20 +21,21 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
-// TODO deprecation warning
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
 public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
+    static final String NAME = "connect-randomly-to-server-group";
     private ConnectRandomlyToServerGroupImpl strategyImpl;
 
     public ConnectRandomlyToServerGroupStrategy()
     {
-        super( "connect-randomly-to-server-group" );
+        super( NAME );
     }
 
     @Override
@@ -43,6 +44,16 @@ public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelect
         List<String> groups = config.get( CausalClusteringSettings.connect_randomly_to_server_group_strategy );
         strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService,
                 myself );
+
+        if (groups.isEmpty())
+        {
+            log.warn( "No server groups configured for upstream strategy " + readableName + ". Strategy will not find upstream servers." );
+        }
+        else
+        {
+            String readableGroups = groups.stream().collect( Collectors.joining( ", " ) );
+            log.info( "Upstream selection strategy " + readableName + " configured with server groups " + readableGroups );
+        }
     }
 
     @Override

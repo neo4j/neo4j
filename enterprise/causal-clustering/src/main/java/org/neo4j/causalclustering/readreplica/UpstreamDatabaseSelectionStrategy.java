@@ -36,6 +36,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     protected Config config;
     protected Log log;
     protected MemberId myself;
+    protected String readableName;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
@@ -50,6 +51,8 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
         this.log = logProvider.getLog( this.getClass() );
         this.myself = myself;
 
+        readableName = StreamSupport.stream( getKeys().spliterator(), false ).collect( Collectors.joining( ", " ) );
+        log.info( "Using upstream selection strategy " + readableName );
         init();
     }
 
