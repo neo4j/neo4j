@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
@@ -368,7 +370,7 @@ public class ReflectiveProcedureCompiler
                 }
                 else
                 {
-                    return new MappingIterator( ((Stream<?>) rs).iterator() );
+                    return new MappingIterator( ((Stream<?>) rs).iterator(), () -> ((Stream<?>) rs).close() );
                 }
             }
             catch ( Throwable throwable )
@@ -386,13 +388,15 @@ public class ReflectiveProcedureCompiler
             }
         }
 
-        private class MappingIterator implements RawIterator<Object[],ProcedureException>
+        private class MappingIterator implements RawIterator<Object[],ProcedureException>, AutoCloseable
         {
             private final Iterator<?> out;
+            private Closeable closeable;
 
-            public MappingIterator( Iterator<?> out )
+            MappingIterator( Iterator<?> out, Closeable closeable )
             {
                 this.out = out;
+                this.closeable = closeable;
             }
 
             @Override
@@ -400,9 +404,14 @@ public class ReflectiveProcedureCompiler
             {
                 try
                 {
-                    return out.hasNext();
+                    boolean hasNext = out.hasNext();
+                    if ( !hasNext )
+                    {
+                        closeable.close();
+                    }
+                    return hasNext;
                 }
-                catch ( RuntimeException e )
+                catch ( RuntimeException | IOException e )
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
@@ -422,6 +431,12 @@ public class ReflectiveProcedureCompiler
                     throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
                             "Failed to call procedure `%s`: %s", signature, e.getMessage() );
                 }
+            }
+
+            @Override
+            public void close() throws Exception
+            {
+                closeable.close();
             }
         }
     }
