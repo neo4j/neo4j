@@ -140,7 +140,7 @@ public class PrimitiveLongObjectHashMap<VALUE> extends AbstractLongHopScotchColl
         @Override
         public boolean visited( long key, T value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( key + value.hashCode() );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( key + value.hashCode() );
             return false;
         }
 

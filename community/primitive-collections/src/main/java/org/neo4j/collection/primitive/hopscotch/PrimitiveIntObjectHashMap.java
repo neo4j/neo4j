@@ -140,7 +140,7 @@ public class PrimitiveIntObjectHashMap<VALUE> extends AbstractIntHopScotchCollec
         @Override
         public boolean visited( int key, T value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( key + value.hashCode() );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( key + value.hashCode() );
             return false;
         }
 

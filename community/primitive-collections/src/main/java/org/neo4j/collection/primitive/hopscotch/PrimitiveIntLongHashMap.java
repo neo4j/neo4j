@@ -155,7 +155,7 @@ public class PrimitiveIntLongHashMap extends AbstractIntHopScotchCollection<long
         @Override
         public boolean visited( int key, long value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( key + DEFAULT_HASHING.hash( value ) );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( key + DEFAULT_HASHING.hashSingleValueToInt( value ) );
             return false;
         }
 
