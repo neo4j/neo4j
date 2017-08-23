@@ -733,7 +733,7 @@ return p""")
         |         RETURN candidate
       """.stripMargin
 
-    val res = succeedWith(Configs.AllExceptSleipnir - Configs.Compiled, query)
+    val res = succeedWith(Configs.All - Configs.Compiled, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
