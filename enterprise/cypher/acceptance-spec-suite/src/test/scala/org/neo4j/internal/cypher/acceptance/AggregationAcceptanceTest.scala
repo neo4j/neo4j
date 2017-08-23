@@ -51,7 +51,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createNode()
     relate(node1, node2)
     relate(node2, node1)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a)--() RETURN DISTINCT a")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a)--() RETURN DISTINCT a")
     result.toList should equal(List(Map("a" -> node1), Map("a" -> node2)))
   }
 
@@ -59,7 +59,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(1337))
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN DISTINCT a.prop")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a) RETURN DISTINCT a.prop")
     result.toComparableResult.toSet should equal(Set(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
 
@@ -67,7 +67,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person) WITH count(a) as c RETURN c")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -75,7 +75,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -85,7 +85,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node3 = createNode()
     val r1 = relate(node1, node2)
     val r2 = relate(node1, node3)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -93,28 +93,28 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createNode(Map("prop" -> 1))
     val node2 = createNode(Map("prop" -> 2))
     val r1 = relate(node1, node2)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 
   test("combine simple aggregation on projection with sorting") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
     result.toList should equal(List(Map("count(b)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (cannot use count store)") {
     val node1 = createNode(Map("prop" -> 1))
     val node2 = createNode(Map("prop" -> 2))
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
     result.toList should equal(List(Map("count(a.prop)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (can use node count store)") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN count(a) ORDER BY count(a)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a) ORDER BY count(a)")
     result.toList should equal(List(Map("count(a)" -> 2)))
   }
 
@@ -122,7 +122,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createNode()
     val node2 = createNode()
     val r1 = relate(node1, node2)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
     result.toList should equal(List(Map("count(r)" -> 2)))
   }
 }
