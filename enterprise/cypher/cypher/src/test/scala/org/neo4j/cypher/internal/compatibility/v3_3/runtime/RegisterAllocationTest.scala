@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -382,4 +382,45 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(apply) should equal(rhsPipeline)
     allocations(rhs) should equal(rhsPipeline)
   }
+
+  test("semi apply"){
+    // MATCH (x) WHERE (x) -[:r]-> (y) ....
+    testSemiApply(SemiApply(_,_))
+  }
+
+  test("anti semi apply"){
+    // MATCH (x) WHERE NOT (x) -[:r]-> (y) ....
+    testSemiApply(AntiSemiApply(_,_))
+  }
+
+  def testSemiApply(
+                 semiApplyBuilder: (LogicalPlan, LogicalPlan) =>
+                                    PlannerQuery with CardinalityEstimation => AbstractSemiApply
+               ):Unit = {
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val arg = Argument(Set(x))(solved)()
+    val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+    val semiApply = semiApplyBuilder(lhs,rhs)(solved)
+    val allocations = RegisterAllocation.allocateRegisters(semiApply)
+
+    val lhsPipeline = PipelineInformation(Map(
+    "x" -> LongSlot(0, nullable = false, CTNode, "x")),
+    numberOfLongs = 1, numberOfReferences = 0)
+
+    val argumentSide = lhsPipeline
+
+    val rhsPipeline = PipelineInformation(Map(
+    "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+    "y" -> LongSlot(2, nullable = false, CTNode, "y"),
+    "r" -> LongSlot(1, nullable = false, CTRelationship, "r")
+    ), numberOfLongs = 3, numberOfReferences = 0)
+
+    allocations should have size 4
+    allocations(semiApply) should equal(lhsPipeline)
+    allocations(lhs) should equal(lhsPipeline)
+    allocations(rhs) should equal(rhsPipeline)
+    allocations(arg) should equal(argumentSide)
+
+  }
+
 }
