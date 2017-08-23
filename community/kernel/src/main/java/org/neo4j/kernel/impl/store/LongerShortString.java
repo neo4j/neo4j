@@ -24,7 +24,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.string.UTF8;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -1092,7 +1091,7 @@ public enum LongerShortString
             }
             result[i] = codePoint;
         }
-        return Values.stringValue( UTF8.decode( result ) );
+        return Values.utf8Value( result );
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )

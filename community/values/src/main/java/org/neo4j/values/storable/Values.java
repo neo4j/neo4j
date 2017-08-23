@@ -107,7 +107,12 @@ public final class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
-    public static final TextValue utf8Value(byte[] bytes, int offset, int length)
+    public static TextValue utf8Value( byte[] bytes )
+    {
+        return utf8Value( bytes, 0, bytes.length );
+    }
+
+    public static TextValue utf8Value( byte[] bytes, int offset, int length )
     {
         return new StringValue.UTF8StringValue( bytes, offset, length );
     }
@@ -203,7 +208,7 @@ public final class Values
         return new FloatValue( value );
     }
 
-    public static TextArray stringArray( String...value )
+    public static TextArray stringArray( String... value )
     {
         return new StringArray.Direct( value );
     }
