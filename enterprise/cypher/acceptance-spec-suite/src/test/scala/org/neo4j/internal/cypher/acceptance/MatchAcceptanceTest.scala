@@ -29,26 +29,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-
-  test("apa") {
-
-    graph.execute(
-      """CREATE (andres:Swedish {name: 'Andres', age: 36, belt: 'white'}),
-        |       (tobias {name: 'Tobias', age: 25, address: 'Sweden/Malmo'}),
-        |       (peter {name: 'Peter', age: 35, email: 'peter_n@example.com'}),
-        |
-        |       (andres)-[:KNOWS {since: 2012}]->(tobias),
-        |       (andres)-[:KNOWS {since: 1999}]->(peter)
-        |      """.stripMargin).resultAsString()
-    val query =
-      """MATCH (n)
-        |WHERE (n)-[:KNOWS]-({name: 'Tobias'})
-        |RETURN n.name, n.age""".stripMargin
-    val result = succeedWith(Configs.Interpreted, query)
-
-    println(result.dumpToString())
-  }
-
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")
