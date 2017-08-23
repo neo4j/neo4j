@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown, ast => frontendAst}
 
 import scala.collection.mutable
 
@@ -132,7 +132,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case (LongSlot(offset, _, typ, name), None) if typ == CTNode => NodePropertyLate(offset, propKey, s"$name.$propKey")
           case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token, s"$name.$propKey")
           case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
-          case _ => throw new CantCompileQueryException(s"Expressions with on object other then nodes and relationships are not yet supported")
+          case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
         }
 
         if (slot.nullable)
@@ -171,8 +171,27 @@ class RegisteredRewriter(tokenContext: TokenContext) {
             throw new CantCompileQueryException("Did not find `" + k + "` in the pipeline information")
         }
 
-      case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
-        idFunction
+      case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Id =>
+        idFunction.args.head match {
+          case Variable(key) =>
+            val slot = pipelineInformation(key)
+            slot match {
+              case LongSlot(offset, true, _, _) => NullCheck(offset, IdFromSlot(offset))
+              case LongSlot(offset, false, _, _) => IdFromSlot(offset)
+              case _ => idFunction // Don't know how to specialize this
+            }
+          case e => idFunction // Don't know how to specialize this
+        }
+
+      case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Exists =>
+        idFunction.args.head match {
+          case Property(Variable(key), PropertyKeyName(propKey)) =>
+            checkIfPropertyExists(pipelineInformation, key, propKey)
+          case e => idFunction // Don't know how to specialize this
+        }
+
+      case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
+        Not(checkIfPropertyExists(pipelineInformation, key, propKey))(e.position)
 
       case _: ShortestPathExpression =>
         throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in register allocation")
@@ -181,6 +200,32 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
+  }
+
+  private def checkIfPropertyExists(pipelineInformation: PipelineInformation, key: String, propKey: String) = {
+    val slot = pipelineInformation(key)
+    val maybeToken = tokenContext.getOptPropertyKeyId(propKey)
+
+    val propExpression = (slot, maybeToken) match {
+      case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTNode =>
+        NodePropertyExists(offset, token, s"$name.$propKey")
+
+      case (LongSlot(offset, _, typ, name), None) if typ == CTNode =>
+        NodePropertyExistsLate(offset, propKey, s"$name.$propKey")
+
+      case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship =>
+        RelationshipPropertyExists(offset, token, s"$name.$propKey")
+
+      case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship =>
+        RelationshipPropertyExistsLate(offset, propKey, s"$name.$propKey")
+
+      case _ => throw new CantCompileQueryException(s"Expressions with on object other then nodes and relationships are not yet supported")
+    }
+
+    if (slot.nullable)
+      NullCheck(slot.offset, propExpression)
+    else
+      propExpression
   }
 
   private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {

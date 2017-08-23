@@ -57,7 +57,12 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def setRefAt(offset: Int, value: AnyValue): Unit = refs(offset) = value
 
-  override def getRefAt(offset: Int): AnyValue = refs(offset)
+  override def getRefAt(offset: Int): AnyValue = {
+    val value = refs(offset)
+    if (value == null)
+      throw new InternalException("Value not initialised")
+    value
+  }
 
   override def +=(kv: (String, AnyValue)) = fail()
 

@@ -100,34 +100,34 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-        val fromSlot = pipeline(from)
-        val relSlot = pipeline(relName)
-        val toSlot = pipeline(to)
-        ExpandAllRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
+        val fromSlot = pipeline.getLongOffsetFor(from)
+        val relSlot = pipeline.getLongOffsetFor(relName)
+        val toSlot = pipeline.getLongOffsetFor(to)
+        ExpandAllRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromSlot = pipeline(from)
-        val relSlot = pipeline(relName)
-        val toSlot = pipeline(to)
-        ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
+        val fromSlot = pipeline.getLongOffsetFor(from)
+        val relSlot = pipeline.getLongOffsetFor(relName)
+        val toSlot = pipeline.getLongOffsetFor(to)
+        ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-        val fromOffset = pipeline(fromName).offset
-        val relOffset = pipeline(relName).offset
-        val toOffset = pipeline(toName).offset
+        val fromOffset = pipeline.getLongOffsetFor(fromName)
+        val relOffset = pipeline.getLongOffsetFor(relName)
+        val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
-        val fromOffset = pipeline(fromName).offset
-        val relOffset = pipeline(relName).offset
-        val toOffset = pipeline(toName).offset
+        val fromOffset = pipeline.getLongOffsetFor(fromName)
+        val relOffset = pipeline.getLongOffsetFor(relName)
+        val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
 
       case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
       VarPatternLength(min, max), expansionMode, IdName(tempNode), IdName(tempEdge), nodePredicate,
-      edgePredicate, legacyPredicates) =>
+      edgePredicate, _) =>
 
         val shouldExpandAll = expansionMode match {
           case ExpandAll => true

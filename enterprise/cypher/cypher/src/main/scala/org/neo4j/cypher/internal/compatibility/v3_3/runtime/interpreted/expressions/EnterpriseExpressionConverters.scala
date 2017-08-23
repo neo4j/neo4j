@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{Ex
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commands}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 object EnterpriseExpressionConverters extends ExpressionConverter {
@@ -49,15 +48,14 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
       case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
         Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
-      case f:ast.FunctionInvocation if f.function == ast.functions.Exists =>
-        f.arguments.head match {
-          case runtimeAst.NodeProperty(offset, token, _) =>
-            Some(runtimeExpression.NodePropertyExists(offset, token))
-          case runtimeAst.NodePropertyLate(offset, token, _) =>
-            Some(runtimeExpression.NodePropertyExistsLate(offset, token))
-          case p =>
-            throw new CantCompileQueryException(s"Don't know how to do EXISTS on $p")
-        }
+      case runtimeAst.NodePropertyExists(offset, token, _) =>
+        Some(runtimeExpression.NodePropertyExists(offset, token))
+      case runtimeAst.NodePropertyExistsLate(offset, token, _) =>
+        Some(runtimeExpression.NodePropertyExistsLate(offset, token))
+      case runtimeAst.RelationshipPropertyExists(offset, token, _) =>
+        Some(runtimeExpression.RelationshipPropertyExists(offset, token))
+      case runtimeAst.RelationshipPropertyExistsLate(offset, token, _) =>
+        Some(runtimeExpression.RelationshipPropertyExistsLate(offset, token))
 
       case _ =>
         None

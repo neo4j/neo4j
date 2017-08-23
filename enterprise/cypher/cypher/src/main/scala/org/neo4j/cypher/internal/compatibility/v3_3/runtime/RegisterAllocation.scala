@@ -271,3 +271,4 @@ object RegisterAllocation {
 }
 
 class RegisterAllocationFailed(str: String) extends InternalException(str)
+

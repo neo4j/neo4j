@@ -460,7 +460,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head)))
@@ -579,9 +579,9 @@ return p""")
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()
