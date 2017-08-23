@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{NodeFromRegister, RelationshipFromRegister}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
@@ -156,6 +157,9 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
 
       case Projection(_, expressions) =>
         val expressionsWithOffsets = expressions map {
+          case (k, e:NodeFromRegister) =>
+            val offset = pipeline.getLongOffsetFor(k)
+            offset -> convertExpressions(e)
           case (k, e) =>
             val offset = pipeline.getReferenceOffsetFor(k)
             offset -> convertExpressions(e)
