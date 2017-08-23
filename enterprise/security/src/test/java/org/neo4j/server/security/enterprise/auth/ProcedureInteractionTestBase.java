@@ -59,7 +59,6 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
@@ -679,9 +678,16 @@ public abstract class ProcedureInteractionTestBase<S>
                     guard.check();
                 }
             }
-            catch (TransactionTerminatedException | TransactionGuardException e)
+            catch ( TransactionTerminatedException | TransactionGuardException e )
             {
-                throw new TransactionGuardException( TransactionTimedOut, PROCEDURE_TIMEOUT_ERROR, e );
+                if ( e.status().equals( TransactionTimedOut ) )
+                {
+                    throw new TransactionGuardException( TransactionTimedOut, PROCEDURE_TIMEOUT_ERROR, e );
+                }
+                else
+                {
+                    throw e;
+                }
             }
             finally
             {
