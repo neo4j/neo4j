@@ -224,7 +224,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
           fail("Unexpectedly Succeeded in " + thisScenario.name)
         }
       } catch {
-        case e: CypherException => {
+        case e: CypherException =>
           if (expectedToFailWithSpecificMessage) {
             if (!e.getMessage.contains(message)) {
               fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
@@ -236,7 +236,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
             }
             // It failed like expected, and we did not specify any message for this config
           }
-        }
+
         case e: Throwable => throw e
       }
     }
@@ -270,11 +270,11 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     def CompiledByteCode3_2: TestConfiguration = Scenarios.CompiledByteCode3_2
 
-    def Interpreted: TestConfiguration = CommunityInterpreted + EnterpriseInterpreted
+    def Interpreted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
 
-    def CommunityInterpreted: TestConfiguration = AbsolutelyAll - Compiled - Procs - EnterpriseInterpreted
+    def CommunityInterpreted: TestConfiguration = AbsolutelyAll - Compiled - Procs - SlottedInterpreted
 
-    def EnterpriseInterpreted: TestConfiguration = Scenarios.EnterpriseInterpreted
+    def SlottedInterpreted: TestConfiguration = Scenarios.EnterpriseInterpreted
 
     def Cost2_3: TestConfiguration = Scenarios.Compatibility2_3Cost
 
@@ -285,7 +285,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def Version3_2: TestConfiguration = Scenarios.Compatibility3_2
 
     def Version3_3: TestConfiguration = Compiled + Scenarios.CommunityInterpreted3_3 + Scenarios.RulePlannerOnLatestVersion +
-      EnterpriseInterpreted
+      SlottedInterpreted
 
     def AllRulePlanners: TestConfiguration = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios
       .RulePlannerOnLatestVersion
@@ -303,7 +303,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
      */
     def All: TestConfiguration = AbsolutelyAll - Procs
 
-    def AllExceptSleipnir: TestConfiguration = All - EnterpriseInterpreted
+    def AllExceptSlotted: TestConfiguration = All - SlottedInterpreted
 
     def AbsolutelyAll: TestConfiguration = Version3_3 + BackwardsCompatibility + Procs
 

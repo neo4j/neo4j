@@ -134,7 +134,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.EnterpriseInterpreted, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.SlottedInterpreted, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")

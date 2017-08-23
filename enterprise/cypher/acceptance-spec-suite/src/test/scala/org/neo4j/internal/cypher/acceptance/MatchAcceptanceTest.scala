@@ -57,7 +57,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     createNode()
 
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (n) RETURN count(n.name)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (n) RETURN count(n.name)")
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
@@ -507,11 +507,9 @@ return p""")
         |RETURN host""".stripMargin
 
     //WHEN
-//    val result = profile(query)
-    val result  = graph.execute(query)
+    val result = succeedWith(Configs.Interpreted, query)
     //THEN
-    println(result.getExecutionPlanDescription)
-//    result.toList should equal(List(Map("host" -> host), Map("host" -> null)))
+    result.toList should equal(List(Map("host" -> host), Map("host" -> null)))
   }
 
   // End of indexes
@@ -623,7 +621,7 @@ return p""")
 
   // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }
@@ -699,7 +697,7 @@ return p""")
 
     // When
     val res =
-      succeedWith(Configs.AllExceptSleipnir, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
+      succeedWith(Configs.AllExceptSlotted, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -716,7 +714,7 @@ return p""")
 
     // When
     val res =
-      succeedWith(Configs.AllExceptSleipnir,
+      succeedWith(Configs.AllExceptSlotted,
         """UNWIND {p1} AS n1
           |UNWIND {p2} AS n2
           |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,

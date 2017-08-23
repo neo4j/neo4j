@@ -31,7 +31,7 @@ case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
     val context = PrimitiveExecutionContext(pipelineInformation)
-    state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
+    state.copyArgumentStateTo(context)
     // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
     nullableOffsets.foreach(offset => context.setLongAt(offset, -1))
     context
