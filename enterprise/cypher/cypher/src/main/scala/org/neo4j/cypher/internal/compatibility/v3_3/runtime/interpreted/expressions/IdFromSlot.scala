@@ -25,13 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.longValue
 
-case class IdFromSlot(offset: Int) extends Expression {
+case class IdFromSlot(offset: Int) extends Expression with RegisterExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }

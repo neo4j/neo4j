@@ -26,15 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-trait RegisterExpression {
-  self: Expression =>
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
-}
 
 case class NodeProperty(offset: Int, token: Int) extends Expression with RegisterExpression {
 

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
 
-case class RelationshipFromRegister(offset: Int) extends Expression with RegisterExpression {
+trait RegisterExpression {
+  self: Expression =>
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): EdgeValue =
-    VirtualValues.fromRelationshipProxy(state.query.relationshipOps.getById(ctx.getLongAt(offset)))
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set.empty
 }

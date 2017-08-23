@@ -24,14 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class ReferenceFromRegister(offset: Int) extends Expression {
+case class ReferenceFromRegister(offset: Int) extends Expression with RegisterExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     ctx.getRefAt(offset)
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }
