@@ -139,7 +139,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY".fixNewLines)
 
     failWithError(
-      Configs.AllExceptSleipnir + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
+      Configs.AllExceptSlotted + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
       "CREATE (n:Person) SET n.name = 'A'",
       "Node(0) already exists with label `Person` and property `name` = 'A'"
     )
@@ -150,7 +150,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     failWithError(
-      Configs.AllExceptSleipnir + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
+      Configs.AllExceptSlotted + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
       String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
     )
@@ -193,7 +193,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     failWithError(
-      Configs.AllExceptSleipnir + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
+      Configs.AllExceptSlotted + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
       String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
     )
@@ -204,7 +204,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     failWithError(
-      Configs.AllExceptSleipnir + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
+      Configs.AllExceptSlotted + Configs.Procs - Configs.Compiled - Configs.Cost2_3,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
       String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
       )

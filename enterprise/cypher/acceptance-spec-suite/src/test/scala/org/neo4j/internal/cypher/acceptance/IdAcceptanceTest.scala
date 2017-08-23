@@ -40,7 +40,7 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupp
     val expected = relate(createNode(), createNode()).getId
 
     // WHEN
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]->() RETURN id(r)")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH ()-[r]->() RETURN id(r)")
 
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))

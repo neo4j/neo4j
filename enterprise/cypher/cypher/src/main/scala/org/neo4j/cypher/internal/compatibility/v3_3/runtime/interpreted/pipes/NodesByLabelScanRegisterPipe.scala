@@ -35,7 +35,7 @@ case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelin
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
           val context = PrimitiveExecutionContext(pipelineInformation)
-          state.copyArgumentStateTo(context, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
+          state.copyArgumentStateTo(context)
           context.setLongAt(offset, nodeId)
           context
         })

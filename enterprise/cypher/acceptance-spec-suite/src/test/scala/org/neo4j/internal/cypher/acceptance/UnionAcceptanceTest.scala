@@ -39,7 +39,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
       |M.a as B
     """.stripMargin
 
-    val result = succeedWith(Configs.Interpreted - Configs.EnterpriseInterpreted, query)
+    val result = succeedWith(Configs.Interpreted - Configs.SlottedInterpreted, query)
     val expected = List(Map("A" -> "a", "B" -> "b"), Map("A" -> "b", "B" -> "a"))
 
     result.toList should equal(expected)

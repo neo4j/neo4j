@@ -73,6 +73,8 @@ class QueryState(val query: QueryContext,
     */
   def copyArgumentStateTo(ctx: ExecutionContext, nLongs: Int, nRefs: Int): Unit = initialContext.foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
+  def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
+
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
 }
