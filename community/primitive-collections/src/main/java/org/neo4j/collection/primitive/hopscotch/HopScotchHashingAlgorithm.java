@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.hashing.HashFunction;
+
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Long.numberOfTrailingZeros;
 
@@ -274,7 +276,7 @@ public class HopScotchHashingAlgorithm
 
     private static int indexOf( HashFunction hashFunction, long key, int tableMask )
     {
-        return hashFunction.hash( key ) & tableMask;
+        return hashFunction.hashSingleValueToInt( key ) & tableMask;
     }
 
     private static <VALUE> void growTable( Table<VALUE> oldTable, Monitor monitor,
@@ -375,48 +377,12 @@ public class HopScotchHashingAlgorithm
         /*No additional logic*/
     };
 
-    public interface HashFunction
-    {
-        int hash( long value );
-    }
-
     /**
-     * Same hash function as that used by the standard library hash collections. It generates a hash by splitting the
-     * input value into segments, and then re-distributing those segments, so the end result is effectively a striped
-     * and then jumbled version of the input data. For randomly distributed keys, this has a good chance at generating
-     * an even hash distribution over the full hash space.
-     *
-     * It performs exceptionally poorly for sequences of numbers, as the sequence increments all end up in the same
-     * stripe, generating hash values that will end up in the same buckets in collections.
+     * The default hash function for primitive collections. This hash function is quite fast but has mediocre
+     * statistics.
+     * @see org.neo4j.hashing.HashFunction#xorShift32()
      */
-    public static final HashFunction JUL_HASHING = new HashFunction()
-    {
-        @Override
-        public int hash( long value )
-        {
-            int h = (int) ((value >>> 32) ^ value);
-            h ^= (h >>> 20) ^ (h >>> 12);
-            return h ^ (h >>> 7) ^ (h >>> 4);
-        }
-    };
-
-    /**
-     * The default hash function is based on a pseudo-random number generator, which uses the input value as a seed
-     * to the generator. This is very fast, and performs well for most input data. However, it is not guaranteed to
-     * generate a superb distribution, only a "decent" one.
-     */
-    public static final HashFunction DEFAULT_HASHING = new HashFunction()
-    {
-        @Override
-        public int hash( long value )
-        {
-            value ^= value << 21;
-            value ^= value >>> 35;
-            value ^= value << 4;
-
-            return (int) ((value >>> 32) ^ value);
-        }
-    };
+    static final HashFunction DEFAULT_HASHING = HashFunction.xorShift32();
 
     public interface ResizeMonitor<VALUE>
     {
