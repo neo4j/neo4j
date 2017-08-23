@@ -50,6 +50,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionGuardException;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.spatial.Point;
@@ -57,6 +59,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.logging.Log;
@@ -91,6 +94,7 @@ import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CO
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
@@ -101,6 +105,7 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 
 public abstract class ProcedureInteractionTestBase<S>
 {
+    static final String PROCEDURE_TIMEOUT_ERROR = "Procedure got: Transaction guard check failed";
     protected boolean PWD_CHANGE_CHECK_FIRST;
     protected String CHANGE_PWD_ERR_MSG = AuthorizationViolationException.PERMISSION_DENIED;
     private static final String BOLT_PWD_ERR_MSG =
@@ -673,6 +678,10 @@ public abstract class ProcedureInteractionTestBase<S>
                     }
                     guard.check();
                 }
+            }
+            catch (TransactionTerminatedException | TransactionGuardException e)
+            {
+                throw new TransactionGuardException( TransactionTimedOut, PROCEDURE_TIMEOUT_ERROR, e );
             }
             finally
             {
