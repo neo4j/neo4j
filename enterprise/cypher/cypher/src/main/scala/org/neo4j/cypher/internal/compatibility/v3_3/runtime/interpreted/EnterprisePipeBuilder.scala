@@ -237,10 +237,10 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         ApplyRegisterPipe(lhs, rhs)(id)
 
       case SemiApply(_, _) =>
-        SemiApplyRegisterPipe(lhs, rhs, negated = false)(id)
+        SemiApplyPipe(lhs, rhs, negated = false)(id)
 
       case AntiSemiApply(_, _) =>
-        SemiApplyRegisterPipe(lhs, rhs, negated = true)(id)
+        SemiApplyPipe(lhs, rhs, negated = true)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }

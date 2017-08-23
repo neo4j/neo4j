@@ -120,9 +120,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
             case (toNode: LNode, rels: Seq[Relationship])
               if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
               val resultRow = PrimitiveExecutionContext(pipeline)
-              //TODO
-              //resultRow.copyFrom(inputRowWithFromNode, pipeline.initialNumberOfLongs, pipeline.initialNumberOfReferences)
-              resultRow.copyFrom(inputRowWithFromNode, longsToCopy)
+              resultRow.copyFrom(inputRowWithFromNode, longsToCopy, pipeline .initialNumberOfReferences)
               resultRow.setLongAt(toOffset, toNode)
               resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
               resultRow
