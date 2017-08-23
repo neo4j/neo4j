@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.state.CommandDispatcher;
 import org.neo4j.causalclustering.core.state.Result;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationRequest;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenRequest;
@@ -164,10 +165,11 @@ public class CoreStateMachinesTest
             mock( ReplicatedLockTokenStateMachine.class );
     @SuppressWarnings( "unchecked" )
     private final ReplicatedIdAllocationStateMachine idAllocationSM = mock( ReplicatedIdAllocationStateMachine.class );
+    private final DummyMachine dummySM = mock( DummyMachine.class );
     private final RecoverConsensusLogIndex recoverConsensusLogIndex = mock( RecoverConsensusLogIndex.class );
 
     private final CoreStateMachines coreStateMachines = new CoreStateMachines( txSM, labelTokenSM,
-            relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM,
+            relationshipTypeTokenSM, propertyKeyTokenSM, lockTokenSM, idAllocationSM, dummySM,
             mock( LocalDatabase.class ), recoverConsensusLogIndex );
 
     private final ReplicatedTransaction replicatedTransaction = mock( ReplicatedTransaction.class );

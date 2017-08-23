@@ -39,6 +39,7 @@ import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdRangeAcquir
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenState;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
+import org.neo4j.causalclustering.core.state.machines.dummy.DummyMachine;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedLabelTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedPropertyKeyTokenHolder;
 import org.neo4j.causalclustering.core.state.machines.token.ReplicatedRelationshipTypeTokenHolder;
@@ -184,7 +185,7 @@ public class CoreStateMachinesModule
 
         coreStateMachines = new CoreStateMachines( replicatedTxStateMachine, labelTokenStateMachine,
                 relationshipTypeTokenStateMachine, propertyKeyTokenStateMachine, replicatedLockTokenStateMachine,
-                idAllocationStateMachine, localDatabase, consensusLogIndexRecovery );
+                idAllocationStateMachine, new DummyMachine(), localDatabase, consensusLogIndexRecovery );
 
         commitProcessFactory = ( appender, applier, ignored ) ->
         {

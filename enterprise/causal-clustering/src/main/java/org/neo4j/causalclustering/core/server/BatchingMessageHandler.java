@@ -110,11 +110,7 @@ class BatchingMessageHandler extends LifecycleAdapter
     {
         List<RaftMessages.ClusterIdAwareMessage> tempDraining = new ArrayList<>();
         messageQueue.drainTo( tempDraining, maxElements );
-
-        for ( RaftMessages.ClusterIdAwareMessage clusterIdAwareMessage : tempDraining )
-        {
-            batch.add( clusterIdAwareMessage );
-        }
+        batch.addAll( tempDraining );
     }
 
     private void collateAndHandleBatch( List<RaftMessages.ClusterIdAwareMessage> batch )
