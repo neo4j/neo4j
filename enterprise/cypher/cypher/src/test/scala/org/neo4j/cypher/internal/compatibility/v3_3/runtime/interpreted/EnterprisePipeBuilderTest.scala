@@ -93,16 +93,19 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(createNode)
 
     // then
-    val pipelineInformation = PipelineInformation.empty
+    val beforeEagerPipelineInformation = PipelineInformation.empty
+      .newLong("x", false, CTNode)
+
+    val afterEagerPipelineInformation = PipelineInformation.empty
       .newLong("x", false, CTNode)
       .newLong("z", false, CTNode)
 
     pipe should equal(
       CreateNodeRegisterPipe(
         EagerRegisterPipe(
-          AllNodesScanRegisterPipe("x", pipelineInformation)(),
-          pipelineInformation)(),
-        "z", pipelineInformation, Seq(LazyLabel(label)), None)()
+          AllNodesScanRegisterPipe("x", beforeEagerPipelineInformation)(),
+          afterEagerPipelineInformation)(),
+        "z", afterEagerPipelineInformation, Seq(LazyLabel(label)), None)()
     )
   }
 
