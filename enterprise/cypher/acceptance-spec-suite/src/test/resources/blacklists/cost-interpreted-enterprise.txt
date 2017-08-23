@@ -76,8 +76,6 @@ Returning a relationship from a pattern predicate
 Pattern predicate should uphold the relationship uniqueness constraint
 Pattern predicates on missing optionally matched nodes should simply evaluate to false
 Matching with complex composite pattern predicate
-Handling pattern predicates without matches
-Handling pattern predicates
 Matching named path with variable length pattern and pattern predicates
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call

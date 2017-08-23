@@ -53,14 +53,9 @@ Support column renaming for aggregates as well
 Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
-Use multiple MATCH clauses to do a Cartesian product
 Using aliased DISTINCT expression in ORDER BY
 `type()` on two relationships
 `type()`
-Returning bound nodes that are not part of the pattern
-Comparing nodes for equality
-Matching disconnected patterns
-No dependencies between the query parts
 
 Nodes are not created when aliases are applied to variable names
 Only a single node is created when an alias is applied to a variable name
@@ -154,6 +149,7 @@ Return a var length path
 Return a var length path of length zero
 Return a named var length path of length zero
 Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false
+Do not fail when evaluating predicates with illegal operations if the OR'd predicate evaluates to true
 Fail when comparing strings and integers using > in an AND'd predicate
 Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
@@ -220,8 +216,6 @@ Variable length optional relationships
 Variable length optional relationships with length predicates
 Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
-Longer pattern with bound nodes
-Longer pattern with bound nodes without matches
 OPTIONAL MATCH and `collect()`
 ORDER BY of a column introduced in RETURN should return salient results in ascending order
 Pattern comprehension and ORDER BY
