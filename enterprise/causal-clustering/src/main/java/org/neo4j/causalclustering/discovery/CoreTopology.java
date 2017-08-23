@@ -22,16 +22,14 @@ package org.neo4j.causalclustering.discovery;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
-import static java.util.stream.Collectors.toSet;
 
-public class CoreTopology
+public class CoreTopology implements Topology<CoreServerInfo>
 {
     static CoreTopology EMPTY = new CoreTopology( null, false, emptyMap() );
 
@@ -46,6 +44,7 @@ public class CoreTopology
         this.coreMembers = new HashMap<>( coreMembers );
     }
 
+    @Override
     public Map<MemberId,CoreServerInfo> members()
     {
         return coreMembers;
@@ -61,29 +60,10 @@ public class CoreTopology
         return canBeBootstrapped;
     }
 
-    public Optional<CoreServerInfo> find( MemberId memberId )
-    {
-        return Optional.ofNullable( coreMembers.get( memberId ) );
-    }
-
     @Override
     public String toString()
     {
         return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
-    }
-
-    TopologyDifference difference( CoreTopology other )
-    {
-        Set<MemberId> members = coreMembers.keySet();
-        Set<MemberId> otherMembers = other.coreMembers.keySet();
-
-        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
-                .map( memberId -> Difference.asDifference( other, memberId ) ).collect( toSet() );
-
-        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
-                .map( memberId -> Difference.asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
-
-        return new TopologyDifference( added, removed );
     }
 
     public Optional<MemberId> anyCoreMemberId()

@@ -169,7 +169,7 @@ public class Settings
         @Nonnull
         public Setting<T> build()
         {
-            BiFunction<String,Function<String, String>, String> valueLookup = named();
+            BiFunction<String, Function<String, String>, String> valueLookup = Settings::named;
             BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
             if ( inheritedSetting != null )
             {
@@ -1093,9 +1093,9 @@ public class Settings
     }
 
     // Setting helpers
-    private static BiFunction<String,Function<String, String>, String> named()
+    private static String named( String name, Function<String, String> settings )
     {
-        return ( name, settings ) -> settings.apply( name );
+        return settings.apply( name );
     }
 
     private static BiFunction<String,Function<String,String>,String> withDefault( final String defaultValue,

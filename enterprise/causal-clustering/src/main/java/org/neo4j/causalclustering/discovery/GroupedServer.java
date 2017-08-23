@@ -21,7 +21,7 @@ package org.neo4j.causalclustering.discovery;
 
 import java.util.Set;
 
-interface GroupedServer
+public interface GroupedServer
 {
     Set<String> groups();
 }
