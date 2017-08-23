@@ -43,6 +43,7 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -169,9 +170,17 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> replicated_lock_token_state_size =
             setting( "causal_clustering.replicated_lock_token_state_size", INTEGER, "1000" );
 
-    @Description( "The number of messages waiting to be sent to other servers in the cluster" )
-    public static final Setting<Integer> outgoing_queue_size =
-            setting( "causal_clustering.outgoing_queue_size", INTEGER, "64" );
+    @Description( "The maximum amount of data which can be in the replication stage concurrently." )
+    public static final Setting<Long> replication_total_size_limit =
+            setting( "causal_clustering.replication_total_size_limit", BYTES, "128M" );
+
+    @Description( "The initial timeout until replication is retried. The timeout will increase exponentially." )
+    public static final Setting<Duration> replication_retry_timeout_base =
+            setting( "causal_clustering.replication_retry_timeout_base", DURATION, "10s" );
+
+    @Description( "The upper limit for the exponentially incremented retry timeout." )
+    public static final Setting<Duration> replication_retry_timeout_limit =
+            setting( "causal_clustering.replication_retry_timeout_limit", DURATION, "60s" );
 
     @Description( "The number of operations to be processed before the state machines flush to disk" )
     public static final Setting<Integer> state_machine_flush_window_size =

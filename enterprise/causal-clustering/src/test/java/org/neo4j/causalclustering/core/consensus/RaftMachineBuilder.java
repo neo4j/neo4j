@@ -62,7 +62,7 @@ public class RaftMachineBuilder
             getInstance() );
 
     private Inbound<RaftMessages.RaftMessage> inbound = handler -> {};
-    private Outbound<MemberId, RaftMessages.RaftMessage> outbound = ( to, message ) -> {};
+    private Outbound<MemberId, RaftMessages.RaftMessage> outbound = ( to, message, block ) -> {};
 
     private LogProvider logProvider = NullLogProvider.getInstance();
     private Clock clock = Clocks.systemClock();

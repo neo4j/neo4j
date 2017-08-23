@@ -29,6 +29,18 @@ public class ReplicatedTransaction implements CoreReplicatedContent
 {
     private final byte[] txBytes;
 
+    @Override
+    public boolean hasSize()
+    {
+        return true;
+    }
+
+    @Override
+    public long size()
+    {
+        return txBytes.length;
+    }
+
     public ReplicatedTransaction( byte[] txBytes )
     {
         this.txBytes = txBytes;

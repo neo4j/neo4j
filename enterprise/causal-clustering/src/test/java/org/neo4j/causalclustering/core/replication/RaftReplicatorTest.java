@@ -70,6 +70,7 @@ public class RaftReplicatorTest
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
     private TimeoutStrategy timeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
     private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
+    private long replicationLimit = 1000;
 
     @Test
     public void shouldSendReplicatedContentToLeader() throws Exception
@@ -81,7 +82,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                        capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -108,7 +109,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -132,7 +133,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
@@ -163,7 +164,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, timeoutStrategy,
-                        availabilityGuard, NullLogProvider.getInstance() );
+                        availabilityGuard, NullLogProvider.getInstance(), replicationLimit );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         ReplicatingThread replicatingThread = replicatingThread( replicator, content, true );
@@ -275,7 +276,7 @@ public class RaftReplicatorTest
         private int count;
 
         @Override
-        public void send( MemberId to, MESSAGE message )
+        public void send( MemberId to, MESSAGE message, boolean block )
         {
             this.lastTo = to;
             this.count++;

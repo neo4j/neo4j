@@ -35,7 +35,7 @@ public class LoggingOutbound<MEMBER, MESSAGE extends Message> implements Outboun
     }
 
     @Override
-    public void send( MEMBER to, MESSAGE message )
+    public void send( MEMBER to, MESSAGE message, boolean block )
     {
         messageLogger.log( me, to, message );
         outbound.send( to, message );
