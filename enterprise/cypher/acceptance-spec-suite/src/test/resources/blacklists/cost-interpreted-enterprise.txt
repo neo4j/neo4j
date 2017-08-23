@@ -1,5 +1,3 @@
-Case should handle mixed number types
-Case should handle mixed types
 Returning a CASE expression into pattern expression
 Returning a CASE expression into integer
 Returning a CASE expression with label predicates

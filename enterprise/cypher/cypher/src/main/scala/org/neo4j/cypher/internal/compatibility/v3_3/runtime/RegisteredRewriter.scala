@@ -157,12 +157,16 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         }
 
       case Variable(k) =>
-        pipelineInformation(k) match {
-          case LongSlot(offset, false, CTNode, name) => NodeFromRegister(offset, name)
-          case LongSlot(offset, true, CTNode, name) => NullCheck(offset, NodeFromRegister(offset, name))
-          case LongSlot(offset, false, CTRelationship, name) => RelationshipFromRegister(offset, name)
-          case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromRegister(offset, name))
-          case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
+        pipelineInformation.get(k) match {
+          case Some(slot) => slot match {
+            case LongSlot(offset, false, CTNode, name) => NodeFromRegister(offset, name)
+            case LongSlot(offset, true, CTNode, name) => NullCheck(offset, NodeFromRegister(offset, name))
+            case LongSlot(offset, false, CTRelationship, name) => RelationshipFromRegister(offset, name)
+            case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromRegister(offset, name))
+            case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
+            case _ =>
+              throw new CantCompileQueryException("Unknown type for `" + k + "` in the pipeline information")
+          }
           case _ =>
             throw new CantCompileQueryException("Did not find `" + k + "` in the pipeline information")
         }

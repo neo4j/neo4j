@@ -705,6 +705,40 @@ return p""")
     res.toList should equal(List(Map("n1.prop" -> 1, "n2.prop" -> 2)))
   }
 
+  test("should handle unwind with filtering projections") {
+    // Given
+    val query =
+      """
+        |WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames
+        |         UNWIND somenames AS candidate
+        |         WITH candidate
+        |         WHERE candidate STARTS WITH 'Jo'
+        |         RETURN candidate
+      """.stripMargin
+
+    val res = succeedWith(Configs.All - Configs.Compiled, query)
+
+    //Then
+    res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
+  }
+
+  test("should handle unwind with filtering projections with renames") {
+    // Given
+    val query =
+      """
+        |WITH ['John', 'Mark', 'Jonathan', 'Bill'] AS somenames
+        |         UNWIND somenames AS names
+        |         WITH names AS candidate
+        |         WHERE candidate STARTS WITH 'Jo'
+        |         RETURN candidate
+      """.stripMargin
+
+    val res = succeedWith(Configs.AllExceptSleipnir - Configs.Compiled, query)
+
+    //Then
+    res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
+  }
+
   test("should handle distinct, variable length and relationship predicate") {
     // Given
     val node1 = createNode()
