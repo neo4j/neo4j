@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class NodeProperty(offset: Int, token: Int) extends Expression {
-
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
-    state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
+trait RegisterExpression {
+  self: Expression =>
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
@@ -37,7 +36,13 @@ case class NodeProperty(offset: Int, token: Int) extends Expression {
   override def symbolTableDependencies: Set[String] = Set.empty
 }
 
-case class NodePropertyLate(offset: Int, propKey: String) extends Expression {
+case class NodeProperty(offset: Int, token: Int) extends Expression with RegisterExpression {
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
+}
+
+case class NodePropertyLate(offset: Int, propKey: String) extends Expression with RegisterExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
@@ -47,9 +52,27 @@ case class NodePropertyLate(offset: Int, propKey: String) extends Expression {
       state.query.nodeOps.getProperty(ctx.getLongAt(offset), maybeToken.get)
   }
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+}
 
-  override def arguments: Seq[Expression] = Seq.empty
+case class NodePropertyExists(offset: Int, token: Int) extends Predicate with RegisterExpression {
 
-  override def symbolTableDependencies: Set[String] = Set.empty
+  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    Some(state.query.nodeOps.hasProperty(m.getLongAt(offset), token))
+  }
+
+  override def containsIsNull = false
+}
+
+case class NodePropertyExistsLate(offset: Int, propKey: String) extends Predicate with RegisterExpression {
+
+  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    val maybeToken = state.query.getOptPropertyKeyId(propKey)
+    val result = if (maybeToken.isEmpty)
+      false
+    else
+      state.query.nodeOps.hasProperty(m.getLongAt(offset), maybeToken.get)
+    Some(result)
+  }
+
+  override def containsIsNull = false
 }

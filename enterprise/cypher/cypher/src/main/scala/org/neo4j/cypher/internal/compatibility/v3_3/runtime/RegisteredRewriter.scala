@@ -174,9 +174,6 @@ class RegisteredRewriter(tokenContext: TokenContext) {
       case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
         idFunction
 
-      case _: FunctionInvocation =>
-        throw new CantCompileQueryException(s"Expressions with functions not yet supported in register allocation")
-
       case _: ShortestPathExpression =>
         throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in register allocation")
 
