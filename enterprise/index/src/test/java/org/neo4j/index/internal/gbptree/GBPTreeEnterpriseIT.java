@@ -19,18 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class TreeNodeV3Factory extends TreeNodeFactory
+public class GBPTreeEnterpriseIT extends GBPTreeIT
 {
-    private static final int PRIORITY = TreeNodeV2Factory.PRIORITY + 1;
-
-    public TreeNodeV3Factory()
-    {
-        super( TreeNodeV3Factory.class.getName(), TreeNodeV3.FORMAT_IDENTIFIER, TreeNodeV3.FORMAT_VERSION, PRIORITY );
-    }
-
-    @Override
-    <KEY, VALUE> TreeNode<KEY,VALUE> instantiate( int pageSize, Layout<KEY,VALUE> layout )
-    {
-        return new TreeNodeV3<>( pageSize, layout );
-    }
+    // Merely running it in the environment will select the enterprise tree node format
 }

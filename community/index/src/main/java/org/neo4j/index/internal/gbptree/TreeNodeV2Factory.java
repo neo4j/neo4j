@@ -37,6 +37,6 @@ public class TreeNodeV2Factory extends TreeNodeFactory
     @Override
     <KEY, VALUE> TreeNode<KEY,VALUE> instantiate( int pageSize, Layout<KEY,VALUE> layout )
     {
-        return new TreeNodeV2<KEY,VALUE>( pageSize, layout );
+        return new TreeNodeV2<>( pageSize, layout );
     }
 }

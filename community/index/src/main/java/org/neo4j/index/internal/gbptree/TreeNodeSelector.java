@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.helpers.Service;
@@ -32,6 +33,7 @@ class TreeNodeSelector
     static TreeNodeFactory selectHighestPrioritizedTreeNodeFormat()
     {
         List<TreeNodeFactory> all = asList( Service.load( TreeNodeFactory.class ) );
+        Collections.sort( all );
         if ( all.isEmpty() )
         {
             throw new IllegalArgumentException( "No formats found" );

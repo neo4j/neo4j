@@ -103,11 +103,11 @@ public class ConsistencyCheckerTest
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
                     node.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    Section<MutableLong,MutableLong> mainContent = node.main();
-                    mainContent.insertKeyAt( cursor, structure.rightKey, 0, 0 );
-                    mainContent.setKeyCount( cursor, 1 );
-                    mainContent.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
-                    mainContent.setChildAt( cursor, structure.rightChild, 1,
+                    Section<MutableLong,MutableLong> mainSection = node.main();
+                    mainSection.insertKeyAt( cursor, structure.rightKey, 0, 0 );
+                    mainSection.setKeyCount( cursor, 1 );
+                    mainSection.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
+                    mainSection.setChildAt( cursor, structure.rightChild, 1,
                             stableGeneration, unstableGeneration );
                     logic.initialize( cursor );
                 }
