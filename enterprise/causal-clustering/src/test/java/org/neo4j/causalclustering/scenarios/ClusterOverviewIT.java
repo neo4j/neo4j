@@ -326,6 +326,7 @@ public class ClusterOverviewIT
        return containsRole( unexpectedRole, 0 );
     }
 
+    @SuppressWarnings( "unchecked" )
     private List<MemberInfo> clusterOverview( GraphDatabaseFacade db )
             throws TransactionFailureException, ProcedureException
     {
@@ -340,8 +341,8 @@ public class ClusterOverviewIT
             while ( itr.hasNext() )
             {
                 Object[] row = itr.next();
-                Object[] addresses = (Object[]) row[1];
-                infos.add( new MemberInfo( Arrays.copyOf( addresses, addresses.length, String[].class ),
+                List<String> addresses = (List<String>) row[1];
+                infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ),
                         Role.valueOf( (String) row[2] ) ) );
             }
         }
