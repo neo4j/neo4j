@@ -20,15 +20,113 @@
 
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
+import scala.collection.mutable
 
 object PipelineInformation {
   def empty = new PipelineInformation(Map.empty, 0, 0)
 
   def apply(slots: Map[String, Slot], numberOfLongs: Int, numberOfReferences: Int) =
     new PipelineInformation(slots, numberOfLongs, numberOfReferences)
+
+  def toString(startFrom: LogicalPlan, m: Map[LogicalPlan, PipelineInformation]): String = {
+    var lastSeen = 0
+
+    def ordinal(): Int = {
+      val result = lastSeen
+      lastSeen += 1
+      result
+    }
+
+    class Pipeline(val order: Int, val info: PipelineInformation, var plans: Seq[LogicalPlan], var dependsOn: Seq[Pipeline]) {
+      def addDependencyTo(toP: Pipeline): Unit = dependsOn = dependsOn :+ toP
+
+      def addPlan(p: LogicalPlan): Unit = plans = plans :+ p
+    }
+
+    class PipelineBuilder(var buffer: Map[PipelineInformation, Pipeline] = Map.empty[PipelineInformation, Pipeline] ) {
+      def addPlanAndPipelineInformation(lp: LogicalPlan, pipelineInformation: PipelineInformation): PipelineBuilder = {
+        val p = getOrCreatePipeline(pipelineInformation)
+        p.addPlan(lp)
+        this
+      }
+
+      def getOrCreatePipeline(key: PipelineInformation): Pipeline = {
+        buffer.getOrElse(key, {
+          val pipeline = new Pipeline(ordinal(), key, Seq.empty, Seq.empty)
+          buffer = buffer + (key -> pipeline)
+          pipeline
+        })
+      }
+
+      def addDependencyBetween(from: PipelineInformation, to: PipelineInformation): PipelineBuilder = {
+        val fromP = getOrCreatePipeline(from)
+        val toP = getOrCreatePipeline(to)
+        if (fromP != toP) {
+          fromP.addDependencyTo(toP)
+        }
+        this
+      }
+    }
+
+    val acc = new PipelineBuilder()
+    m.foreach {
+      case (lp, pipelineInformation) =>
+        acc.addPlanAndPipelineInformation(lp, pipelineInformation)
+
+        lp.lhs.foreach {
+          plan =>
+            val incomingPipeline = m(plan)
+            acc.addDependencyBetween(pipelineInformation, incomingPipeline)
+        }
+
+        lp.rhs.foreach {
+          plan =>
+            val incomingPipeline = m(plan)
+            acc.addDependencyBetween(pipelineInformation, incomingPipeline)
+        }
+    }
+
+    val result = new mutable.StringBuilder()
+
+    def addToString(pipeline: Pipeline): Unit = {
+      result.append(s"Pipeline ${pipeline.order}:\n")
+
+      //Plans
+      result.append(s"  -> ${pipeline.plans.head.getClass.getSimpleName}")
+      pipeline.plans.tail.foreach {
+        plan => result.append(", ").append(plan.getClass.getSimpleName)
+      }
+      result.append("\n")
+
+      //Slots
+      result.append("Slots:\n")
+      pipeline.info.slots.values.foreach {
+        slot =>
+          val s = if (slot.isInstanceOf[LongSlot]) "L" else "V"
+          val r = if (slot.nullable) "T" else "F"
+
+          result.append(s"[$s $r ${slot.offset} ${slot.typ}] -> ${slot.name}\n")
+      }
+      result.append("\n")
+
+      // Dependencies:
+      result.append("Dependends on: ")
+      pipeline.dependsOn.foreach(p => result.append("#").append(p.order))
+
+      result.append("\n")
+      result.append("*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+*-+\n")
+
+      pipeline.dependsOn.foreach(addToString)
+    }
+
+    addToString(acc.buffer(m(startFrom)))
+
+    result.toString()
+  }
 }
 
 class PipelineInformation(private var slots: Map[String, Slot], var numberOfLongs: Int, var numberOfReferences: Int) {
