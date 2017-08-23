@@ -59,7 +59,6 @@ Using a pattern expression in a WITH
 Using a variable-length pattern expression in a WITH
 Using pattern expression in RETURN
 Aggregating on pattern expression
-Returning pattern expression in `exists()`
 Pattern expression inside list comprehension
 Filter relationships with properties using pattern predicate
 Filter using negated pattern predicate
