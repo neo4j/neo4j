@@ -312,8 +312,6 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
-    private Boolean kill_query_verbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
-
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
     public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
@@ -324,8 +322,8 @@ public class EnterpriseBuiltInDbmsProcedures
             long queryId = fromExternalString( idText ).kernelQueryId();
 
             Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys = getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
-
-            if ( kill_query_verbose && querys.isEmpty() )
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && querys.isEmpty() )
             {
                 return Stream.<QueryTerminationResult>builder().add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
             }
@@ -351,8 +349,8 @@ public class EnterpriseBuiltInDbmsProcedures
 
             Set<QueryTerminationResult> terminatedQuerys = getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) ).map(
                     catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) ).collect( toSet() );
-
-            if ( kill_query_verbose && terminatedQuerys.size() != idTexts.size() )
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && terminatedQuerys.size() != idTexts.size() )
             {
                 for ( String id : idTexts )
                 {
