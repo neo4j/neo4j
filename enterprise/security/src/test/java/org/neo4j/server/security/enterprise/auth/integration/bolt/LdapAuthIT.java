@@ -272,7 +272,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // When
         assertAuth( "smith", "abc123" );
         client.send( TransportTestUtil.chunk(
-                run( "CALL dbms.security.showCurrentUser()" ),
+                run( "CALL dbms.showCurrentUser()" ),
                 pullAll() ) );
 
         // Then
