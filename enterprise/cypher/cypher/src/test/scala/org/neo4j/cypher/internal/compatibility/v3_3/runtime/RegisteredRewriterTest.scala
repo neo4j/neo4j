@@ -221,6 +221,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     // then
     resultPlan should equal(
       Projection(leaf, Map(
+        "x" -> NodeFromRegister(0, "x"),
         "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId, "x.propertyKey")
       ))(solved)
     )
@@ -245,6 +246,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val nodeOffset = pipeline.getLongOffsetFor("x")
     resultPlan should equal(
       Projection(leaf, Map(
+        "x" -> NullCheck(0, NodeFromRegister(0, "x")),
         "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId, "x.propertyKey"))
       ))(solved)
     )

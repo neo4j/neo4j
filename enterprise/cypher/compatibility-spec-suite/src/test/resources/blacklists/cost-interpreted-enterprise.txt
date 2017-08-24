@@ -1,5 +1,4 @@
 Combining string operators' was blacklisted, but succeeded
-Cope with shadowed variables
 Count non-null values
 Counting directed self-relationships
 Counting distinct undirected self-relationships in self-relationship graph
@@ -12,7 +11,6 @@ DISTINCT on nullable values
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
 Distinct on null
-Double unwinding a list of lists
 Get rows in the middle by param
 Get rows in the middle
 Run coalesce
@@ -21,7 +19,6 @@ Handling long chains of operators
 handling long chanins of operators
 Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
-Honour the column name for RETURN items
 Keeping used expression 1
 LIMIT 0 should return an empty result
 Limit to two hits
@@ -29,7 +26,6 @@ Limiting amount of rows when there are fewer left than the LIMIT argument
 Matching a self-loop
 Matching and returning ordered results, with LIMIT
 Matching with aggregation
-Multiple unwinds after each other
 ORDER BY DESC should order booleans in the expected order
 ORDER BY DESC should order floats in the expected order
 ORDER BY DESC should order ints in the expected order
@@ -59,8 +55,6 @@ Support column renaming for aggregates as well
 Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
-Unwind does not prune context
-Unwinding a concatenation of lists
 Use multiple MATCH clauses to do a Cartesian product
 Using aliased DISTINCT expression in ORDER BY
 `type()` on two relationships
@@ -110,12 +104,7 @@ Number-typed float comparison
 Any-typed string comparison
 Comparing nodes to nodes
 Comparing relationships to relationships
-IN should work with nested list subscripting
-IN should work with list slices
-Use dynamic property lookup based on parameters when there is no type information
 Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is no type information
-Use collection lookup based on parameters when there is lhs type information
 Use collection lookup based on parameters when there is rhs type information
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
@@ -304,7 +293,6 @@ Multiple aliasing and backreferencing
 Aggregating by a list property has a correct definition of equality
 Reusing variable names
 Handling DISTINCT with lists in maps
-Handling property access on the Any type
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
@@ -382,10 +370,8 @@ Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
-Aliasing
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
-WHERE after WITH should filter results
 WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
 WHERE on a DISTINCT column

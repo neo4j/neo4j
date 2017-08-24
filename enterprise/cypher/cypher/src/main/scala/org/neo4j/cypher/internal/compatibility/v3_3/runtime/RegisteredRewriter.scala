@@ -50,7 +50,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         val rewriter = rewriteCreator(information, oldPlan)
 
         val newExpressions = expressions collect {
-          case (column, expression) if !expression.isInstanceOf[Variable] => column -> expression.endoRewrite(rewriter)
+          case (column, expression) => column -> expression.endoRewrite(rewriter)
         }
 
         val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
