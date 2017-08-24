@@ -33,6 +33,7 @@ public class SimpleStatementLocks implements StatementLocks
 {
     private final Locks.Client client;
     private Supplier<LockTracer> lockTracerSupplier;
+    private IsolationLevel isolationLevel;
 
     public SimpleStatementLocks( Locks.Client client )
     {
@@ -172,6 +173,11 @@ public class SimpleStatementLocks implements StatementLocks
         {
             throw new IllegalStateException( "The isolation level " + isolationLevel + " is not supported." );
         }
+        if ( this.isolationLevel != null )
+        {
+            throw new IllegalStateException( "Isolation level cannot be set more than once." );
+        }
+        this.isolationLevel = isolationLevel;
     }
 
     @Override

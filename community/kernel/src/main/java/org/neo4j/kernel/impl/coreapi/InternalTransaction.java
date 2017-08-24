@@ -38,6 +38,9 @@ public interface InternalTransaction extends Transaction
 
     /**
      * Set the isolation level of this transaction.
+     * <p>
+     * This must be done before the transaction is put to use, and can only be set once.
+     *
      * @param isolationLevel The isolation level desired for this transaction.
      * @throws IllegalStateException if the given isolation level is not supported, if modification of isolation level
      * is not support in the given database configuration, if an isolation level has already been set on this

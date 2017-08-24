@@ -202,6 +202,69 @@ public abstract class IsolationLevelsTestTemplate
     }
 
     @Theory
+    public void settingIsolationLevelAfterIsolationLevelHasAlreadyBeenSetMustThrow( IsolationLevel level )
+    {
+
+        if ( !level.isSupported() )
+        {
+            return;
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            setIsolationLevel( tx, level );
+            setIsolationLevel( tx, level );
+            fail( "setting isolation level a second time should have thrown" );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // good!
+        }
+    }
+
+    @Theory
+    public void settingIsolationLevelOnDataWriteTransactionMustThrow( IsolationLevel level )
+    {
+        if ( !level.isSupported() )
+        {
+            return;
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode(); // upgrade transaction mode from NONE to DATA WRITE
+            setIsolationLevel( tx, level );
+            fail( "setting isolation level in a data write transaction should have thrown" );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // good!
+        }
+    }
+
+    @Theory
+    public void settingIsolationLevelOnSchemaWriteTransactionMustThrow( IsolationLevel level )
+    {
+        if ( !level.isSupported() )
+        {
+            return;
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // upgrade transaction mode from NONE to SCHEMA WRITE
+            db.schema().indexFor( LABEL_C ).on( "random property" ).create();
+            setIsolationLevel( tx, level );
+            fail( "setting isolation level in a schema write transaction should have thrown" );
+        }
+        catch ( IllegalStateException ex )
+        {
+            // good!
+        }
+    }
+    // todo perhaps change the thrown exception to some kind of KernelException?
+
+    @Theory
     public void preventDirtyWriteOnNodeProperty( IsolationLevel level )
     {
         if ( shouldIgnoreTestForLevel( level, IsolationLevel.Anomaly.DirtyWrite ) )

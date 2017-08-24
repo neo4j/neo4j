@@ -789,6 +789,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void setIsolationLevel( IsolationLevel isolationLevel )
     {
+        if ( writeState != TransactionWriteState.NONE )
+        {
+            String stateName = writeState.name().toLowerCase();
+            throw new IllegalStateException(
+                    "Cannot change transaction isolation level after " + stateName +
+                    " writes have occurred in a transaction" );
+        }
         StatementLocks locks = this.statementLocks;
         if ( locks != null )
         {
