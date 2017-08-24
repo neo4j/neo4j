@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
-import org.neo4j.values.AnyValue
+import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val id: Id = new Id)
@@ -59,11 +59,10 @@ sealed trait SortDescription {
   def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
 }
 
-//TODO these should use AnyValue comparator directly but it currently doesn't give the correct orderting
 case class Ascending(id: String) extends SortDescription with Comparer {
-  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = compareForOrderability(Some("ORDER BY"), a, b)
+  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
 case class Descending(id: String) extends SortDescription with Comparer {
-  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = compareForOrderability(Some("ORDER BY"), b, a)
+  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
 }
