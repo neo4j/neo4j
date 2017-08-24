@@ -110,7 +110,6 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
-    {
-        throw new UnsupportedOperationException( "Implement me" );
+    {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }

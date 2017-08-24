@@ -50,6 +50,9 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -192,7 +195,7 @@ public class RebuildCountsTest
         db = dbFactory.setUserLogProvider( userLogProvider )
                       .setInternalLogProvider( internalLogProvider )
                       .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                      .addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) )
+                      .setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) )
                       .newImpermanentDatabaseBuilder( storeDir )
                       .setConfig( index_background_sampling_enabled, "false" )
                       .newGraphDatabase();

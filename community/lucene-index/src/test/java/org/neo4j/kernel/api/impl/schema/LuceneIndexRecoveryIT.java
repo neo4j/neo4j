@@ -219,7 +219,7 @@ public class LuceneIndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.asList( indexProviderFactory ) );
+        factory.setKernelExtensions( Arrays.asList( indexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 

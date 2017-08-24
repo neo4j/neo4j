@@ -17,20 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.inmemory;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.logging.NullLogProvider;
 
-public class InMemoryIndexProviderTest extends IndexProviderCompatibilityTestSuite
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
     protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
-        return new InMemoryIndexProvider();
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
+        return NativeLuceneFusionSchemaIndexProviderFactory
+                .newInstance( pageCache, graphDbDir, fs, logProvider, config, OperationalMode.single,
+                        RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 }
