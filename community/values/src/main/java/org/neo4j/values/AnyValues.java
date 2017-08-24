@@ -57,6 +57,43 @@ public final class AnyValues
 {
     /**
      * Default AnyValue comparator. Will correctly compare all storable and virtual values.
+     *
+     * <h1>
+     * Orderability
+     *
+     * <a href="https://github.com/opencypher/openCypher/blob/master/cip/1.accepted/CIP2016-06-14-Define-comparability-and-equality-as-well-as-orderability-and-equivalence.adoc">
+     *   The Cypher CIP defining orderability
+     * </a>
+     *
+     * <p>
+     * Ascending global sort order of disjoint types:
+     *
+     * <ul>
+     *   <li> MAP types
+     *   <ul>
+     *     <li> Regular map
+     *
+     *     <li> NODE
+     *
+     *     <li> RELATIONSHIP
+     *   </ul>
+     *
+     *  <li> LIST OF ANY?
+     *
+     *  <li> PATH
+     *
+     *  <li> POINT
+     *
+     *  <li> STRING
+     *
+     *  <li> BOOLEAN
+     *
+     *  <li> NUMBER
+     *    <ul>
+     *      <li> NaN values are treated as the largest numbers in orderability only (i.e. they are put after positive infinity)
+     *    </ul>
+     *  <li> VOID (i.e. the type of null)
+     * </ul>
      */
     public static final Comparator<AnyValue> COMPARATOR =
             new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );

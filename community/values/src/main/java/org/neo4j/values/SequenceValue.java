@@ -18,6 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.values;
+
+import java.util.Comparator;
+
 /**
  * Values that represent sequences of values (such as Lists or Arrays) need to implement this interface.
  * Thus we can get an equality check that is based on the values (e.g. List.equals(ArrayValue) )
@@ -52,4 +55,25 @@ public interface SequenceValue
     AnyValue value( int offset );
 
     int length();
+
+    default int compareToSequence( SequenceValue other, Comparator<AnyValue> comparator )
+    {
+        int i = 0;
+        int x = 0;
+        int length = Math.min( length(), other.length() );
+
+        while ( x == 0 && i < length )
+        {
+            x = comparator.compare( value( i ), other.value( i ) );
+            i++;
+        }
+
+        if ( x == 0 )
+        {
+            x = length() - other.length();
+        }
+
+        return x;
+    }
+
 }

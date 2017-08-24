@@ -60,10 +60,28 @@ class AnyValueComparator implements Comparator<AnyValue>
             return -1;
         }
 
+        // We must handle sequences as a special case, as they can be both storable and virtual
+        boolean isSequence1 = v1.isSequenceValue();
+        boolean isSequence2 = v2.isSequenceValue();
+
+        if ( isSequence1 && isSequence2 )
+        {
+            return compareSequences( (SequenceValue)v1, (SequenceValue)v2 );
+        }
+        else if ( isSequence1 )
+        {
+            return compareSequenceAndNonSequence( (SequenceValue)v1, v2 );
+        }
+        else if ( isSequence2 )
+        {
+            return -compareSequenceAndNonSequence( (SequenceValue)v2, v1 );
+        }
+
+        // Handle remaining AnyValues
         boolean isValue1 = v1 instanceof Value;
         boolean isValue2 = v2 instanceof Value;
 
-        int x = -Boolean.compare( isValue1, isValue2 );
+        int x = Boolean.compare( isValue1, isValue2 );
 
         if ( x == 0 )
         {
@@ -98,5 +116,23 @@ class AnyValueComparator implements Comparator<AnyValue>
             return v1.compareTo( v2, this );
         }
         return x;
+    }
+
+    private int compareSequenceAndNonSequence( SequenceValue v1, AnyValue v2 )
+    {
+        boolean isValue2 = v2 instanceof Value;
+        if ( isValue2 )
+        {
+            return -1;
+        }
+        else
+        {
+            return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue)v2).valueGroup() );
+        }
+    }
+
+    private int compareSequences( SequenceValue v1, SequenceValue v2 )
+    {
+        return v1.compareToSequence( v2, this );
     }
 }

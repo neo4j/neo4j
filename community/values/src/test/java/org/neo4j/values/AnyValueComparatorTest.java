@@ -54,13 +54,21 @@ public class AnyValueComparatorTest
     private Comparator<AnyValue> comparator = AnyValues.COMPARATOR;
 
     private Object[] objs = new Object[]{
-            // Storable values
-            "hello",
-            true,
-            1L,
-            Math.PI,
-            Short.MAX_VALUE,
-            Double.NaN,
+            // MAP LIKE TYPES
+
+            // Map
+            map(),
+            map( "1", 'a' ),
+            map( "1", 'b' ),
+            map( "2", 'a' ),
+            map( "1", map( "1", map( "1", 'a' ) ), "2", 'x' ),
+            map( "1", map( "1", map( "1", 'b' ) ), "2", 'x' ),
+            map( "1", 'a', "2", 'b' ),
+            map( "1", 'b', "2", map() ),
+            map( "1", 'b', "2", map( "10", 'a' ) ),
+            map( "1", 'b', "2", map( "10", 'b' ) ),
+            map( "1", 'b', "2", map( "20", 'a' ) ),
+            map( "1", 'b', "2", 'a' ),
 
             // Node
             node( 1L ),
@@ -72,6 +80,27 @@ public class AnyValueComparatorTest
             edgeValue( 2L, nodeValue( 1L, stringArray( "L" ), emptyMap() ),
                     nodeValue( 2L, stringArray( "L" ), emptyMap() ), stringValue( "type" ), emptyMap() ),
             edge( 3L ),
+
+            // LIST AND STORABLE ARRAYS
+
+            // List
+            list(),
+            new String[]{"a"},
+            new boolean[]{false},
+            list( 1 ),
+            list( 1, 2 ),
+            list( 1, 3 ),
+            list( 2, 1 ),
+            new short[]{2, 3},
+            list( 3 ),
+            list( 3, list( 1 ) ),
+            list( 3, list( 1, 2 ) ),
+            list( 3, list( 2 ) ),
+            list( 3, 1 ),
+            new double[]{3.0, 2.0},
+            list( 4, list( 1, list( 1 ) ) ),
+            list( 4, list( 1, list( 2 ) ) ),
+            new int[]{4, 1},
 
             // Path
             path( nodes( 1L ), edges() ),
@@ -86,6 +115,8 @@ public class AnyValueComparatorTest
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 3L, 4L ) ),
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 4L, 2L ) ),
 
+            // SCALARS AND POINTS
+
             // Point
             pointCartesian( -1.0, -1.0 ),
             pointCartesian( 1.0, 1.0 ),
@@ -96,32 +127,14 @@ public class AnyValueComparatorTest
             pointGeographic( 1.0, 2.0 ),
             pointGeographic( 2.0, 1.0 ),
 
-            // List
-            list(),
-            list( 1 ),
-            list( 3 ),
-            list( 1, 2 ),
-            list( 1, 3 ),
-            list( 2, 1 ),
-            list( 3, list( 1 ) ),
-            list( 3, list( 2 ) ),
-            list( 3, list( 1, 2 ) ),
-            list( 4, list( 1, list( 1 ) ) ),
-            list( 4, list( 1, list( 2 ) ) ),
+            // Scalars
+            "hello",
+            true,
+            1L,
+            Math.PI,
+            Short.MAX_VALUE,
+            Double.NaN,
 
-            // Map
-            map(),
-            map( "1", 'a' ),
-            map( "1", 'b' ),
-            map( "2", 'a' ),
-            map( "1", 'a', "2", 'b' ),
-            map( "1", 'b', "2", 'a' ),
-            map( "1", 'b', "2", map() ),
-            map( "1", 'b', "2", map( "10", 'a' ) ),
-            map( "1", 'b', "2", map( "10", 'b' ) ),
-            map( "1", 'b', "2", map( "20", 'a' ) ),
-            map( "1", map( "1", map( "1", 'a' ) ), "2", 'x' ),
-            map( "1", map( "1", map( "1", 'b' ) ), "2", 'x' ),
             // OTHER
             null,
     };
