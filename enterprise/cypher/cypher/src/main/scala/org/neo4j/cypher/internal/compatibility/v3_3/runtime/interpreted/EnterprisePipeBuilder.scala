@@ -106,10 +106,10 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         ExpandAllRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromSlot = pipeline.getLongOffsetFor(from)
-        val relSlot = pipeline.getLongOffsetFor(relName)
-        val toSlot = pipeline.getLongOffsetFor(to)
-        ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
+        val fromOffset = pipeline.getLongOffsetFor(from)
+        val relOffset = pipeline.getLongOffsetFor(relName)
+        val toOffset = pipeline.getLongOffsetFor(to)
+        ExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val fromOffset = pipeline.getLongOffsetFor(fromName)
