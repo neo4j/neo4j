@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection, VarExpand}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Aggregation, LogicalPlan, Projection, VarExpand}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -36,7 +36,6 @@ This class takes a logical plan and pipeline information, and rewrites it so it 
 using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
  */
 class RegisteredRewriter(tokenContext: TokenContext) {
-
   def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
@@ -60,12 +59,11 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         newPlan
 
-      case oldPlan:VarExpand =>
+      case oldPlan: VarExpand =>
         /*
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming pipeline info for predicate rewriting
          */
-
         val incomingPipeline = pipelineInformation(oldPlan.left)
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
 
@@ -77,6 +75,22 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           edgePredicate = newEdgePredicate,
           legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the register runtime
         )(oldPlan.solved)
+
+        /*
+        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        outgoing pipeline info here
+         */
+        val outgoingPipeline = pipelineInformation(oldPlan)
+        newPipelineInfo += (newPlan -> outgoingPipeline)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
+
+      case oldPlan: Aggregation =>
+        val incomingPipeline = pipelineInformation(oldPlan.left)
+        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+        val newPlan = oldPlan.endoRewrite(rewriter)
 
         /*
         Since the logical plan pipeinformation is about the output rows we still need to remember the

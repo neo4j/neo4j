@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
@@ -137,7 +135,7 @@ object RegisterAllocation {
         groupingExpressions foreach { // return n as x, count(*)
           case (key, parserAst.Variable(ident)) =>
             val slotInfo = incomingPipeline(ident)
-            outgoing.add(key, slotInfo)
+            outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
           case (key, _) =>
             outgoing.newReference(key, nullable = true, CTAny)
         }
