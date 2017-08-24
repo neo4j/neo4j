@@ -728,16 +728,16 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldShowCurrentUser() throws Exception
     {
         userManager.addRoleToUser( READER, "writeSubject" );
-        assertSuccess( adminSubject, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( adminSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "adminSubject", listOf( ADMIN ) ) ) ) );
-        assertSuccess( readSubject, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( readSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "readSubject", listOf( READER ) ) ) ) );
-        assertSuccess( schemaSubject, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( schemaSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "schemaSubject", listOf( ARCHITECT ) ) ) ) );
-        assertSuccess( writeSubject, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( writeSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles",
                         valueOf( map( "writeSubject", listOf( READER, PUBLISHER ) ) ) ) );
-        assertSuccess( noneSubject, "CALL dbms.security.showCurrentUser()",
+        assertSuccess( noneSubject, "CALL dbms.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "noneSubject", listOf() ) ) ) );
     }
 

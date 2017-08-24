@@ -210,7 +210,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     protected void assertRoles( String... roles ) throws Exception
     {
-        client.send( TransportTestUtil.chunk( run( "CALL dbms.security.showCurrentUser" ), pullAll() ) );
+        client.send( TransportTestUtil.chunk( run( "CALL dbms.showCurrentUser" ), pullAll() ) );
 
         // Then
         assertThat( client, eventuallyReceives(
