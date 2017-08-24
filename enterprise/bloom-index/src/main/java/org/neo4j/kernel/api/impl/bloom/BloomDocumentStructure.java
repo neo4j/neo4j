@@ -65,8 +65,7 @@ class BloomDocumentStructure
 
     static Field encodeValueField( String propertyKey, Value value )
     {
-        BloomFieldEncoding encoding = BloomFieldEncoding.forValue( value );
-        return encoding.encodeField( propertyKey, value );
+        return BloomFieldEncoding.encodeField( propertyKey, value );
     }
 
     private static class DocWithId

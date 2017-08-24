@@ -48,7 +48,8 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
     public Object beforeCommit( TransactionData data ) throws Exception
     {
         Map<Long,Map<String,Object>> nodeMap = new HashMap<Long,Map<String,Object>>();
-        data.removedNodeProperties().forEach( propertyEntry -> {
+        data.removedNodeProperties().forEach( propertyEntry ->
+        {
             try
             {
                 nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( properties ) );
@@ -62,7 +63,8 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
 
         Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
 
-        data.removedRelationshipProperties().forEach( propertyEntry -> {
+        data.removedRelationshipProperties().forEach( propertyEntry ->
+        {
             try
             {
                 relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( properties ) );

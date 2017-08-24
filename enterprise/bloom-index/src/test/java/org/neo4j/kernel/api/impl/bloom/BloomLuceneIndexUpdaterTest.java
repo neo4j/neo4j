@@ -90,6 +90,117 @@ public class BloomLuceneIndexUpdaterTest
     }
 
     @Test
+    public void shouldFindNodeWithNumber() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
+
+        {
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", 1 );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "prop", 234 );
+
+                tx.success();
+            }
+
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
+            {
+                PrimitiveLongIterator one = reader.query( "1" );
+                assertEquals( firstID, one.next() );
+                assertFalse( one.hasNext() );
+                PrimitiveLongIterator twohundredthirtyfour = reader.query( "234" );
+                assertEquals( secondID, twohundredthirtyfour.next() );
+                assertFalse( twohundredthirtyfour.hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldFindNodeWithBoolean() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
+
+        {
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", true );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "prop", false );
+
+                tx.success();
+            }
+
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
+            {
+                PrimitiveLongIterator sant = reader.query( "true" );
+                assertEquals( firstID, sant.next() );
+                assertFalse( sant.hasNext() );
+                PrimitiveLongIterator falskt = reader.query( "false" );
+                assertEquals( secondID, falskt.next() );
+                assertFalse( falskt.hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldFindNodeWithArrays() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
+
+        {
+            db.registerTransactionEventHandler( bloomIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "prop", new int[]{1, 27, 48} );
+
+                tx.success();
+            }
+
+            try ( BloomIndexReader reader = bloomIndex.getNodeReader() )
+            {
+                PrimitiveLongIterator strings = reader.query( "live" );
+                assertEquals( firstID, strings.next() );
+                assertFalse( strings.hasNext() );
+                PrimitiveLongIterator ints = reader.query( "27" );
+                assertEquals( secondID, ints.next() );
+                assertFalse( ints.hasNext() );
+            }
+        }
+    }
+
+    @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
