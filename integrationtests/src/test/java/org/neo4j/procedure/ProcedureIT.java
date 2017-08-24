@@ -92,7 +92,7 @@ public class ProcedureIT
 
     private GraphDatabaseService db;
 
-    public static boolean onCloseCalled[];
+    public static boolean[] onCloseCalled;
 
     @Test
     public void shouldCallProcedureWithParameterMap() throws Throwable
