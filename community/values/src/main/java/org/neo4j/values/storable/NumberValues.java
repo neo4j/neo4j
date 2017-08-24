@@ -242,56 +242,80 @@ public final class NumberValues
     public static int compareIntegerArrays( IntegralArray a, IntegralArray b )
     {
         int i = 0;
-        int length = a.length();
-        int x = length - b.length();
+        int x = 0;
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
             x = Long.compare( a.longValue( i ), b.longValue( i ) );
             i++;
         }
+
+        if ( x == 0 )
+        {
+            x = a.length() - b.length();
+        }
+
         return x;
     }
 
     public static int compareIntegerVsFloatArrays( IntegralArray a, FloatingPointArray b )
     {
         int i = 0;
-        int length = a.length();
-        int x = length - b.length();
+        int x = 0;
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
             x = compareLongAgainstDouble( a.longValue( i ), b.doubleValue( i ) );
             i++;
         }
+
+        if ( x == 0 )
+        {
+            x = a.length() - b.length();
+        }
+
         return x;
     }
 
     public static int compareFloatArrays( FloatingPointArray a, FloatingPointArray b )
     {
         int i = 0;
-        int length = a.length();
-        int x = length - b.length();
+        int x = 0;
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
             x = Double.compare( a.doubleValue( i ), b.doubleValue( i ) );
             i++;
         }
+
+        if ( x == 0 )
+        {
+            x = a.length() - b.length();
+        }
+
         return x;
     }
 
     public static int compareBooleanArrays( BooleanArray a, BooleanArray b )
     {
         int i = 0;
-        int length = a.length();
-        int x = length - b.length();
+        int x = 0;
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
             x = Boolean.compare( a.booleanValue( i ), b.booleanValue( i ) );
             i++;
         }
+
+        if ( x == 0 )
+        {
+            x = a.length() - b.length();
+        }
+
         return x;
     }
 }

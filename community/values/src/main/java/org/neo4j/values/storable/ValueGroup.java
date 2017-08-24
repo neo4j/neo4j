@@ -22,15 +22,18 @@ package org.neo4j.values.storable;
 /**
  * The ValueGroup is the logical group or type of a Value. For example byte, short, int and long are all attempting
  * to represent mathematical integers, meaning that for comparison purposes they should be treated the same.
+ *
+ * The order here is defined in <a href="https://github.com/opencypher/openCypher/blob/master/cip/1.accepted/CIP2016-06-14-Define-comparability-and-equality-as-well-as-orderability-and-equivalence.adoc">
+ *   The Cypher CIP defining orderability
+ * </a>
  */
 public enum ValueGroup
 {
+    TEXT_ARRAY,
+    BOOLEAN_ARRAY,
+    NUMBER_ARRAY,
     TEXT,
     BOOLEAN,
     NUMBER,
-    NUMBER_ARRAY,
-    TEXT_ARRAY,
-    BOOLEAN_ARRAY,
-    VIRTUAL,
     NO_VALUE,
 }
