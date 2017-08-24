@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.bloom;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 
@@ -52,17 +51,15 @@ public class BloomIndex implements AutoCloseable
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
-                .withDirectoryFactory( directoryFactory( false, fileSystem ) )
-                .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        nodeIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, this.properties, analyzer);
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" ).withDirectoryFactory(
+                directoryFactory( false, fileSystem ) ).withIndexRootFolder( Paths.get( file.getAbsolutePath(), "insightindex" ).toFile() );
+        nodeIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, this.properties, analyzer );
         nodeIndex.open();
 
         storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" )
-                .withDirectoryFactory( directoryFactory( false, fileSystem ) )
-                .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        relationshipIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, properties,  analyzer);
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" ).withDirectoryFactory(
+                directoryFactory( false, fileSystem ) ).withIndexRootFolder( Paths.get( file.getAbsolutePath(), "insightindex" ).toFile() );
+        relationshipIndex = new BloomLuceneIndex( storageBuilder.build(), partitionFactory, properties, analyzer );
         relationshipIndex.open();
     }
 
@@ -84,7 +81,8 @@ public class BloomIndex implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws Exception
+    {
         nodeIndex.close();
         relationshipIndex.close();
     }

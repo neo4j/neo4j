@@ -66,7 +66,7 @@ public class BloomIT
 
         Result result = db.execute( String.format( NODES, "integration" ) );
 
-        assertEquals( 0l, result.next().get( NODEID ) );
+        assertEquals( 0L, result.next().get( NODEID ) );
         assertFalse( result.hasNext() );
     }
 

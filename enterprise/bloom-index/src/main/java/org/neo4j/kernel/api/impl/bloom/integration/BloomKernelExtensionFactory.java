@@ -51,6 +51,7 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        return new BloomKernelExtension( dependencies.fileSystem(), context.storeDir(), dependencies.getConfig(), dependencies.db(), dependencies.procedures() );
+        return new BloomKernelExtension( dependencies.fileSystem(), context.storeDir(), dependencies.getConfig(), dependencies.db(),
+                dependencies.procedures() );
     }
 }
