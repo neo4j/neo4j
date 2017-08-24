@@ -28,16 +28,16 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     createLabeledNode(Map("a" -> "a", "b" -> "b"), "B")
 
     val query =
-    """
-      |MATCH (N:A)
-      |RETURN
-      |N.a as A,
-      |N.b as B
-      |UNION
-      |MATCH (M:B) RETURN
-      |M.b as A,
-      |M.a as B
-    """.stripMargin
+      """
+        |MATCH (N:A)
+        |RETURN
+        |N.a as A,
+        |N.b as B
+        |UNION
+        |MATCH (M:B) RETURN
+        |M.b as A,
+        |M.a as B
+      """.stripMargin
 
     val result = succeedWith(Configs.Interpreted - Configs.EnterpriseInterpreted, query)
     val expected = List(Map("A" -> "a", "B" -> "b"), Map("A" -> "b", "B" -> "a"))
@@ -50,19 +50,19 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     createLabeledNode(Map("a" -> "b", "b" -> "a"), "B")
 
     val query =
-    """
-      |MATCH (N:A)
-      |RETURN
-      |N.a as B,
-      |N.b as A
-      |UNION
-      |MATCH (M:B) RETURN
-      |M.b as A,
-      |M.a as B
-    """.stripMargin
+      """
+        |MATCH (N:A)
+        |RETURN
+        |N.a as B,
+        |N.b as A
+        |UNION
+        |MATCH (M:B) RETURN
+        |M.b as A,
+        |M.a as B
+      """.stripMargin
 
-
-    val expectedToWorkIn = Configs.CommunityInterpreted - Scenarios.Compatibility3_1Cost - Scenarios.Compatibility2_3Cost
+    // TODO we expect this test to succeed with 3.2.4
+    val expectedToWorkIn = Configs.CommunityInterpreted - Scenarios.Compatibility3_1Cost - Scenarios.Compatibility2_3Cost - Scenarios.Compatibility3_2
     val result = succeedWith(expectedToWorkIn, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 

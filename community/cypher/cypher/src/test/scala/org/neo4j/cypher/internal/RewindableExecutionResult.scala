@@ -442,8 +442,7 @@ object RewindableExecutionResult {
 
       val arguments: Seq[Argument] = planDescription.arguments.map {
         case Arguments3_2.ByteCode(className, disassembly) => Arguments.ByteCode(className, disassembly)
-        //TODO this needs to recurse over expressions to be supported
-        case Arguments3_2.Expressions(e) => ???
+        case Arguments3_2.Expressions(e) => Arguments.Expressions(e.mapValues(oldExpression => null))
         case Arguments3_2.PageCacheHits(e) => Arguments.PageCacheHits(e)
         case Arguments3_2.PageCacheMisses(e) => Arguments.PageCacheMisses(e)
         case Arguments3_2.Time(value) => Arguments.Time(value)
