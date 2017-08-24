@@ -1,16 +1,7 @@
 Combining string operators' was blacklisted, but succeeded
-Count non-null values
-Counting directed self-relationships
-Counting distinct undirected self-relationships in self-relationship graph
-Counting undirected self-relationships in self-relationship graph
-Counting with loops
-DISTINCT inside aggregation should work with lists in maps
-DISTINCT inside aggregation should work with nested lists in maps
-DISTINCT inside aggregation should work with nested lists of maps in maps
 DISTINCT on nullable values
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
-Distinct on null
 Get rows in the middle by param
 Get rows in the middle
 
@@ -19,9 +10,7 @@ Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
 Keeping used expression 1
 Limiting amount of rows when there are fewer left than the LIMIT argument
-Matching a self-loop
 Matching and returning ordered results, with LIMIT
-Matching with aggregation
 ORDER BY DESC should order booleans in the expected order
 ORDER BY DESC should order floats in the expected order
 ORDER BY DESC should order ints in the expected order
@@ -36,11 +25,7 @@ ORDER BY should order strings in the expected order
 ORDER BY should return results in ascending order
 ORDER BY with LIMIT 0 should not generate errors
 ORDER BY with negative parameter for LIMIT should not generate errors
-Projecting a list of nodes and relationships
-Projecting a map of nodes and relationships
-Projecting an arithmetic expression with aggregation
 Projecting nodes and relationships
-Rel type function works as expected
 Renaming columns before ORDER BY should return results in ascending order
 Returned columns do not change from using ORDER BY
 Returning all variables with ordering
@@ -52,37 +37,21 @@ Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
 Using aliased DISTINCT expression in ORDER BY
-`type()` on two relationships
-`type()`
-
 Nodes are not created when aliases are applied to variable names
 Only a single node is created when an alias is applied to a variable name
 Support multiple divisions in aggregate function
-Aggregates inside normal functions
-Handle aggregates inside non-aggregate expressions
-Count nodes
 Sort on aggregate function and normal property
-Aggregate on property
-Sum non-null values
 Handle aggregation on functions
 Distinct on unbound node
-Collect distinct nulls
-Collect distinct values mixed with nulls
-Aggregate on list values
 Aggregates in aggregates
 Aggregates with arithmetics
 Aggregates ordered by arithmetics
-Multiple aggregates on same variable
 Aggregation of named paths
 Aggregation with `min()`
-Handle subexpression in aggregation also occurring as standalone expression with nested aggregation in a literal map
 Projection during aggregation in WITH before MERGE and after WITH with predicate
 No overflow during summation
-`max()` should aggregate strings
-`min()` should aggregate strings
 Keeping used expression 2
 Keeping used expression 3
-Keeping used expression 4
 Handling numerical ranges 1
 Handling numerical ranges 2
 Handling numerical ranges 3
@@ -92,9 +61,6 @@ Handling string ranges 2
 Handling string ranges 3
 Handling string ranges 4
 Handling empty range
-Number-typed integer comparison
-Number-typed float comparison
-Any-typed string comparison
 Comparing nodes to nodes
 Comparing relationships to relationships
 Fail at runtime when attempting to index with an Int into a Map
@@ -103,16 +69,11 @@ Fail at runtime when attempting to index with a String into a Collection
 Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
 Functions should return null if they get path containing unbound
-`split()`
-`properties()` on a relationship
 `exists()` with literal maps
 IS NOT NULL with literal maps
-`percentileDisc()`
-`percentileCont()`
 `percentileCont()` failing on bad arguments
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
-`type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` in return clauses
 Find friends of others
@@ -136,7 +97,6 @@ Using a list comprehension in a WITH
 Using a list comprehension in a WHERE
 Path query should return results in written order
 Longer path query should return results in written order
-Walk alternative relationships
 Return a simple path
 Return a three node path
 Do not return anything because path length does not match
@@ -178,7 +138,6 @@ Matching and optionally matching with unbound nodes and equality predicate in re
 Fail when using property access on primitive type
 Counting an empty graph
 Variable length pattern checking labels on endnodes
-Variable length pattern with label predicate on both sides
 Undirected named path
 Named path with WITH
 Named path with alternating directed/undirected relationships
@@ -251,17 +210,14 @@ Return all variables
 Setting and returning the size of a list property
 Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
-Matching and disregarding output, then matching again
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
 Multiple aliasing and backreferencing
-Aggregating by a list property has a correct definition of equality
 Reusing variable names
 Handling DISTINCT with lists in maps
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
-SKIP with an expression that does not depend on variables
 LIMIT with an expression that does not depend on variables
 Using `rand()` in aggregations
 Handling triadic friend of a friend that is not a friend
@@ -299,7 +255,6 @@ Two elements, both unique, not distinct
 Two elements, both unique, distinct
 Three elements, two unique, distinct
 Three elements, two unique, not distinct
-Unwinding a collected unwound expression
 Unwinding a collected expression
 Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
@@ -319,13 +274,11 @@ Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
 Handle dependencies across WITH with SKIP
-WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
 WHERE on a DISTINCT column
 A simple pattern with one bound endpoint
 Nested maps
 Connected components succeeding WITH
-Single WITH using a predicate and aggregation
 Multiple WITHs using a predicate and aggregation
 Fail at compile time when attempting to index with a non-integer into a list
 `properties()` failing on an integer literal
@@ -442,9 +395,6 @@ Explicit null values in a map remove old values
 Non-existent values in a property map are removed with SET =
 Unwind with merge
 Fail when trying to create using an undirected relationship pattern
-Handling non-string operands for STARTS WITH
-Handling non-string operands for CONTAINS
-Handling non-string operands for ENDS WITH
 Returning nested expressions based on list property
 
 `type()` on mixed null and non-null relationships
@@ -456,12 +406,6 @@ Many CREATE clauses
 Comparing across types yields null, except numbers
 
 `labels()` failing on invalid arguments
-Undirected match in self-relationship graph, count
-Undirected match of self-relationship in self-relationship graph, count
-Undirected match on simple relationship graph, count
-Directed match of self-relationship on self-relationship graph, count
-Mixing directed and undirected pattern parts with self-relationship, count
-Mixing directed and undirected pattern parts with self-relationship, undirected count
 Direction of traversed relationship is not significant for path equality, simple
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
