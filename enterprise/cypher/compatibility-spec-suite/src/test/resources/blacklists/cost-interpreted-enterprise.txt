@@ -136,7 +136,6 @@ Ignore space before colon
 Adding multiple labels
 Ignoring intermediate whitespace 1
 Ignoring intermediate whitespace 2
-Create node with label in pattern
 Removing a label
 Removing a non-existent label
 Returning a list comprehension
@@ -391,6 +390,8 @@ Delete paths from nested map/list
 Delete relationship with bidirectional matching
 Updating one property with ON CREATE
 Null-setting one property with ON CREATE
+Copying properties from literal map with ON CREATE
+Copying properties from literal map with ON MATCH
 Copying properties from node with ON CREATE
 Copying properties from node with ON MATCH
 Merge node when no nodes exist
