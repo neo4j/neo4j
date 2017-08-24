@@ -33,6 +33,6 @@ public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowed
         super( String.format(
                 "Failed to start Neo4j with an older data store version. "
                         + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
-                GraphDatabaseSettings.allow_store_upgrade.name() ) );
+                GraphDatabaseSettings.allow_upgrade.name() ) );
     }
 }

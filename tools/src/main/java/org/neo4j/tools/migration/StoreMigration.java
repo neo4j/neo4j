@@ -87,7 +87,7 @@ public class StoreMigration
 
     private static Config getMigrationConfig()
     {
-        return Config.defaults( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE);
+        return Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE);
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,

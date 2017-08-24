@@ -155,6 +155,16 @@ public class TestGraphDatabaseConfigurationMigrator
         assertContainsWarningMessage();
     }
 
+    @Test
+    public void migrateAllowFormatMigration() throws Exception
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.allow_format_migration", "true" ), getLog() );
+        assertEquals( "Old property should be migrated to new",
+                migratedProperties, stringMap( "dbms.allow_upgrade", "true" ));
+
+        assertContainsWarningMessage("dbms.allow_format_migration has been replaced with dbms.allow_upgrade.");
+    }
+
     private Log getLog()
     {
         return logProvider.getLog( GraphDatabaseConfigurationMigrator.class );

@@ -148,7 +148,7 @@ public class StoreUpgrader
 
     private boolean isUpgradeAllowed()
     {
-        return config.get( GraphDatabaseSettings.allow_store_upgrade );
+        return config.get( GraphDatabaseSettings.allow_upgrade );
     }
 
     private void cleanupLegacyLeftOverDirsIn( File storeDir )

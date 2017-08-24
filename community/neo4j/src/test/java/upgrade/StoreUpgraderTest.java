@@ -104,7 +104,7 @@ public class StoreUpgraderTest
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true" );
+    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
     public StoreUpgraderTest( String version )
     {
@@ -131,7 +131,7 @@ public class StoreUpgraderTest
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "false" );
+        Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ),

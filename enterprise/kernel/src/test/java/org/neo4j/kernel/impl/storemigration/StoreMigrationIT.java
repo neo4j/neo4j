@@ -195,7 +195,7 @@ public class StoreMigrationIT
     private static void createDb( RecordFormats recordFormat, File storeDir ) throws IOException
     {
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat.storeVersion() ).newGraphDatabase();
         database.shutdown();
     }
@@ -292,7 +292,7 @@ public class StoreMigrationIT
     protected GraphDatabaseService getGraphDatabaseService( File db, String storeVersion )
     {
         return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( db )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, storeVersion ).newGraphDatabase();
     }
 }

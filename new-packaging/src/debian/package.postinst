@@ -92,7 +92,7 @@ case "$1" in
             echo "You must tell the database to migrate your active database when the service starts."
             echo "To do this, use the following command:"
             echo
-            echo "    sudo -u neo4j -g adm sed -i 's/#dbms.allow_format_migration=true/dbms.allow_format_migration=true/' /etc/neo4j/neo4j.conf"
+            echo "    sudo -u neo4j -g adm sed -i 's/#dbms.allow_upgrade=true/dbms.allow_upgrade=true/' /etc/neo4j/neo4j.conf"
             echo
             echo "Finally, start the database service:"
             echo

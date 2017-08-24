@@ -125,8 +125,12 @@ public class GraphDatabaseSettings implements LoadableConfig
             "older store version. " +
             "Setting this to `true` does not guarantee successful upgrade, it just " +
             "allows an upgrade to be performed." )
-    public static final Setting<Boolean> allow_store_upgrade = setting( "dbms.allow_format_migration", BOOLEAN,
-            FALSE );
+    @Deprecated
+    @ReplacedBy( "dbms.allow_upgrade" )
+    public static final Setting<Boolean> allow_store_upgrade = setting( "dbms.allow_format_migration", BOOLEAN, FALSE );
+
+    @Description( "Whether to allow an upgrade in case the current version of the database starts against an older version." )
+    public static final Setting<Boolean> allow_upgrade = setting( "dbms.allow_upgrade", BOOLEAN, FALSE );
 
     @Description( "Database record format. Enterprise edition only. Valid values: `standard`, `high_limit`. " +
                   "Default value:  `standard`." )

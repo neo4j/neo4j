@@ -101,8 +101,8 @@ public class CopiedStoreRecovery extends LifecycleAdapter
                 .setConfig( "dbms.backup.enabled", Settings.FALSE )
                 .setConfig( GraphDatabaseSettings.logs_directory, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade,
-                        config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.allow_upgrade,
+                        config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
                 .setConfig( GraphDatabaseSettings.record_format, config.get( GraphDatabaseSettings.record_format ) )
                 .newGraphDatabase();
     }

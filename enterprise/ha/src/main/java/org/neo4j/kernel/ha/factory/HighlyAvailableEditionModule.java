@@ -527,7 +527,7 @@ public class HighlyAvailableEditionModule
             }
         };
 
-        config.augment( GraphDatabaseSettings.allow_store_upgrade, Settings.FALSE );
+        config.augment( GraphDatabaseSettings.allow_upgrade, Settings.FALSE );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 

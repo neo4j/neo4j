@@ -19,12 +19,12 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.io.File;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -42,8 +42,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
-
-import static java.util.Collections.singletonMap;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 
 public class ClusterCommunityToEnterpriseIT
@@ -80,7 +78,7 @@ public class ClusterCommunityToEnterpriseIT
         // given
         File storeDir = testDir.makeGraphDbDir();
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, HighLimit.NAME )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();

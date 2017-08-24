@@ -41,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
 
 public class DatabaseStartupTest
 {
@@ -81,7 +82,7 @@ public class DatabaseStartupTest
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException );
             assertEquals( "Failed to start Neo4j with an older data store version. To enable automatic upgrade, " +
-                          "please set configuration parameter \"dbms.allow_format_migration=true\"",
+                          "please set configuration parameter \"" + allow_upgrade.name() + "=true\"",
                     ex.getCause().getCause().getMessage());
         }
     }
@@ -113,7 +114,7 @@ public class DatabaseStartupTest
         try
         {
             new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" ).newGraphDatabase();
+                    .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
             fail( "It should have failed." );
         }
         catch ( RuntimeException ex )

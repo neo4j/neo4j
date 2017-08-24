@@ -21,6 +21,7 @@ package org.neo4j.server.exception;
 
 import org.junit.Test;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -50,7 +51,7 @@ public class ServerStartupErrorsTest
         logging.assertExactly( inLog( "console" )
                 .error( "Neo4j cannot be started, because the database files require upgrading and upgrades are " +
                         "disabled in configuration. Please set '%s' to 'true' in your configuration file and try " +
-                        "again.", "dbms.allow_format_migration" ) );
+                        "again.", GraphDatabaseSettings.allow_upgrade.name() ) );
 
     }
 }

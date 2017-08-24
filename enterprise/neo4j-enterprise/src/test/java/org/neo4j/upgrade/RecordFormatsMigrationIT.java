@@ -135,7 +135,7 @@ public class RecordFormatsMigrationIT
     private GraphDatabaseService startDb( String recordFormatName )
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
                 .newGraphDatabase();
     }
