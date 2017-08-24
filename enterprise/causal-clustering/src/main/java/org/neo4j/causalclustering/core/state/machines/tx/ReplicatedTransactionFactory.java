@@ -49,6 +49,7 @@ public class ReplicatedTransactionFactory
 
     private ReplicatedTransactionFactory()
     {
+        throw new AssertionError( "Should not be instantiated" );
     }
 
     public static ReplicatedTransaction createImmutableReplicatedTransaction( TransactionRepresentation tx  )
@@ -71,6 +72,10 @@ public class ReplicatedTransactionFactory
             throw new RuntimeException( e );
         }
 
+        /*
+         * This trims down the array to send up to the actual index it was written. Not doing this would send additional
+         * zeroes which not only wasteful, but also not handled by the LogEntryReader receiving this.
+         */
         byte[] txBytes = Arrays.copyOf( transactionBuffer.array(), transactionBuffer.writerIndex() );
         transactionBuffer.release();
 

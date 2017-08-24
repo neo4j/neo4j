@@ -46,7 +46,7 @@ public class ReplicatedTokenRequestSerializer
 {
     private ReplicatedTokenRequestSerializer()
     {
-        throw new AssertionError();
+        throw new AssertionError( "Should not be instantiated" );
     }
 
     public static void marshal( ReplicatedTokenRequest content, WritableChannel channel ) throws IOException
@@ -105,6 +105,10 @@ public class ReplicatedTokenRequestSerializer
             e.printStackTrace(); // TODO: Handle or throw.
         }
 
+        /*
+         * This trims down the array to send up to the actual index it was written. Not doing this would send additional
+         * zeroes which not only wasteful, but also not handled by the LogEntryReader receiving this.
+         */
         byte[] commandsBytes = Arrays.copyOf( commandBuffer.array(), commandBuffer.writerIndex() );
         commandBuffer.release();
 
