@@ -39,11 +39,11 @@ trait Clauses extends Parser
   }
 
   def FromGraph: Rule1[ast.FromGraph] = rule("FROM") {
-    keyword("FROM") ~~ GraphDef ~~>> (ast.FromGraph(_))
+    keyword("FROM") ~~ SingleGraphItem ~~>> (ast.FromGraph(_))
   }
 
   def IntoGraph: Rule1[ast.IntoGraph] = rule("INTO") {
-    keyword("INTO") ~~ GraphDef ~~>> (ast.IntoGraph(_))
+    keyword("INTO") ~~ SingleGraphItem ~~>> (ast.IntoGraph(_))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {
@@ -145,6 +145,7 @@ trait Clauses extends Parser
 
   private def ReturnBody = {
     ReturnItems ~~
+      // TODO: Put last
       optional(GraphReturnItems) ~~
       optional(Order) ~~
       optional(Skip) ~~
@@ -155,11 +156,6 @@ trait Clauses extends Parser
     str("-") ~~~> ast.ReturnItems.empty
       | "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
       | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
-  )
-
-  private def GraphReturnItems: Rule1[ast.GraphReturnItems] = rule("'*', an expression")(
-    keyword("GRAPHS") ~~ oneOrMore(GraphDef, separator = CommaSep) ~~>> (ast.GraphReturnItems(false, _)) |
-    keyword("GRAPHS") ~~ "*" ~ zeroOrMore(CommaSep ~ GraphDef) ~~>> (ast.GraphReturnItems(true, _))
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule(

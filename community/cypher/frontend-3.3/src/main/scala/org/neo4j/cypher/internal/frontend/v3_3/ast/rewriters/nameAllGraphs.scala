@@ -4,12 +4,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
+// TODO: Reactivate / fix
 case object nameAllGraphs extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case graphDef: GraphDef if graphDef.alias.isEmpty =>
+    case graphDef: SingleGraphItem if graphDef.as.isEmpty =>
       val pos = graphDef.position.bumped()
       graphDef.withNewName(Variable(UnNamedNameGenerator.name(pos))(pos))
   }

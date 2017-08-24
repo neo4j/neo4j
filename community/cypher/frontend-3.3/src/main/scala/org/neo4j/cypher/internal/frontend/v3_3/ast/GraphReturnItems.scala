@@ -19,13 +19,44 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
-case class GraphReturnItems(star: Boolean, items: Seq[GraphDef])
-                           (val position: InputPosition)
-  extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+// TODO: Unit test semantic checking
+sealed trait GraphReturnItem extends ASTNode with ASTParticle {
+  def graphs: List[SingleGraphItem]
+
+  def newSource: Option[SingleGraphItem] = None
+  def newTarget: Option[SingleGraphItem] = None
+}
+
+final case class ReturnedGraph(item: SingleGraphItem)(val position: InputPosition) extends GraphReturnItem {
+  override def graphs = List(item)
+}
+
+final case class NewTargetGraph(target: SingleGraphItem)(val position: InputPosition) extends GraphReturnItem {
+  override def graphs = List(target)
+}
+
+final case class NewContextGraphs(source: SingleGraphItem,
+                                  override val newTarget: Option[SingleGraphItem] = None)
+                                 (val position: InputPosition) extends GraphReturnItem {
+  override def graphs = List(source) ++ newTarget.toList
+
+  override def newSource: Option[SingleGraphItem] = Some(source)
+}
+
+final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
+                                 (val position: InputPosition)
+  extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+
+  val graphs: List[SingleGraphItem] = items.flatMap(_.graphs)
+
+  def newSource: Option[SingleGraphItem] = items.flatMap(_.newSource).headOption
+  def newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption
 
   override def semanticCheck = {
+    // TODO: Make sure only one source and target is ever specified
     val covariant = CTGraphRef.covariant
-    items.flatMap(_.alias).foldSemanticCheck(_.expectType(covariant)) chain
-    FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+    graphs.flatMap(_.as).foldSemanticCheck(_.expectType(covariant)) chain
+      FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
   }
 }
+
