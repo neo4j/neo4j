@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.guard;
 
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.KernelStatement;
 
-public class GuardTimeoutException extends GuardException
+/**
+ * Guard that checks kernel transaction for termination.
+ * As soon as transaction timeout time reached {@link TransactionTerminatedException } will be thrown.
+ */
+public class TerminationGuard implements Guard
 {
-    private final long overtime;
 
-    public GuardTimeoutException( String message, final long overtime )
+    @Override
+    public void check( KernelStatement statement )
     {
-        super( message );
-        this.overtime = overtime;
-    }
-
-    public long getOvertime()
-    {
-        return overtime;
+        statement.assertOpen();
     }
 
     @Override
-    public Status status()
+    public void check( KernelTransaction transaction )
     {
-        return Status.Transaction.TransactionTimedOut;
+        if ( transaction.isTerminated() )
+        {
+            throw new TransactionTerminatedException( transaction.getReasonIfTerminated().get() );
+        }
     }
 }

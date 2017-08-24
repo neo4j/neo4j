@@ -55,14 +55,14 @@ import org.neo4j.storageengine.api.StorageStatement;
  * <ol>
  * <li>Construct {@link KernelStatement} when {@link KernelTransactionImplementation} is constructed</li>
  * <li>For every transaction...</li>
- * <li>Call {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer)} which makes this instance
+ * <li>Call {@link #initialize(StatementLocks, PageCursorTracer)} which makes this instance
  * full available and ready to use. Call when the {@link KernelTransactionImplementation} is initialized.</li>
  * <li>Alternate {@link #acquire()} / {@link #close()} when acquiring / closing a statement for the transaction...
  * Temporarily asymmetric number of calls to {@link #acquire()} / {@link #close()} is supported, although in
  * the end an equal number of calls must have been issued.</li>
  * <li>To be safe call {@link #forceClose()} at the end of a transaction to force a close of the statement,
  * even if there are more than one current call to {@link #acquire()}. This instance is now again ready
- * to be {@link #initialize(StatementLocks, StatementOperationParts, PageCursorTracer)}  initialized} and used for the transaction
+ * to be {@link #initialize(StatementLocks, PageCursorTracer)}  initialized} and used for the transaction
  * instance again, when it's initialized.</li>
  * </ol>
  */
@@ -84,13 +84,14 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
                             StorageStatement storeStatement,
                             Procedures procedures,
                             AccessCapability accessCapability,
-                            LockTracer systemLockTracer )
+                            LockTracer systemLockTracer,
+                            StatementOperationParts statementOperations )
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
         this.storeStatement = storeStatement;
         this.accessCapability = accessCapability;
-        this.facade = new OperationsFacade( transaction, this, procedures );
+        this.facade = new OperationsFacade( transaction, this, procedures, statementOperations );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
     }
@@ -194,12 +195,10 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         }
     }
 
-    public void initialize( StatementLocks statementLocks, StatementOperationParts operationParts,
-            PageCursorTracer pageCursorCounters )
+    public void initialize( StatementLocks statementLocks, PageCursorTracer pageCursorCounters )
     {
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
-        facade.initialize( operationParts );
     }
 
     public StatementLocks locks()

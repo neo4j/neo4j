@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
@@ -64,7 +63,6 @@ import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
@@ -736,13 +734,13 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
 
-        StatementOperationContainer statementOperationContainer = dependencies.satisfyDependency(
+        StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
                         constraintIndexCreator, databaseSchemaState, guard, legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
-                constraintIndexCreator, statementOperationContainer, schemaWriteGuard, transactionHeaderInformationFactory,
+                constraintIndexCreator, statementOperationParts, schemaWriteGuard, transactionHeaderInformationFactory,
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
 
@@ -763,6 +761,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor =
                 new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );
+        dependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
                         config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
@@ -863,7 +862,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationContainer buildStatementOperations(
+    private StatementOperationParts buildStatementOperations(
             StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
@@ -908,14 +907,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null, null );
-        // + Guard
-        GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
-                parts.entityWriteOperations(), parts.entityReadOperations(), guard );
-        StatementOperationParts guardedParts = parts.override( null, null, guardingOperations,
-                guardingOperations, null, null, null, null,
-                null, null, null, null );
 
-        return new StatementOperationContainer( guardedParts, parts );
+        return parts;
     }
 
     @Override

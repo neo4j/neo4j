@@ -26,7 +26,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.StatementOperationContainer;
+import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -84,7 +84,7 @@ public class KernelTransactionFactory
         when( storageEngine.storeReadLayer() ).thenReturn( storeReadLayer );
 
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
-                mock( StatementOperationContainer.class ),
+                mock( StatementOperationParts.class ),
                 mock( SchemaWriteGuard.class ),
                 new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,

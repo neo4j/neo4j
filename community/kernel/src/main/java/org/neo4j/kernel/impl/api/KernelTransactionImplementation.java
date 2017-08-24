@@ -94,7 +94,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
-    private final StatementOperationContainer operationContainer;
+    private final StatementOperationParts statementOperations;
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
@@ -114,7 +114,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private LegacyIndexTransactionState legacyIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
-    private StatementOperationParts currentTransactionOperations;
     private final KernelStatement currentStatement;
     private final StorageStatement storageStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
@@ -146,7 +145,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationContainer operationContainer,
+    public KernelTransactionImplementation( StatementOperationParts statementOperations,
                                             SchemaWriteGuard schemaWriteGuard,
                                             TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
@@ -163,7 +162,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             StorageEngine storageEngine,
                                             AccessCapability accessCapability )
     {
-        this.operationContainer = operationContainer;
+        this.statementOperations = statementOperations;
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -178,8 +177,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.storageStatement = storeLayer.newStatement();
-        this.currentStatement =
-                new KernelStatement( this, this, storageStatement, procedures, accessCapability, lockTracer );
+        this.currentStatement = new KernelStatement( this, this, storageStatement,
+                procedures, accessCapability, lockTracer, statementOperations );
         this.userMetaData = new HashMap<>();
     }
 
@@ -209,8 +208,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
-        this.currentTransactionOperations = timeoutMillis > 0 ? operationContainer.guardedParts() : operationContainer.nonGuarderParts();
-        this.currentStatement.initialize( statementLocks, currentTransactionOperations, cursorTracerSupplier.get() );
+        this.currentStatement.initialize( statementLocks, cursorTracerSupplier.get() );
         return this;
     }
 
@@ -596,7 +594,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         catch ( ConstraintValidationException | CreateConstraintFailureException e )
         {
             throw new ConstraintViolationTransactionFailureException(
-                    e.getUserMessage( new KeyReadTokenNameLookup( currentTransactionOperations.keyReadOperations() ) ), e );
+                    e.getUserMessage( new KeyReadTokenNameLookup( statementOperations.keyReadOperations() ) ), e );
         }
         finally
         {
@@ -710,7 +708,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             legacyIndexTransactionState = null;
             txState = null;
             hooksState = null;
-            currentTransactionOperations = null;
             closeListeners.clear();
             reuseCount++;
             userMetaData = Collections.emptyMap();
@@ -731,7 +728,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return !closed && !isTerminated();
     }
 
-    private boolean isTerminated()
+    @Override
+    public boolean isTerminated()
     {
         return terminationReason != null;
     }

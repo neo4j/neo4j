@@ -72,6 +72,6 @@ public class StatementLifecycleTest
             StorageStatement storageStatement )
     {
         return new KernelStatement( transaction, null, storageStatement, new Procedures(), new CanWrite(),
-                LockTracer.NONE );
+                LockTracer.NONE, mock( StatementOperationParts.class ) );
     }
 }
