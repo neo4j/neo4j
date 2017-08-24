@@ -33,7 +33,7 @@ case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: Pipeline
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
       val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
+      state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
       context.setLongAt(offset, nodeId)
       context
     })
