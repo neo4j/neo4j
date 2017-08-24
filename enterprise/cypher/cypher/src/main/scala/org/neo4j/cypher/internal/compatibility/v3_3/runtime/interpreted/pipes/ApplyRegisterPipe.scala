@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 case class ApplyRegisterPipe(lhs: Pipe, rhs: Pipe)
                             (val id: Id = new Id)
-                             extends PipeWithSource(lhs) with Pipe {
+  extends PipeWithSource(lhs) with Pipe {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
       lhsContext =>
