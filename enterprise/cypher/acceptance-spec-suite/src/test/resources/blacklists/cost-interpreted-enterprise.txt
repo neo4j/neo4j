@@ -8,7 +8,6 @@ Using a CASE expression in a WHERE, with label predicate
 Add labels inside FOREACH
 Returning a CASE expression with a pattern expression alternative
 Merge node with prop and label and unique index
-Merge node with prop and label and unique index when no match
 Merge using unique constraint should update existing node
 Merge using unique constraint should create missing node
 Should match on merge using multiple unique indexes if only found single node for both indexes
@@ -22,8 +21,6 @@ Should fail on merge using multiple unique indexes if it found a node matching s
 Should fail on merge using multiple unique indexes if it found a node matching single property only flipped order
 Should fail on merge using multiple unique indexes and labels if found different nodes
 Merge with uniqueness constraints must properly handle multiple labels
-Unrelated nodes with same property should not clash
-Works fine with index and constraint
 Works with property repeated in literal map in set
 Works with property in map that gets set
 Failing when creation would violate constraint
@@ -36,11 +33,6 @@ Inside nested FOREACH
 Inside nested FOREACH, nodes inlined
 Should handle running merge inside a foreach loop
 Merge inside foreach should see variables introduced by update actions outside foreach
-Works fine with index
-Works with indexed and unindexed property
-Works with two indexed properties
-Should be able to merge using property from match with index
-Merge with an index must properly handle multiple labels
 Using a single bound node
 Using a longer pattern
 Using bound nodes in mid-pattern
@@ -73,7 +65,6 @@ Using a pattern predicate after aggregation 1
 Using a pattern predicate after aggregation 2
 Returning a relationship from a pattern predicate
 Pattern predicate should uphold the relationship uniqueness constraint
-Pattern predicates on missing optionally matched nodes should simply evaluate to false
 Matching with complex composite pattern predicate
 Matching named path with variable length pattern and pattern predicates
 In-query call to procedure that takes no arguments
@@ -107,7 +98,6 @@ Find a shortest path among paths matched using a non-variable length pattern
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
 LIMIT 0 should stop side effects
-Id on null
 type on null
 
 //OrderByAcceptance.feature - Unsupported orderability
