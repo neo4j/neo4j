@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
+import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
@@ -87,18 +88,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     private void applyPendingLabelAndIndexUpdates() throws IOException
     {
+        AsyncApply labelUpdatesApply = null;
         if ( labelUpdates != null )
         {
             // Updates are sorted according to node id here, an artifact of node commands being sorted
             // by node id when extracting from TransactionRecordState.
-            try
-            {
-                labelScanStoreSync.apply( new LabelUpdateWork( labelUpdates ) );
-            }
-            catch ( ExecutionException e )
-            {
-                throw new IOException( "Failed to flush label updates", e );
-            }
+            labelUpdatesApply = labelScanStoreSync.applyAsync( new LabelUpdateWork( labelUpdates ) );
             labelUpdates = null;
         }
         if ( indexUpdates != null && indexUpdates.hasUpdates() )
@@ -112,6 +107,18 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 throw new IOException( "Failed to flush index updates", e );
             }
             indexUpdates = null;
+        }
+
+        if ( labelUpdatesApply != null )
+        {
+            try
+            {
+                labelUpdatesApply.await();
+            }
+            catch ( ExecutionException e )
+            {
+                throw new IOException( "Failed to flush label updates", e );
+            }
         }
     }
 
