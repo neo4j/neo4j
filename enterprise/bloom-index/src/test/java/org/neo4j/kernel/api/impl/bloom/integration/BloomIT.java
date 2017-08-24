@@ -27,6 +27,9 @@ import org.junit.Test;
 import java.util.Collections;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -39,7 +42,9 @@ import static org.junit.Assert.assertFalse;
 public class BloomIT
 {
     public static final String NODES = "CALL dbms.bloom.bloomNodes([\"%s\"])";
+    public static final String RELS = "CALL dbms.bloom.bloomRelationships([\"%s\"])";
     public static final String NODEID = "nodeid";
+    public static final String RELID = "relid";
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -52,7 +57,7 @@ public class BloomIT
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
-        db = factory.newImpermanentDatabase( Collections.singletonMap( GraphDatabaseSettings.bloom_indexed_properties, "prop" ) );
+        db = factory.newImpermanentDatabase( Collections.singletonMap( GraphDatabaseSettings.bloom_indexed_properties, "prop, relprop" ) );
     }
 
     @Test
@@ -60,13 +65,21 @@ public class BloomIT
     {
         try ( Transaction transaction = db.beginTx() )
         {
-            db.createNode().setProperty( "prop", "This is a integration test." );
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "This is a integration test." );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "This is a related integration test" );
+            Relationship relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "type" ) );
+            relationship.setProperty( "relprop", "They relate" );
             transaction.success();
         }
 
         Result result = db.execute( String.format( NODES, "integration" ) );
-
         assertEquals( 0L, result.next().get( NODEID ) );
+        assertEquals( 1L, result.next().get( NODEID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( RELS, "relate" ) );
+        assertEquals( 0L, result.next().get( RELID ) );
         assertFalse( result.hasNext() );
     }
 

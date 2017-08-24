@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.PropertyEntry;
@@ -62,7 +63,6 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
         data.assignedNodeProperties().forEach( propertyEntry -> nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
 
         Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
-
         data.removedRelationshipProperties().forEach( propertyEntry ->
         {
             try
@@ -89,14 +89,15 @@ public class BloomIndexTransactionEventUpdater implements TransactionEventHandle
         deleteIndexData( data.deletedNodes(), nodeIndex );
         //update relationship index
         Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
-        updatePropertyData( data.removedNodeProperties(), relationshipMap, relationshipIndex );
-        updatePropertyData( data.assignedNodeProperties(), relationshipMap, relationshipIndex );
+        updatePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
+        updatePropertyData( data.assignedRelationshipProperties(), relationshipMap, relationshipIndex );
         deleteIndexData( data.deletedNodes(), nodeIndex );
     }
 
-    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state, WritableDatabaseBloomIndex nodeIndex )
+    private <E extends Entity> void updatePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
+            WritableDatabaseBloomIndex nodeIndex )
     {
-        for ( PropertyEntry<Node> propertyEntry : propertyEntries )
+        for ( PropertyEntry<E> propertyEntry : propertyEntries )
         {
             long nodeId = propertyEntry.entity().getId();
             Map<String,Object> allProperties = state.get( nodeId );
