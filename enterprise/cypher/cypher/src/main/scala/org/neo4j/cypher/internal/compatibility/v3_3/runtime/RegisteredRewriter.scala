@@ -65,6 +65,35 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         newPlan
 
+      case oldPlan:VarExpand =>
+        /*
+        The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
+        We need to use the incoming pipeline info for predicate rewriting
+         */
+
+        val incomingPipeline = pipelineInformation(oldPlan.left)
+        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+
+        val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)
+        val newEdgePredicate = oldPlan.edgePredicate.endoRewrite(rewriter)
+
+        val newPlan = oldPlan.copy(
+          nodePredicate = newNodePredicate,
+          edgePredicate = newEdgePredicate,
+          legacyPredicates = Seq.empty // If we use the legacy predicates, we are not on the register runtime
+        )(oldPlan.solved)
+
+        /*
+        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        outgoing pipeline info here
+         */
+        val outgoingPipeline = pipelineInformation(oldPlan)
+        newPipelineInfo += (newPlan -> outgoingPipeline)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
+
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val incomingPipeline = pipelineInformation(oldPlan.lhs.getOrElse(throw new InternalException("Leaf nodes cannot be handled like this")))
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
