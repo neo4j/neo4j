@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{NodeFromRegister, RelationshipFromRegister}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
@@ -33,6 +34,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
@@ -175,6 +178,20 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case UnwindCollection(_, IdName(name), expression) =>
         val offset = pipeline.getReferenceOffsetFor(name)
         UnwindRegisterPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
+
+      case Aggregation(_, groupingExpressions, aggregationExpression) =>
+        val grouping = groupingExpressions.map {
+          case (key, expression) =>
+            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+        }
+        val aggregation = aggregationExpression.map {
+          case (key, expression) =>
+            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression).asInstanceOf[AggregationExpression]
+        }
+        EagerAggregationRegisterPipe(source,
+                                     pipeline,
+                                     grouping,
+                                     aggregation)(id)
 
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
         val fromOffset = pipeline(startNode).offset
