@@ -26,3 +26,11 @@ case class RelationshipProperty(offset: Int, propToken: Int, name: String) exten
 case class RelationshipPropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
   override def asCanonicalStringVal: String = name
 }
+
+case class RelationshipPropertyExists(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}
+
+case class RelationshipPropertyExistsLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}

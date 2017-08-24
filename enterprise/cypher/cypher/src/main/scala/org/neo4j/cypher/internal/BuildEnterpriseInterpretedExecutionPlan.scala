@@ -56,7 +56,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+      val converters = new ExpressionConverters(EnterpriseExpressionConverters, CommunityExpressionConverter)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = EnterprisePipeBuilderFactory(

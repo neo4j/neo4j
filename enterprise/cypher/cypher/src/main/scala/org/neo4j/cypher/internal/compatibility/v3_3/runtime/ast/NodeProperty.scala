@@ -27,3 +27,12 @@ case class NodeProperty(offset: Int, propToken: Int, name: String) extends Runti
 case class NodePropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
   override def asCanonicalStringVal: String = name
 }
+
+case class NodePropertyExists(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}
+
+// Token did not exist at plan time, so we'll need to look it up at runtime
+case class NodePropertyExistsLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}

@@ -48,6 +48,15 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
       case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
         Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
+      case runtimeAst.NodePropertyExists(offset, token, _) =>
+        Some(runtimeExpression.NodePropertyExists(offset, token))
+      case runtimeAst.NodePropertyExistsLate(offset, token, _) =>
+        Some(runtimeExpression.NodePropertyExistsLate(offset, token))
+      case runtimeAst.RelationshipPropertyExists(offset, token, _) =>
+        Some(runtimeExpression.RelationshipPropertyExists(offset, token))
+      case runtimeAst.RelationshipPropertyExistsLate(offset, token, _) =>
+        Some(runtimeExpression.RelationshipPropertyExistsLate(offset, token))
+
       case _ =>
         None
     }

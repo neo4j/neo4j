@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
-case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate {
+case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate with RegisterExpression {
 
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val value1 = a(m)
@@ -34,8 +34,4 @@ case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate {
   override def containsIsNull: Boolean = false
 
   override def rewrite(f: (Expression) => Expression): Expression = f(PrimitiveEquals(a.rewrite(f), b.rewrite(f)))
-
-  override def arguments: Seq[Expression] = Seq.empty
-
-  override def symbolTableDependencies: Set[String] = Set.empty
 }
