@@ -64,7 +64,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     {
         configuredSetup( stringMap( GraphDatabaseSettings.transaction_timeout.name(), "4s" ) );
 
-        assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
+        assertFail( adminSubject, "CALL test.loop", PROCEDURE_TIMEOUT_ERROR );
 
         Result result = neo.getLocalGraph().execute(
                 "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );

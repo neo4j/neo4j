@@ -699,7 +699,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         String loopQuery = "CALL test.loop";
 
-        new Thread( () -> assertFail( readSubject, loopQuery, "Explicitly terminated by the user." ) ).start();
+        Thread loopQueryThread =
+                new Thread( () -> assertFail( readSubject, loopQuery, "Explicitly terminated by the user." ) );
+        loopQueryThread.start();
         latch.startAndWaitForAllToStart();
 
         try
@@ -724,6 +726,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             latch.finishAndWaitForAllToFinish();
         }
+
+        // there is a race with "test.loop" procedure - after decrementing latch it may take time to actually exit
+        loopQueryThread.join( 10_000 );
 
         assertEmpty(
                 adminSubject,
