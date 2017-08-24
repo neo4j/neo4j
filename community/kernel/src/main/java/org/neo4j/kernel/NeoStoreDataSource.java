@@ -898,7 +898,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
                 parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
+        parts = parts.override( null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext, null, null, null, null );
         // + Guard
         GuardingStatementOperations guardingOperations = new GuardingStatementOperations(

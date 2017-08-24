@@ -34,6 +34,7 @@ public class SimpleStatementLocks implements StatementLocks
     private final Locks.Client client;
     private Supplier<LockTracer> lockTracerSupplier;
     private IsolationLevel isolationLevel;
+    private boolean takesEntityIteratorLocks; // Not taken with Read Committed
 
     public SimpleStatementLocks( Locks.Client client )
     {
@@ -127,13 +128,19 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void entityIterateAcquireShared( ResourceType type, long resource )
     {
-        // Not taken with Read Committed
+        if ( takesEntityIteratorLocks )
+        {
+            client.acquireShared( getTracer(), type, resource );
+        }
     }
 
     @Override
     public void entityIterateReleaseShared( ResourceType type, long resource )
     {
-        // Not taken with Read Committed
+        if ( takesEntityIteratorLocks )
+        {
+            client.releaseShared( type, resource );
+        }
     }
 
     @Override
@@ -178,6 +185,10 @@ public class SimpleStatementLocks implements StatementLocks
             throw new IllegalStateException( "Isolation level cannot be set more than once." );
         }
         this.isolationLevel = isolationLevel;
+        if ( isolationLevel == IsolationLevel.IteratorStability )
+        {
+            takesEntityIteratorLocks = true;
+        }
     }
 
     @Override

@@ -24,10 +24,16 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
@@ -36,11 +42,13 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
+import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -50,6 +58,7 @@ import org.neo4j.kernel.api.schema.constaints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.impl.api.cursor.OnCloseCursorDelegate;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
@@ -57,6 +66,10 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.Direction;
+import org.neo4j.storageengine.api.NodeItem;
+import org.neo4j.storageengine.api.PropertyItem;
+import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -66,6 +79,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
+        EntityReadOperations,
         EntityWriteOperations,
         SchemaReadOperations,
         SchemaWriteOperations,
@@ -552,5 +566,211 @@ public class LockingStatementOperations implements
         {
             state.locks().schemaModifyAcquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         }
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetForLabel( KernelStatement state, int labelId )
+    {
+        return entityReadDelegate.nodesGetForLabel( state, labelId );
+    }
+
+    @Override
+    public PrimitiveLongIterator indexQuery( KernelStatement statement,
+                                             IndexDescriptor index, IndexQuery... predicates )
+            throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    {
+        return entityReadDelegate.indexQuery( statement, index, predicates );
+    }
+
+    @Override
+    public long nodeGetFromUniqueIndexSeek( KernelStatement state, IndexDescriptor index,
+                                            IndexQuery.ExactPredicate... predicates )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException, IndexNotApplicableKernelException
+    {
+        return entityReadDelegate.nodeGetFromUniqueIndexSeek( state, index, predicates );
+    }
+
+    @Override
+    public long nodesCountIndexed( KernelStatement statement, IndexDescriptor index, long nodeId, Object value )
+            throws IndexNotFoundKernelException, IndexBrokenKernelException
+    {
+        return entityReadDelegate.nodesCountIndexed( statement, index, nodeId, value );
+    }
+
+    @Override
+    public boolean graphHasProperty( KernelStatement state, int propertyKeyId )
+    {
+        return entityReadDelegate.graphHasProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public Object graphGetProperty( KernelStatement state, int propertyKeyId )
+    {
+        return entityReadDelegate.graphGetProperty( state, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntIterator graphGetPropertyKeys( KernelStatement state )
+    {
+        return entityReadDelegate.graphGetPropertyKeys( state );
+    }
+
+    @Override
+    public PrimitiveLongIterator nodesGetAll( KernelStatement state )
+    {
+        return entityReadDelegate.nodesGetAll( state );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
+    {
+        return entityReadDelegate.relationshipsGetAll( state );
+    }
+
+    @Override
+    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
+                                                                 RelationshipVisitor<EXCEPTION> visitor )
+            throws EntityNotFoundException, EXCEPTION
+    {
+        entityReadDelegate.relationshipVisit( statement, relId, visitor );
+    }
+
+    @Override
+    public Cursor<NodeItem> nodeCursorById( KernelStatement statement, long nodeId ) throws EntityNotFoundException
+    {
+        return entityReadDelegate.nodeCursorById( statement, nodeId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorById( KernelStatement statement, long relId )
+            throws EntityNotFoundException
+    {
+        return entityReadDelegate.relationshipCursorById( statement, relId );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> relationshipCursorGetAll( KernelStatement statement )
+    {
+        return entityReadDelegate.relationshipCursorGetAll( statement );
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement,
+                                                          NodeItem node, Direction direction )
+    {
+//        statement.locks().entityIterateAcquireShared( ResourceTypes.NODE, node.id() );
+        return new OnCloseCursorDelegate<RelationshipItem>( entityReadDelegate.nodeGetRelationships( statement, node, direction ) )
+        {
+            @Override
+            protected void onClose()
+            {
+                statement.locks().entityIterateReleaseShared( ResourceTypes.NODE, node.id() );
+            }
+        };
+    }
+
+    @Override
+    public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement,
+                                                          NodeItem node, Direction direction, int[] relTypes )
+    {
+        return entityReadDelegate.nodeGetRelationships( statement, node, direction, relTypes );
+    }
+
+    @Override
+    public Cursor<PropertyItem> nodeGetProperties( KernelStatement statement, NodeItem node )
+    {
+//        return entityReadDelegate.nodeGetProperties( statement, node );
+        statement.locks().entityIterateAcquireShared( ResourceTypes.NODE, node.id() );
+        return new OnCloseCursorDelegate<PropertyItem>( entityReadDelegate.nodeGetProperties( statement, node ) )
+        {
+            @Override
+            protected void onClose()
+            {
+                statement.locks().entityIterateReleaseShared( ResourceTypes.NODE, node.id() );
+            }
+        };
+    }
+
+    @Override
+    public Object nodeGetProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        return entityReadDelegate.nodeGetProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public boolean nodeHasProperty( KernelStatement statement, NodeItem node, int propertyKeyId )
+    {
+        return entityReadDelegate.nodeHasProperty( statement, node, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection nodeGetPropertyKeys( KernelStatement statement,
+                                                       NodeItem node )
+    {
+        return entityReadDelegate.nodeGetPropertyKeys( statement, node );
+    }
+
+    @Override
+    public Cursor<PropertyItem> relationshipGetProperties( KernelStatement statement,
+                                                           RelationshipItem relationship )
+    {
+        return entityReadDelegate.relationshipGetProperties( statement, relationship );
+    }
+
+    @Override
+    public Object relationshipGetProperty( KernelStatement statement,
+                                           RelationshipItem relationship, int propertyKeyId )
+    {
+        return entityReadDelegate.relationshipGetProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public boolean relationshipHasProperty( KernelStatement statement,
+                                            RelationshipItem relationship, int propertyKeyId )
+    {
+        return entityReadDelegate.relationshipHasProperty( statement, relationship, propertyKeyId );
+    }
+
+    @Override
+    public PrimitiveIntCollection relationshipGetPropertyKeys( KernelStatement statement,
+                                                               RelationshipItem relationship )
+    {
+        return entityReadDelegate.relationshipGetPropertyKeys( statement, relationship );
+    }
+
+    @Override
+    public long nodesGetCount( KernelStatement statement )
+    {
+        return entityReadDelegate.nodesGetCount( statement );
+    }
+
+    @Override
+    public long relationshipsGetCount( KernelStatement statement )
+    {
+        return entityReadDelegate.relationshipsGetCount( statement );
+    }
+
+    @Override
+    public boolean nodeExists( KernelStatement statement, long id )
+    {
+        return entityReadDelegate.nodeExists( statement, id );
+    }
+
+    @Override
+    public PrimitiveIntSet relationshipTypes( KernelStatement statement, NodeItem nodeItem )
+    {
+        return entityReadDelegate.relationshipTypes( statement, nodeItem );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction )
+    {
+        return entityReadDelegate.degree( statement, nodeItem, direction );
+    }
+
+    @Override
+    public int degree( KernelStatement statement, NodeItem nodeItem, Direction direction, int relType )
+    {
+        return entityReadDelegate.degree( statement, nodeItem, direction, relType );
     }
 }

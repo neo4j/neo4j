@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -331,6 +332,7 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
+        statement.locks().entityIterateAcquireShared( ResourceTypes.NODE, nodeId );
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
             return new CursorRelationshipIterator(

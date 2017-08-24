@@ -30,6 +30,8 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -51,6 +53,7 @@ import org.neo4j.test.rule.ReuseDatabaseClassRule;
 import org.neo4j.test.rule.concurrent.ThreadRepository;
 import org.neo4j.test.rule.concurrent.ThreadRepository.ThreadInfo;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
@@ -77,7 +80,7 @@ public abstract class IsolationLevelsTestTemplate
     public ThreadRepository threads = new ThreadRepository( 10, TimeUnit.SECONDS );
 
     @Rule
-    public RuleChain rules = RuleChain.outerRule( reuse.getRule() ).around( threads ).around( new RepeatRule( 100 ) );
+    public RuleChain rules = RuleChain.outerRule( reuse.getRule() ).around( threads ).around( new RepeatRule( 10 ) );
 
     protected abstract DatabaseRule createDatabaseRule();
 
@@ -95,15 +98,29 @@ public abstract class IsolationLevelsTestTemplate
 
         private void perform() throws Exception
         {
-            Transaction tx = db.beginTx();
-            for ( ThrowingBiConsumer<GraphDatabaseService,Transaction,Exception> action : actions )
+            try
             {
-                action.accept( db, tx );
+                Transaction tx = db.beginTx();
+                for ( ThrowingBiConsumer<GraphDatabaseService,Transaction,Exception> action : actions )
+                {
+                    action.accept( db, tx );
+                }
+                if ( !terminal )
+                {
+                    tx.close();
+                }
             }
-            if ( !terminal )
+            catch ( Throwable e )
             {
-                tx.close();
+                e.printStackTrace();
+                throw e;
             }
+        }
+
+        public DbTask then( ThrowingBiConsumer<GraphDatabaseService,Transaction,Exception> action )
+        {
+            actions.add( action );
+            return this;
         }
 
         public DbTask then( Consumer<GraphDatabaseService> action )
@@ -585,9 +602,125 @@ public abstract class IsolationLevelsTestTemplate
     // todo prevent lost update of node label
     // todo prevent lost update of relationship property
 
-    // todo prevent unstable iterator of node properties
-    // todo prevent unstable iterator of node labels
+    @Theory
+    public void preventUnstableIteratorOfNodeProperties( IsolationLevel level )
+    {
+        if ( shouldIgnoreTestForLevel( level, IsolationLevel.Anomaly.UnstableIterator ) )
+        {
+            return;
+        }
+
+        String[] propertyNames = buildPropertyNames();
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            for ( String name : propertyNames )
+            {
+                node.setProperty( name, 1 );
+            }
+            tx.success();
+        }
+
+        int threadCount = 10;
+        try ( Transaction tx = db.beginTx() )
+        {
+            setIsolationLevel( tx, level );
+            beginForked()
+                    .then( db -> setAllProperties( db, nodeId, propertyNames ) )
+                    .commit()
+                    .run( threadCount, threads );
+
+            while ( !threads.allDone() )
+            {
+                Node node = db.getNodeById( nodeId );
+                Map<String,Object> allProperties = node.getAllProperties();
+                Object valueToCompare = allProperties.get( propertyNames[0] );
+                for ( Object value : allProperties.values() )
+                {
+                    assertThat( value, is( equalTo( valueToCompare ) ) );
+                }
+            }
+        }
+    }
+
+    private String[] buildPropertyNames()
+    {
+        char[] chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+        String[] propertyNames = new String[chars.length];
+        int i = 0;
+        for ( char x : chars )
+        {
+            propertyNames[i] = "" + x;
+            i++;
+        }
+        return propertyNames;
+    }
+
+    private void setAllProperties( GraphDatabaseService db, long nodeId, String[] propertyNames )
+    {
+        int value = ThreadLocalRandom.current().nextInt();
+        Node node = db.getNodeById( nodeId );
+        for ( String name : propertyNames )
+        {
+            node.setProperty( name, value );
+        }
+    }
+
+    @Theory
+    public void preventUnstableIteratorOfNodeRelationships( IsolationLevel level )
+    {
+        if ( shouldIgnoreTestForLevel( level, IsolationLevel.Anomaly.UnstableIterator ) )
+        {
+            return;
+        }
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.createRelationshipTo( node, REL );
+            tx.success();
+        }
+
+        int threadCount = 10;
+        try ( Transaction tx = db.beginTx() )
+        {
+            setIsolationLevel( tx, level );
+
+            beginForked()
+                    .then( (db,innerTx) -> setIsolationLevel( innerTx, level ) )
+                    .then( (db,innerTx) -> deleteCreateRelationship( db, innerTx, nodeId ) )
+                    .commit()
+                    .run( threadCount, threads );
+
+            while ( !threads.allDone() )
+            {
+                Node node = db.getNodeById( nodeId );
+                assertThat( Iterables.count( node.getRelationships() ), is( 1L ) );
+            }
+        }
+    }
+
+    private void deleteCreateRelationship( GraphDatabaseService db, Transaction innerTx, long nodeId )
+    {
+        Node node = db.getNodeById( nodeId );
+        innerTx.acquireWriteLock( node );
+        node.getRelationships().forEach( Relationship::delete );
+        node.createRelationshipTo( node, REL );
+//        try
+//        {
+//        }
+//        catch ( DeadlockDetectedException e )
+//        {
+//            // ignore these, because after iteration, we competed with another transaction to delete this relationship
+//        }
+    }
     // todo prevent unstable iterator of node relationships
+    // todo prevent unstable iterator of node labels
     // todo prevent unstable iterator of relationship properties
 
     // todo prevent fuzzy read of node property

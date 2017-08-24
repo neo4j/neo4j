@@ -26,6 +26,7 @@ import org.junit.runners.model.Statement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +45,16 @@ public class ThreadRepository implements TestRule
         default ThreadInfo run( ThreadRepository repo )
         {
             return repo.execute( this );
+        }
+
+        default ThreadInfo[] run( int threadCount, ThreadRepository repo )
+        {
+            ThreadInfo[] threads = new ThreadInfo[threadCount];
+            for ( int i = 0; i < threadCount; i++ )
+            {
+                threads[i] = repo.execute( this );
+            }
+            return threads;
         }
     }
 
@@ -96,6 +107,11 @@ public class ThreadRepository implements TestRule
     public Events events()
     {
         return new Events();
+    }
+
+    public boolean allDone()
+    {
+        return repository.allDone();
     }
 
     public static class Signal implements Task
@@ -275,6 +291,21 @@ public class ThreadRepository implements TestRule
                     failures.add( interrupted );
                 }
             }
+        }
+
+        synchronized boolean allDone()
+        {
+            ListIterator<TaskThread> itr = threads.listIterator();
+            while ( itr.hasNext() )
+            {
+                TaskThread thread = itr.next();
+                if ( thread.getState() != Thread.State.TERMINATED )
+                {
+                    return false;
+                }
+                itr.remove();
+            }
+            return true;
         }
     }
 

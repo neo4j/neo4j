@@ -71,7 +71,7 @@ public enum IsolationLevel
      * Note that this <em>does not</em> prevent the {@link Anomaly#CursorLostUpdate} anomaly. See the
      * {@link IsolationLevel#CursorStability} isolation level for that.
      */
-    IteratorStability( Unsupported, EnumSet.of( DirtyWrite, DirtyRead, UnstableIterator ) ),
+    IteratorStability( Supported, EnumSet.of( DirtyWrite, DirtyRead, UnstableIterator ) ),
     /**
      * Completely isolates all forms of entity level reads and writes, including all forms of lost updates, and any
      * observation of writes from other concurrent transactions.
