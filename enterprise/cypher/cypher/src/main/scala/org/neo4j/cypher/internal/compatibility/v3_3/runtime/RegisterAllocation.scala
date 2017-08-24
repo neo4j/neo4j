@@ -40,6 +40,7 @@ import scala.collection.mutable
   * method.
   **/
 object RegisterAllocation {
+
   def allocateRegisters(lp: LogicalPlan): Map[LogicalPlan, PipelineInformation] = {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
@@ -129,24 +130,23 @@ object RegisterAllocation {
 
   private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
     lp match {
-      case Aggregation(_, groupingExpressions, aggregationExpressions) =>
-        val newPipeline = PipelineInformation.empty
 
-        def addExpressions(groupingExpressions: Map[String, Expression]): Unit = {
-          groupingExpressions foreach {
-            case (_, parserAst.Variable(ident)) =>
-              val slotInfo = incomingPipeline(ident)
-              newPipeline.add(ident, slotInfo)
-            case (_, exp) =>
-              // TODO: Support this properly. Requires actually using the expression and supporting aggregation
-              //newPipeline.newReference(key, nullable = true, CTAny)
-              throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
-          }
+      case Aggregation(_, groupingExpressions, aggregationExpressions) =>
+        val outgoing = PipelineInformation.empty
+
+        groupingExpressions foreach { // return n as x, count(*)
+          case (key, parserAst.Variable(ident)) =>
+            val slotInfo = incomingPipeline(ident)
+            outgoing.add(key, slotInfo)
+          case (key, _) =>
+            outgoing.newReference(key, nullable = true, CTAny)
         }
 
-        addExpressions(groupingExpressions)
-        addExpressions(aggregationExpressions)
-        newPipeline
+        aggregationExpressions foreach {
+          case (key, _) =>
+            outgoing.newReference(key, nullable = true, CTAny)
+        }
+        outgoing
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
         val newPipeline = incomingPipeline.deepClone()
@@ -183,36 +183,35 @@ object RegisterAllocation {
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
-
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
         val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
-        case VarExpand(lhs: LogicalPlan,
-                       IdName(from),
-                       dir,
-                       projectedDir,
-                       types,
-                       IdName(to),
-                       IdName(edge),
-                       length,
-                       ExpandAll,
-                       IdName(tempNode),
-                       IdName(tempEdge),
-                       _,
-                       _,
-                       _) =>
-          val newPipeline = incomingPipeline.deepClone()
+      case VarExpand(lhs: LogicalPlan,
+                     IdName(from),
+                     dir,
+                     projectedDir,
+                     types,
+                     IdName(to),
+                     IdName(edge),
+                     length,
+                     ExpandAll,
+                     IdName(tempNode),
+                     IdName(tempEdge),
+                     _,
+                     _,
+                     _) =>
+        val newPipeline = incomingPipeline.deepClone()
 
-          // We register these on the incoming pipeline after cloning it, since we don't need these slots in
-          // the produced rows
-          incomingPipeline.newLong(tempNode, nullable = false, CTNode)
-          incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+        // We register these on the incoming pipeline after cloning it, since we don't need these slots in
+        // the produced rows
+        incomingPipeline.newLong(tempNode, nullable = false, CTNode)
+        incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
 
-          newPipeline.newLong(to, nullable, CTNode)
-          newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-          newPipeline
+        newPipeline.newLong(to, nullable, CTNode)
+        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+        newPipeline
 
       case CreateNode(_, IdName(name), _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTNode)
@@ -245,7 +244,7 @@ object RegisterAllocation {
       case _: Apply =>
         rhsPipeline
 
-      case _:CartesianProduct =>
+      case _: CartesianProduct =>
         val cartesianProductPipeline = lhsPipeline.deepClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>

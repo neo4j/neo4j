@@ -407,4 +407,37 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     )))
     allocations(produceResult) shouldBe theSameInstanceAs(allocations(unwind))
   }
+
+  test("should allocate aggregation") {
+    // Given MATCH (x)-[r:R]->(y) RETURN x, x.prop, count(r.prop)
+    val labelScan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val expand = Expand(labelScan, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+    val grouping = Map(
+      "x" -> varFor("x"),
+      "x.prop" -> prop("x", "prop")
+    )
+    val aggregations = Map(
+      "count(r.prop)" -> FunctionInvocation(FunctionName("count")(pos), prop("r", "prop"))(pos)
+    )
+    val aggregation = Aggregation(expand, grouping, aggregations)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(aggregation)
+
+    allocations should have size 3
+    allocations(expand) should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = false, CTRelationship, "r"),
+        "y" -> LongSlot(2, nullable = false, CTNode, "y")
+        ), numberOfLongs = 3, numberOfReferences = 0)
+    )
+    allocations(aggregation) should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "x.prop" -> RefSlot(0, nullable = true, CTAny, "x.prop"),
+        "count(r.prop)" -> RefSlot(1, nullable = true, CTAny, "count(r.prop)")
+        ), numberOfLongs = 1, numberOfReferences = 2)
+    )
+  }
 }
