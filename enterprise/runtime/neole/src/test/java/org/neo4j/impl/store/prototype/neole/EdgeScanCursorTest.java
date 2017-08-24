@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -188,6 +189,8 @@ public class EdgeScanCursorTest
     @Test
     public void shouldAccessNodes() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         // given
         try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
         {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -148,6 +149,8 @@ public class NodeCursorTest
     @Test
     public void shouldReadLabels() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         // given
         try ( NodeCursor nodes = graph.allocateNodeCursor() )
         {

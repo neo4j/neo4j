@@ -22,6 +22,7 @@ package org.neo4j.impl.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -128,6 +129,8 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessSingleProperty() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         assertAccessSingleProperty( byteProp, Values.of( (byte)13 ) );
         assertAccessSingleProperty( shortProp, Values.of( (short)13 ) );
         assertAccessSingleProperty( intProp, Values.of( 13 ) );
@@ -145,6 +148,8 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessAllNodeProperties() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
                 PropertyCursor props = graph.allocatePropertyCursor() )
