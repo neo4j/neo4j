@@ -239,7 +239,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Instance of {@link TreeNode} which handles reading/writing physical bytes from pages representing tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final Section<KEY,VALUE> mainContent;
+    private final Section<KEY,VALUE> mainSection;
 
     /**
      * A free-list of released ids. Acquiring new ids involves first trying out the free-list and then,
@@ -400,7 +400,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.pageSize = pagedFile.pageSize();
             Meta meta = created ? selectFormatAndWriteMeta( layout, pagedFile ) : readMeta( layout, pagedFile );
             this.bTreeNode = selectTreeNodeFormat( layout, meta );
-            this.mainContent = bTreeNode.main();
+            this.mainSection = bTreeNode.main();
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
@@ -1195,16 +1195,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
             if ( structurePropagation.hasRightKeyInsert )
             {
                 // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
-                PageCursorUtil.goTo( cursor, "new root", newRootId );
-
-                bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                mainContent.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
-                mainContent.setKeyCount( cursor, 1 );
-                mainContent.setChildAt( cursor, structurePropagation.midChild, 0,
-                        stableGeneration, unstableGeneration );
-                mainContent.setChildAt( cursor, structurePropagation.rightChild, 1,
-                        stableGeneration, unstableGeneration );
+                long newRootId = treeLogic.initializeNewRootAfterSplit(
+                        cursor, structurePropagation, stableGeneration, unstableGeneration );
                 setRoot( newRootId );
             }
             else if ( structurePropagation.hasMidChildUpdate )

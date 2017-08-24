@@ -1625,4 +1625,17 @@ class InternalTreeLogic<KEY,VALUE>
 
         idProvider.releaseId( stableGeneration, unstableGeneration, oldId );
     }
+
+    long initializeNewRootAfterSplit( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
+            long stableGeneration, long unstableGeneration ) throws IOException
+    {
+        long newRootId = idProvider.acquireNewId( stableGeneration, unstableGeneration );
+        bTreeNode.goTo( cursor, "new root", newRootId );
+        bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+        mainSection.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
+        mainSection.setKeyCount( cursor, 1 );
+        mainSection.setChildAt( cursor, structurePropagation.midChild, 0, stableGeneration, unstableGeneration );
+        mainSection.setChildAt( cursor, structurePropagation.rightChild, 1, stableGeneration, unstableGeneration );
+        return newRootId;
+    }
 }

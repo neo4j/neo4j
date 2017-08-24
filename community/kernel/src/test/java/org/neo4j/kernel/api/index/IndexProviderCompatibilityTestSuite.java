@@ -34,6 +34,8 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
+import static org.neo4j.test.rule.PageCacheRule.config;
+
 @RunWith( ParameterizedSuiteRunner.class )
 @Suite.SuiteClasses( {
         SimpleIndexPopulatorCompatibility.General.class,
@@ -53,7 +55,8 @@ public abstract class IndexProviderCompatibilityTestSuite
     public abstract static class Compatibility
     {
         @Rule
-        public PageCacheAndDependenciesRule pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new );
+        public PageCacheAndDependenciesRule pageCacheAndDependenciesRule =
+                new PageCacheAndDependenciesRule( config(), DefaultFileSystemRule::new );
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;

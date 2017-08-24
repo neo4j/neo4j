@@ -213,6 +213,7 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
         long result = GenerationSafePointerPair.write( cursor, leftSiblingId, stableGeneration, unstableGeneration );
         GenerationSafePointerPair.assertSuccess( result );
     }
+
     @Override
     public void setSuccessor( PageCursor cursor, long successorId, long stableGeneration, long unstableGeneration )
     {        cursor.setOffset( BYTE_POS_SUCCESSOR );

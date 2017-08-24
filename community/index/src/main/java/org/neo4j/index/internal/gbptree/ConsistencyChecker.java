@@ -239,12 +239,12 @@ class ConsistencyChecker<KEY>
         boolean isLeaf = false;
         int keyCount;
         long successor;
-        long successorGeneration;
+        long successorGeneration = 0;
 
         long leftSiblingPointer;
         long rightSiblingPointer;
-        long leftSiblingPointerGeneration;
-        long rightSiblingPointerGeneration;
+        long leftSiblingPointerGeneration = 0;
+        long rightSiblingPointerGeneration = 0;
         long currentNodeGeneration;
 
         do
@@ -259,15 +259,26 @@ class ConsistencyChecker<KEY>
 
             // for assertSiblings
             leftSiblingPointer = node.leftSibling( cursor, stableGeneration, unstableGeneration );
-            rightSiblingPointer = node.rightSibling( cursor, stableGeneration, unstableGeneration );
-            leftSiblingPointerGeneration = node.pointerGeneration( cursor, leftSiblingPointer );
-            rightSiblingPointerGeneration = node.pointerGeneration( cursor, rightSiblingPointer );
+            if ( GenerationSafePointerPair.isSuccess( leftSiblingPointer ) )
+            {
+                leftSiblingPointerGeneration = node.pointerGeneration( cursor, leftSiblingPointer );
+            }
             leftSiblingPointer = pointer( leftSiblingPointer );
+
+            rightSiblingPointer = node.rightSibling( cursor, stableGeneration, unstableGeneration );
+            if ( GenerationSafePointerPair.isSuccess( rightSiblingPointer ) )
+            {
+                rightSiblingPointerGeneration = node.pointerGeneration( cursor, rightSiblingPointer );
+            }
             rightSiblingPointer = pointer( rightSiblingPointer );
             currentNodeGeneration = node.generation( cursor );
 
             successor = node.successor( cursor, stableGeneration, unstableGeneration );
-            successorGeneration = node.pointerGeneration( cursor, successor );
+            if ( GenerationSafePointerPair.isSuccess( successor ) )
+            {
+                successorGeneration = node.pointerGeneration( cursor, successor );
+            }
+            successor = pointer( successor );
 
             isInternal = node.isInternal( cursor );
             isLeaf = node.isLeaf( cursor );
@@ -302,6 +313,7 @@ class ConsistencyChecker<KEY>
         assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
                 rightSiblingPointerGeneration, level );
+        cursor.checkAndClearCursorException();
         checkSuccessorPointerGeneration( cursor, successor, successorGeneration );
 
         if ( isInternal )
@@ -318,30 +330,22 @@ class ConsistencyChecker<KEY>
                 " to be ≤ pointer generation:" + expectedGeneration;
     }
 
-    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration )
+    private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorPointerGeneration )
             throws IOException
     {
         if ( TreeNode.isNode( successor ) )
         {
-            cursor.setCursorException( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
-                    " which had successor:" + pointer( successor ) );
-            long origin = cursor.getCurrentPageId();
             node.goTo( cursor, "successor", successor );
-            try
+            long successorGeneration;
+            do
             {
-                long nodeGeneration;
-                do
-                {
-                    nodeGeneration = node.generation( cursor );
-                }
-                while ( cursor.shouldRetry() );
+                successorGeneration = node.generation( cursor );
+            }
+            while ( cursor.shouldRetry() );
 
-                assertPointerGenerationMatchesGeneration( cursor, nodeGeneration, successorGeneration );
-            }
-            finally
-            {
-                node.goTo( cursor, "back", origin );
-            }
+            throw new TreeInconsistencyException( "Ended up on tree node:%d which has successor:%d with generation:%d " +
+                    "(pointer said generation:%d)",
+                    cursor.getCurrentPageId(), pointer( successor ), successorGeneration, successorPointerGeneration );
         }
     }
 

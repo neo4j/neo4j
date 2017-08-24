@@ -48,7 +48,7 @@ class RightmostInChain
         StringBuilder errorMessageBuilder = new StringBuilder();
         if ( newRightmostLeftSiblingPointer != currentRightmostNode )
         {
-            errorMessageBuilder.append( format( "Sibling pointer does align with tree structure%n" ) );
+            errorMessageBuilder.append( format( "Sibling pointer does not align with tree structure%n" ) );
         }
         if ( currentRightmostNodeGeneration > newRightmostLeftSiblingPointerGeneration && currentRightmostNode != NO_NODE_FLAG )
         {
