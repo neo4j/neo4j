@@ -63,11 +63,12 @@ public class RecoveryRequiredChecker
         }
 
         long logVersion = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
+        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, logVersion );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
 
-        LogTailScanner finder = new LogTailScanner( logFiles, fs, reader );
-        return new PositionToRecoverFrom( finder, NO_MONITOR ).apply( logVersion ) != LogPosition.UNSPECIFIED;
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader );
+        return new PositionToRecoverFrom( tailScanner, NO_MONITOR ).get() != LogPosition.UNSPECIFIED;
     }
 }

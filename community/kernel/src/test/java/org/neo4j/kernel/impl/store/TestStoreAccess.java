@@ -47,7 +47,7 @@ public class TestStoreAccess
     private final File storeDir = new File( "dir" ).getAbsoluteFile();
 
     @Test
-    public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
+    public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
     {
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
         {

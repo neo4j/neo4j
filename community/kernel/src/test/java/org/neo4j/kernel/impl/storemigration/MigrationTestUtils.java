@@ -184,8 +184,8 @@ public class MigrationTestUtils
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner finder = new LogTailScanner( logFiles, fileSystem, logEntryReader );
-        LogTailScanner.LogTailInformation logTailInformation = finder.find( logFiles.getHighestLogVersion() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, logEntryReader );
+        LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         if ( logTailInformation.commitsAfterLastCheckPoint )
         {

@@ -104,6 +104,7 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -164,7 +165,6 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
 public class NeoStoreDataSource implements Lifecycle, IndexProviders
@@ -427,9 +427,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         life.add( new Delegate( Lifecycles.multiple( indexProviders.values() ) ) );
 
+        // Check the tail of transaction logs and validate version
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME, fs );
+        final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader );
+        LogVersionUpgradeChecker.check( tailScanner, config );
+
         // Upgrade the store before we begin
         RecordFormats formats = selectStoreFormats( config, storeDir, fs, pageCache, logService );
-        upgradeStore( formats );
+        upgradeStore( formats, tailScanner );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -446,24 +452,21 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
                     indexConfigStore, databaseSchemaState, legacyIndexTransactionOrdering, operationalMode );
 
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                    new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
-
             TransactionIdStore transactionIdStore = dependencies.resolveDependency( TransactionIdStore.class );
             LogVersionRepository logVersionRepository = dependencies.resolveDependency( LogVersionRepository.class );
             NeoStoreTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( storeDir, config, logProvider, scheduler, fs,
+                    buildTransactionLogs( logFiles, config, logProvider, scheduler, fs,
                             storageEngine, logEntryReader, legacyIndexTransactionOrdering,
                             transactionIdStore, logVersionRepository );
             transactionLogModule.satisfyDependencies(dependencies);
 
             buildRecovery( fs,
                     transactionIdStore,
-                    logVersionRepository,
+                    tailScanner,
                     monitors.newMonitor( Recovery.Monitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
-                    transactionLogModule.logFiles(), startupStatistics,
-                    storageEngine, logEntryReader, transactionLogModule.logicalTransactionStore()
+                    logFiles, startupStatistics,
+                    storageEngine, transactionLogModule.logicalTransactionStore()
             );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
@@ -558,7 +561,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return formats;
     }
 
-    private void upgradeStore( RecordFormats format )
+    private void upgradeStore( RecordFormats format, LogTailScanner tailScanner )
     {
         VisibleMigrationProgressMonitor progressMonitor =
                 new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigrator.class ) );
@@ -570,7 +573,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 schemaIndexProviderMap,
                 indexProviders,
                 pageCache,
-                format ).migrate( storeDir );
+                format, tailScanner ).migrate( storeDir );
     }
 
     private StorageEngine buildStorageEngine(
@@ -596,7 +599,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     private NeoStoreTransactionLogModule buildTransactionLogs(
-            File storeDir,
+            PhysicalLogFiles logFiles,
             Config config,
             LogProvider logProvider,
             JobScheduler scheduler,
@@ -607,8 +610,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
         LogHeaderCache logHeaderCache = new LogHeaderCache( 1000 );
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME,
-                fileSystemAbstraction );
 
         final PhysicalLogFile logFile = life.add( new PhysicalLogFile( fileSystemAbstraction, logFiles,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
@@ -682,20 +683,17 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private void buildRecovery(
             final FileSystemAbstraction fileSystemAbstraction,
             TransactionIdStore transactionIdStore,
-            LogVersionRepository logVersionRepository,
+            LogTailScanner tailScanner,
             Recovery.Monitor recoveryMonitor,
             PositionToRecoverFrom.Monitor positionMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             LogicalTransactionStore logicalTransactionStore )
     {
-        final LogTailScanner logTailScanner =
-                new LogTailScanner( logFiles, fileSystemAbstraction, logEntryReader );
-        Recovery.SPI spi = new DefaultRecoverySPI(
-                storageEngine, logFiles, fileSystemAbstraction, logVersionRepository,
-                logTailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
+        Recovery.SPI spi =
+                new DefaultRecoverySPI( storageEngine, logFiles, fileSystemAbstraction, tailScanner, transactionIdStore,
+                        logicalTransactionStore, positionMonitor );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
         monitors.addMonitorListener( new Recovery.Monitor()
         {

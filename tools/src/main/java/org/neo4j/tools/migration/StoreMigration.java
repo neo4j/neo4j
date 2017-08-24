@@ -46,9 +46,23 @@ import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
+=======
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+>>>>>>> LogTailScanner updated
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.spi.legacyindex.IndexProviders;
@@ -120,6 +134,9 @@ public class StoreMigration
                     kernelContext, GraphDatabaseDependencies.newDependencies().kernelExtensions(),
                     deps, ignore() ) );
 
+            final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+
             // Add the kernel store migrator
             life.start();
 
@@ -132,8 +149,12 @@ public class StoreMigration
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
                     schemaIndexProviderMap, legacyIndexProvider.getIndexProviders(),
-                    pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ) );
+                    pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
             migrator.migrate( storeDirectory );
+
+            // Append checkpoint so the last log entry will have the latest version
+            appendCheckpoint( fs, storeDirectory, pageCache, logFiles, tailScanner );
+
             long duration = System.currentTimeMillis() - startTime;
             log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
@@ -147,9 +168,28 @@ public class StoreMigration
         }
     }
 
+    private void appendCheckpoint( FileSystemAbstraction fs, File storeDirectory, PageCache pageCache,
+            PhysicalLogFiles logFiles, LogTailScanner tailScanner ) throws IOException
+    {
+        ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( pageCache, storeDirectory );
+        ReadOnlyTransactionIdStore
+                readOnlyTransactionIdStore = new ReadOnlyTransactionIdStore( pageCache, storeDirectory );
+        PhysicalLogFile logFile = new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
+                () -> readOnlyTransactionIdStore.getLastClosedTransactionId() - 1, logVersionRepository,
+                PhysicalLogFile.NO_MONITOR,
+                new LogHeaderCache( 10 ) );
+
+        try ( Lifespan lifespan = new Lifespan( logFile ) )
+        {
+            FlushablePositionAwareChannel writer = logFile.getWriter();
+            TransactionLogWriter transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( writer ) );
+            transactionLogWriter.checkPoint( tailScanner.getTailInformation().lastCheckPoint.getLogPosition() );
+            writer.prepareForFlush().flush();
+        }
+    }
+
     private class LegacyIndexProvider implements IndexProviders
     {
-
         private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
 
         public Map<String,IndexImplementation> getIndexProviders()

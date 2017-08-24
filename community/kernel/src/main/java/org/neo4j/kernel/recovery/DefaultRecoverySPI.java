@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -42,7 +41,6 @@ import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
 public class DefaultRecoverySPI implements Recovery.SPI
 {
-    private final LogVersionRepository logVersionRepository;
     private final PositionToRecoverFrom positionToRecoverFrom;
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fs;
@@ -53,14 +51,13 @@ public class DefaultRecoverySPI implements Recovery.SPI
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
             PhysicalLogFiles logFiles, FileSystemAbstraction fs,
-            LogVersionRepository logVersionRepository, LogTailScanner logTailScanner,
+            LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
             PositionToRecoverFrom.Monitor monitor )
     {
         this.storageEngine = storageEngine;
         this.logFiles = logFiles;
         this.fs = fs;
-        this.logVersionRepository = logVersionRepository;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.positionToRecoverFrom = new PositionToRecoverFrom( logTailScanner, monitor );
@@ -69,7 +66,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public LogPosition getPositionToRecoverFrom() throws IOException
     {
-        return positionToRecoverFrom.apply( logVersionRepository.getCurrentLogVersion() );
+        return positionToRecoverFrom.get();
     }
 
     @Override

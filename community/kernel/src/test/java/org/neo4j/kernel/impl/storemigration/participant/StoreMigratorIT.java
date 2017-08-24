@@ -33,9 +33,7 @@ import java.util.function.Function;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
@@ -50,6 +48,10 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,7 +72,6 @@ public class StoreMigratorIT
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( pageCacheRule );
 
-    private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private final FileSystemAbstraction fs = fileSystemRule.get();
 
     @Parameterized.Parameter( 0 )
@@ -109,8 +110,9 @@ public class StoreMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                selectFormat() );
+        LogTailScanner tailScanner = getTailScanner( storeDirectory );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ),
+                selectFormat(), tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -149,8 +151,9 @@ public class StoreMigratorIT
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         LogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                selectFormat() );
+        LogTailScanner tailScanner = getTailScanner( storeDirectory );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ),
+                selectFormat(), tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -187,8 +190,9 @@ public class StoreMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -224,8 +228,9 @@ public class StoreMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -251,8 +256,9 @@ public class StoreMigratorIT
         // and a state of the migration saying that it has done the actual migration
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
+        LogTailScanner tailScanner = getTailScanner( storeDirectory );
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ), selectFormat() );
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -266,6 +272,12 @@ public class StoreMigratorIT
 
         // then
         assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationDir ) ) );
+    }
+
+    private LogTailScanner getTailScanner( File storeDirectory )
+    {
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
+        return new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
     }
 
     private RecordFormats selectFormat()

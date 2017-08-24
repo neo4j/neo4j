@@ -138,17 +138,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner finder = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 private int nr;
 
@@ -241,17 +241,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner finder = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
@@ -379,17 +379,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner finder = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()

@@ -54,6 +54,9 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -101,12 +104,14 @@ public class StoreMigrationIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File dir = TestDirectory.testDirectory( StoreMigrationIT.class ).prepareDirectoryForTest( "migration" );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
         List<Object[]> data = new ArrayList<>();
         ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
         RecordFormatSelector.allFormats().forEach( ( f ) -> addIfNotThere( f, recordFormatses ) );
         for ( RecordFormats toFormat : recordFormatses )
         {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, storeVersionCheck, toFormat );
+            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner );
             for ( RecordFormats fromFormat : recordFormatses )
             {
                 File db = new File( dir, baseDirName( toFormat, fromFormat ) );

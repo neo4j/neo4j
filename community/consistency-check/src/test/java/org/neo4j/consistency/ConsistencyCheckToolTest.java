@@ -191,7 +191,7 @@ public class ConsistencyCheckToolTest
             tx.success();
         }
 
-        fs.snapshot( () -> db.shutdown() );
+        fs.snapshot( db::shutdown );
     }
 
     private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )

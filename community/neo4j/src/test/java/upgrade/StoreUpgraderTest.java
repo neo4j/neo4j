@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -60,6 +61,9 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -114,9 +118,7 @@ public class StoreUpgraderTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Arrays.asList(
-                StandardV2_3.STORE_VERSION
-        );
+        return Collections.singletonList( StandardV2_3.STORE_VERSION );
     }
 
     @Before
@@ -133,9 +135,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" );
 
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         try
         {
@@ -158,9 +158,7 @@ public class StoreUpgraderTest
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         try
         {
@@ -185,9 +183,7 @@ public class StoreUpgraderTest
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         try
         {
@@ -206,9 +202,7 @@ public class StoreUpgraderTest
     public void shouldContinueMovingFilesIfUpgradeCancelledWhileMoving() throws Exception
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         String versionToMigrateTo = upgradableDatabase.currentVersion();
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( dbDirectory ).storeVersion();
@@ -257,9 +251,7 @@ public class StoreUpgraderTest
         // Given
         fileSystem.deleteFile( new File( dbDirectory, INTERNAL_LOG_FILE ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
@@ -284,9 +276,7 @@ public class StoreUpgraderTest
         // Given
         fileSystem.deleteFile( new File( dbDirectory, INTERNAL_LOG_FILE ) );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         // When
         newUpgrader( upgradableDatabase, allowMigrateConfig, pageCache ).migrateIfNeeded( dbDirectory );
@@ -300,8 +290,7 @@ public class StoreUpgraderTest
     {
         // Given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem, new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
 
         // When
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -328,9 +317,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
 
         // When
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats() );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         storeUpgrader.migrateIfNeeded( dbDirectory );
 
@@ -342,6 +329,15 @@ public class StoreUpgraderTest
             File databaseDirectory ) throws IOException
     {
         prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, databaseDirectory );
+    }
+
+    private UpgradableDatabase getUpgradableDatabase( PageCache pageCache )
+    {
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dbDirectory, fileSystem );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
+        return new UpgradableDatabase(
+                new StoreVersionCheck( pageCache ),
+                getRecordFormats(), tailScanner );
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )
@@ -389,11 +385,6 @@ public class StoreUpgraderTest
         upgrader.addParticipant( defaultMigrator );
         upgrader.addParticipant( countsMigrator );
         return upgrader;
-    }
-
-    private static <T extends Throwable> void sneakyThrow( Throwable throwable ) throws T
-    {
-        throw (T) throwable;
     }
 
     private List<File> migrationHelperDirs()

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -45,6 +46,7 @@ public class LogTailScanner
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private LogTailInformation logTailInformation;
 
     public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
@@ -54,8 +56,9 @@ public class LogTailScanner
         this.logEntryReader = logEntryReader;
     }
 
-    public LogTailInformation find( long fromVersionBackwards ) throws IOException
+    private LogTailInformation update() throws IOException
     {
+        final long fromVersionBackwards = logFiles.getHighestLogVersion();
         long version = fromVersionBackwards;
         long versionToSearchForCommits = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
@@ -110,8 +113,8 @@ public class LogTailScanner
                         }
                     }
 
-                    // Collect data about latest entry version
-                    if ( latestLogEntryVersion == null || version == versionToSearchForCommits )
+                    // Collect data about latest entry version, only in first log file
+                    if ( version == versionToSearchForCommits || latestLogEntryVersion == null )
                     {
                         latestLogEntryVersion = entry.getVersion();
                     }
@@ -139,7 +142,7 @@ public class LogTailScanner
                 : LogTailInformation.NO_TRANSACTION_ID;
 
         return new LogTailInformation( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound,
-                latestLogEntryVersion );
+                fromVersionBackwards, latestLogEntryVersion );
     }
 
     protected LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
@@ -167,7 +170,7 @@ public class LogTailScanner
                 ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
                 : LogTailInformation.NO_TRANSACTION_ID;
         return new LogTailInformation( latestCheckPoint, startEntryAfterCheckPoint,
-                firstTxIdAfterCheckPoint, oldestVersionFound, latestLogEntryVersion );
+                firstTxIdAfterCheckPoint, oldestVersionFound, fromVersionBackwards, latestLogEntryVersion );
     }
 
     /**
@@ -217,6 +220,34 @@ public class LogTailScanner
         return LogTailInformation.NO_TRANSACTION_ID;
     }
 
+    /**
+     * Collects information about the tail of the transaction log, i.e. last checkpoint, last entry etc.
+     * Since this is an expensive task we do it once and reuse the result. This method is thus lazy and the first one
+     * calling it will take the hit.
+     * <p>
+     * This is only intended to be used during startup. If you need to track the state of the tail, that can be done more
+     * efficiently at runtime, and this method should then only be used to restore said state.
+     *
+     * @return snapshot of the state of the transaction logs tail at startup.
+     * @throws UnderlyingStorageException if any errors occurs while parsing the transaction logs
+     */
+    public LogTailInformation getTailInformation() throws UnderlyingStorageException
+    {
+        if ( logTailInformation == null )
+        {
+            try
+            {
+                logTailInformation = update();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Error encountered while parsing transaction logs", e );
+            }
+        }
+
+        return logTailInformation;
+    }
+
     public static class LogTailInformation
     {
         public static long NO_TRANSACTION_ID = -1;
@@ -225,63 +256,18 @@ public class LogTailScanner
         public final boolean commitsAfterLastCheckPoint;
         public final long firstTxIdAfterLastCheckPoint;
         public final long oldestLogVersionFound;
+        public final long currentLogVersion;
         public final LogEntryVersion latestLogEntryVersion;
 
         public LogTailInformation( CheckPoint lastCheckPoint, boolean commitsAfterLastCheckPoint,
-                long firstTxIdAfterLastCheckPoint, long oldestLogVersionFound, LogEntryVersion latestLogEntryVersion )
+                long firstTxIdAfterLastCheckPoint, long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion )
         {
             this.lastCheckPoint = lastCheckPoint;
             this.commitsAfterLastCheckPoint = commitsAfterLastCheckPoint;
             this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
             this.oldestLogVersionFound = oldestLogVersionFound;
+            this.currentLogVersion = currentLogVersion;
             this.latestLogEntryVersion = latestLogEntryVersion;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            LogTailInformation that = (LogTailInformation) o;
-
-            return commitsAfterLastCheckPoint == that.commitsAfterLastCheckPoint &&
-                   firstTxIdAfterLastCheckPoint == that.firstTxIdAfterLastCheckPoint &&
-                   oldestLogVersionFound == that.oldestLogVersionFound &&
-                   (lastCheckPoint == null ? that.lastCheckPoint == null : lastCheckPoint
-                           .equals( that.lastCheckPoint )) &&
-                    latestLogEntryVersion.equals( that.latestLogEntryVersion );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = lastCheckPoint != null ? lastCheckPoint.hashCode() : 0;
-            result = 31 * result + (commitsAfterLastCheckPoint ? 1 : 0);
-            if ( commitsAfterLastCheckPoint )
-            {
-                result = 31 * result + Long.hashCode( firstTxIdAfterLastCheckPoint );
-            }
-            result = 31 * result + Long.hashCode( oldestLogVersionFound );
-            result = 31 * result + latestLogEntryVersion.hashCode();
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "LogTailInformation{" +
-                   "lastCheckPoint=" + lastCheckPoint +
-                   ", commitsAfterLastCheckPoint=" + commitsAfterLastCheckPoint +
-                   (commitsAfterLastCheckPoint ? ", firstTxIdAfterLastCheckPoint=" + firstTxIdAfterLastCheckPoint : "") +
-                   ", oldestLogVersionFound=" + oldestLogVersionFound +
-                   '}';
         }
     }
 }

@@ -111,7 +111,6 @@ public class TransactionLogCatchUpWriterTest
         // then
         verifyTransactionsInLog( fromTxId, endTxId );
         verifyCheckpointInLog(); // necessary for recovery
-
     }
 
     private void verifyCheckpointInLog() throws IOException
@@ -122,9 +121,9 @@ public class TransactionLogCatchUpWriterTest
         final LogTailScanner logTailScanner =
                 new LogTailScanner( logFiles, fs, logEntryReader );
 
-        LogTailScanner.LogTailInformation checkPoint = logTailScanner.find( 0 );
-        assertNotNull( checkPoint.lastCheckPoint );
-        assertTrue( checkPoint.commitsAfterLastCheckPoint );
+        LogTailScanner.LogTailInformation tailInformation = logTailScanner.getTailInformation();
+        assertNotNull( tailInformation.lastCheckPoint );
+        assertTrue( tailInformation.commitsAfterLastCheckPoint );
     }
 
     private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException

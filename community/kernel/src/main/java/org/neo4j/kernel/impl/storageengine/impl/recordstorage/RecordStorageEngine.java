@@ -110,7 +110,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -153,7 +152,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IdOrderingQueue legacyIndexTransactionOrdering;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
-    private final CommandReaderFactory commandReaderFactory;
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final IndexStoreView indexStoreView;
     private final LegacyIndexProviderLookup legacyIndexProviderLookup;
@@ -241,7 +239,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
-            commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             // Immutable state for creating/applying commands
@@ -274,12 +271,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
-    }
-
-    @Override
-    public CommandReaderFactory commandReaderFactory()
-    {
-        return commandReaderFactory;
     }
 
     @SuppressWarnings( "resource" )

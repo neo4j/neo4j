@@ -37,17 +37,34 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion.CURREN
 public class LogEntryWriter
 {
     private final FlushableChannel channel;
+    private final LogEntryVersion version;
     private final Visitor<StorageCommand,IOException> serializer;
 
+    /**
+     * Create a writer that uses {@link LogEntryVersion#CURRENT} for versioning.
+     * @param channel underlying channel
+     */
     public LogEntryWriter( FlushableChannel channel )
     {
+        this(channel, CURRENT );
+    }
+
+    /**
+     * Create a writer that uses a different version than {@link LogEntryVersion#CURRENT}. Useful when writing test for
+     * migration/upgrade scenarios.
+     * @param channel underlying channel
+     * @param version version to put in the header
+     */
+    public LogEntryWriter( FlushableChannel channel, LogEntryVersion version )
+    {
         this.channel = channel;
+        this.version = version;
         this.serializer = new StorageCommandSerializer( channel );
     }
 
     private void writeLogEntryHeader( byte type ) throws IOException
     {
-        channel.put( CURRENT.byteCode() ).put( type );
+        channel.put( version.byteCode() ).put( type );
     }
 
     public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
