@@ -13,8 +13,6 @@ Directed match on self-relationship graph, count
 Distinct on null
 Get rows in the middle by param
 Get rows in the middle
-Run coalesce
-Handling long chains of operators
 
 handling long chanins of operators
 Handle ORDER BY with LIMIT 1
@@ -106,8 +104,6 @@ Number-typed float comparison
 Any-typed string comparison
 Comparing nodes to nodes
 Comparing relationships to relationships
-Use dynamic property lookup based on parameters when there is rhs type information
-Use collection lookup based on parameters when there is rhs type information
 Fail at runtime when attempting to index with an Int into a Map
 Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
@@ -115,12 +111,7 @@ Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
 Functions should return null if they get path containing unbound
 `split()`
-`properties()` on a node
 `properties()` on a relationship
-`properties()` on a map
-`properties()` on null
-`reverse()`
-`exists()` with dynamic property lookup
 `exists()` with literal maps
 IS NOT NULL with literal maps
 `percentileDisc()`
@@ -131,13 +122,8 @@ IS NOT NULL with literal maps
 `type()` handling Any type
 `type()` failing on invalid arguments
 `labels()` in return clauses
-`labels()` should accept type Any
-`labels()` should accept type Any
-`labels()` should accept type Any
-`exists()` is case insensitive
 Find friends of others
 Should only join when matching
-Using `labels()` in return clauses
 Using `keys()` on a single node, non-empty result
 Using `keys()` on multiple nodes, non-empty result
 Using `keys()` on a single node, empty result
@@ -145,16 +131,11 @@ Using `keys()` on an optionally matched node
 Using `keys()` on a relationship, non-empty result
 Using `keys()` on a relationship, empty result
 Using `keys()` on an optionally matched relationship
-Using `keys()` on a literal map
-Using `keys()` on a parameter map
 Adding a single label
 Ignore space before colon
 Adding multiple labels
 Ignoring intermediate whitespace 1
 Ignoring intermediate whitespace 2
-Creating node without label
-Creating node with two labels
-Ignore space when creating node with labels
 Create node with label in pattern
 Removing a label
 Removing a non-existent label
@@ -174,7 +155,6 @@ Return a var length path
 Return a var length path of length zero
 Return a named var length path of length zero
 Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false
-Do not fail when evaluating predicates with illegal operations if the OR'd predicate evaluates to true
 Fail when comparing strings and integers using > in an AND'd predicate
 Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
@@ -213,7 +193,6 @@ Named path with WITH
 Named path with alternating directed/undirected relationships
 Named path with multiple alternating directed/undirected relationships
 Named path with undirected fixed variable length pattern
-Variable length relationship variables are lists of relationships
 Variable length patterns and nulls
 Respecting direction when matching existing path
 Respecting direction when matching non-existent path
@@ -272,8 +251,6 @@ Remove multiple relationship properties
 Remove a missing property should be a valid operation
 Sort on aggregated function
 Count star should count everything in scope
-Absolute function
-Return collection size
 Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
@@ -284,13 +261,10 @@ Ordering with aggregation
 Return all variables
 Setting and returning the size of a list property
 Setting and returning the size of a list property
-`sqrt()` returning float values
 Arithmetic expressions inside aggregation
 Matching and disregarding output, then matching again
-Returning an expression
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
-`substring()` with default second argument
 Multiple aliasing and backreferencing
 Aggregating by a list property has a correct definition of equality
 Reusing variable names
@@ -319,40 +293,26 @@ Handling triadic friend of a friend that is a friend with same labels
 Handling triadic friend of a friend that is a friend with different labels
 Handling triadic friend of a friend that is a friend with implicit subset of labels
 Handling triadic friend of a friend that is a friend with implicit superset of labels
-`toBoolean()` on valid literal string
-`toBoolean()` on booleans
-`toBoolean()` on variables with valid string values
-`toBoolean()` on invalid strings
 `toBoolean()` on invalid types
 `toInteger()`
-`toInteger()` on float
-`toInteger()` returning null on non-numerical string
 `toInteger()` handling mixed number types
 `toInteger()` handling Any type
 `toInteger()` on a list of strings
-`toInteger()` on a complex-typed expression
 `toInteger()` failing on invalid arguments
 `toFloat()`
 `toFloat()` on mixed number types
-`toFloat()` returning null on non-numerical string
 `toFloat()` handling Any type
 `toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
 `toString()`
-`toString()` handling boolean properties
-`toString()` handling inlined boolean
-`toString()` handling boolean literal
 `toString()` should work on Any type
 `toString()` on a list of integers
 `toString()` failing on invalid arguments
-`toString()` should accept potentially correct types 1
-`toString()` should accept potentially correct types 2
 Should be able to create text output from union queries
 Two elements, both unique, not distinct
 Two elements, both unique, distinct
 Three elements, two unique, distinct
 Three elements, two unique, not distinct
-Unwinding a range
 Unwinding a collected unwound expression
 Unwinding a collected expression
 Creating nodes from an unwound parameter list
@@ -433,8 +393,6 @@ Updating one property with ON CREATE
 Null-setting one property with ON CREATE
 Copying properties from node with ON CREATE
 Copying properties from node with ON MATCH
-Copying properties from literal map with ON CREATE
-Copying properties from literal map with ON MATCH
 Merge node when no nodes exist
 Merge node with label
 Merge node with label add label on create
@@ -528,8 +486,6 @@ Do not fail when predicates on optionally matched and missed nodes are invalid
 
 Many CREATE clauses
 
-Comparing strings and integers using > in an AND'd predicate
-Comparing strings and integers using > in a OR'd predicate
 Comparing across types yields null, except numbers
 
 `labels()` failing on invalid arguments
