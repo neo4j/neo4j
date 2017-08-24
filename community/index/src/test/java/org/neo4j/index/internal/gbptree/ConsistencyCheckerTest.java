@@ -135,4 +135,8 @@ public class ConsistencyCheckerTest
             assertThat( e.getMessage(), containsString( "unused pages" ) );
         }
     }
+
+    // TODO unexpected key count
+    // TODO keys out of order
+    // TODO non-unique keys
 }
