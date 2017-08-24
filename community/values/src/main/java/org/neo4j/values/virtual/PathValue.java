@@ -104,18 +104,22 @@ public final class PathValue extends VirtualValue
 
         PathValue otherPath = (PathValue) other;
 
-        int x = Integer.compare( edges.length, otherPath.edges.length );
+        int x = nodes[0].compareTo( otherPath.nodes[0], comparator );
         if ( x == 0 )
         {
-            for ( int i = 0; i < edges.length; i++ )
+            int i = 0;
+            int length = Math.min( edges.length, otherPath.edges.length );
+
+            while ( x == 0 && i < length )
             {
                 x = edges[i].compareTo( otherPath.edges[i], comparator );
-                if ( x != 0 )
-                {
-                    return x;
-                }
+                ++i;
             }
-            x = nodes[0].compareTo( otherPath.nodes[0], comparator );
+
+            if ( x == 0 )
+            {
+                x = Integer.compare( edges.length, otherPath.edges.length );
+            }
         }
 
         return x;

@@ -104,16 +104,18 @@ public class AnyValueComparatorTest
 
             // Path
             path( nodes( 1L ), edges() ),
-            path( nodes( 2L ), edges() ),
-            path( nodes( 3L ), edges() ),
             path( nodes( 1L, 2L ), edges( 1L ) ),
-            path( nodes( 4L, 5L ), edges( 2L ) ),
-            path( nodes( 1L, 2L ), edges( 3L ) ), // non-zero length paths are ordered by edges,
             path( nodes( 1L, 2L, 3L ), edges( 1L, 2L ) ),
             path( nodes( 1L, 2L, 3L ), edges( 1L, 3L ) ),
-            path( nodes( 1L, 2L, 3L ), edges( 2L, 3L ) ),
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 3L, 4L ) ),
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 4L, 2L ) ),
+            path( nodes( 1L, 2L, 3L ), edges( 2L, 3L ) ),
+            path( nodes( 1L, 2L ), edges( 3L ) ),
+            path( nodes( 2L ), edges() ),
+            path( nodes( 2L, 1L ), edges( 1L ) ),
+            path( nodes( 3L ), edges() ),
+            path( nodes( 4L, 5L ), edges( 2L ) ),
+            path( nodes( 5L, 4L ), edges( 2L ) ),
 
             // SCALARS AND POINTS
 
