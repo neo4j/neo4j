@@ -54,18 +54,18 @@ public class ConsistencyCheckerTest
     @Rule
     public PageCacheAndDependenciesRule rule = new PageCacheAndDependenciesRule( config().withPageSize( pageSize ) );
 
-    private TreeNode<MutableLong,MutableLong> node;
-    private Layout<MutableLong,MutableLong> layout;
+    protected TreeNode<MutableLong,MutableLong> node;
+    protected Layout<MutableLong,MutableLong> layout;
     private SimpleIdProvider idProvider;
     private InternalTreeLogic<MutableLong,MutableLong> logic;
     private StructurePropagation<MutableLong> propagation;
     private final long oldStableGeneration = MIN_GENERATION;
-    private long stableGeneration = oldStableGeneration + 1;
+    protected long stableGeneration = oldStableGeneration + 1;
     private final long crashGeneration = stableGeneration + 1;
-    private long unstableGeneration = crashGeneration + 1;
+    protected long unstableGeneration = crashGeneration + 1;
     private long root;
     private PagedFile pagedFile;
-    private PageCursor cursor;
+    protected PageCursor cursor;
 
     @Before
     public void before() throws IOException
@@ -164,7 +164,7 @@ public class ConsistencyCheckerTest
             cc.checkSpace( cursor, idProvider.lastId(), PrimitiveLongCollections.emptyIterator() );
             fail( "Should have failed" );
         }
-        catch ( RuntimeException e )
+        catch ( TreeInconsistencyException e )
         {
             // THEN good
             assertThat( e.getMessage(), containsString( "unused pages" ) );
@@ -181,10 +181,10 @@ public class ConsistencyCheckerTest
         // when
         try
         {
-            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, stableGeneration );
+            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Unexpected main keyCount" ) );
@@ -202,10 +202,10 @@ public class ConsistencyCheckerTest
         // when
         try
         {
-            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, stableGeneration );
+            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Non-unique key 3" ) );
@@ -223,10 +223,10 @@ public class ConsistencyCheckerTest
         // when
         try
         {
-            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, stableGeneration );
+            new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Non-unique key 5" ) );
@@ -260,7 +260,7 @@ public class ConsistencyCheckerTest
             new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Sibling pointer does not align" ) );
@@ -292,7 +292,7 @@ public class ConsistencyCheckerTest
             new ConsistencyChecker<>( node, layout, unstableGeneration, unstableGeneration + 1 ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Sibling pointer generation differs" ) );
@@ -326,7 +326,7 @@ public class ConsistencyCheckerTest
             new ConsistencyChecker<>( node, layout, stableGeneration, unstableGeneration ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Sibling pointer does not align" ) );
@@ -358,7 +358,7 @@ public class ConsistencyCheckerTest
             new ConsistencyChecker<>( node, layout, unstableGeneration, unstableGeneration + 1 ).check( cursor, unstableGeneration );
             fail( "Should have failed" );
         }
-        catch ( CursorException e )
+        catch ( TreeInconsistencyException e )
         {
             // then
             assertThat( e.getMessage(), containsString( "Sibling pointer generation differs" ) );
