@@ -1119,12 +1119,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void dumpConfiguration( Map<String,String> config, PrintStream out )
     {
-        for ( String key : config.keySet() )
+        for ( Entry<String,String> entry : config.entrySet() )
         {
-            Object value = config.get( key );
-            if ( value != null )
+            if ( entry.getValue() != null )
             {
-                out.println( key + "=" + value );
+                out.println( entry.getKey() + "=" + entry.getValue() );
             }
         }
     }

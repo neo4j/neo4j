@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.function.IntPredicate;
-import java.util.stream.IntStream;
 
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.helpers.collection.Visitor;
@@ -36,29 +35,24 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 /**
- * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless lable scan store is empty or
- * explicitly told to use store in which cases it will fallback to whole store scan.
+ * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
+ * store is empty or explicitly told to use store in which cases it will fallback to whole store scan.
  */
 public class DynamicIndexStoreView implements IndexStoreView
 {
-    private static final int VISIT_ALL_NODES_THRESHOLD_PERCENTAGE =
-            FeatureToggles.getInteger( DynamicIndexStoreView.class, "all.nodes.visit.percentage.threshold", 10 );
     private static boolean USE_LABEL_INDEX_FOR_SCHEMA_INDEX_POPULATION = FeatureToggles.flag(
             DynamicIndexStoreView.class, "use.label.index", true );
 
     private final NeoStoreIndexStoreView neoStoreIndexStoreView;
     private final LabelScanStore labelScanStore;
     protected final LockService locks;
-    private final CountsTracker counts;
     private final Log log;
     protected final NodeStore nodeStore;
     protected final PropertyStore propertyStore;
@@ -70,7 +64,6 @@ public class DynamicIndexStoreView implements IndexStoreView
         this.propertyStore = neoStores.getPropertyStore();
         this.neoStoreIndexStoreView = neoStoreIndexStoreView;
         this.locks = locks;
-        this.counts = neoStores.getCounts();
         this.labelScanStore = labelScanStore;
         this.log = logProvider.getLog( getClass() );
     }
@@ -136,14 +129,6 @@ public class DynamicIndexStoreView implements IndexStoreView
     private boolean isEmptyLabelScanStore() throws Exception
     {
         return labelScanStore.isEmpty();
-    }
-
-    private long getNumberOfLabeledNodes( int[] labelIds )
-    {
-        return IntStream.of( labelIds )
-                .mapToLong( labelId -> counts.nodeCount( labelId, Registers.newDoubleLongRegister() ).readSecond() )
-                .reduce( Math::addExact )
-                .orElse( 0L );
     }
 
     @Override

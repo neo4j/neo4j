@@ -48,7 +48,8 @@ public class RecordStorageCommandReaderFactory implements CommandReaderFactory
         LogEntryVersion[] versions = LogEntryVersion.values();
         for ( LogEntryVersion version : versions )
         {
-            if ( version == null )
+            CommandReader versionReader = readers[abs( version.byteCode() )];
+            if ( versionReader == null )
             {
                 throw new IllegalStateException( "Version " + version + " not handled" );
             }
