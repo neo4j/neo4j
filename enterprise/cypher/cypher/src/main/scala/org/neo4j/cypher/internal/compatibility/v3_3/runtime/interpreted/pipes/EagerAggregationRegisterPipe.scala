@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import java.util
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
@@ -27,16 +29,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWit
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
-
-import scala.collection.immutable
-import scala.collection.mutable.{Map => MutableMap}
-
-/*
-grouping values are all longs
-RETURN n, count(*)
- */
-
-import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
@@ -54,7 +46,7 @@ case class EagerAggregationRegisterPipe(source: Pipe,
     (a.toIndexedSeq, b.toIndexedSeq)
   }
 
-  private val expressionOrder: immutable.Seq[(Int, Expression)] = groupingExpressions.toIndexedSeq
+  private val expressionOrder: Seq[(Int, Expression)] = groupingExpressions.toIndexedSeq
 
   val groupingFunction: (ExecutionContext, QueryState) => AnyValue = {
     groupingExpressions.size match {
@@ -95,7 +87,7 @@ case class EagerAggregationRegisterPipe(source: Pipe,
       case _ =>
         val listOfValues = groupingKey.asInstanceOf[ListValue]
         for (i <- 0 until groupingExpressions.size) {
-          val (k, v) = expressionOrder(i)
+          val (k, _) = expressionOrder(i)
           val value: AnyValue = listOfValues.value(i)
           context.setRefAt(k, value)
         }
@@ -104,45 +96,62 @@ case class EagerAggregationRegisterPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    implicit val s = state
-
-    val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
-
-    // Used when we have no input and no grouping expressions. In this case, we'll return a single row
-    def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
-      val context = PrimitiveExecutionContext(pipelineInformation)
-      val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
-        .map(_._2.createAggregationFunction.result)
-
-      aggregationOffsetsAndFunctions.toMap.foreach {
-        case (offset, zeroValue) => context.setRefAt(offset, zeroValue)
-      }
-      Iterator.single(context)
-    }
-
-    def writeAggregationResultToContext(groupingKey: AnyValue, aggregator: Seq[AggregationFunction]): ExecutionContext = {
-      val context = PrimitiveExecutionContext(pipelineInformation)
-      addGroupingValuesToResult(context, groupingKey)
-      (aggregationOffsets zip aggregator.map(_.result)).foreach {
-        case (offset, value) => context.setRefAt(offset, value)
-      }
-      context
-    }
+    val result = new util.HashMap[AnyValue, Seq[AggregationFunction]]()
 
     // Consume all input and aggregate
-    input.foreach(ctx => {
-      val groupingValue: AnyValue = groupingFunction(ctx, state)
-      val functions = result.getOrElseUpdate(groupingValue, aggregationFunctions.map(_.createAggregationFunction))
-      functions.foreach(func => func(ctx)(state))
-    })
+    input.foreach { row =>
+      aggregateOnInputRow(state, result, row)
+    }
 
-    // Write the produced aggregation map to the output pipeline
     if (result.isEmpty && groupingExpressions.isEmpty) {
-      createEmptyResult(state.params)
+      createEmptyResult(state.params, state)
+    } else
+      produceResultFromMap(result, state)
+  }
+
+  // Used when we have no input and no grouping expressions. In this case, we'll return a single row
+  private def createEmptyResult(params: Map[String, Any], queryState: QueryState): Iterator[ExecutionContext] = {
+    val context = PrimitiveExecutionContext(pipelineInformation)
+    val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
+      .map(_._2.createAggregationFunction.result(queryState))
+
+    aggregationOffsetsAndFunctions.toMap.foreach {
+      case (offset, zeroValue) => context.setRefAt(offset, zeroValue)
+    }
+    Iterator.single(context)
+  }
+
+
+  private def aggregateOnInputRow(state: QueryState,
+                                  result: util.HashMap[AnyValue, Seq[AggregationFunction]],
+                                  ctx: ExecutionContext): Unit = {
+    val groupingValue: AnyValue = groupingFunction(ctx, state)
+    val functions = if (result.containsKey(groupingValue)) {
+      result.get(groupingValue)
     } else {
-      result.map {
-        case (key, aggregator) => writeAggregationResultToContext(key, aggregator)
-      }.toIterator
+      val t = aggregationFunctions.map(_.createAggregationFunction)
+      result.put(groupingValue, t)
+      t
+    }
+    functions.foreach(func => func(ctx)(state))
+  }
+
+  private def produceResultFromMap(result: util.HashMap[AnyValue, Seq[AggregationFunction]], queryState: QueryState) = {
+    new Iterator[ExecutionContext] {
+      private val inner = result.entrySet().iterator()
+
+      override def hasNext: Boolean = inner.hasNext
+
+      override def next(): ExecutionContext = {
+        val mapEntry = inner.next()
+        val context = PrimitiveExecutionContext(pipelineInformation)
+        addGroupingValuesToResult(context, mapEntry.getKey)
+        val aggregationResults = mapEntry.getValue.map(function => function.result(queryState))
+        (aggregationOffsets zip aggregationResults).foreach {
+          case (offset: Int, value: AnyValue) => context.setRefAt(offset, value)
+        }
+        context
+      }
     }
   }
 }
