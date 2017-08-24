@@ -437,19 +437,19 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val arg = Argument(Set(x))(solved)()
     val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
-    val semiApply = semiApplyBuilder(lhs,rhs)(solved)
+    val semiApply = semiApplyBuilder(lhs, rhs)(solved)
     val allocations = RegisterAllocation.allocateRegisters(semiApply)
 
     val lhsPipeline = PipelineInformation(Map(
-    "x" -> LongSlot(0, nullable = false, CTNode, "x")),
-    numberOfLongs = 1, numberOfReferences = 0)
+      "x" -> LongSlot(0, nullable = false, CTNode, "x")),
+                                          numberOfLongs = 1, numberOfReferences = 0)
 
     val argumentSide = lhsPipeline
 
     val rhsPipeline = PipelineInformation(Map(
-    "x" -> LongSlot(0, nullable = false, CTNode, "x"),
-    "y" -> LongSlot(2, nullable = false, CTNode, "y"),
-    "r" -> LongSlot(1, nullable = false, CTRelationship, "r")
+      "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+      "y" -> LongSlot(2, nullable = false, CTNode, "y"),
+      "r" -> LongSlot(1, nullable = false, CTRelationship, "r")
     ), numberOfLongs = 3, numberOfReferences = 0)
 
     allocations should have size 4
@@ -457,6 +457,38 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(lhs) should equal(lhsPipeline)
     allocations(rhs) should equal(rhsPipeline)
     allocations(arg) should equal(argumentSide)
+  }
 
+  test("should allocate aggregation") {
+    // Given MATCH (x)-[r:R]->(y) RETURN x, x.prop, count(r.prop)
+    val labelScan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val expand = Expand(labelScan, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+    val grouping = Map(
+      "x" -> varFor("x"),
+      "x.prop" -> prop("x", "prop")
+    )
+    val aggregations = Map(
+      "count(r.prop)" -> FunctionInvocation(FunctionName("count")(pos), prop("r", "prop"))(pos)
+    )
+    val aggregation = Aggregation(expand, grouping, aggregations)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(aggregation)
+
+    allocations should have size 3
+    allocations(expand) should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = false, CTRelationship, "r"),
+        "y" -> LongSlot(2, nullable = false, CTNode, "y")
+        ), numberOfLongs = 3, numberOfReferences = 0)
+    )
+    allocations(aggregation) should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "x.prop" -> RefSlot(0, nullable = true, CTAny, "x.prop"),
+        "count(r.prop)" -> RefSlot(1, nullable = true, CTAny, "count(r.prop)")
+        ), numberOfLongs = 1, numberOfReferences = 2)
+    )
   }
 }
