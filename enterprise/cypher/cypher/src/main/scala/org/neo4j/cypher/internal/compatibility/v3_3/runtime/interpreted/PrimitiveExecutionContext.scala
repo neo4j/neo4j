@@ -24,18 +24,18 @@ import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0,0))
+  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
 }
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
 
   private val longs = new Array[Long](pipeline.numberOfLongs)
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
-  
+
   override def copyTo(target: ExecutionContext): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
       if (pipeline.numberOfLongs > otherPipeline.initialNumberOfLongs ||
-          pipeline.numberOfReferences > otherPipeline.initialNumberOfReferences)
+        pipeline.numberOfReferences > otherPipeline.initialNumberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
         System.arraycopy(longs, 0, other.longs, 0, pipeline.numberOfLongs)
