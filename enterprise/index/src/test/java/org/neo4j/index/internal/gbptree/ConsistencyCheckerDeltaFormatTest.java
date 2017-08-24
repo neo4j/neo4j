@@ -28,8 +28,6 @@ import static org.junit.Assert.fail;
 
 public class ConsistencyCheckerDeltaFormatTest extends ConsistencyCheckerTest
 {
-    // tests to add for delta format
-
     @Test
     public void shouldDetectOutOfOrderDeltaKeys() throws Exception
     {

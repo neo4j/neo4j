@@ -24,12 +24,12 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class TreeNodeV3Test extends TreeNodeTestBase
+public class TreeNodeDeltaTest extends TreeNodeTestBase
 {
     @Override
     protected TreeNode<MutableLong,MutableLong> instantiateTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
     {
-        return new TreeNodeV3<>( pageSize, layout );
+        return new TreeNodeDelta<>( pageSize, layout );
     }
 
     @Test

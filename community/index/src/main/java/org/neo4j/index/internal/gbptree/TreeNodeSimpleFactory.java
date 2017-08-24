@@ -20,23 +20,23 @@
 package org.neo4j.index.internal.gbptree;
 
 /**
- * Loads {@link TreeNodeV2} instances.
+ * Loads {@link TreeNodeSimple} instances.
  */
-public class TreeNodeV2Factory extends TreeNodeFactory
+public class TreeNodeSimpleFactory extends TreeNodeFactory
 {
     static final int PRIORITY = 1;
 
     /**
-     * Loads {@link TreeNodeV2} instances.
+     * Loads {@link TreeNodeSimple} instances.
      */
-    public TreeNodeV2Factory()
+    public TreeNodeSimpleFactory()
     {
-        super( TreeNodeV2Factory.class.getName(), TreeNodeV2.FORMAT_IDENTIFIER, TreeNodeV2.FORMAT_VERSION, PRIORITY );
+        super( TreeNodeSimpleFactory.class.getName(), TreeNodeSimple.FORMAT_IDENTIFIER, TreeNodeSimple.FORMAT_VERSION, PRIORITY );
     }
 
     @Override
     <KEY, VALUE> TreeNode<KEY,VALUE> instantiate( int pageSize, Layout<KEY,VALUE> layout )
     {
-        return new TreeNodeV2<>( pageSize, layout );
+        return new TreeNodeSimple<>( pageSize, layout );
     }
 }

@@ -63,7 +63,7 @@ public class InternalTreeLogicTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV2<>( pageSize, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeSimple<>( pageSize, layout );
     private final Section<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
 

@@ -21,11 +21,11 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class TreeNodeV2Test extends TreeNodeTestBase
+public class TreeNodeSimpleTest extends TreeNodeTestBase
 {
     @Override
     protected TreeNode<MutableLong,MutableLong> instantiateTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
     {
-        return new TreeNodeV2<>( pageSize, layout );
+        return new TreeNodeSimple<>( pageSize, layout );
     }
 }

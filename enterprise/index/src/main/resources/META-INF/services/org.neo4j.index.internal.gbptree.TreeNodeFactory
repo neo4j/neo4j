@@ -1,1 +1,1 @@
-org.neo4j.index.internal.gbptree.TreeNodeV3Factory
+org.neo4j.index.internal.gbptree.TreeNodeDeltaFactory

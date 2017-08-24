@@ -68,7 +68,7 @@ public class SeekCursorTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV2<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeSimple<>( PAGE_SIZE, layout );
     private final Section<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =

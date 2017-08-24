@@ -19,18 +19,18 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-public class TreeNodeV3Factory extends TreeNodeFactory
+public class TreeNodeDeltaFactory extends TreeNodeFactory
 {
-    private static final int PRIORITY = TreeNodeV2Factory.PRIORITY + 1;
+    private static final int PRIORITY = TreeNodeSimpleFactory.PRIORITY + 1;
 
-    public TreeNodeV3Factory()
+    public TreeNodeDeltaFactory()
     {
-        super( TreeNodeV3Factory.class.getName(), TreeNodeV3.FORMAT_IDENTIFIER, TreeNodeV3.FORMAT_VERSION, PRIORITY );
+        super( TreeNodeDeltaFactory.class.getName(), TreeNodeDelta.FORMAT_IDENTIFIER, TreeNodeDelta.FORMAT_VERSION, PRIORITY );
     }
 
     @Override
     <KEY, VALUE> TreeNode<KEY,VALUE> instantiate( int pageSize, Layout<KEY,VALUE> layout )
     {
-        return new TreeNodeV3<>( pageSize, layout );
+        return new TreeNodeDelta<>( pageSize, layout );
     }
 }
