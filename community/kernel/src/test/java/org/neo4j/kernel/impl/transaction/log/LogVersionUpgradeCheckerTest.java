@@ -43,7 +43,7 @@ public class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "false") );
+        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
     }
 
     @Test
@@ -53,7 +53,7 @@ public class LogVersionUpgradeCheckerTest
 
         expect.expect( UpgradeNotAllowedByConfigurationException.class );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "false") );
+        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
     }
 
     @Test
@@ -61,7 +61,7 @@ public class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true") );
+        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }
 
     @Test
@@ -69,7 +69,7 @@ public class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true") );
+        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }
 
     private static class OnlyVersionTailInformation extends LogTailScanner.LogTailInformation

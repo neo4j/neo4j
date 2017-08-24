@@ -41,7 +41,7 @@ public class LogVersionUpgradeChecker
 
     public static void check( LogTailScanner tailScanner, Config config ) throws UpgradeNotAllowedByConfigurationException
     {
-        if ( !config.get( GraphDatabaseSettings.allow_store_upgrade ) )
+        if ( !config.get( GraphDatabaseSettings.allow_upgrade ) )
         {
             // The user doesn't want us to upgrade the store.
             LogEntryVersion latestLogEntryVersion = tailScanner.getTailInformation().latestLogEntryVersion;

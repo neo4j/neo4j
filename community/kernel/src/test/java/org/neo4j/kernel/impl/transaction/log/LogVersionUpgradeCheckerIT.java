@@ -66,7 +66,7 @@ public class LogVersionUpgradeCheckerIT
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "false" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
     }
@@ -82,7 +82,7 @@ public class LogVersionUpgradeCheckerIT
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "false" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "false" )
                 .newGraphDatabase();
         db.shutdown();
     }
@@ -96,7 +96,7 @@ public class LogVersionUpgradeCheckerIT
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() )
                 .newImpermanentDatabaseBuilder( storeDirectory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
         db.shutdown();
     }

@@ -227,7 +227,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         GraphDatabaseService databaseService =
                 new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDirectory )
-                        .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" ).newGraphDatabase();
+                        .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
         databaseService.shutdown();
     }
 }

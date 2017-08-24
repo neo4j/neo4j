@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -118,10 +119,9 @@ public class TransactionLogCatchUpWriterTest
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LogTailScanner logTailScanner =
-                new LogTailScanner( logFiles, fs, logEntryReader );
+        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader );
 
-        LogTailScanner.LogTailInformation tailInformation = logTailScanner.getTailInformation();
+        LogTailInformation tailInformation = logTailScanner.getTailInformation();
         assertNotNull( tailInformation.lastCheckPoint );
         assertTrue( tailInformation.commitsAfterLastCheckPoint );
     }

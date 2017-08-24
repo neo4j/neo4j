@@ -46,7 +46,7 @@ public class LogEntryWriter
      */
     public LogEntryWriter( FlushableChannel channel )
     {
-        this(channel, CURRENT );
+        this( channel, CURRENT );
     }
 
     /**
