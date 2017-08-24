@@ -63,62 +63,58 @@ trait Graphs
     oneOrMore(SingleGraphItem, separator = CommaSep)
 
   private def ShortGraphItem: Rule1[ast.SingleGraphItem] =
-    (GraphRefAlias ~~>> (ast.GraphRefAliasItem(_)))
+    GraphRefAlias ~~>> (ast.GraphRefAliasItem(_))
 
-  private def ShortGraphItemList: Rule1[List[ast.SingleGraphItem]] =
-    keyword("GRAPHS") ~~ oneOrMore(!SingleGraphItem ~~ ShortGraphItem)
+  private def GraphItem: Rule1[ast.SingleGraphItem] =
+    SingleGraphItem | ShortGraphItem
 
-//  private def GraphItemList: Rule1[List[ast.SingleGraphItem]] =
-//    oneOrMore(ShortGraphItemList | SingleGraphItemList, separator = CommaSep) ~~>(_.flatten)
-//
-//  private def PickedGraphItems: Rule1[Option[ast.SingleGraphItem]] =
-//    keyword(">>") ~~ optional(SingleGraphItem | ShortGraphItem)
-//
-//  private def ManyGraphItems =
-//    GraphItemList ~~ optional(PickedGraphItems ~~ optional(CommaSep ~~ GraphItemList)) ~~>> {
-//      (left: List[SingleGraphItem], picked: Option[(Option[ast.SingleGraphItem], Option[List[ast.SingleGraphItem]])]) =>
-//        (pos: InputPosition) =>
-//          picked match {
-//            // left >>, right
-//            case Some((None, right)) =>
-//              ast.GraphReturnItems(false, left, PickLeft, right.getOrElse(List.empty))(pos)
-//
-//            // left >> target, right
-//            case Some((Some(target), right)) =>
-//              ast.GraphReturnItems(false, left, PickBoth, target :: right.getOrElse(List.empty))(pos)
-//
-//            // left
-//            case None =>
-//              ast.GraphReturnItems(false, left, PickNone, List.empty)(pos)
-//          }
-//    }
+  // a >> b?
+  private def ShortNewContextGraphs: Rule1[ast.NewContextGraphs] =
+    GraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraphItem, target: Option[ast.SingleGraphItem]) => ast.NewContextGraphs(source, target)}
 
+  // >> b
+  private def ShortNewTargetGraph: Rule1[ast.NewTargetGraph] =
+    keyword(">>") ~~ GraphItem ~~>> { (target: ast.SingleGraphItem) => ast.NewTargetGraph(target) }
 
-      // ~~ optional(CommaSep ~~ GraphItemList)))
+  // a
+  private def ShortReturnedGraph: Rule1[ast.ReturnedGraph] =
+    ShortGraphItem ~~>> { item: ast.SingleGraphItem => ast.ReturnedGraph(item) }
 
-//    GraphItemList ~~ optional(PickedGraphItems) ~~>> {
-//      (left: List[ast.SingleGraphItem], optRight: Option[(SingleGraphItem, Option[List[SingleGraphItem]])]) =>
-//        ???
-//    }
+  // GRAPH a >> (GRAPH b)?
+  private def NewContextGraphs: Rule1[ast.NewContextGraphs] =
+    SingleGraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraphItem, target: Option[ast.SingleGraphItem]) => ast.NewContextGraphs(source, target)}
 
-//    GraphItemList ~~ (optional(keyword(">>") ~~ push(true)) ~~> (_.getOrElse(false))) ~~ optional(GraphItemList) ~~>
-//      withContext {
-//        (star: Boolean, left: List[ast.SingleGraphItem], pick: Boolean, right: List[ast.SingleGraphItem], ctx) =>
-//          ast.GraphReturnItems(star, left, pick, right)(ContextPosition(ctx))
-//      }
-//
-//  private def OptionallyStarredGraphsReturnItems: Rule1[ast.GraphReturnItems] = rule("WITH|RETURN GRAPHS ...") {
-//    keyword("GRAPHS") ~~ (
-//      (keyword("*") ~~ optional(CommaSep ~~ push(true) ~~ ManyGraphReturnItems) ~~>> {
-//        (items: Option[ast.GraphReturnItems]) =>
-//          (pos) => items.getOrElse(ast.GraphReturnItems(true, List.empty, false, List.empty)(pos))
-//      }
-//      )
-//      |
-//      (push(false) ~~ ManyGraphReturnItems)
-//    )
-//  }
+  // >> GRAPH b
+  private def NewTargetGraph: Rule1[ast.NewTargetGraph] =
+    keyword(">>") ~~ SingleGraphItem ~~>> { (target: ast.SingleGraphItem) => ast.NewTargetGraph(target) }
 
-  def GraphReturnItems: Rule1[ast.GraphReturnItems] =
-    ???
+  // GRAPH a
+  private def ReturnedGraph: Rule1[ast.ReturnedGraph] =
+    SingleGraphItem ~~>> { item: ast.SingleGraphItem => ast.ReturnedGraph(item) }
+
+  private def GraphReturnItem: Rule1[ast.GraphReturnItem] =
+    NewContextGraphs | NewTargetGraph | ReturnedGraph | ShortNewContextGraphs | ShortNewTargetGraph | ShortReturnedGraph
+
+  private def ShortGraphReturnItemList: Rule1[ast.GraphReturnItems] =
+    keyword("GRAPHS") ~~ oneOrMore(
+      GraphReturnItem,
+      separator = CommaSep
+    ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(star = false, itemsList) }
+
+  private def ShortGraphStarReturnItemList: Rule1[ast.GraphReturnItems] =
+    keyword("GRAPHS") ~~ keyword("*") ~~ optional(
+      CommaSep ~~ oneOrMore(
+        GraphReturnItem,
+        separator = CommaSep
+      ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(star = true, itemsList) }
+    ) ~~>> { foo: Option[ast.GraphReturnItems] => (pos) => foo.getOrElse(ast.GraphReturnItems(star = true, List.empty)(pos)) }
+
+  private def GraphReturnItemList: Rule1[ast.GraphReturnItems] =
+    oneOrMore(
+      NewContextGraphs | NewTargetGraph | ReturnedGraph ,
+      separator = CommaSep
+    ) ~~>> { graphReturnItems => ast.GraphReturnItems(star = false, graphReturnItems) }
+
+   def GraphReturnItems: Rule1[ast.GraphReturnItems] =
+     ShortGraphStarReturnItemList | ShortGraphReturnItemList | GraphReturnItemList
 }
