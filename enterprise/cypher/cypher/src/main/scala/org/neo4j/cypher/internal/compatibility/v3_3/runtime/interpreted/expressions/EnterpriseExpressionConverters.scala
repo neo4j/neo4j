@@ -56,7 +56,9 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
         Some(runtimeExpression.RelationshipPropertyExists(offset, token))
       case runtimeAst.RelationshipPropertyExistsLate(offset, token, _) =>
         Some(runtimeExpression.RelationshipPropertyExistsLate(offset, token))
-
+      case runtimeAst.NullCheck(offset, inner) =>
+        val a = self.toCommandExpression(inner)
+        Some(runtimeExpression.NullCheck(offset, a))
       case _ =>
         None
     }

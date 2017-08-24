@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{NodeFromRegister, RelationshipFromRegister}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.NodeFromRegister
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
@@ -169,6 +169,9 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case CreateNode(_, idName, labels, props) =>
         CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
 
+      case MergeCreateNode(_, idName, labels, props) =>
+        MergeCreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
+
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
 
@@ -246,6 +249,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val lhsLongCount = pipelines(lhsPlan).numberOfLongs
         val lhsRefCount = pipelines(lhsPlan).numberOfReferences
         CartesianProductRegisterPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
+
+      case ConditionalApply(_, _, items) =>
+        ConditionalApplyRegisterPipe(lhs, rhs, items.map(_.name), negated = false, pipeline)(id)
+
+      case AntiConditionalApply(_, _, items) =>
+        ConditionalApplyRegisterPipe(lhs, rhs, items.map(_.name), negated = true, pipeline)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }

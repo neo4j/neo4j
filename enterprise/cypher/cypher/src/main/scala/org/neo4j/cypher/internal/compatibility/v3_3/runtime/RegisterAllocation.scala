@@ -218,13 +218,16 @@ object RegisterAllocation {
         incomingPipeline.newLong(name, nullable = false, CTNode)
         incomingPipeline
 
+      case MergeCreateNode(_, IdName(name), _, _) =>
+        // The variable name should already have been allocated by the NodeLeafPlan
+        incomingPipeline
+
       case CreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
         incomingPipeline
 
       case MergeCreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
-        incomingPipeline
 
       case EmptyResult(_) =>
         incomingPipeline
@@ -248,6 +251,10 @@ object RegisterAllocation {
       case _: SemiApply |
            _: AntiSemiApply =>
         lhsPipeline
+
+      case _: AntiConditionalApply |
+           _: ConditionalApply =>
+        rhsPipeline
 
       case _:CartesianProduct =>
         val cartesianProductPipeline = lhsPipeline.seedClone()

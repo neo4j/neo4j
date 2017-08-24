@@ -27,15 +27,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
-                                  labels: Seq[LazyLabel], properties: Option[Expression])
-                                   (val id: Id = new Id) extends PipeWithSource(source) with Pipe{
+abstract class BaseCreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
+                                          labels: Seq[LazyLabel], properties: Option[Expression])
+  extends PipeWithSource(source) with Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
@@ -75,12 +75,31 @@ case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformati
     }
   }
 
-  protected def handleNull(key: String) {
-    // do nothing
-  }
+  protected def handleNull(key: String): Unit
 
   private def setLabels(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     val labelIds = labels.map(_.getOrCreateId(state.query).id)
     state.query.setLabelsOnNode(nodeId, labelIds.iterator)
+  }
+}
+
+case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
+                                  labels: Seq[LazyLabel], properties: Option[Expression])
+                                 (val id: Id = new Id)
+  extends BaseCreateNodeRegisterPipe(source, ident, pipelineInformation, labels, properties) {
+
+  override protected def handleNull(key: String) {
+    // do nothing
+  }
+}
+
+case class MergeCreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
+                                       labels: Seq[LazyLabel], properties: Option[Expression])
+                                      (val id: Id = new Id)
+  extends BaseCreateNodeRegisterPipe(source, ident, pipelineInformation, labels, properties) {
+
+  override protected def handleNull(key: String) {
+    //merge cannot use null properties, since in that case the match part will not find the result of the create
+    throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")
   }
 }
