@@ -129,10 +129,9 @@ object PipelineInformation {
   }
 }
 
-class PipelineInformation(
-                           private var slots: Map[String, Slot],
-                           val initialNumberOfLongs: Int,
-                           val initialNumberOfReferences: Int) {
+class PipelineInformation(private var slots: Map[String, Slot],
+                          val initialNumberOfLongs: Int,
+                          val initialNumberOfReferences: Int) {
 
   var numberOfLongs = initialNumberOfLongs
   var numberOfReferences = initialNumberOfReferences

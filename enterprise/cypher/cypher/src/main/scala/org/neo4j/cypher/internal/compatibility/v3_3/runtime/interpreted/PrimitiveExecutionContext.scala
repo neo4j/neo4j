@@ -34,8 +34,8 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def copyTo(target: ExecutionContext): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (pipeline.numberOfLongs > otherPipeline.initialNumberOfLongs ||
-        pipeline.numberOfReferences > otherPipeline.initialNumberOfReferences)
+      if (pipeline.numberOfLongs > otherPipeline.numberOfLongs ||
+        pipeline.numberOfReferences > otherPipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
         System.arraycopy(longs, 0, other.longs, 0, pipeline.numberOfLongs)

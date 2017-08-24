@@ -233,14 +233,18 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
     val id = idMap.getOrElse(plan, new Id)
 
     plan match {
-      case Apply(_, _) =>
-        ApplyRegisterPipe(lhs, rhs)(id)
 
       case SemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs, negated = false)(id)
 
       case AntiSemiApply(_, _) =>
         SemiApplyPipe(lhs, rhs, negated = true)(id)
+
+      case _: CartesianProduct |
+           _: SemiApply |
+           _: AntiSemiApply |
+           _: Apply =>
+        fallback.build(plan, lhs, rhs)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
