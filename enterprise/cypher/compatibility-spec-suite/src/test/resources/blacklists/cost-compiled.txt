@@ -162,7 +162,6 @@ Matching relationships into a list and matching variable length using the list, 
 Matching relationships into a list and matching variable length using the list, with bound nodes, wrong direction
 Matching and optionally matching with bound nodes in reverse direction
 Matching and optionally matching with unbound nodes and equality predicate in reverse direction
-Fail when using property access on primitive type
 Counting an empty graph
 Matching variable length pattern with property predicate
 Variable length pattern checking labels on endnodes
