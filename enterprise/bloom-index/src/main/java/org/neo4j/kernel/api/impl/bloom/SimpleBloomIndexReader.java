@@ -64,7 +64,11 @@ class SimpleBloomIndexReader implements BloomIndexReader
         {
             for ( String property : properties )
             {
-                builder.add( multiFieldQueryParser.createBooleanQuery( property, s ), BooleanClause.Occur.SHOULD );
+                Query booleanQuery = multiFieldQueryParser.createBooleanQuery( property, s );
+                if ( booleanQuery != null )
+                {
+                    builder.add( booleanQuery, BooleanClause.Occur.SHOULD );
+                }
             }
         }
         return query( builder.build() );
