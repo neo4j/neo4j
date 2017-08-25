@@ -86,7 +86,7 @@ public class ConstraintEnforcingEntityOperationsTest
         assertEquals( expectedNodeId, nodeId );
         verify( locks).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, resourceId );
+                INDEX_ENTRY, false, resourceId );
         verifyNoMoreInteractions( locks );
     }
 
@@ -103,7 +103,7 @@ public class ConstraintEnforcingEntityOperationsTest
         assertEquals( NO_SUCH_NODE, nodeId );
         verify( locks ).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, resourceId );
+                INDEX_ENTRY, false, resourceId );
         verify( locks ).acquireExclusive(
                 LockTracer.NONE,
                 INDEX_ENTRY, resourceId );
@@ -127,7 +127,7 @@ public class ConstraintEnforcingEntityOperationsTest
         assertEquals( expectedNodeId, nodeId );
         verify( locks, times(2) ).acquireShared(
                 LockTracer.NONE,
-                INDEX_ENTRY, resourceId );
+                INDEX_ENTRY, false, resourceId );
         verify( locks ).acquireExclusive(
                 LockTracer.NONE,
                 INDEX_ENTRY, resourceId );

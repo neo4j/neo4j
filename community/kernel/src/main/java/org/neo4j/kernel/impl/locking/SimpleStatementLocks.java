@@ -62,7 +62,7 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void pessimisticAcquireShared( ResourceType type, long... resourceId )
     {
-        client.acquireShared( getTracer(), type, resourceId );
+        client.acquireShared( getTracer(), type, false, resourceId );
     }
 
     @Override
@@ -92,7 +92,7 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void uniquenessConstraintEntryAcquireShared( long resource )
     {
-        client.acquireShared( getTracer(), ResourceTypes.INDEX_ENTRY, resource );
+        client.acquireShared( getTracer(), ResourceTypes.INDEX_ENTRY, false, resource );
     }
 
     @Override
@@ -110,7 +110,7 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void schemaModifyAcquireShared( ResourceType type, long resource )
     {
-        client.acquireShared( getTracer(), type, resource  );
+        client.acquireShared( getTracer(), type, false, resource  );
     }
 
     @Override
@@ -130,7 +130,9 @@ public class SimpleStatementLocks implements StatementLocks
     {
         if ( takesEntityIteratorLocks )
         {
-            client.acquireShared( getTracer(), type, resource );
+            // In Iterator Stability, these locks are short-lived.
+            // In Repeatable Read, they would be long-lived.
+            client.acquireShared( getTracer(), type, true, resource );
         }
     }
 

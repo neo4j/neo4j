@@ -80,17 +80,24 @@ public abstract class IsolationLevelsTestTemplate
     public ThreadRepository threads = new ThreadRepository( 10, TimeUnit.SECONDS );
 
     @Rule
-    public RuleChain rules = RuleChain.outerRule( reuse.getRule() ).around( threads ).around( new RepeatRule( 100 ) );
+    public RuleChain rules = RuleChain.outerRule( reuse.getRule() )
+                                      .around( threads )
+                                      .around( new RepeatRule( defaultTestRepetitions() ) );
 
     protected abstract DatabaseRule createDatabaseRule();
 
-    private static class DbTask
+    protected int defaultTestRepetitions()
+    {
+        return 100;
+    }
+
+    protected static class DbTask
     {
         private final List<ThrowingBiConsumer<GraphDatabaseService,Transaction,Exception>> actions;
         private final GraphDatabaseService db;
         private boolean terminal;
 
-        private DbTask( GraphDatabaseService db )
+        protected DbTask( GraphDatabaseService db )
         {
             this.db = db;
             this.actions = new ArrayList<>();
@@ -151,7 +158,7 @@ public abstract class IsolationLevelsTestTemplate
         }
     }
 
-    private DbTask beginForked()
+    protected DbTask beginForked()
     {
         return new DbTask( db );
     }

@@ -63,7 +63,7 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void pessimisticAcquireShared( ResourceType type, long... resourceId )
     {
-        explicit.acquireShared( getTracer(), type, resourceId );
+        explicit.acquireShared( getTracer(), type, false, resourceId );
     }
 
     @Override
@@ -98,7 +98,7 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void uniquenessConstraintEntryAcquireShared( long resource )
     {
-        optimistic().acquireShared( getTracer(), INDEX_ENTRY, resource );
+        optimistic().acquireShared( getTracer(), INDEX_ENTRY, false, resource );
     }
 
     @Override
@@ -116,7 +116,7 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void schemaModifyAcquireShared( ResourceType type, long resource )
     {
-        optimistic().acquireShared( getTracer(), type, resource );
+        optimistic().acquireShared( getTracer(), type, false, resource );
     }
 
     @Override

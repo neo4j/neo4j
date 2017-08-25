@@ -191,7 +191,7 @@ public class SlaveLocksClientConcurrentTest
             try
             {
                 resourceLatch.await();
-                locksClient.acquireShared( LockTracer.NONE, resourceType, id );
+                locksClient.acquireShared( LockTracer.NONE, resourceType, false, id );
                 resourceReleaseLatch.countDown();
                 locksClient.close();
             }

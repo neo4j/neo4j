@@ -45,7 +45,8 @@ public class ReadOnlyLocks implements Locks
     private static class ReadOnlyClient extends NoOpClient
     {
         @Override
-        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived,
+                                   long... resourceIds ) throws AcquireLockTimeoutException
         {
             fail();
         }

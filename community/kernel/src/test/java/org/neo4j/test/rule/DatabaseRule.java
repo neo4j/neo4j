@@ -335,11 +335,16 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     {
         if ( database == null )
         {
-            applyConfigChanges( additionalConfig );
-            database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+            database = configureAndBuildDatabase( additionalConfig );
             storeDir = database.getStoreDir();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
         }
+    }
+
+    protected GraphDatabaseAPI configureAndBuildDatabase( String... additionalConfig)
+    {
+        applyConfigChanges( additionalConfig );
+        return (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
     }
 
     public DatabaseRule withSetting( Setting<?> key, String value )

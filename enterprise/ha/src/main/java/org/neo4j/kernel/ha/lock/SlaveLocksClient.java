@@ -85,9 +85,18 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived, long... resourceIds ) throws AcquireLockTimeoutException
     {
         assertNotStopped();
+
+        if ( shortLived )
+        {
+            // Don't propagate short-lived locks to the master.
+            // Short-lived locks are used to coordinate reads and writes locally, e.g. between transactions and with
+            // the update puller.
+            client.acquireShared( tracer, resourceType, shortLived, resourceIds );
+            return;
+        }
 
         long[] newResourceIds = firstTimeSharedLocks( resourceType, resourceIds );
         if ( newResourceIds.length > 0 )

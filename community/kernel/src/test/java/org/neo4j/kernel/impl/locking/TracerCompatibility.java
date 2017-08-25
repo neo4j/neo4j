@@ -78,7 +78,7 @@ public class TracerCompatibility extends LockingCompatibilityTestSuite.Compatibi
     {
         // given
         Tracer tracerA = new Tracer(), tracerB = new Tracer();
-        clientA.acquireShared( tracerA, NODE, 17 );
+        clientA.acquireShared( tracerA, NODE, false, 17 );
 
         // when
         Future<Object> future = acquireExclusive( clientB, tracerB, NODE, 17 ).callAndAssertWaiting();

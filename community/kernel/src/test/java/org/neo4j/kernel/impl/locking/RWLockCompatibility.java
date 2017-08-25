@@ -69,7 +69,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             // good
         }
 
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
         try
         {
             clientA.releaseExclusive( NODE, 1L );
@@ -93,13 +93,13 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
         }
         clientA.releaseExclusive( NODE, 1L );
 
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
         clientA.releaseShared( NODE, 1L );
 
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1L );
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
         clientA.releaseShared( NODE, 1L );
         clientA.releaseExclusive( NODE, 1L );
 
@@ -111,7 +111,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
             }
             else
             {
-                clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+                clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
             }
         }
         for ( int i = 9; i >= 0; i-- )
@@ -253,7 +253,7 @@ public class RWLockCompatibility extends LockingCompatibilityTestSuite.Compatibi
                             float f = rand.nextFloat();
                             if ( f < readWriteRatio )
                             {
-                                client.acquireShared( LockTracer.NONE, NODE, nodeId );
+                                client.acquireShared( LockTracer.NONE, NODE, false, nodeId );
                                 lockStack.push( READ );
                             }
                             else

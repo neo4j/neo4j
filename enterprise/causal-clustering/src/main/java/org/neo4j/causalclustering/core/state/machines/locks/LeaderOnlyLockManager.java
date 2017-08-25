@@ -209,9 +209,10 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceId ) throws AcquireLockTimeoutException
+        public void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived,
+                                   long... resourceId ) throws AcquireLockTimeoutException
         {
-            localClient.acquireShared( tracer, resourceType, resourceId );
+            localClient.acquireShared( tracer, resourceType, false, resourceId );
         }
 
         @Override

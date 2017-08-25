@@ -94,7 +94,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try

@@ -367,7 +367,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             for ( long resourceId : resourceIds )
             {
-                session.acquireShared( LockTracer.NONE, type, resourceId );
+                session.acquireShared( LockTracer.NONE, type, false, resourceId );
             }
 
             return spi.packTransactionObligationResponse( context, new LockResult( LockStatus.OK_LOCKED ) );

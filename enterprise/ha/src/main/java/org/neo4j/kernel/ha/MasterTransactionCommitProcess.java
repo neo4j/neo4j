@@ -158,7 +158,7 @@ public class MasterTransactionCommitProcess implements TransactionCommitProcess
                 {
                     locks = this.locks.newClient();
                 }
-                locks.acquireShared( LockTracer.NONE, SCHEMA, schemaResource() );
+                locks.acquireShared( LockTracer.NONE, SCHEMA, false, schemaResource() );
             }
             return locks;
         }
