@@ -386,8 +386,6 @@ Copying properties from node with ON MATCH
 Merge node when no nodes exist
 Merge node with label add label on create
 Merge node with label add property on create
-Merge node with label when it exists
-Merge node with prop and label
 Merge node with label add label on match when it exists
 Merge node with label add property on update when it exists
 Merge node and set property on match

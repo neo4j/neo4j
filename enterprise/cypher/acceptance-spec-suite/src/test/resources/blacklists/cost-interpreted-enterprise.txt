@@ -7,7 +7,6 @@ Using a CASE expression with label predicates in a WITH
 Using a CASE expression in a WHERE, with label predicate
 Add labels inside FOREACH
 Returning a CASE expression with a pattern expression alternative
-Merge node with prop and label and unique index
 Merge using unique constraint should update existing node
 Merge using unique constraint should create missing node
 Should match on merge using multiple unique indexes if only found single node for both indexes
