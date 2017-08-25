@@ -37,7 +37,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     createNode()
 
-    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (n) RETURN count(n.name)")
+    val result = succeedWith(Configs.All, "MATCH (n) RETURN count(n.name)")
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 

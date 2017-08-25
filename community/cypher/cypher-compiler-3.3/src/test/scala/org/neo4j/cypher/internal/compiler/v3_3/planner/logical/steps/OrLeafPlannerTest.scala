@@ -44,10 +44,9 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
     val orPlanner = OrLeafPlanner(Seq(inner1))
 
-    val expected = Aggregation(
+    val expected = Distinct(
       left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
@@ -104,22 +103,18 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    val expected1 = Aggregation(
+    val expected1 = Distinct(
       left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected2 = Aggregation(
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
+    val expected2 = Distinct(
       left = Union(p1, p4)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected3 = Aggregation(
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
+    val expected3 = Distinct(
       left = Union(p3, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected4 = Aggregation(
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
+    val expected4 = Distinct(
       left = Union(p3, p4)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
 
 
     orPlanner.apply(queryGraph)(context) should equal(Seq(expected1, expected2, expected3, expected4))
@@ -143,14 +138,12 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    val expected1 = Aggregation(
+    val expected1 = Distinct(
       left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected3 = Aggregation(
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
+    val expected3 = Distinct(
       left = Union(p3, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
+      groupingExpressions = Map("x" -> Variable("x")(pos)))(solved)
 
 
     orPlanner.apply(queryGraph)(context) should equal(Seq(expected1, expected3))

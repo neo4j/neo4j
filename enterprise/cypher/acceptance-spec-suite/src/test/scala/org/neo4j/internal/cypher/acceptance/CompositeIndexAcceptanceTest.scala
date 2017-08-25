@@ -252,7 +252,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz")
   }
@@ -267,7 +267,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz)")
   }

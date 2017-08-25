@@ -280,8 +280,9 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
       PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
         0))
 
-    allocations(leaf) should equal(allocations(distinct))
-    allocations(leaf) shouldNot be theSameInstanceAs allocations(distinct)
+    allocations(distinct) should equal(
+      PipelineInformation(Map("x" -> RefSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 0, numberOfReferences =
+        1))
   }
 
   ignore("optional travels through aggregation used for distinct") {
@@ -485,10 +486,10 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     )
     allocations(aggregation) should equal(
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
-        "x.prop" -> RefSlot(0, nullable = true, CTAny, "x.prop"),
-        "count(r.prop)" -> RefSlot(1, nullable = true, CTAny, "count(r.prop)")
-        ), numberOfLongs = 1, numberOfReferences = 2)
+        "x" -> RefSlot(0, nullable = false, CTNode, "x"),
+        "x.prop" -> RefSlot(1, nullable = true, CTAny, "x.prop"),
+        "count(r.prop)" -> RefSlot(2, nullable = true, CTAny, "count(r.prop)")
+        ), numberOfLongs = 0, numberOfReferences = 3)
     )
   }
 }
