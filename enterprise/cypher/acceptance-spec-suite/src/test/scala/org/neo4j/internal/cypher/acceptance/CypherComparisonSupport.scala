@@ -366,6 +366,7 @@ object CypherComparisonSupport {
     object V3_3 extends Version("3.3")
 
     object Default extends Version("")
+
   }
 
   case class Version(name: String) {
@@ -392,6 +393,7 @@ object CypherComparisonSupport {
     object Rule extends Planner(Set("RULE"), "planner=rule")
 
     object Default extends Planner(Set(), "")
+
   }
 
   case class Planner(acceptedPlannerNames: Set[String], preparserOption: String)
@@ -414,10 +416,10 @@ object CypherComparisonSupport {
     object ProcedureOrSchema extends Runtime("PROCEDURE", "")
 
     object Default extends Runtime("", "")
+
   }
 
   case class Runtime(acceptedRuntimeName: String, preparserOption: String)
-
 
 
   /**
