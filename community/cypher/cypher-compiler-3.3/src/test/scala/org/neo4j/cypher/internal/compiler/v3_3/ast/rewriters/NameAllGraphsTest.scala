@@ -28,14 +28,14 @@ class NameAllGraphsTest extends CypherFunSuite {
   import parser.ParserFixture._
 
   test("do not rename source graph") {
-    val original = parser.parse("FROM GRAPH AS foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
+    val original = parser.parse("FROM GRAPH foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
     assert(result === original)
   }
 
   test("do not rename TARGET graph") {
-    val original = parser.parse("INTO GRAPH AS foo AT 'url' WITH * TARGET GRAPH RETURN 1")
+    val original = parser.parse("INTO GRAPH foo AT 'url' WITH * TARGET GRAPH RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
     assert(result === original)

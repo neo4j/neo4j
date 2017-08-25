@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.parboiled.scala.{Parser, ReductionRule1, Rule1, Rule2}
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.parboiled.scala.{Parser, Rule1}
 
 trait Graphs
   extends Parser
@@ -65,10 +64,10 @@ trait Graphs
   }
 
   private def GraphOfShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphAlias ~~ keyword("OF") ~~ Pattern ~~>> { (as: ast.Variable, of: ast.Pattern) => ast.GraphOfItem(of, Some(as)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.GraphRef, of: ast.Pattern) => ast.GraphOfItem(of, Some(ref.name)) }
 
   private def GraphAtShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphAlias ~~ keyword("AT") ~~ GraphUrl ~~>> { (as: ast.Variable, url: ast.GraphUrl) => ast.GraphAtItem(url, Some(as)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.GraphRef, url: ast.GraphUrl) => ast.GraphAtItem(url, Some(ref.name)) }
 
   private def GraphAliasFirstItem = GraphOfShorthand | GraphAtShorthand
 

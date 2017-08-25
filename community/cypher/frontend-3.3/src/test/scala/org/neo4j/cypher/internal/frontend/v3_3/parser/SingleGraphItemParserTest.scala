@@ -76,11 +76,11 @@ class SingleGraphItemParserTest
     yields(ast.GraphOfItem(complexPattern, Some(v("foo"))))
   }
 
-  test("GRAPH AS foo AT 'url'") {
+  test("GRAPH foo AT 'url'") {
     yields(ast.GraphAtItem(url("url"), Some(v("foo"))))
   }
 
-  test("GRAPH AS foo OF ()") {
+  test("GRAPH foo OF ()") {
     yields(ast.GraphOfItem(nodePattern, Some(v("foo"))))
   }
 
