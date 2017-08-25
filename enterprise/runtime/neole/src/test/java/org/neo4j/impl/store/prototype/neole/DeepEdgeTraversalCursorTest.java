@@ -22,6 +22,8 @@ package org.neo4j.impl.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.nio.ByteOrder;
+
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -103,6 +105,8 @@ public class DeepEdgeTraversalCursorTest
     @Test
     public void shouldTraverseTreeOfDepthThree() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         try ( NodeCursor node = graph.allocateNodeCursor();
               EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
               EdgeTraversalCursor edge1 = graph.allocateEdgeTraversalCursor();

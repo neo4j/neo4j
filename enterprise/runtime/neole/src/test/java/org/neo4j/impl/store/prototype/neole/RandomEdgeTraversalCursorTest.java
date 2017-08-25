@@ -22,6 +22,7 @@ package org.neo4j.impl.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -79,6 +80,8 @@ public class RandomEdgeTraversalCursorTest
     @Test
     public void shouldManageRandomTraversals() throws Exception
     {
+        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
               EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
