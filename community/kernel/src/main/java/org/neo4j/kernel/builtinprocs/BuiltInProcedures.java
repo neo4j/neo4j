@@ -31,7 +31,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.*;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -49,7 +53,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.procedure.*;
+import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Description;
+import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
