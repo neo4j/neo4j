@@ -289,10 +289,10 @@ public class TestCommunication
         }
         assertTrue( writer.getSizeRead() >= failAtSize );
 
-        long maxWaitUntil = System.currentTimeMillis() + 10_000L;
+        long maxWaitUntil = System.currentTimeMillis() + 60_000L;
         while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil )
         {
-            sleep( 10 );
+            sleep( 100 );
         }
         assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
         assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
