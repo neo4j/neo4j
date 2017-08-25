@@ -33,6 +33,7 @@ final case class ReturnedGraph(item: SingleGraphItem)(val position: InputPositio
 
 final case class NewTargetGraph(target: SingleGraphItem)(val position: InputPosition) extends GraphReturnItem {
   override def graphs = List(target)
+  override def newTarget = Some(target)
 }
 
 final case class NewContextGraphs(source: SingleGraphItem,
@@ -50,13 +51,30 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
   val graphs: List[SingleGraphItem] = items.flatMap(_.graphs)
 
   def newSource: Option[SingleGraphItem] = items.flatMap(_.newSource).headOption
-  def newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption
+  def newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption orElse newSource
 
-  override def semanticCheck = {
-    // TODO: Make sure only one source and target is ever specified
-    val covariant = CTGraphRef.covariant
-    graphs.flatMap(_.as).foldSemanticCheck(_.expectType(covariant)) chain
-      FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
-  }
+  override def semanticCheck: SemanticCheck =
+    graphs.flatMap(_.as).foldSemanticCheck(_.expectType(CTGraphRef.covariant)) chain
+      reportNoMultigraphSupport.unlessFeatureEnabled('multigraph) chain(
+        checkNoMultipleSources chain
+        checkNoMultipleTargets
+    ).ifFeatureEnabled('multigraph)
+
+  private def checkNoMultipleSources: SemanticCheck =
+    (s: SemanticState) =>
+      if(items.flatMap(_.newSource).size > 1)
+        SemanticCheckResult.error(s, SemanticError("Setting multiple source graphs is not allowed", position))
+      else SemanticCheckResult.success(s)
+
+  private def checkNoMultipleTargets: SemanticCheck =
+    (s: SemanticState) =>
+      if(items.flatMap(_.newTarget).size > 1)
+        SemanticCheckResult.error(s, SemanticError("Setting multiple target graphs is not allowed", position))
+      else SemanticCheckResult.success(s)
+
+  private def reportNoMultigraphSupport: SemanticCheck =
+    FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+
+
 }
 

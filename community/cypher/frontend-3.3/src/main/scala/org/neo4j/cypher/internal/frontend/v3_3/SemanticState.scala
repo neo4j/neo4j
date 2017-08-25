@@ -194,7 +194,9 @@ object SemanticState {
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo],
                          recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope],
-                         notifications: Set[InternalNotification] = Set.empty) {
+                         notifications: Set[InternalNotification] = Set.empty,
+                         features: Set[scala.Symbol] = Set.empty
+                        ) {
   def scopeTree = currentScope.rootScope
 
   def newChildScope = copy(currentScope = currentScope.newChildScope)
@@ -286,4 +288,6 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def scope(astNode: ast.ASTNode): Option[Scope] =
     recordedScopes.get(astNode)
+
+  def withFeature(feature: scala.Symbol): SemanticState = copy(features=features + feature)
 }

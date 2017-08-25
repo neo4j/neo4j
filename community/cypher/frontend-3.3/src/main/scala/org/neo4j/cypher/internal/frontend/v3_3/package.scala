@@ -84,4 +84,13 @@ package object v3_3 {
 
   // Allows calling semanticCheck on a traversable sequence of SemanticCheckable objects
   implicit def semanticCheckableTraversableOnce[A <: SemanticCheckable](traversable: TraversableOnce[A]): SemanticCheckableTraversableOnce[A] = new SemanticCheckableTraversableOnce(traversable)
+
+  implicit final class RichSemanticCheck(val check: SemanticCheck) extends AnyVal {
+    // Only run a check if a given feature is enabled
+    def ifFeatureEnabled(feature: scala.Symbol): SemanticCheck =
+      (s: SemanticState) => if(s.features(feature)) check(s) else SemanticCheckResult.success(s)
+    def unlessFeatureEnabled(feature: scala.Symbol): SemanticCheck =
+      (s: SemanticState) => if(!s.features(feature)) check(s) else SemanticCheckResult.success(s)
+  }
 }
+
