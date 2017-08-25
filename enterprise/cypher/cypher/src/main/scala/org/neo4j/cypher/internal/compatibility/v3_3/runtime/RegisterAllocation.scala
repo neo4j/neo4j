@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
@@ -129,16 +130,14 @@ object RegisterAllocation {
   private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
     lp match {
 
+      case Distinct(_, groupingExpressions) =>
+        val outgoing = PipelineInformation.empty
+        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
+        outgoing
+
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
         val outgoing = PipelineInformation.empty
-
-        groupingExpressions foreach { // return n as x, count(*)
-          case (key, parserAst.Variable(ident)) =>
-            val slotInfo = incomingPipeline(ident)
-            outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
-          case (key, _) =>
-            outgoing.newReference(key, nullable = true, CTAny)
-        }
+        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
 
         aggregationExpressions foreach {
           case (key, _) =>
@@ -233,6 +232,16 @@ object RegisterAllocation {
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
+
+  private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: PipelineInformation, outgoing: PipelineInformation) = {
+    groupingExpressions foreach {
+      case (key, parserAst.Variable(ident)) =>
+        val slotInfo = incoming(ident)
+        outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
+      case (key, _) =>
+        outgoing.newReference(key, nullable = true, CTAny)
+    }
+  }
 
   private def allocate(plan: LogicalPlan,
                        nullable: Boolean,
