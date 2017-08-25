@@ -136,6 +136,11 @@ public class IdReusabilityStressTesting
 
             Futures.combine( insertLoad, deleteLoad1, deleteLoad2, reelectionLoad ).get( durationInMinutes + 5, MINUTES );
         }
+        catch ( Throwable e )
+        {
+            System.out.println( "Exception thrown from execution service:" );
+            e.printStackTrace();
+        }
         finally
         {
             service.shutdown();
@@ -266,7 +271,9 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                throw new RuntimeException( e );
+                // Ignore throws for now
+                System.out.println( "InsertionWorkload encountered error:" );
+                e.printStackTrace();
             }
         }
     }
@@ -302,7 +309,9 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                throw new RuntimeException( e );
+                // Ignore throws for now
+                System.out.println( "ReelectionWorkload encountered error:" );
+                e.printStackTrace();
             }
         }
     }
@@ -346,7 +355,9 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                throw new RuntimeException( e );
+                // Ignore throws for now
+                System.out.println( "DeletionWorkload encountered error:" );
+                e.printStackTrace();
             }
         }
     }
