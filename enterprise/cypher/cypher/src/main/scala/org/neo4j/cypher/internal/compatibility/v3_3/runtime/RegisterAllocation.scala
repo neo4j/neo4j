@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -40,6 +39,7 @@ import scala.collection.mutable
   * method.
   **/
 object RegisterAllocation {
+
   def allocateRegisters(lp: LogicalPlan): Map[LogicalPlan, PipelineInformation] = {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
@@ -129,24 +129,21 @@ object RegisterAllocation {
 
   private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
     lp match {
+
+      case Distinct(_, groupingExpressions) =>
+        val outgoing = PipelineInformation.empty
+        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
+        outgoing
+
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
-        val newPipeline = PipelineInformation.empty
+        val outgoing = PipelineInformation.empty
+        addGroupingMap(groupingExpressions, incomingPipeline, outgoing)
 
-        def addExpressions(groupingExpressions: Map[String, Expression]): Unit = {
-          groupingExpressions foreach {
-            case (_, parserAst.Variable(ident)) =>
-              val slotInfo = incomingPipeline(ident)
-              newPipeline.add(ident, slotInfo)
-            case (_, exp) =>
-              // TODO: Support this properly. Requires actually using the expression and supporting aggregation
-              //newPipeline.newReference(key, nullable = true, CTAny)
-              throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
-          }
+        aggregationExpressions foreach {
+          case (key, _) =>
+            outgoing.newReference(key, nullable = true, CTAny)
         }
-
-        addExpressions(groupingExpressions)
-        addExpressions(aggregationExpressions)
-        newPipeline
+        outgoing
 
       case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
         val newPipeline = incomingPipeline.deepClone()
@@ -183,36 +180,35 @@ object RegisterAllocation {
         newPipeline.newLong(to, nullable = true, CTNode)
         newPipeline
 
-
       case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
         val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline
 
-        case VarExpand(lhs: LogicalPlan,
-                       IdName(from),
-                       dir,
-                       projectedDir,
-                       types,
-                       IdName(to),
-                       IdName(edge),
-                       length,
-                       ExpandAll,
-                       IdName(tempNode),
-                       IdName(tempEdge),
-                       _,
-                       _,
-                       _) =>
-          val newPipeline = incomingPipeline.deepClone()
+      case VarExpand(lhs: LogicalPlan,
+                     IdName(from),
+                     dir,
+                     projectedDir,
+                     types,
+                     IdName(to),
+                     IdName(edge),
+                     length,
+                     ExpandAll,
+                     IdName(tempNode),
+                     IdName(tempEdge),
+                     _,
+                     _,
+                     _) =>
+        val newPipeline = incomingPipeline.deepClone()
 
-          // We register these on the incoming pipeline after cloning it, since we don't need these slots in
-          // the produced rows
-          incomingPipeline.newLong(tempNode, nullable = false, CTNode)
-          incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+        // We register these on the incoming pipeline after cloning it, since we don't need these slots in
+        // the produced rows
+        incomingPipeline.newLong(tempNode, nullable = false, CTNode)
+        incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
 
-          newPipeline.newLong(to, nullable, CTNode)
-          newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-          newPipeline
+        newPipeline.newLong(to, nullable, CTNode)
+        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+        newPipeline
 
       case CreateNode(_, IdName(name), _, _) =>
         incomingPipeline.newLong(name, nullable = false, CTNode)
@@ -237,6 +233,16 @@ object RegisterAllocation {
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
+  private def addGroupingMap(groupingExpressions: Map[String, Expression], incoming: PipelineInformation, outgoing: PipelineInformation) = {
+    groupingExpressions foreach {
+      case (key, parserAst.Variable(ident)) =>
+        val slotInfo = incoming(ident)
+        outgoing.newReference(key, slotInfo.nullable, slotInfo.typ)
+      case (key, _) =>
+        outgoing.newReference(key, nullable = true, CTAny)
+    }
+  }
+
   private def allocate(plan: LogicalPlan,
                        nullable: Boolean,
                        lhsPipeline: PipelineInformation,
@@ -245,7 +251,7 @@ object RegisterAllocation {
       case _: Apply =>
         rhsPipeline
 
-      case _:CartesianProduct =>
+      case _: CartesianProduct =>
         val cartesianProductPipeline = lhsPipeline.deepClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>

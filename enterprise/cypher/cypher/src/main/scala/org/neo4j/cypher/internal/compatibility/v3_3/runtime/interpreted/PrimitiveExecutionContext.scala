@@ -32,6 +32,8 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   private val longs = new Array[Long](pipeline.numberOfLongs)
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
+  override def toString(): String = s"pipeLine: $pipeline, longs: $longs, refs: $refs"
+
   def copyFrom(input: ExecutionContext, longsToCopy: Int): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
       System.arraycopy(other.longs, 0, longs, 0, longsToCopy)

@@ -51,6 +51,7 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
+      case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 3.1")
     }
     val updateStrategy = strategy match {
       case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
