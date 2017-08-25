@@ -102,6 +102,7 @@ public class ProcedureIT
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
                 .newGraphDatabase();
+        onCloseCalled = new boolean[2];
     }
 
     @After
@@ -112,6 +113,8 @@ public class ProcedureIT
             this.db.shutdown();
         }
     }
+
+    public static boolean[] onCloseCalled;
 
     @Test
     public void shouldCallProcedureWithParameterMap() throws Throwable
@@ -1015,6 +1018,39 @@ public class ProcedureIT
         }
     }
 
+    @Test
+    public void shouldCallStreamCloseWhenResultExhausted() throws Throwable
+    {
+        String query = "CALL org.neo4j.procedure.onCloseProcedure(0)";
+
+        Result res = db.execute( query );
+
+        assertTrue( res.hasNext() );
+        res.next();
+
+        assertFalse( onCloseCalled[0] );
+
+        assertTrue( res.hasNext() );
+        res.next();
+
+        assertTrue( onCloseCalled[0] );
+    }
+
+    @Test
+    public void shouldCallStreamCloseWhenResultFiltered() throws Throwable
+    {
+        // This query should return zero rows
+        String query = "CALL org.neo4j.procedure.onCloseProcedure(1) YIELD someVal WITH someVal WHERE someVal = 1337 RETURN someVal";
+
+        Result res = db.execute( query );
+
+        assertFalse( onCloseCalled[1] );
+
+        assertFalse( res.hasNext() );
+
+        assertTrue( onCloseCalled[1] );
+    }
+
     private String createCsvFile( String... lines ) throws IOException
     {
         File file = plugins.newFile();
@@ -1694,6 +1730,18 @@ public class ProcedureIT
         {
             db.execute( "CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE" );
             db.createNode();
+        }
+
+        @Procedure( name = "org.neo4j.procedure.onCloseProcedure" )
+        public Stream<Output> onCloseProcedure( @Name( "index" ) long index )
+        {
+            onCloseCalled[(int) index] = false;
+            return Stream.of( 1L, 2L ).map( Output::new )
+                    .onClose( () ->
+                    {
+                        onCloseCalled[(int) index] = true;
+                    } );
+
         }
     }
 
