@@ -102,13 +102,18 @@ public enum ResourceTypes implements ResourceType
         if ( !useStrongHashing )
         {
             // Default
-            return indexEntryResourceId_2_2_0( labelId, predicates, 0 );
+            return indexEntryResourceId_2_2_0( labelId, predicates );
         }
         else
         {
             // Opt-in
             return indexEntryResourceId_4_x( labelId, predicates );
         }
+    }
+
+    static long indexEntryResourceId_2_2_0( long labelId, IndexQuery.ExactPredicate[] predicates )
+    {
+        return indexEntryResourceId_2_2_0( labelId, predicates, 0 );
     }
 
     private static long indexEntryResourceId_2_2_0( long labelId, IndexQuery.ExactPredicate[] predicates, int i )
@@ -164,7 +169,7 @@ public enum ResourceTypes implements ResourceType
      *
      * @see HashFunction#incrementalXXH64()
      */
-    private static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate... predicates )
+    static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate[] predicates )
     {
         long hash = indexEntryHash_4_x.initialise( 0x0123456789abcdefL );
 
@@ -207,18 +212,32 @@ public enum ResourceTypes implements ResourceType
 
                         hash = indexEntryHash_4_x.update( hash, len );
 
-                        for ( int j = 0; i < len; j++ )
+                        for ( int j = 0; j < len; j++ )
                         {
                             hash = indexEntryHash_4_x.update( hash, str.charAt( j ) );
                         }
                     }
                 }
-                else if ( componentType == Double.class )
+                else if ( componentType == Double.TYPE )
                 {
                     for ( int i = 0; i < length; i++ )
                     {
                         hash = indexEntryHash_4_x.update(
-                                hash, Double.doubleToLongBits( (Double) Array.get( value, i ) ) );
+                                hash, Double.doubleToLongBits( Array.getDouble( value, i ) ) );
+                    }
+                }
+                else if ( componentType == Boolean.TYPE )
+                {
+                    for ( int i = 0; i < length; i++ )
+                    {
+                        hash = indexEntryHash_4_x.update( hash, Boolean.hashCode( Array.getBoolean( value, i ) ) );
+                    }
+                }
+                else if ( componentType == Character.TYPE )
+                {
+                    for ( int i = 0; i < length; i++ )
+                    {
+                        hash = indexEntryHash_4_x.update( hash, Array.getChar( value, i ) );
                     }
                 }
                 else
@@ -232,6 +251,14 @@ public enum ResourceTypes implements ResourceType
             else if ( type == Double.class )
             {
                 hash = indexEntryHash_4_x.update( hash, Double.doubleToLongBits( (Double) value ) );
+            }
+            else if ( type == Boolean.class )
+            {
+                hash = indexEntryHash_4_x.update( hash, value.hashCode() );
+            }
+            else if ( type == Character.class )
+            {
+                hash = indexEntryHash_4_x.update( hash, (char) value );
             }
             else
             {
