@@ -22,14 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.concurrent.Work;
-import org.neo4j.concurrent.WorkSync;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -62,7 +56,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     private final VALUE treeValue;
     private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
-    private WorkSync<IndexUpdateApply,IndexUpdateWork> workSync;
 
     private Writer<KEY,VALUE> singleTreeWriter;
     private byte[] failureBytes;
@@ -81,10 +74,8 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
-        pageCache.getCachedFileSystem().mkdirs( storeFile.getParentFile() );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
-        workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, conflictDetectingValueMerger ) );
     }
 
     void instantiateWriter() throws IOException
@@ -111,7 +102,17 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        applyWithWorkSync( updates );
+        for ( IndexEntryUpdate<?> update : updates )
+        {
+            add( update );
+        }
+    }
+
+    @Override
+    public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+    {
+        NativeSchemaNumberIndexUpdater
+                .processAdd( treeKey, treeValue, update, singleTreeWriter, conflictDetectingValueMerger );
     }
 
     @Override
@@ -124,38 +125,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return new IndexUpdater()
-        {
-            private boolean closed;
-            private Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
-
-            @Override
-            public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
-            {
-                assertOpen();
-                updates.add( update );
-            }
-
-            @Override
-            public void close() throws IOException, IndexEntryConflictException
-            {
-                applyWithWorkSync( updates );
-                closed = true;
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds ) throws IOException
-            {   // no-op
-            }
-
-            private void assertOpen()
-            {
-                if ( closed )
-                {
-                    throw new IllegalStateException( "Updater has been closed" );
-                }
-            }
-        };
+        return singleUpdater.initialize( singleTreeWriter, false );
     }
 
     @Override
@@ -184,18 +154,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         finally
         {
             closeTree();
-        }
-    }
-
-    private void applyWithWorkSync( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
-    {
-        try
-        {
-            workSync.apply( new IndexUpdateWork( updates ) );
-        }
-        catch ( ExecutionException e )
-        {
-            throw Exceptions.launderedException( IOException.class, e );
         }
     }
 
@@ -246,54 +204,5 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     void closeWriter() throws IOException
     {
         singleTreeWriter = closeIfPresent( singleTreeWriter );
-    }
-
-    private static class IndexUpdateApply<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-    {
-        private final KEY treeKey;
-        private final VALUE treeValue;
-        private final Writer<KEY,VALUE> writer;
-        private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
-
-        IndexUpdateApply( KEY treeKey, VALUE treeValue, Writer<KEY,VALUE> writer,
-                ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
-        {
-            this.treeKey = treeKey;
-            this.treeValue = treeValue;
-            this.writer = writer;
-            this.conflictDetectingValueMerger = conflictDetectingValueMerger;
-        }
-
-        public void process( IndexEntryUpdate indexEntryUpdate ) throws Exception
-        {
-            NativeSchemaNumberIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
-        }
-    }
-
-    private static class IndexUpdateWork implements Work<IndexUpdateApply,IndexUpdateWork>
-    {
-        private final Collection<? extends IndexEntryUpdate<?>> updates;
-
-        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates )
-        {
-            this.updates = updates;
-        }
-
-        @Override
-        public IndexUpdateWork combine( IndexUpdateWork work )
-        {
-            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
-            combined.addAll( work.updates );
-            return new IndexUpdateWork( combined );
-        }
-
-        @Override
-        public void apply( IndexUpdateApply indexUpdateApply ) throws Exception
-        {
-            for ( IndexEntryUpdate<?> indexEntryUpdate : updates )
-            {
-                indexUpdateApply.process( indexEntryUpdate );
-            }
-        }
     }
 }

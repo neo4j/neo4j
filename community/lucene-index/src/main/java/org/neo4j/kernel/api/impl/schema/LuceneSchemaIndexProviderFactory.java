@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import java.io.File;
-
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -28,7 +26,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.logging.LogProvider;
@@ -61,20 +58,14 @@ public class LuceneSchemaIndexProviderFactory extends
     @Override
     public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
-        File storeDir = context.storeDir();
         Config config = dependencies.getConfig();
-        LogService logging = dependencies.getLogging();
-        LogProvider internalLogProvider = logging.getInternalLogProvider();
-        OperationalMode operationalMode = context.databaseInfo().operationalMode;
-        return create( fileSystemAbstraction, storeDir, internalLogProvider, config, operationalMode );
-    }
-
-    public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-            LogProvider logProvider, Config config, OperationalMode operationalMode )
-    {
+        LogProvider logging = dependencies.getLogging().getInternalLogProvider();
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, storeDir, logProvider, config, operationalMode );
+
+        FileSystemAbstraction fileSystem = dependencies.fileSystem();
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystem );
+
+        return new LuceneSchemaIndexProvider( fileSystem, directoryFactory, context.storeDir(), logging, config,
+                context.databaseInfo().operationalMode );
     }
 }

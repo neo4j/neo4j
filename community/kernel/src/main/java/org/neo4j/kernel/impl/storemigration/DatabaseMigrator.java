@@ -24,8 +24,8 @@ import java.util.Map;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -49,14 +49,14 @@ public class DatabaseMigrator
     private final FileSystemAbstraction fs;
     private final Config config;
     private final LogService logService;
-    private final SchemaIndexProviderMap schemaIndexProviderMap;
+    private final SchemaIndexProvider schemaIndexProvider;
     private final Map<String,IndexImplementation> indexProviders;
     private final PageCache pageCache;
     private final RecordFormats format;
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
-            Config config, LogService logService, SchemaIndexProviderMap schemaIndexProviderMap,
+            Config config, LogService logService, SchemaIndexProvider schemaIndexProvider,
             Map<String,IndexImplementation> indexProviders, PageCache pageCache,
             RecordFormats format )
     {
@@ -64,7 +64,7 @@ public class DatabaseMigrator
         this.fs = fs;
         this.config = config;
         this.logService = logService;
-        this.schemaIndexProviderMap = schemaIndexProviderMap;
+        this.schemaIndexProvider = schemaIndexProvider;
         this.indexProviders = indexProviders;
         this.pageCache = pageCache;
         this.format = format;
@@ -84,13 +84,13 @@ public class DatabaseMigrator
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 
+        StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
-        schemaIndexProviderMap.accept(
-                provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
+        storeUpgrader.addParticipant( schemaMigrator );
         storeUpgrader.addParticipant( legacyIndexMigrator );
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );

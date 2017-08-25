@@ -26,11 +26,9 @@ import org.junit.runners.Suite;
 
 import java.io.File;
 
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
@@ -48,12 +46,14 @@ import org.neo4j.test.runner.ParameterizedSuiteRunner;
 } )
 public abstract class IndexProviderCompatibilityTestSuite
 {
-    protected abstract SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir );
+    protected abstract SchemaIndexProvider createIndexProvider( FileSystemAbstraction fs, File graphDbDir );
 
     public abstract static class Compatibility
     {
         @Rule
-        public PageCacheAndDependenciesRule pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new );
+        public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+        @Rule
+        public final TestDirectory testDir = TestDirectory.testDirectory( getClass() );
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
@@ -64,41 +64,15 @@ public abstract class IndexProviderCompatibilityTestSuite
         @Before
         public void setup()
         {
-            fs = pageCacheAndDependenciesRule.fileSystem();
-            graphDbDir = pageCacheAndDependenciesRule.directory().graphDbDir();
-            PageCache pageCache = pageCacheAndDependenciesRule.pageCache();
-            indexProvider = testSuite.createIndexProvider( pageCache, fs, graphDbDir );
+            fs = fileSystemRule.get();
+            graphDbDir = testDir.graphDbDir();
+            indexProvider = testSuite.createIndexProvider( fs, graphDbDir );
         }
 
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;
-        }
-
-        protected void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
-        {
-            try
-            {
-                runWithPopulator.accept( populator );
-            }
-            finally
-            {
-                try
-                {
-                    populator.close( true );
-                }
-                catch ( Exception e )
-                {   // ignore
-                }
-                try
-                {
-                    populator.close( false );
-                }
-                catch ( Exception e )
-                {   // ignore
-                }
-            }
         }
     }
 }

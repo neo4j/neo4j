@@ -25,8 +25,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -45,12 +45,11 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -65,10 +64,8 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -446,6 +443,13 @@ public class SchemaIndexHaIT
         }
 
         @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+            delegate.add( update );
+            latch.startAndWaitForAllToStartAndFinish();
+        }
+
+        @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
@@ -543,8 +547,6 @@ public class SchemaIndexHaIT
     {
         GraphDatabaseService db();
         Config config();
-        PageCache pageCache();
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector();
     }
 
     private static class ControllingIndexProviderFactory extends KernelExtensionFactory<IndexProviderDependencies>
@@ -563,26 +565,20 @@ public class SchemaIndexHaIT
         @Override
         public Lifecycle newInstance( KernelContext context, SchemaIndexHaIT.IndexProviderDependencies deps ) throws Throwable
         {
-            PageCache pageCache = deps.pageCache();
-            File storeDir = context.storeDir();
-            DefaultFileSystemAbstraction fs = fileSystemRule.get();
-            NullLogProvider logProvider = NullLogProvider.getInstance();
-            Config config = deps.config();
-            OperationalMode operationalMode = context.databaseInfo().operationalMode;
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
-
-            FusionSchemaIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, recoveryCleanupWorkCollector );
-
             if ( injectLatchPredicate.test( deps.db() ) )
             {
-                ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider( fusionSchemaIndexProvider );
+                ControlledSchemaIndexProvider provider = new ControlledSchemaIndexProvider(
+                        new LuceneSchemaIndexProvider( fileSystemRule.get(),
+                                DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(),
+                                deps.config(), context.databaseInfo().operationalMode ) );
                 perDbIndexProvider.put( deps.db(), provider );
                 return provider;
             }
             else
             {
-                return fusionSchemaIndexProvider;
+                return new LuceneSchemaIndexProvider( fileSystemRule.get(),
+                        DirectoryFactory.PERSISTENT, context.storeDir(), NullLogProvider.getInstance(), deps.config(),
+                        context.databaseInfo().operationalMode );
             }
         }
     }
@@ -594,19 +590,18 @@ public class SchemaIndexHaIT
 
         ControlledGraphDatabaseFactory()
         {
-            this( Predicates.alwaysTrue() );
+            factory = new ControllingIndexProviderFactory( perDbIndexProvider, Predicates.alwaysTrue() );
         }
 
         private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )
         {
             factory = new ControllingIndexProviderFactory( perDbIndexProvider, dbsToControlIndexingOn );
-            getCurrentState().removeKernelExtensions( kef -> kef.getClass().getSimpleName().contains( "IndexProvider" ) );
-            getCurrentState().addKernelExtensions( Collections.singletonList( factory ) );
         }
 
         @Override
         public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File file )
         {
+            getCurrentState().addKernelExtensions( Arrays.asList( factory ) );
             return super.newEmbeddedDatabaseBuilder( file );
         }
 

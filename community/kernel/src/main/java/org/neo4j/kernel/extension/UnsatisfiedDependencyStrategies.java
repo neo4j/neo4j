@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.io.PrintStream;
-
 public class UnsatisfiedDependencyStrategies
 {
     private UnsatisfiedDependencyStrategies()
@@ -38,16 +36,7 @@ public class UnsatisfiedDependencyStrategies
     public static UnsatisfiedDependencyStrategy ignore()
     {
         return ( kernelExtensionFactory, e ) ->
-        {   // just ignore
-        };
-    }
-
-    // Perhaps not used, but very useful for debugging kernel extension loading problems
-    public static UnsatisfiedDependencyStrategy print( PrintStream out )
-    {
-        return ( kernelExtensionFactory, e ) ->
         {
-            out.println( kernelExtensionFactory + " missing dep " + e );
         };
     }
 }

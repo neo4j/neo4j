@@ -42,17 +42,12 @@ public class IterableMatcher<T> extends TypeSafeMatcher<Iterable<T>>
     @Override
     protected boolean matchesSafely( Iterable<T> objects )
     {
-        return itemsMatches( toMatch, objects );
-    }
-
-    static <T> boolean itemsMatches( Iterable<T> expected, Iterable<T> actual )
-    {
-        if ( Iterables.count( expected ) != Iterables.count( actual ) )
+        if ( Iterables.count( toMatch ) != Iterables.count( objects ) )
         {
             return false;
         }
-        Iterator<T> original = expected.iterator();
-        Iterator<T> matched = actual.iterator();
+        Iterator<T> original = toMatch.iterator();
+        Iterator<T> matched = objects.iterator();
         T fromOriginal;
         T fromToMatch;
         for ( ; original.hasNext() && matched.hasNext(); )
@@ -75,6 +70,6 @@ public class IterableMatcher<T> extends TypeSafeMatcher<Iterable<T>>
 
     public static <T> IterableMatcher<T> matchesIterable( Iterable<T> toMatch )
     {
-        return new IterableMatcher<>( toMatch );
+        return new IterableMatcher<T>( toMatch );
     }
 }

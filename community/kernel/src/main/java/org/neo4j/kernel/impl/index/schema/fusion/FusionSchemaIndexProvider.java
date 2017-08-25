@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
+import static java.lang.String.format;
 
 /**
  * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by two physical
@@ -49,10 +50,11 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
-            SchemaIndexProvider.Descriptor descriptor, int priority )
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector )
     {
-        super( descriptor, priority );
+        super( new Descriptor(
+                nativeProvider.getProviderDescriptor().getKey() + "+" + luceneProvider.getProviderDescriptor().getKey(),
+                nativeProvider.getProviderDescriptor().getVersion() + "+" + luceneProvider.getProviderDescriptor().getVersion() ), 0 );
         this.nativeProvider = nativeProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;
@@ -78,28 +80,16 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String nativeFailure = null;
-        try
+        String nativeFailure = nativeProvider.getPopulationFailure( indexId );
+        String luceneFailure = luceneProvider.getPopulationFailure( indexId );
+        if ( nativeFailure != null )
         {
-            nativeFailure = nativeProvider.getPopulationFailure( indexId );
+            return luceneFailure == null ? nativeFailure : nativeFailure + " and " + luceneFailure;
         }
-        catch ( IllegalStateException e )
-        {   // Just catch
-        }
-        String luceneFailure = null;
-        try
+        else
         {
-            luceneFailure = luceneProvider.getPopulationFailure( indexId );
+            return luceneFailure;
         }
-        catch ( IllegalStateException e )
-        {   // Just catch
-        }
-
-        if ( nativeFailure != null || luceneFailure != null )
-        {
-            return "native: " + nativeFailure + " lucene: " + luceneFailure;
-        }
-        throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
     @Override
@@ -107,17 +97,12 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
         InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
-        if ( nativeState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
+        if ( nativeState != luceneState )
         {
-            // One of the state is FAILED, the whole state must be considered FAILED
-            return InternalIndexState.FAILED;
+            throw new IllegalStateException(
+                    format( "Internal providers answer with different state native:%s, lucene:%s",
+                            nativeState, luceneState ) );
         }
-        if ( nativeState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
-        {
-            // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
-            return InternalIndexState.POPULATING;
-        }
-        // This means that both states are ONLINE
         return nativeState;
     }
 

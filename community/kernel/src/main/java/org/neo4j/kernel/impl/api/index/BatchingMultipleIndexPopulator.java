@@ -19,7 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,8 +39,12 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -58,6 +68,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 {
     static final String TASK_QUEUE_SIZE_NAME = "task_queue_size";
     static final String AWAIT_TIMEOUT_MINUTES_NAME = "await_timeout_minutes";
+    static final String BATCH_SIZE_NAME = "batch_size";
     static final String MAXIMUM_NUMBER_OF_WORKERS_NAME = "population_workers_maximum";
 
     private static final String EOL = System.lineSeparator();
@@ -68,9 +79,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
+    private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
+    private final Map<IndexPopulation,List<IndexEntryUpdate<?>>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -78,7 +91,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    public BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
         super( storeView, logProvider );
         this.executor = createThreadPool();
@@ -107,6 +120,15 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
+    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId,
+            IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
+            FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+    {
+        return new BatchingIndexPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
+                failedIndexProxyFactory, indexUserDescription );
+    }
+
+    @Override
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         log.debug( "Populating from queue." + EOL + this );
@@ -119,9 +141,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     @Override
     public String toString()
     {
-        String updatesString = populations
+        String updatesString = batchedUpdates.values()
                 .stream()
-                .map( population -> population.batchedUpdates.size() + " updates" )
+                .map( entry -> entry.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
@@ -151,22 +173,62 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
+     * Add given {@link IndexEntryUpdate update} to the list of updates already present for the given
+     * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
+     *
+     * @param population the index population.
+     * @param update updates to add to the batch.
+     */
+    private void batchUpdate( IndexPopulation population, IndexEntryUpdate<?> update )
+    {
+        List<IndexEntryUpdate<?>> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
+        batch.add( update );
+        flushIfNeeded( population, batch );
+    }
+
+    /**
+     * Insert given list of updates to the index if {@link #BATCH_SIZE} is reached.
+     *
+     * @param population the index population.
+     * @param batch the list of updates for the index.
+     */
+    private void flushIfNeeded( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
+    {
+        if ( batch.size() >= BATCH_SIZE )
+        {
+            batchedUpdates.remove( population );
+            flush( population, batch );
+        }
+    }
+
+    /**
      * Insert all batched updates into corresponding indexes.
      */
     private void flushAll()
     {
-        populations.forEach( population -> flush( population ) );
+        Iterator<Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>>> entries = batchedUpdates.entrySet().iterator();
+        while ( entries.hasNext() )
+        {
+            Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>> entry = entries.next();
+            IndexPopulation population = entry.getKey();
+            List<IndexEntryUpdate<?>> updates = entry.getValue();
+            entries.remove();
+            if ( updates != null && !updates.isEmpty() )
+            {
+                flush( population, updates );
+            }
+        }
     }
 
     /**
      * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
      *
      * @param population the index population.
+     * @param batch the list of updates to insert.
      */
-    private void flush( IndexPopulation population )
+    private void flush( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
     {
         activeTasks.incrementAndGet();
-        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
 
         executor.execute( () ->
         {
@@ -231,6 +293,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
     }
 
+    private List<IndexEntryUpdate<?>> newBatch()
+    {
+        return new ArrayList<>( BATCH_SIZE );
+    }
+
     private ExecutorService createThreadPool()
     {
         int threads = getNumberOfPopulationWorkers();
@@ -264,6 +331,28 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private int getNumberOfPopulationWorkers()
     {
         return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
+    }
+
+    /**
+     * An {@link IndexPopulation} that does not insert updates one by one into the index but instead adds them to the
+     * map containing batches of updates for each index.
+     */
+    private class BatchingIndexPopulation extends IndexPopulation
+    {
+        BatchingIndexPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
+                SchemaIndexProvider.Descriptor providerDescriptor, FlippableIndexProxy flipper,
+                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
+        {
+            super( populator, indexId, descriptor, providerDescriptor, flipper, failedIndexProxyFactory,
+                    indexUserDescription );
+        }
+
+        @Override
+        protected void add( IndexEntryUpdate updates ) throws IOException,
+                IndexEntryConflictException
+        {
+            batchUpdate( this, updates );
+        }
     }
 
     /**

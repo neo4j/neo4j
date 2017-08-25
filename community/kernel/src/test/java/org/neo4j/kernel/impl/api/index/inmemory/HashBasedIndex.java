@@ -290,7 +290,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullNumberPrecision()
     {
         return false;
     }

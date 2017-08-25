@@ -58,6 +58,13 @@ public interface IndexPopulator
             throws IndexEntryConflictException, IOException;
 
     /**
+     * Variant of {@link #add(Collection)
+     * @param update to be inserted
+     */
+    void add( IndexEntryUpdate<?> update )
+            throws IndexEntryConflictException, IOException;
+
+    /**
      * Verifies that each value in this index is unique.
      * This method is called after the index has been fully populated and is guaranteed to not have
      * concurrent changes while executing.
@@ -141,6 +148,11 @@ public interface IndexPopulator
         @Override
         public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
                 IOException
+        {
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
         {
         }
 

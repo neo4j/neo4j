@@ -60,9 +60,9 @@ public class DelegatingIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision( IndexQuery... predicates )
+    public boolean hasFullNumberPrecision()
     {
-        return delegate.hasFullNumberPrecision( predicates );
+        return delegate.hasFullNumberPrecision();
     }
 
     @Override

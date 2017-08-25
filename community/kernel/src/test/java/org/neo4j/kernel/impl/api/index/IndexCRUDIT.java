@@ -168,12 +168,11 @@ public class IndexCRUDIT
     @Before
     public void before() throws Exception
     {
-        when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setKernelExtensions(
+        factory.addKernelExtensions(
                 Collections.singletonList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
         ctxSupplier = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
@@ -185,6 +184,7 @@ public class IndexCRUDIT
         when( mockedIndexProvider.getPopulator(
                     anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) )
             ).thenReturn( writer );
+        when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.getOnlineAccessor(
                     anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class )
             ) ).thenReturn( writer );
@@ -213,6 +213,13 @@ public class IndexCRUDIT
         public void add( Collection<? extends IndexEntryUpdate<?>> updates )
         {
             updatesCommitted.addAll( updates );
+        }
+
+        @Override
+        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+        {
+            ReadOperations statement = ctxSupplier.get().readOperations();
+            updatesCommitted.add( update );
         }
 
         @Override

@@ -54,8 +54,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 
-import static java.util.Arrays.asList;
-
 public class IndexingServiceIntegrationTest
 {
     private static final String FOOD_LABEL = "food";
@@ -77,7 +75,7 @@ public class IndexingServiceIntegrationTest
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
         database = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .setKernelExtensions( asList( new LuceneSchemaIndexProviderFactory() ) )
+                .addKernelExtension( new LuceneSchemaIndexProviderFactory() )
                 .newImpermanentDatabase();
         createData( database, 100 );
     }

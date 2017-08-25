@@ -26,9 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -50,7 +48,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -177,14 +174,14 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     {
         // given
         populator.create();
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
+        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+
+        // when
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
-            }
+            updater.process( update );
         }
 
         // then
@@ -220,11 +217,12 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     {
         // given
         populator.create();
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
-        applyInterleaved( updates, populator );
+        applyInterleaved( updates, updater, populator );
 
         // then
         populator.close( true );
@@ -504,7 +502,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
                     }
                 }
             }
-            populator.add( asList( updates.next() ) );
+            populator.add( updates.next() );
             count++;
         }
         return count;
@@ -542,44 +540,19 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         return RandomStringUtils.random( length, true, true );
     }
 
-    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, NativeSchemaNumberIndexPopulator<KEY,VALUE> populator )
-            throws IOException, IndexEntryConflictException
+    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
+            NativeSchemaNumberIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
     {
-        boolean useUpdater = true;
-        Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            if ( random.nextInt( 100 ) < 20 )
+            if ( random.nextBoolean() )
             {
-                if ( useUpdater )
-                {
-                    updater.close();
-                    populatorBatch = new ArrayList<>();
-                }
-                else
-                {
-                    populator.add( populatorBatch );
-                    updater = populator.newPopulatingUpdater( null_property_accessor );
-                }
-                useUpdater = !useUpdater;
-            }
-            if ( useUpdater )
-            {
-                updater.process( update );
+                populator.add( update );
             }
             else
             {
-                populatorBatch.add( update );
+                updater.process( update );
             }
-        }
-        if ( useUpdater )
-        {
-            updater.close();
-        }
-        else
-        {
-            populator.add( populatorBatch );
         }
     }
 

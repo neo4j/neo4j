@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -69,14 +68,16 @@ class FusionIndexPopulator implements IndexPopulator
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<?>> luceneBatch = new ArrayList<>();
-        Collection<IndexEntryUpdate<?>> nativeBatch = new ArrayList<>();
         for ( IndexEntryUpdate<?> update : updates )
         {
-            selector.select( nativeBatch, luceneBatch, update.values() ).add( update );
+            add( update );
         }
-        lucenePopulator.add( luceneBatch );
-        nativePopulator.add( nativeBatch );
+    }
+
+    @Override
+    public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
+    {
+        selector.select( nativePopulator, lucenePopulator, update.values() ).add( update );
     }
 
     @Override

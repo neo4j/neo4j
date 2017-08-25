@@ -68,14 +68,13 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     {
         // given
         populator.create();
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+
+        // when
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
-            }
+            updater.process( update );
         }
 
         // then
