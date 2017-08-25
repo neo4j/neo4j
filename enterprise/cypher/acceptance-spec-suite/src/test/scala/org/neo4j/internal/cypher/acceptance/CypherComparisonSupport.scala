@@ -271,16 +271,16 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     def Cost2_3: TestConfiguration = TestConfiguration(TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default))
 
-    def Version2_3: TestConfiguration = TestConfiguration(TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)) + Cost2_3
+    def Version2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default) + Cost2_3
 
-    def Version3_1: TestConfiguration = TestConfiguration(TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default), TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default))
+    def Version3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default) + TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
     def Version3_2: TestConfiguration = TestConfiguration(TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default))
 
     def Version3_3: TestConfiguration = Compiled + TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) + TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
       SlottedInterpreted
 
-    def AllRulePlanners: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default) + TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default) + TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners(Planners.Rule), Runtimes(Runtimes.Default))
 
     def Cost: TestConfiguration = Compiled + TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default) + TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default) + TestScenario(Versions.Default, Planners.Cost, Runtimes.Default)
 
@@ -447,6 +447,8 @@ object CypherComparisonSupport {
     }
 
     def +(other: TestScenario): TestConfiguration = TestConfiguration(Set(this, other))
+
+    def +(other: TestConfiguration): TestConfiguration = other + this
   }
 
   /**
