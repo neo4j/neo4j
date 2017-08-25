@@ -60,26 +60,26 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("rewrites * in return graphs") {
     assertRewrite(
-      "from new graph as foo from new graph as bar return * graphs *",
-      "from new graph as foo from new graph as bar return - graphs bar as bar, foo as foo"
+      "from graph as foo at 'url' from graph as bar at 'url2' return * graphs *",
+      "from graph as foo at 'url' from graph as bar at 'url2' return - graphs bar as bar, foo as foo"
     )
 
     assertRewrite(
-      "from new graph as foo from new graph as bar return - graphs *",
-      "from new graph as foo from new graph as bar return - graphs bar as bar, foo as foo"
+      "from graph as foo at 'url' from graph as bar at 'url2' return - graphs *",
+      "from graph as foo at 'url' from graph as bar at 'url2' return - graphs bar as bar, foo as foo"
     )
 
   }
 
   test("rewrites * in with graphs") {
     assertRewrite(
-      "from new graph as foo from new graph as bar with * graphs * return 1",
-      "from new graph as foo from new graph as bar with - graphs bar as bar, foo as foo return 1"
+      "from graph as foo at 'url' from graph as bar at 'url2' with * graphs * return 1",
+      "from graph as foo at 'url' from graph as bar at 'url2' with - graphs bar as bar, foo as foo return 1"
     )
 
     assertRewrite(
-      "from new graph as foo from new graph as bar with - graphs * return 1",
-      "from new graph as foo from new graph as bar with - graphs bar as bar, foo as foo return 1"
+      "from graph as foo at 'url' from graph as bar at 'url2' with - graphs * return 1",
+      "from graph as foo at 'url' from graph as bar at 'url2' with - graphs bar as bar, foo as foo return 1"
     )
   }
 

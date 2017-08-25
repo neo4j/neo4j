@@ -24,31 +24,30 @@ case class expandStar(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-// TODO: Reactivate!!!
-//    case clause@With(_, values, graphs, _, _, _, _)
-//      if values.includeExisting || graphs.exists(_.star) =>
-//      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
-//      val newGraphItems = graphs match {
-//        case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems)
-//        case _ => graphs
-//      }
-//      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems)(clause.position)
-//
-//    case clause: PragmaWithout =>
-//      With(
-//        distinct = false,
-//        returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-//        graphItems = graphReturnItems(clause, Seq.empty, clause.excludedNames),
-//        orderBy = None, skip = None, limit = None, where = None)(clause.position)
-//
-//    case clause@Return(_, values, graphs, _, _, _, excludedNames)
-//      if values.includeExisting || graphs.exists(_.star) =>
-//      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
-//      val newGraphItems = graphs match {
-//        case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems, excludedNames)
-//        case _ => graphs
-//      }
-//      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems, excludedNames = Set.empty)(clause.position)
+    case clause@With(_, values, graphs, _, _, _, _)
+      if values.includeExisting || graphs.exists(_.star) =>
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
+      val newGraphItems = graphs match {
+        case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems)
+        case _ => graphs
+      }
+      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems)(clause.position)
+
+    case clause: PragmaWithout =>
+      With(
+        distinct = false,
+        returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
+        graphItems = graphReturnItems(clause, List.empty, clause.excludedNames),
+        orderBy = None, skip = None, limit = None, where = None)(clause.position)
+
+    case clause@Return(_, values, graphs, _, _, _, excludedNames)
+      if values.includeExisting || graphs.exists(_.star) =>
+      val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
+      val newGraphItems = graphs match {
+        case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems, excludedNames)
+        case _ => graphs
+      }
+      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems, excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode
@@ -56,21 +55,28 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-//  private def graphReturnItems(clause: Clause, listedItems: Seq[SingleGraphItem], excludedNames: Set[String] = Set.empty)
-//  : Option[GraphReturnItems] = {
-//    val scope = state.scope(clause).getOrElse {
-//      throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
-//    }
-//    val clausePos = clause.position
-//    val symbolNames = scope.selectSymbolNames(_.graph) -- excludedNames
-//    val newGraphItems = symbolNames.toIndexedSeq.sorted.map { id =>
-//      val idPos = scope.symbolTable(id).definition.position
-//      val expr = Variable(id)(idPos)
-//      val alias = expr.copyId
-//      AliasGraph(NamedGraph(expr)(clausePos), Some(alias))(clausePos)
-//    }
-//    if (newGraphItems.isEmpty) None else Some(GraphReturnItems(false, newGraphItems)(clausePos))
-//  }
+  private def graphReturnItems(clause: Clause, listedItems: List[GraphReturnItem], excludedNames: Set[String] = Set.empty)
+  : Option[GraphReturnItems] = {
+    val scope = state.scope(clause).getOrElse {
+      throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
+    }
+    val clausePos = clause.position
+    val symbolNames = scope.selectSymbolNames(_.graph) -- excludedNames
+    val newGraphItems = symbolNames.toIndexedSeq.sorted.map { id =>
+      val idPos = scope.symbolTable(id).definition.position
+      val expr = Variable(id)(idPos)
+      val alias = expr.copyId
+      ReturnedGraph(
+        GraphRefAliasItem(
+          GraphRefAlias(
+            GraphRef(expr)(idPos),
+            Some(alias)
+          )(idPos)
+        )(clausePos)
+      )(clausePos)
+    }.toList ++ listedItems
+    if (newGraphItems.isEmpty) None else Some(GraphReturnItems(star = false, newGraphItems)(clausePos))
+  }
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty)
   : ReturnItemsDef = {

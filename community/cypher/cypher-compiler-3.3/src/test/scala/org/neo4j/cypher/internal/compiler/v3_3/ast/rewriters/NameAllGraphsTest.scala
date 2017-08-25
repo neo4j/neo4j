@@ -27,41 +27,31 @@ class NameAllGraphsTest extends CypherFunSuite {
 
   import parser.ParserFixture._
 
-  test("do not name no graph") {
-    val original = parser.parse("FROM - RETURN 1")
-    val expected = parser.parse("FROM - RETURN 1")
+  test("do not rename source graph") {
+    val original = parser.parse("FROM GRAPH AS foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
-    assert(result === expected)
+    assert(result === original)
+  }
+
+  test("do not rename TARGET graph") {
+    val original = parser.parse("INTO GRAPH AS foo AT 'url' WITH * TARGET GRAPH RETURN 1")
+
+    val result = original.rewrite(nameAllGraphs)
+    assert(result === original)
   }
 
   test("name named graphs") {
-    val original = parser.parse("FROM foo RETURN 1")
-    val expected = parser.parse("FROM foo RETURN 1")
-
-    val result = original.rewrite(nameAllGraphs)
-    assert(result === expected)
-  }
-
-  test("name new graph") {
-    val original = parser.parse("FROM NEW GRAPH RETURN 1")
-    val expected = parser.parse("FROM NEW GRAPH AS `  UNNAMED16` RETURN 1")
+    val original = parser.parse("FROM GRAPH foo RETURN 1")
+    val expected = parser.parse("FROM GRAPH foo AS foo RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
     assert(result === expected)
   }
 
   test("name load graph") {
-    val original = parser.parse("FROM GRAPH AT 'foo' RETURN 1")
-    val expected = parser.parse("FROM GRAPH AT 'foo' AS `  UNNAMED21` RETURN 1")
-
-    val result = original.rewrite(nameAllGraphs)
-    assert(result === expected)
-  }
-
-  test("name copy graph") {
-    val original = parser.parse("FROM COPY foo RETURN 1")
-    val expected = parser.parse("FROM COPY foo AS `  UNNAMED15` RETURN 1")
+    val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
+    val expected = parser.parse("FROM GRAPH AT 'url' AS `  UNNAMED21` RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
     assert(result === expected)
