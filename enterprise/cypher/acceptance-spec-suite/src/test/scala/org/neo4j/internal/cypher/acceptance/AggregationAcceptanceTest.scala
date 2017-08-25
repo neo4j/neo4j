@@ -97,7 +97,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createNode(Map("prop" -> 2))
     val r1 = relate(node1, node2)
 
-    val result = succeedWith(Configs.AllExceptSlotted - Configs.Compiled, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
+    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 

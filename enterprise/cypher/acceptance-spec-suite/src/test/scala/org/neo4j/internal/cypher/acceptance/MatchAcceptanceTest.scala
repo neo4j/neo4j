@@ -29,6 +29,14 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  test("fff") {
+    createNode("prop" -> 42)
+    createNode("prop" -> 42)
+    createNode("prop" -> 43)
+    val result = graph.execute("MATCH (n) RETURN n.prop, count(n.prop)")
+    println(result.resultAsString())
+    println(result.getExecutionPlanDescription)
+  }
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")
