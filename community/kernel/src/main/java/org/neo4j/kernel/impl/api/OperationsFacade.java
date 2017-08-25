@@ -344,7 +344,6 @@ public class OperationsFacade
         statementLocks.entityIterateAcquireShared( ResourceTypes.NODE, nodeId );
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
-
             Lock lock = new CompositeSharedNodeLock( node.get(), statementLocks, nodeId );
             return new CursorRelationshipIterator(
                     dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ), lock );

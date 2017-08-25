@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.function.Supplier;
@@ -38,6 +39,8 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 public class CursorRelationshipIteratorTest
 {
+    @Ignore( "In order to support Iterator Stability isolation level, we actually have to peek the next cursor item " +
+             "eagerly" )
     @Test
     public void shouldLazilyGoToNext() throws Exception
     {

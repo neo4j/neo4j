@@ -87,12 +87,12 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
                 type = item.type();
                 startNode = item.startNode();
                 endNode = item.endNode();
-
                 return item.id();
             }
             finally
             {
                 hasDeterminedNext = false;
+                hasNext();
             }
         }
         throw new NoSuchElementException();

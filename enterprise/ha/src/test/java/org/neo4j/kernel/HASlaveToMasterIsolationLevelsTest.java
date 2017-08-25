@@ -53,7 +53,7 @@ public class HASlaveToMasterIsolationLevelsTest extends IsolationLevelsTestTempl
     @Override
     protected int defaultTestRepetitions()
     {
-        return 1;
+        return 10;
     }
 
     @Override

@@ -48,6 +48,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.ReuseDatabaseClassRule;
@@ -685,6 +686,7 @@ public abstract class IsolationLevelsTestTemplate
         {
             return;
         }
+        RecordStorageEngine.takeRelationshipChainReadLocks = true;
 
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -712,6 +714,10 @@ public abstract class IsolationLevelsTestTemplate
                 assertThat( Iterables.count( node.getRelationships() ), is( 1L ) );
             }
         }
+        finally
+        {
+            RecordStorageEngine.takeRelationshipChainReadLocks = false;
+        }
     }
 
     @Theory
@@ -721,6 +727,7 @@ public abstract class IsolationLevelsTestTemplate
         {
             return;
         }
+        RecordStorageEngine.takeRelationshipChainReadLocks = true;
 
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -748,6 +755,10 @@ public abstract class IsolationLevelsTestTemplate
                 assertThat( Iterables.count( node.getRelationships( REL ) ), is( 1L ) );
             }
         }
+        finally
+        {
+            RecordStorageEngine.takeRelationshipChainReadLocks = false;
+        }
     }
 
     private void deleteCreateRelationship( GraphDatabaseService db, long nodeId )
@@ -758,13 +769,15 @@ public abstract class IsolationLevelsTestTemplate
             node.getRelationships().forEach( Relationship::delete );
             node.createRelationshipTo( node, REL );
         }
-        catch ( DeadlockDetectedException ignore )
+        catch ( DeadlockDetectedException | NotFoundException ignore )
         {
             // this is fine
         }
     }
     // todo prevent unstable iterator of node labels
     // todo prevent unstable iterator of relationship properties
+    // todo prevent unstable iterator of multiple node relationships
+    // todo prevent unstable iterator of multiple node relationships with types
 
     // todo prevent fuzzy read of node property
     // todo prevent fuzzy read of node label
