@@ -400,7 +400,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.get().lock() : NO_LOCK;
+            Lock lock = RecordStorageEngine.takePropertyReadLocks ? relationship.get().lock() : NO_LOCK;
             try ( Cursor<PropertyItem> properties = storeStatement
                     .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {

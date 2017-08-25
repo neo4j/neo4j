@@ -421,7 +421,8 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, AssertOpen assertOpen )
     {
-        Lock lock = RecordStorageEngine.takePropertyReadLocks? node.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
+        // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks ? node.lock() : NO_LOCK;
         return statement.acquirePropertyCursor( node.nextPropertyId(), lock, assertOpen );
     }
 
@@ -429,7 +430,8 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
             AssertOpen assertOpen )
     {
-        Lock lock = RecordStorageEngine.takePropertyReadLocks? node.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
+        // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks ? node.lock() : NO_LOCK;
         return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 
@@ -437,7 +439,8 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
             AssertOpen assertOpen )
     {
-        Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
+        // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks ? relationship.lock() : NO_LOCK;
         return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, assertOpen );
     }
 
@@ -445,7 +448,8 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
             int propertyKeyId, AssertOpen assertOpen )
     {
-        Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
+        // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks ? relationship.lock() : NO_LOCK;
         return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 

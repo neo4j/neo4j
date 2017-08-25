@@ -1537,7 +1537,7 @@ public class OperationsFacade
         private final StatementLocks statementLocks;
         private final long nodeId;
 
-        public CompositeSharedNodeLock( NodeItem node, StatementLocks statementLocks, long nodeId )
+        CompositeSharedNodeLock( NodeItem node, StatementLocks statementLocks, long nodeId )
         {
             this.innerLock = RecordStorageEngine.takeRelationshipChainReadLocks ? node.lock() : NO_LOCK;
             this.statementLocks = statementLocks;
@@ -1551,5 +1551,4 @@ public class OperationsFacade
             statementLocks.entityIterateReleaseShared( ResourceTypes.NODE, nodeId );
         }
     }
-    // </Procedures>
 }

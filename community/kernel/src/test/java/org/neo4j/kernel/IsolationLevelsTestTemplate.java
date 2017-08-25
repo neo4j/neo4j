@@ -178,7 +178,8 @@ public abstract class IsolationLevelsTestTemplate
 
     private long txCreateNode( Label... labels )
     {
-        return db.executeAndCommit( db -> {
+        return db.executeAndCommit( db ->
+        {
             return db.createNode( labels ).getId();
         } );
     }
