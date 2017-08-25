@@ -20,14 +20,38 @@
 package org.neo4j.values;
 
 import java.util.Comparator;
+import java.util.Iterator;
+
+import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 
 /**
  * Values that represent sequences of values (such as Lists or Arrays) need to implement this interface.
  * Thus we can get an equality check that is based on the values (e.g. List.equals(ArrayValue) )
  * Values that implement this interface also need to overwrite isSequence() to return true!
+ *
+ * Note that even though SequenceValue extends Iterable iterating over the sequence using iterator() might not be the
+ * most performant method. Branch using iterationPreference() in performance critical code paths.
  */
-public interface SequenceValue
+public interface SequenceValue extends Iterable<AnyValue>
 {
+    /**
+     * The preferred way to iterate this sequence. Preferred in this case means the method which is expected to be
+     * the most performant.
+     */
+    enum IterationPreference
+    {
+        RANDOM_ACCESS,
+        ITERATION
+    }
+
+    int length();
+
+    AnyValue value( int offset );
+
+    Iterator<AnyValue> iterator();
+
+    IterationPreference iterationPreference();
+
     default boolean equals( SequenceValue other )
     {
         if ( other == null )
@@ -35,45 +59,95 @@ public interface SequenceValue
             return false;
         }
 
-        if ( this.length() != other.length() )
+        IterationPreference pref = iterationPreference();
+        IterationPreference otherPref = other.iterationPreference();
+        if ( pref == RANDOM_ACCESS && otherPref == RANDOM_ACCESS )
         {
-            return false;
+            return equalsUsingRandomAccess( this, other );
         }
-
-        for ( int i = 0; i < this.length(); i++ )
+        else
         {
-            AnyValue myValue = this.value( i );
-            AnyValue otherValue = other.value( i );
-            if ( !myValue.equals( otherValue ) )
-            {
-                return false;
-            }
+            return equalsUsingIterators( this, other );
         }
-        return true;
     }
 
-    AnyValue value( int offset );
+    static boolean equalsUsingRandomAccess( SequenceValue a, SequenceValue b )
+    {
+        int i = 0;
+        boolean areEqual = a.length() == b.length();
 
-    int length();
+        while ( areEqual && i < a.length() )
+        {
+            areEqual = a.value( i ).equals( b.value( i ) );
+            i++;
+        }
+        return areEqual;
+    }
+
+    static boolean equalsUsingIterators( SequenceValue a, SequenceValue b )
+    {
+        boolean areEqual = true;
+        Iterator<AnyValue> aIterator = a.iterator();
+        Iterator<AnyValue> bIterator = b.iterator();
+
+        while ( areEqual && aIterator.hasNext() && bIterator.hasNext() )
+        {
+            areEqual = aIterator.next().equals( bIterator.next() );
+        }
+
+        return areEqual && aIterator.hasNext() == bIterator.hasNext();
+    }
 
     default int compareToSequence( SequenceValue other, Comparator<AnyValue> comparator )
     {
+        IterationPreference pref = iterationPreference();
+        IterationPreference otherPref = other.iterationPreference();
+        if ( pref == RANDOM_ACCESS && otherPref == RANDOM_ACCESS )
+        {
+            return compareUsingRandomAccess( this, other, comparator );
+        }
+        else
+        {
+            return compareUsingIterators( this, other, comparator );
+        }
+    }
+
+    static int compareUsingRandomAccess( SequenceValue a, SequenceValue b, Comparator<AnyValue> comparator )
+    {
         int i = 0;
         int x = 0;
-        int length = Math.min( length(), other.length() );
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
-            x = comparator.compare( value( i ), other.value( i ) );
+            x = comparator.compare( a.value( i ), b.value( i ) );
             i++;
         }
 
         if ( x == 0 )
         {
-            x = length() - other.length();
+            x = a.length() - b.length();
         }
 
         return x;
     }
 
+    static int compareUsingIterators( SequenceValue a, SequenceValue b, Comparator<AnyValue> comparator )
+    {
+        int x = 0;
+        Iterator<AnyValue> aIterator = a.iterator();
+        Iterator<AnyValue> bIterator = b.iterator();
+
+        while ( aIterator.hasNext() && bIterator.hasNext() )
+        {
+            x = comparator.compare( aIterator.next(), bIterator.next() );
+        }
+
+        if ( x == 0 )
+        {
+            x = Boolean.compare( aIterator.hasNext(), bIterator.hasNext() );
+        }
+
+        return x;
+    }
 }

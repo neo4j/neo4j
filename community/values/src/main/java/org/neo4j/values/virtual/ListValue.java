@@ -152,6 +152,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.RANDOM_ACCESS;
+        }
+
+        @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
             int length = array.length();
@@ -220,6 +226,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.RANDOM_ACCESS;
+        }
+
+        @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
             writer.beginList( values.length );
@@ -265,6 +277,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             assert !containsNull( values );
 
             this.values = values;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
         }
 
         @Override
@@ -317,6 +335,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             this.inner = inner;
             this.from = from;
             this.to = to;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
         }
 
         @Override
@@ -377,6 +401,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
+        }
+
+        @Override
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
             writer.beginList( size() );
@@ -432,6 +462,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         {
             this.inner = inner;
             this.transform = transform;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return inner.iterationPreference();
         }
 
         @Override
@@ -619,6 +655,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             return new FilteredIterator();
         }
 
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
+        }
+
         private class FilteredIterator implements Iterator<AnyValue>
         {
             private AnyValue next;
@@ -687,6 +729,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             this.start = start;
             this.end = end;
             this.step = step;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.RANDOM_ACCESS;
         }
 
         @Override
@@ -788,6 +836,12 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         ConcatList( ListValue[] lists )
         {
             this.lists = lists;
+        }
+
+        @Override
+        public IterationPreference iterationPreference()
+        {
+            return IterationPreference.ITERATION;
         }
 
         @Override
