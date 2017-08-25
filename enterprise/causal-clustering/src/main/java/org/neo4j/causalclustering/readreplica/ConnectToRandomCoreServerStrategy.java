@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.Random;
 
@@ -49,15 +48,6 @@ public class ConnectToRandomCoreServerStrategy extends UpstreamDatabaseSelection
 
         int skippedServers = random.nextInt( coreTopology.members().size() );
 
-        final Iterator<MemberId> iterator = coreTopology.members().keySet().iterator();
-
-        MemberId member;
-        do
-        {
-            member = iterator.next();
-        }
-        while ( skippedServers-- > 0 );
-
-        return Optional.ofNullable( member );
+        return coreTopology.members().keySet().stream().skip( skippedServers ).findFirst();
     }
 }

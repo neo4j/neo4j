@@ -36,26 +36,27 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ConnectRandomlyWithinServerGroupStrategyTest
+public class ConnectRandomlyToServerGroupStrategyTest
 {
+
     @Test
-    public void shouldUseServerGroupsFromConfig() throws Exception
+    public void shouldConnectToGroupDefinedInStrategySpecificConfig() throws Exception
     {
         // given
-        final String myServerGroup = "my_server_group";
-        Config configWithMyServerGroup = Config.defaults( CausalClusteringSettings.server_groups, myServerGroup );
-        MemberId[] myGroupMemberIds = memberIDs( 10 );
+        final String targetServerGroup = "target_server_group";
+        Config configWithTargetServerGroup = Config.defaults( CausalClusteringSettings.connect_randomly_to_server_group_strategy, targetServerGroup );
+        MemberId[] targetGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService =
-                ConnectRandomlyToServerGroupStrategyImplTest.getTopologyService( Collections.singletonList( myServerGroup ), myGroupMemberIds,
+                ConnectRandomlyToServerGroupStrategyImplTest.getTopologyService( Collections.singletonList( targetServerGroup ), targetGroupMemberIds,
                         Collections.singletonList( "your_server_group" ) );
 
-        ConnectRandomlyWithinServerGroupStrategy strategy = new ConnectRandomlyWithinServerGroupStrategy();
-        strategy.inject( topologyService, configWithMyServerGroup, NullLogProvider.getInstance(), myGroupMemberIds[0] );
+        ConnectRandomlyToServerGroupStrategy strategy = new ConnectRandomlyToServerGroupStrategy();
+        strategy.inject( topologyService, configWithTargetServerGroup, NullLogProvider.getInstance(), targetGroupMemberIds[0] );
 
         // when
         Optional<MemberId> result = strategy.upstreamDatabase();
 
         // then
-        assertThat( result, contains( isIn( myGroupMemberIds ) ) );
+        assertThat( result, contains( isIn( targetGroupMemberIds ) ) );
     }
 }

@@ -19,27 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-
-class Difference
+public interface DiscoveryServerInfo extends CatchupServerAddress, ClientConnector, GroupedServer
 {
-    private MemberId memberId;
-    private CatchupServerAddress server;
-
-    private Difference( MemberId memberId, CatchupServerAddress server )
-    {
-        this.memberId = memberId;
-        this.server = server;
-    }
-
-    static <T extends DiscoveryServerInfo> Difference asDifference( Topology<T> topology, MemberId memberId )
-    {
-        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "{memberId=%s, info=%s}", memberId, server );
-    }
 }

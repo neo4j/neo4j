@@ -246,9 +246,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
-        defaultStrategy.setTopologyService( topologyService );
-        defaultStrategy.setConfig( config );
-        defaultStrategy.setMyself( myself );
+        defaultStrategy.inject( topologyService, config, logProvider, myself );
 
         UpstreamDatabaseStrategiesLoader loader;
         if ( config.get( CausalClusteringSettings.multi_dc_license ) )

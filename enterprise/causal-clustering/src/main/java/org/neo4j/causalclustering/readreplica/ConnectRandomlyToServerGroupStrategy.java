@@ -21,27 +21,39 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
-public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
+public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
+    static final String NAME = "connect-randomly-to-server-group";
     private ConnectRandomlyToServerGroupImpl strategyImpl;
 
-    public ConnectRandomlyWithinServerGroupStrategy()
+    public ConnectRandomlyToServerGroupStrategy()
     {
-        super( "connect-randomly-within-server-group" );
+        super( NAME );
     }
 
     @Override
     void init()
     {
-        List<String> groups = config.get( CausalClusteringSettings.server_groups );
-        strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService, myself );
-        log.warn( "Upstream selection strategy " + readableName + " is deprecated. Consider using " + ConnectRandomlyToServerGroupStrategy.NAME + " instead." );
+        List<String> groups = config.get( CausalClusteringSettings.connect_randomly_to_server_group_strategy );
+        strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService,
+                myself );
+
+        if ( groups.isEmpty() )
+        {
+            log.warn( "No server groups configured for upstream strategy " + readableName + ". Strategy will not find upstream servers." );
+        }
+        else
+        {
+            String readableGroups = groups.stream().collect( Collectors.joining( ", " ) );
+            log.info( "Upstream selection strategy " + readableName + " configured with server groups " + readableGroups );
+        }
     }
 
     @Override
