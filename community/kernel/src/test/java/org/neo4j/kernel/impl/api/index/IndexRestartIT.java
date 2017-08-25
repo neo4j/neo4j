@@ -67,7 +67,7 @@ public class IndexRestartIT
     {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs.get() ) );
-        factory.setKernelExtensions( Collections.singletonList(
+        factory.addKernelExtensions( Collections.singletonList(
             singleInstanceSchemaIndexProviderFactory( "test", provider )
         ) );
     }

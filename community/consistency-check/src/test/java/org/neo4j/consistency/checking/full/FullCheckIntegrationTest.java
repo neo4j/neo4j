@@ -444,8 +444,8 @@ public class FullCheckIntegrationTest
         {
             IndexRule rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().apply( rule.getProviderDescriptor() )
-                .getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
+            IndexPopulator populator =
+                storeAccess.indexes().getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
 
@@ -556,13 +556,11 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().getOnlineAccessor(
+                    indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.remove( asPrimitiveLongSet( indexedNodes ) );
             updater.close();
-            accessor.force();
             accessor.close();
         }
 
@@ -584,12 +582,11 @@ public class FullCheckIntegrationTest
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().apply( indexRule.getProviderDescriptor() )
+            IndexAccessor accessor = fixture.directStoreAccess().indexes()
                     .getOnlineAccessor( indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.getIndexDescriptor().schema(), values( indexRule ) ) );
             updater.close();
-            accessor.force();
             accessor.close();
         }
 
@@ -1036,8 +1033,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
-                IndexRule rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
+                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId1 );
+                IndexRule rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId1 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
                 Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
@@ -1081,7 +1078,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record1Before = record1.clone();
                 DynamicRecord record2Before = record2.clone();
 
-                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
+                IndexRule rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, (long) ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
                 Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );

@@ -409,10 +409,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
 
-    @Internal
-    public static final Setting<Boolean> enable_native_schema_index =
-            setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
-
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +

@@ -51,7 +51,7 @@ public class SchemaIndexWaitingAcceptanceTest
         {
             List<KernelExtensionFactory<?>> extensions;
             extensions = Collections.singletonList( singleInstanceSchemaIndexProviderFactory( "test", provider ) );
-            ((TestGraphDatabaseFactory) databaseFactory).setKernelExtensions( extensions );
+            ((TestGraphDatabaseFactory) databaseFactory).addKernelExtensions( extensions );
         }
     };
 

@@ -302,16 +302,6 @@ public abstract class IndexQuery implements Predicate<Value>
             return (Number)to.asObject();
         }
 
-        public Value fromAsValue()
-        {
-            return from;
-        }
-
-        public Value toAsValue()
-        {
-            return to;
-        }
-
         public boolean fromInclusive()
         {
             return fromInclusive;

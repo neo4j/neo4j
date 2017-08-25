@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -47,19 +46,19 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulato
 public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
-    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private final PageCache pageCache;
     private final File nativeSchemaIndexBaseDir;
     private final Log log;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NativeSchemaNumberIndexProvider( PageCache pageCache, File storeDir, LogProvider logging,
+    NativeSchemaNumberIndexProvider( PageCache pageCache, File nativeSchemaIndexBaseDir, LogProvider logging,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0 );
         this.pageCache = pageCache;
-        this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( storeDir );
+        this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( nativeSchemaIndexBaseDir );
         this.log = logging.getLog( getClass() );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;

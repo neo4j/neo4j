@@ -51,14 +51,8 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
             throws IOException
     {
-        ensureDirectoryExist();
         tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER, headerWriter,
                 recoveryCleanupWorkCollector );
-    }
-
-    private void ensureDirectoryExist() throws IOException
-    {
-        pageCache.getCachedFileSystem().mkdirs( storeFile.getParentFile() );
     }
 
     void closeTree() throws IOException

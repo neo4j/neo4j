@@ -205,31 +205,25 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     public int hashCode()
     {
         int result = priority;
-        result = 31 * result + providerDescriptor.hashCode();
+        result = 31 * result + (providerDescriptor != null ? providerDescriptor.hashCode() : 0);
         return result;
     }
 
     /**
      * Get schema index store root directory in specified store.
      * @param storeDir store root directory
-     * @return schema index store root directory
+     * @return shema index store root directory
      */
     public File getSchemaIndexStoreDirectory( File storeDir )
     {
-        return getSchemaIndexStoreDirectory( storeDir, getProviderDescriptor() );
-    }
-
-    public static File getSchemaIndexStoreDirectory( File storeDir, Descriptor descriptor )
-    {
-        return new File( new File( new File( storeDir, "schema" ), "index" ), descriptor.getKey() );
+        return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.
-     *
-     * @return {@link ResourceIterator<File>} over all meta files for this index provider.
+     * @return
      */
     public ResourceIterator<File> snapshotMetaFiles()
     {
