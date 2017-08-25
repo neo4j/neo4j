@@ -1,5 +1,4 @@
 Combining string operators' was blacklisted, but succeeded
-DISTINCT on nullable values
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
 Get rows in the middle by param
@@ -87,12 +86,7 @@ IS NOT NULL with literal maps
 `labels()` in return clauses
 Find friends of others
 Should only join when matching
-Using `keys()` on a single node, non-empty result
-Using `keys()` on multiple nodes, non-empty result
-Using `keys()` on a single node, empty result
 Using `keys()` on an optionally matched node
-Using `keys()` on a relationship, non-empty result
-Using `keys()` on a relationship, empty result
 Using `keys()` on an optionally matched relationship
 Adding a single label
 Ignore space before colon
@@ -226,7 +220,6 @@ Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
 Multiple aliasing and backreferencing
 Reusing variable names
-Handling DISTINCT with lists in maps
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
@@ -291,7 +284,6 @@ Fail when trying to compare strings and numbers
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
 ORDER BY on an aggregating key
-WHERE on a DISTINCT column
 A simple pattern with one bound endpoint
 Nested maps
 Connected components succeeding WITH
