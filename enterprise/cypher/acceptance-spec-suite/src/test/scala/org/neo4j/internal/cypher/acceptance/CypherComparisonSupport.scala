@@ -257,36 +257,31 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   object Configs {
 
-    def CompiledSource: TestConfiguration = TestConfiguration(TestScenario(Versions.V3_3, Planners.Cost, Runtimes.CompiledSource))
-
-    def CompiledByteCode: TestConfiguration = TestConfiguration(TestScenario(Versions.V3_3, Planners.Cost, Runtimes.CompiledBytecode))
-
-    def Compiled: TestConfiguration = CompiledByteCode + CompiledSource
+    def Compiled: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     def Interpreted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
 
     def CommunityInterpreted: TestConfiguration = AbsolutelyAll - Compiled - Procs - SlottedInterpreted
 
-    def SlottedInterpreted: TestConfiguration = TestConfiguration(TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted))
+    def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
-    def Cost2_3: TestConfiguration = TestConfiguration(TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default))
+    def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
     def Version2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default) + Cost2_3
 
     def Version3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default) + TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
 
-    def Version3_2: TestConfiguration = TestConfiguration(TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default))
+    def Version3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
 
-    def Version3_3: TestConfiguration = Compiled + TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) + TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-      SlottedInterpreted
+    def Version3_3: TestConfiguration = Compiled + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) + TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners(Planners.Rule), Runtimes(Runtimes.Default))
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
 
-    def Cost: TestConfiguration = Compiled + TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default) + TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default) + TestScenario(Versions.Default, Planners.Cost, Runtimes.Default)
+    def Cost: TestConfiguration = Compiled + TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
 
     def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1 + Version3_2
 
-    def Procs: TestConfiguration = TestConfiguration(TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema))
+    def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
     /*
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
@@ -325,6 +320,8 @@ object CypherComparisonSupport {
   object Versions {
     val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_2, V3_3)
 
+    implicit def versionToVersions(version: Version) : Versions = Versions(version)
+
     val oldest = orderedVersions.head
     val latest = orderedVersions.last
 
@@ -353,6 +350,9 @@ object CypherComparisonSupport {
   case class Planners(planners: Planner*)
 
   object Planners {
+
+    implicit def plannerToPlanners(planner: Planner) : Planners = Planners(planner)
+
     object Cost extends Planner(Set("COST", "IDP"), "planner=cost")
 
     object Rule extends Planner(Set("RULE"), "planner=rule")
@@ -366,6 +366,9 @@ object CypherComparisonSupport {
   case class Runtimes(runtimes: Runtime*)
 
   object Runtimes {
+
+    implicit def runtimeToRuntimes(runtime: Runtime) : Runtimes = Runtimes(runtime)
+
     object CompiledSource extends Runtime("COMPILED", "runtime=compiled debug=generate_java_source")
 
     object CompiledBytecode extends Runtime("COMPILED", "runtime=compiled")
@@ -446,8 +449,6 @@ object CypherComparisonSupport {
       })
     }
 
-    def +(other: TestScenario): TestConfiguration = TestConfiguration(Set(this, other))
-
     def +(other: TestConfiguration): TestConfiguration = other + this
   }
 
@@ -458,11 +459,7 @@ object CypherComparisonSupport {
 
     def +(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios ++ other.scenarios)
 
-    def +(other: TestScenario): TestConfiguration = TestConfiguration(scenarios + other)
-
     def -(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios -- other.scenarios)
-
-    def -(other: TestScenario): TestConfiguration = TestConfiguration(scenarios - other)
   }
 
   object TestConfiguration {
@@ -481,6 +478,8 @@ object CypherComparisonSupport {
     def empty: TestConfiguration = {
       TestConfiguration(Nil: _*)
     }
+
+    implicit def scenarioToTestConfiguration(scenario: TestScenario) : TestConfiguration = TestConfiguration(scenario)
   }
 
 }
