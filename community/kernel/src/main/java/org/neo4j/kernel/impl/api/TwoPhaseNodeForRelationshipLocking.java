@@ -49,19 +49,6 @@ class TwoPhaseNodeForRelationshipLocking
 
     void lockAllNodesAndConsumeRelationships( long nodeId, final KernelStatement state ) throws KernelException
     {
-        state.locks().entityIterateAcquireShared( NODE, nodeId );
-        try
-        {
-            innerLockAllNodesAndConsumeRelationships( nodeId, state );
-        }
-        finally
-        {
-            state.locks().entityIterateReleaseShared( NODE, nodeId );
-        }
-    }
-
-    private void innerLockAllNodesAndConsumeRelationships( long nodeId, KernelStatement state ) throws KernelException
-    {
         boolean retry;
         do
         {

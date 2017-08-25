@@ -20,7 +20,6 @@
 package org.neo4j.kernel;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -101,14 +100,5 @@ public class HASlaveToMasterIsolationLevelsTest extends IsolationLevelsTestTempl
     public void settingIsolationLevelOnSchemaWriteTransactionMustThrow( IsolationLevel level )
     {
         // Ignore this one, because schema write transactions are not allowed on slaves in HA.
-    }
-
-    @Ignore
-    @Override
-    public void preventUnstableIteratorOfNodeProperties( IsolationLevel level )
-    {
-        // Also ignore this one, because our current implementation cannot have both stable iteration of properties
-        // at the same time as it has stable iteration of relationships.
-        // One unfortunately have to choose between properties and relationships here.
     }
 }

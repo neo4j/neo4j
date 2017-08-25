@@ -69,16 +69,6 @@ public class SlaveWritingAfterStoreCopyTest
         assertTrue( expected.equals( collectIds( slave ) ) );
     }
 
-    @Test
-    public void poke() throws Exception
-    {
-        ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
-        HighlyAvailableGraphDatabase master = cluster.getMaster();
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-
-        createOneNode( slave );
-    }
-
     private Set<Long> collectIds( HighlyAvailableGraphDatabase db )
     {
         Set<Long> result = new HashSet();
