@@ -31,38 +31,24 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     GraphDatabaseSettings.relationship_auto_indexing -> "true",
     GraphDatabaseSettings.relationship_keys_indexable -> "weight")
 
-  test("Auto-index node from exact key value match") {
-    val node = createNode(Map("name" -> "Anna"))
-
-    val result = execute( """CALL db.nodeManualIndexSeek('node_auto_index', 'name', 'Anna') YIELD node AS n RETURN n""").toList
-
-    result should equal(List(Map("n" -> node)))
-  }
-
-  test("Auto-index relationship from exact key value match") {
-    val a = createNode()
-    val b = createNode()
-    val rel = relate(a, b, "weight" -> 12)
-
-    val result = execute( """CALL db.relationshipManualIndexSeek('relationship_auto_index', 'weight', 12) YIELD relationship AS r RETURN r""").toList
-
-    result should equal(List(Map("r" -> rel)))
-  }
-
   test("Node from exact key value match") {
     val node = createNode()
     graph.inTx {
       graph.index().forNodes("index").add(node, "key", "value")
     }
 
-    val result = execute( """CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""").toList
+    val result = execute(
+      """CALL db.nodeManualIndexSeek('index', 'key', 'value')
+        |YIELD node AS n RETURN n""".stripMargin).toList
 
     result should equal(List(Map("n" -> node)))
   }
 
   test("should fail if index doesn't exist for node seek") {
-    a [CypherExecutionException] should be thrownBy
-      execute("""CALL db.nodeManualIndexSeek('index', 'key', 'value') YIELD node AS n RETURN n""")
+    a[CypherExecutionException] should be thrownBy
+      execute(
+        """CALL db.nodeManualIndexSeek('index', 'key', 'value')
+          |YIELD node AS n RETURN n""".stripMargin)
   }
 
   test("Node from query lucene index") {
@@ -77,7 +63,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("should fail if index doesn't exist for node search") {
-    a [CypherExecutionException] should be thrownBy
+    a[CypherExecutionException] should be thrownBy
       execute("""CALL db.nodeManualIndexSearch('index', 'key:value') YIELD node AS n RETURN n""")
   }
 
@@ -109,11 +95,11 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val query = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
     val result = execute(query)
 
-    result.toList should equal(List(Map("r"-> relationship)))
+    result.toList should equal(List(Map("r" -> relationship)))
   }
 
   test("should fail if index doesn't exist for relationship") {
-    a [CypherExecutionException] should be thrownBy
+    a[CypherExecutionException] should be thrownBy
       execute("""CALL db.relationshipManualIndexSeek('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
 
@@ -131,8 +117,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val result = execute(query)
 
     result.toList should equal(List(
-      Map("r"-> relationship),
-      Map("r"-> relationship)
+      Map("r" -> relationship),
+      Map("r" -> relationship)
     ))
   }
 
@@ -150,7 +136,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val result = execute(query)
 
     result.toList should equal(List(
-      Map("r"-> relationship)
+      Map("r" -> relationship)
     ))
   }
 
@@ -166,9 +152,182 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     }
 
     val result = execute("CALL db.nodeManualIndexSeek('nodes', 'key', 'A') YIELD node AS n " +
-                           "CALL db.relationshipManualIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
-                           "MATCH (n)-[r]->(b) RETURN b")
+      "CALL db.relationshipManualIndexSeek('rels', 'key', 'B') YIELD relationship AS r " +
+      "MATCH (n)-[r]->(b) RETURN b")
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 
+  test("Auto-index node from exact key value match using manual feature") {
+    val node = createNode(Map("name" -> "Neo"))
+
+    val result = execute(
+      """CALL db.nodeManualIndexSeek('node_auto_index', 'name', 'Neo')
+        |YIELD node AS n RETURN n""".stripMargin).toList
+
+    result should equal(List(Map("n" -> node)))
+  }
+
+  test("Auto-index relationship from exact key value match using manual feature") {
+    val a = createNode()
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val result = execute(
+      """CALL db.relationshipManualIndexSeek('relationship_auto_index', 'weight', 12)
+        |YIELD relationship AS r RETURN r""".stripMargin).toList
+
+    result should equal(List(Map("r" -> rel)))
+  }
+
+  test("Auto-index node from exact key value match using auto feature") {
+    val node = createNode(Map("name" -> "Neo"))
+
+    val result = execute(
+      """CALL db.nodeAutoIndexSeek('name', 'Neo')
+        |YIELD node AS n RETURN n""".stripMargin).toList
+
+    result should equal(List(Map("n" -> node)))
+  }
+
+  test("Auto-index relationship from exact key value match using auto feature") {
+    val a = createNode()
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val result = execute(
+      """CALL db.relationshipAutoIndexSeek('weight', 12)
+        |YIELD relationship AS r RETURN r""".stripMargin).toList
+
+    result should equal(List(Map("r" -> rel)))
+  }
+
+  test("Should be able to create a node manual index by using a procedure") {
+    // Given a database with nodes with properties
+    val node = createNode(Map("name" -> "Neo"))
+
+    // When adding a node to the index, the index should exist
+    val addResult = execute(
+      """MATCH (n) WITH n CALL db.nodeManualIndexAdd('usernames', n, 'name', 'Neo') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    // Then the index should exist
+    val result = execute("CALL db.nodeManualIndexExists('usernames')").toList
+
+    result should be(List(Map("success" -> true)))
+
+    // And queries should return nodes
+    graph.inTx {
+      val results = graph.index().forNodes("usernames").get("name", "Neo")
+      results.size() should be(1)
+      results.getSingle should be(node)
+    }
+  }
+
+  test("Maunal relationships index should exist") {
+    val a = createNode(Map("name" -> "Neo"))
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val addResult = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    val result = execute(
+      """CALL db.relationshipManualIndexExists('relIndex')
+        |YIELD success AS s RETURN s""".stripMargin).toList
+
+
+    result should equal(List(Map("s" -> true)))
+  }
+
+  test("Should be able to drop node index") {
+    // Given a database with nodes with properties
+    val node = createNode(Map("name" -> "Neo"))
+
+    // When adding a node to the index
+    val addResult = execute(
+      """MATCH (n) WITH n CALL db.nodeManualIndexAdd('usernames', n, 'name', 'Neo') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    // Then the index should exist
+    val result = execute("CALL db.manualIndexDrop('usernames')").toList
+
+    result should be(List(Map("success" -> true)))
+  }
+
+  test("Should be able to drop relationship index") {
+    val a = createNode(Map("name" -> "Neo"))
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val addResult = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    val result = execute(
+      """CALL db.manualIndexDrop('relIndex')
+        |YIELD success AS s RETURN s""".stripMargin).toList
+
+
+    result should equal(List(Map("s" -> true)))
+  }
+
+  test("Should able to remove a node from manual index") {
+    val node = createNode(Map("name" -> "Neo"))
+
+    val addResult = execute(
+      """MATCH (n) WITH n CALL db.nodeManualIndexAdd('usernames', n, 'name', 'Neo') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    val seekResult = execute("CALL db.nodeManualIndexSeek('usernames', 'name', 'Neo') YIELD node AS n ").toList
+
+    seekResult should equal(List(Map("n" -> node)))
+
+    val result = execute(
+      """MATCH (n) WITH n CALL db.nodeManualIndexRemove('usernames', n, 'name') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    result should equal(List(Map("s" -> true)))
+
+    val emptyResult = execute("CALL db.nodeManualIndexSeek('usernames', 'name', 'Neo') YIELD node AS n ").toList
+
+    emptyResult should equal(List.empty)
+
+  }
+
+  test("Should able to remove a relationship from manual index") {
+    val a = createNode(Map("name" -> "Neo"))
+    val b = createNode()
+    val rel = relate(a, b, "weight" -> 12)
+
+    val addResult = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    addResult should be(List(Map("s" -> true)))
+
+    val seekResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'weight', '12') YIELD relationship AS r ").toList
+
+    seekResult should equal(List(Map("r" -> rel)))
+
+    val result = execute(
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexRemove('relIndex', r, 'weight') YIELD success as s RETURN s"""
+        .stripMargin).toList
+
+    result should equal(List(Map("s" -> true)))
+
+    val emptyResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'weight', '12') YIELD relationship AS r ").toList
+
+    emptyResult should equal(List.empty)
+
+  }
+
 }
+
+
