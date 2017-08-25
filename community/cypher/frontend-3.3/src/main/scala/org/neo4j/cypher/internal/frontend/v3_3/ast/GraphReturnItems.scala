@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
   def graphs: List[SingleGraphItem]
@@ -56,8 +56,12 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
       reportNoMultigraphSupport.unlessFeatureEnabled('multigraph) chain(
         checkNoMultipleSources chain
         checkNoMultipleTargets chain
-        checkUniqueGraphReference
+        checkUniqueGraphReference chain
+        (updateSetContextGraphs: SemanticCheck)
     ).ifFeatureEnabled('multigraph)
+
+  private def updateSetContextGraphs: (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).updateSetContextGraphs(newSource.flatMap(_.as), newTarget.flatMap(_.as))
 
   private def checkNoMultipleSources: SemanticCheck =
     (s: SemanticState) =>

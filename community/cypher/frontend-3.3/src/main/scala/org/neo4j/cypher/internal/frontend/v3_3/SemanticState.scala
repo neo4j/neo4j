@@ -66,7 +66,9 @@ object Scope {
   val empty = Scope(symbolTable = HashMap.empty, children = Vector())
 }
 
-case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends TreeElem[Scope] {
+case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope],
+                 setSourceGraph: Option[String] = None, setTargetGraph: Option[String] = None
+) extends TreeElem[Scope] {
 
   self =>
 
@@ -87,8 +89,15 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
-  def updateGraphVariable(variable: String, positions: Set[InputPosition]) =
+  def updateGraphVariable(variable: String, positions: Set[InputPosition]): Scope =
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, CTGraphRef, graph = true)))
+
+  def sourceGraph = setSourceGraph.flatMap(symbol).filter(_.graph)
+
+  def targetGraph = setTargetGraph.flatMap(symbol).filter(_.graph)
+
+  def updateSetContextGraphs(newSource: Option[String], newTarget: Option[String]) =
+    copy(setSourceGraph = newSource orElse setSourceGraph, setTargetGraph = newTarget orElse setTargetGraph)
 
   def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
@@ -145,13 +154,16 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
   private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
       val symbol = symbolTable(key)
+      val keyText =
+        setSourceGraph.flatMap(name => if (name == key) Some(s"$key >>") else None).orElse(
+        setTargetGraph.flatMap(name => if (name == key) Some(s">> $key") else None)
+      ).getOrElse(key)
       val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
-      builder.append(s"$indent$key: $symbolText$EOL")
+      builder.append(s"$indent$keyText: $symbolText$EOL")
     }
     children.foreach { child => child.dumpSingle(indent, builder) }
   }
 }
-
 
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
@@ -179,6 +191,9 @@ object SemanticState {
       case (loc, sym) if exclude(sym.name) => loc
       case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
     }
+
+    def updateSetContextGraphs(newSource: Option[String], newTarget: Option[String]): ScopeLocation =
+      location.replace(scope.updateSetContextGraphs(newSource, newTarget))
 
     def updateGraphVariable(variable: String, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateGraphVariable(variable, positions))
@@ -211,6 +226,21 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
+
+  def updateSetContextGraphs(newSource: Option[Variable], newTarget: Option[Variable]): Either[SemanticError, SemanticState] = {
+    val newScopeLocation = currentScope.updateSetContextGraphs(newSource.map(_.name), newTarget.map(_.name))
+    val newScope = newScopeLocation.location.elem
+    if (newScope.setSourceGraph.isEmpty)
+        Left(SemanticError("No source graph has been defined", InputPosition.NONE))
+    else if (newScope.sourceGraph.isEmpty)
+      Left(SemanticError("Source graph is no longer in scope", InputPosition.NONE))
+    else if (newScope.setTargetGraph.isEmpty)
+        Left(SemanticError("No target graph has been defined", InputPosition.NONE))
+    else if (newScope.targetGraph.isEmpty)
+      Left(SemanticError("Target graph is no longer in scope", InputPosition.NONE))
+    else
+      Right(copy(currentScope = newScopeLocation))
+  }
 
   def declareGraphVariable(variable: ast.Variable, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
