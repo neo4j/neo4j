@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{NodeFromRegister, RelationshipFromRegister}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.NodeFromRegister
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
@@ -34,8 +34,6 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
@@ -48,7 +46,8 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
                             pipelines: Map[LogicalPlan, PipelineInformation],
                             readOnly: Boolean,
                             rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
-                           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
+                           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
+  extends PipeBuilder {
 
   private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
     rewriteAstExpression andThen expressionConverters.toCommandExpression
@@ -69,12 +68,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id)
+                                  valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id)
 
       case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
+                                  valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
       case _: Argument =>
         ArgumentRegisterPipe(pipelineInformation)(id)
@@ -119,18 +118,20 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
+        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+                                      pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
         val fromOffset = pipeline.getLongOffsetFor(fromName)
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
+        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+                                       pipeline)(id)
 
       case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
-      VarPatternLength(min, max), expansionMode, IdName(tempNode), IdName(tempEdge), nodePredicate,
-      edgePredicate, _) =>
+                     VarPatternLength(min, max), expansionMode, IdName(tempNode), IdName(tempEdge), nodePredicate,
+                     edgePredicate, _) =>
 
         val shouldExpandAll = expansionMode match {
           case ExpandAll => true
@@ -146,12 +147,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val tempEdgeOffset = incomingPipeline.getLongOffsetFor(tempEdge)
         val sizeOfTemporaryStorage = 2
         VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types), min,
-          max, shouldExpandAll, pipeline,
-          tempNodeOffset = tempNodeOffset,
-          tempEdgeOffset = tempEdgeOffset,
-          nodePredicate = buildPredicate(nodePredicate),
-          edgePredicate = buildPredicate(edgePredicate),
-          longsToCopy = incomingPipeline.numberOfLongs - sizeOfTemporaryStorage)(id)
+                                    max, shouldExpandAll, pipeline,
+                                    tempNodeOffset = tempNodeOffset,
+                                    tempEdgeOffset = tempEdgeOffset,
+                                    nodePredicate = buildPredicate(nodePredicate),
+                                    edgePredicate = buildPredicate(edgePredicate),
+                                    longsToCopy = incomingPipeline.numberOfLongs - sizeOfTemporaryStorage)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
@@ -160,7 +161,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
 
       case Projection(_, expressions) =>
         val expressionsWithOffsets = expressions map {
-          case (k, e:NodeFromRegister) =>
+          case (k, e: NodeFromRegister) =>
             val offset = pipeline.getLongOffsetFor(k)
             offset -> convertExpressions(e)
           case (k, e) =>
@@ -170,7 +171,8 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
+        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply),
+                               props.map(convertExpressions))(id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
@@ -186,22 +188,33 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         }
         val aggregation = aggregationExpression.map {
           case (key, expression) =>
-            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression).asInstanceOf[AggregationExpression]
+            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+              .asInstanceOf[AggregationExpression]
         }
         EagerAggregationRegisterPipe(source,
                                      pipeline,
                                      grouping,
                                      aggregation)(id)
 
+      case Distinct(_, groupingExpressions) =>
+        val grouping = groupingExpressions.map {
+          case (key, expression) =>
+            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+        }
+
+        DistinctRegisterPipe(source, pipeline, grouping)(id)
+
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
         val fromOffset = pipeline(startNode).offset
         val endOffset = pipeline(endNode).offset
-        CreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,pipeline, props.map(convertExpressions))(id = id)
+        CreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,
+                                       pipeline, props.map(convertExpressions))(id = id)
 
       case MergeCreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
         val fromOffset = pipeline(startNode).offset
         val endOffset = pipeline(endNode).offset
-        MergeCreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,pipeline, props.map(convertExpressions))(id = id)
+        MergeCreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable),
+                                            endOffset, pipeline, props.map(convertExpressions))(id = id)
 
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection |
@@ -238,10 +251,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
     runtimeColumns
   }
 
-  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+  private def buildPredicate(expr: frontEndAst.Expression)
+                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
     val rewrittenExpr: Expression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext))
+      .asInstanceOf[Predicate]
   }
 
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
