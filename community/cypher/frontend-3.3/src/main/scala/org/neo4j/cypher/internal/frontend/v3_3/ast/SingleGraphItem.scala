@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
 sealed trait SingleGraphItem extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
@@ -25,7 +26,8 @@ sealed trait SingleGraphItem extends ASTNode with ASTParticle with SemanticCheck
   def withNewName(newName: Variable): SingleGraphItem
 
   override def semanticCheck: SemanticCheck = {
-    inner chain as.map(_.declareGraph: SemanticCheck).getOrElse(SemanticCheckResult.success)
+    inner chain as.map(_.declareGraph: SemanticCheck).getOrElse(SemanticCheckResult.success) chain
+      as.expectType(CTGraphRef.covariant)
   }
 
   protected def inner: SemanticCheck

@@ -17,9 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
-// TODO: Unit test semantic checking
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
   def graphs: List[SingleGraphItem]
 
@@ -54,27 +52,36 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
   def newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    graphs.flatMap(_.as).foldSemanticCheck(_.expectType(CTGraphRef.covariant)) chain
+    graphs.semanticCheck chain
       reportNoMultigraphSupport.unlessFeatureEnabled('multigraph) chain(
         checkNoMultipleSources chain
-        checkNoMultipleTargets
+        checkNoMultipleTargets chain
+        checkUniqueGraphReference
     ).ifFeatureEnabled('multigraph)
 
   private def checkNoMultipleSources: SemanticCheck =
     (s: SemanticState) =>
-      if(items.flatMap(_.newSource).size > 1)
+      if (items.flatMap(_.newSource).size > 1)
         SemanticCheckResult.error(s, SemanticError("Setting multiple source graphs is not allowed", position))
       else SemanticCheckResult.success(s)
 
   private def checkNoMultipleTargets: SemanticCheck =
     (s: SemanticState) =>
-      if(items.flatMap(_.newTarget).size > 1)
+      if (items.flatMap(_.newTarget).size > 1)
         SemanticCheckResult.error(s, SemanticError("Setting multiple target graphs is not allowed", position))
       else SemanticCheckResult.success(s)
 
   private def reportNoMultigraphSupport: SemanticCheck =
     FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
 
-
+  private def checkUniqueGraphReference: SemanticCheck = {
+    (s: SemanticState) => {
+      val aliases = graphs.flatMap(_.as)
+      if (aliases.size == aliases.toSet.size)
+        SemanticCheckResult.success(s)
+      else
+        SemanticCheckResult.error(s, SemanticError("Multiple result graphs with the same name are not supported", position))
+    }
+  }
 }
 

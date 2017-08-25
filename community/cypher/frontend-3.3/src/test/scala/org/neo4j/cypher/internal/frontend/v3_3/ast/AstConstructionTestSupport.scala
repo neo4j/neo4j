@@ -62,4 +62,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
 
   def TRUE: Expression = True()(pos)
+
+  def url(addr: String): GraphUrl =
+    GraphUrl(Right(StringLiteral(addr)(pos)))(pos)
+
+  def graph(name: String): SingleGraphItem =
+    GraphRefAliasItem(GraphRefAlias(GraphRef(varFor(name))(pos), None)(pos))(pos)
+
+  def graphAs(name: String, alias: String): SingleGraphItem =
+    GraphRefAliasItem(GraphRefAlias(GraphRef(varFor(name))(pos), Some(varFor(alias)))(pos))(pos)
+
+  def graphAt(name: String, address: String): SingleGraphItem =
+    GraphAtItem(url(address), Some(varFor(name)))(pos)
 }

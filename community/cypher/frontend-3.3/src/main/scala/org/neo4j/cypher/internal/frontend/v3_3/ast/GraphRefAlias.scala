@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
 final case class GraphRefAlias(ref: GraphRef, as: Option[Variable])(val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
@@ -24,5 +25,12 @@ final case class GraphRefAlias(ref: GraphRef, as: Option[Variable])(val position
   def withNewName(newName: Variable) = copy(as = Some(newName))(position)
 
   override def semanticCheck: SemanticCheck =
-    ref.semanticCheck chain as.map(_.declareGraph: SemanticCheck).getOrElse(SemanticCheckResult.success)
+    ref.semanticCheck chain checkAlias chain as.expectType(CTGraphRef.covariant)
+
+  def checkAlias: SemanticCheck =
+    as match {
+      case Some(v) if v.name != ref.name.name =>
+        as.map(_.declareGraph: SemanticCheck).getOrElse(SemanticCheckResult.success)
+      case _ => SemanticCheckResult.success
+    }
 }

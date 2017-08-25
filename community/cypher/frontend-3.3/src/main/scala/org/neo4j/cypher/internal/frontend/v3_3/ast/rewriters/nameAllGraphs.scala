@@ -24,6 +24,7 @@ case object nameAllGraphs extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
+  // TODO: resolve source and target graph
   private val rewriter = Rewriter.lift {
     case item: SourceGraphItem => item
     case item: TargetGraphItem => item

@@ -16,15 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{GraphRefAliasItem, GraphUrl, SingleGraphItem}
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 
 import scala.language.implicitConversions
 
 class GraphReturnItemsParserTest
   extends ParserAstTest[ast.GraphReturnItems]
   with Graphs
-  with Expressions {
+  with Expressions 
+  with AstConstructionTestSupport {
 
   implicit val parser = GraphReturnItems
 
@@ -34,43 +35,43 @@ class GraphReturnItemsParserTest
 
   test("GRAPH foo >>") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewContextGraphs(g("foo"))(pos)
+      ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test(">> GRAPH bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewTargetGraph(g("bar"))(pos)
+      ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPH foo >> GRAPH bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos)
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPH a, GRAPH foo >> GRAPH bar, GRAPH b") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("a"))(pos),
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos),
-      ast.ReturnedGraph(g("b"))(pos)
+      ast.ReturnedGraph(graph("a"))(pos),
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
+      ast.ReturnedGraph(graph("b"))(pos)
     )))
   }
 
   test("GRAPH baz, GRAPH foo >>, GRAPH bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("baz"))(pos),
-      ast.NewContextGraphs(g("foo"))(pos),
-      ast.ReturnedGraph(g("bar"))(pos)
+      ast.ReturnedGraph(graph("baz"))(pos),
+      ast.NewContextGraphs(graph("foo"))(pos),
+      ast.ReturnedGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPH foo, >> GRAPH bar, GRAPH baz") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("foo"))(pos),
-      ast.NewTargetGraph(g("bar"))(pos),
-      ast.ReturnedGraph(g("baz"))(pos)
+      ast.ReturnedGraph(graph("foo"))(pos),
+      ast.NewTargetGraph(graph("bar"))(pos),
+      ast.ReturnedGraph(graph("baz"))(pos)
     )))
   }
 
@@ -78,43 +79,43 @@ class GraphReturnItemsParserTest
 
   test("GRAPHS foo >>") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewContextGraphs(g("foo"))(pos)
+      ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test("GRAPHS >> bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewTargetGraph(g("bar"))(pos)
+      ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPHS foo >> bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos)
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPHS a, foo >> bar, b") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("a"))(pos),
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos),
-      ast.ReturnedGraph(g("b"))(pos)
+      ast.ReturnedGraph(graph("a"))(pos),
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
+      ast.ReturnedGraph(graph("b"))(pos)
     )))
   }
 
   test("GRAPHS baz, foo >>, bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("baz"))(pos),
-      ast.NewContextGraphs(g("foo"))(pos),
-      ast.ReturnedGraph(g("bar"))(pos)
+      ast.ReturnedGraph(graph("baz"))(pos),
+      ast.NewContextGraphs(graph("foo"))(pos),
+      ast.ReturnedGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPHS foo, >> bar, baz") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("foo"))(pos),
-      ast.NewTargetGraph(g("bar"))(pos),
-      ast.ReturnedGraph(g("baz"))(pos)
+      ast.ReturnedGraph(graph("foo"))(pos),
+      ast.NewTargetGraph(graph("bar"))(pos),
+      ast.ReturnedGraph(graph("baz"))(pos)
     )))
   }
 
@@ -122,27 +123,27 @@ class GraphReturnItemsParserTest
 
   test("GRAPHS *, foo >>") {
     yields(ast.GraphReturnItems(star = true, List(
-      ast.NewContextGraphs(g("foo"))(pos)
+      ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test("GRAPHS *, >> bar") {
     yields(ast.GraphReturnItems(star = true, List(
-      ast.NewTargetGraph(g("bar"))(pos)
+      ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPHS *, foo >> bar") {
     yields(ast.GraphReturnItems(star = true, List(
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos)
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPHS *, a, foo >> bar, b") {
     yields(ast.GraphReturnItems(star = true, List(
-      ast.ReturnedGraph(g("a"))(pos),
-      ast.NewContextGraphs(g("foo"), Some(g("bar")))(pos),
-      ast.ReturnedGraph(g("b"))(pos)
+      ast.ReturnedGraph(graph("a"))(pos),
+      ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
+      ast.ReturnedGraph(graph("b"))(pos)
     )))
   }
 
@@ -150,29 +151,16 @@ class GraphReturnItemsParserTest
 
   test("GRAPHS baz, foo >> GRAPH AT 'url' AS bar") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("baz"))(pos),
-      ast.NewContextGraphs(g("foo"), Some(g("bar", "url")))(pos)
+      ast.ReturnedGraph(graph("baz"))(pos),
+      ast.NewContextGraphs(graph("foo"), Some(graphAt("bar", "url")))(pos)
     )))
   }
 
   test("GRAPHS foo, GRAPH AT 'url' AS moep >> bar, baz") {
     yields(ast.GraphReturnItems(star = false, List(
-      ast.ReturnedGraph(g("foo"))(pos),
-      ast.NewContextGraphs(g("moep", "url"), Some(g("bar")))(pos),
-      ast.ReturnedGraph(g("baz"))(pos)
+      ast.ReturnedGraph(graph("foo"))(pos),
+      ast.NewContextGraphs(graphAt("moep", "url"), Some(graph("bar")))(pos),
+      ast.ReturnedGraph(graph("baz"))(pos)
     )))
   }
-
-  private implicit val pos: InputPosition = DummyPosition(-1)
-  private implicit def v(name: String): ast.Variable = ast.Variable(name)(pos)
-
-  private def url(addr: String): GraphUrl =
-    ast.GraphUrl(Right(ast.StringLiteral(addr)(pos)))(pos)
-
-  private def g(name: String): SingleGraphItem =
-    ast.GraphRefAliasItem(ast.GraphRefAlias(ast.GraphRef(v(name))(pos), None)(pos))(pos)
-
-  private def g(name: String, address: String): SingleGraphItem =
-    ast.GraphAtItem(url(address), Some(v(name)))(pos)
-
 }

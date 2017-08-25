@@ -1,14 +1,14 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, SemanticState, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
-class GraphReturnItemsTest extends CypherFunSuite {
-  val foo = g("foo")
-  val bar = g("bar")
-  val baz = g("baz")
-  val moep = g("moep")
+class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
+  val foo = graph("foo")
+  val bar = graph("bar")
+  val baz = graph("baz")
+  val moep = graph("moep")
 
   test("set correct source and target") {
     val items = GraphReturnItems(false, List(
@@ -68,15 +68,27 @@ class GraphReturnItemsTest extends CypherFunSuite {
     errors.exists(_.msg.contains("Setting multiple target graphs is not allowed")) should be(true)
   }
 
-  private implicit val pos: InputPosition = DummyPosition(-1)
-  private implicit def v(name: String): ast.Variable = ast.Variable(name)(pos)
+  test("disallow declaring variable multiple times") {
+    val items = GraphReturnItems(false, List(
+      ReturnedGraph(graphAt("foo", "url"))(pos),
+      ReturnedGraph(graphAt("foo", "url2"))(pos)
+    ))(pos)
 
-  private def url(addr: String): GraphUrl =
-    ast.GraphUrl(Right(ast.StringLiteral(addr)(pos)))(pos)
+    val result = items.semanticCheck(SemanticState.clean.withFeature('multigraph))
+    val errors = result.errors.toSet
 
-  private def g(name: String): SingleGraphItem =
-    ast.GraphRefAliasItem(ast.GraphRefAlias(ast.GraphRef(v(name))(pos), None)(pos))(pos)
+    errors.exists(_.msg.contains("Variable `foo` already declared")) should be(true)
+  }
 
-  private def g(name: String, address: String): SingleGraphItem =
-    ast.GraphAtItem(url(address), Some(v(name)))(pos)
+  test("disallow multiple result graphs with same name") {
+    val items = GraphReturnItems(false, List(
+      ReturnedGraph(graphAt("foo", "url"))(pos),
+      ReturnedGraph(graphAs("foo", "foo"))(pos)
+    ))(pos)
+
+    val result = items.semanticCheck(SemanticState.clean.withFeature('multigraph))
+    val errors = result.errors.toSet
+
+    errors.exists(_.msg.contains("Multiple result graphs with the same name are not supported")) should be(true)
+  }
 }
