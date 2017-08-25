@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -53,6 +54,7 @@ import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static org.neo4j.collection.primitive.PrimitiveArrays.union;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 class PropertyExistenceEnforcer
 {
@@ -296,7 +298,7 @@ class PropertyExistenceEnforcer
 
         private Cursor<PropertyItem> properties( NodeItem node )
         {
-            Lock lock = node.lock();
+            Lock lock = RecordStorageEngine.takePropertyReadLocks? node.lock() : NO_LOCK;
             Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( node.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getNodeState( node.id() ) );
@@ -304,7 +306,7 @@ class PropertyExistenceEnforcer
 
         private Cursor<PropertyItem> properties( RelationshipItem relationship )
         {
-            Lock lock = relationship.lock();
+            Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.lock() : NO_LOCK;
             Cursor<PropertyItem> cursor = storeStatement().acquirePropertyCursor( relationship.nextPropertyId(), lock,
                     AssertOpen.ALWAYS_OPEN );
             return txState.augmentPropertyCursor( cursor, txState.getRelationshipState( relationship.id() ) );

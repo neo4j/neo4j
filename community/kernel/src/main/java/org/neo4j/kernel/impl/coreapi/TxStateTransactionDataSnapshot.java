@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -57,6 +58,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
 import static org.neo4j.kernel.api.AssertOpen.ALWAYS_OPEN;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
@@ -236,7 +238,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     if ( relationship.next() )
                     {
-                        Lock lock = relationship.get().lock();
+                        Lock lock = RecordStorageEngine.takePropertyReadLocks ? relationship.get().lock() : NO_LOCK;
                         try ( Cursor<PropertyItem> properties = storeStatement
                                 .acquirePropertyCursor( relationship.get().nextPropertyId(), lock, ALWAYS_OPEN ) )
                         {
@@ -398,7 +400,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return null;
             }
 
-            Lock lock = relationship.get().lock();
+            Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.get().lock() : NO_LOCK;
             try ( Cursor<PropertyItem> properties = storeStatement
                     .acquireSinglePropertyCursor( relationship.get().nextPropertyId(), property, lock, ALWAYS_OPEN ) )
             {

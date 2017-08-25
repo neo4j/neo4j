@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -85,6 +86,7 @@ import static org.neo4j.collection.primitive.Primitive.intSet;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countByFirstPrevPointer;
 import static org.neo4j.kernel.impl.api.store.DegreeCounter.countRelationshipsInGroup;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -419,7 +421,7 @@ public class StorageLayer implements StoreReadLayer
     @Override
     public Cursor<PropertyItem> nodeGetProperties( StorageStatement statement, NodeItem node, AssertOpen assertOpen )
     {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks? node.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
         return statement.acquirePropertyCursor( node.nextPropertyId(), lock, assertOpen );
     }
 
@@ -427,7 +429,7 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> nodeGetProperty( StorageStatement statement, NodeItem node, int propertyKeyId,
             AssertOpen assertOpen )
     {
-        Lock lock = node.lock(); // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks? node.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
         return statement.acquireSinglePropertyCursor( node.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 
@@ -435,7 +437,7 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> relationshipGetProperties( StorageStatement statement, RelationshipItem relationship,
             AssertOpen assertOpen )
     {
-        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
         return statement.acquirePropertyCursor( relationship.nextPropertyId(), lock, assertOpen );
     }
 
@@ -443,7 +445,7 @@ public class StorageLayer implements StoreReadLayer
     public Cursor<PropertyItem> relationshipGetProperty( StorageStatement statement, RelationshipItem relationship,
             int propertyKeyId, AssertOpen assertOpen )
     {
-        Lock lock = relationship.lock(); // lock before reading the property id, since we might need to reload the record
+        Lock lock = RecordStorageEngine.takePropertyReadLocks? relationship.lock() : NO_LOCK; // lock before reading the property id, since we might need to reload the record
         return statement.acquireSinglePropertyCursor( relationship.nextPropertyId(), propertyKeyId, lock, assertOpen );
     }
 

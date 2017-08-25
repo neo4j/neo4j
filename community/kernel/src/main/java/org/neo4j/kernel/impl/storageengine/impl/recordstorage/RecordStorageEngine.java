@@ -120,12 +120,12 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
-    private static final boolean takePropertyReadLocks = FeatureToggles.flag(
+    public static final boolean takePropertyReadLocks = FeatureToggles.flag(
             RecordStorageEngine.class, "propertyReadLocks", false );
+    public static final boolean takeRelationshipChainReadLocks = FeatureToggles.flag(
+            RecordStorageEngine.class, "takeRelationshipChainReadLocks", false );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
@@ -254,9 +254,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private Supplier<StorageStatement> storeStatementSupplier( NeoStores neoStores )
     {
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
-
-        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
+        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, this.lockService );
     }
 
     @Override

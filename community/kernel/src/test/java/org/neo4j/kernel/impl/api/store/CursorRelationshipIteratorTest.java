@@ -34,6 +34,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 public class CursorRelationshipIteratorTest
 {
@@ -57,7 +58,7 @@ public class CursorRelationshipIteratorTest
             }
         } ) );
 
-        try ( CursorRelationshipIterator iterator = new CursorRelationshipIterator( cursor ) )
+        try ( CursorRelationshipIterator iterator = new CursorRelationshipIterator( cursor, NO_LOCK ) )
         {
             verifyZeroInteractions( cursor );
 

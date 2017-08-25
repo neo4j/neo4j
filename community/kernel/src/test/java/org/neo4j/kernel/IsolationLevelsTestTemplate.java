@@ -80,7 +80,7 @@ public abstract class IsolationLevelsTestTemplate
     public ThreadRepository threads = new ThreadRepository( 10, TimeUnit.SECONDS );
 
     @Rule
-    public RuleChain rules = RuleChain.outerRule( reuse.getRule() ).around( threads ).around( new RepeatRule( 10 ) );
+    public RuleChain rules = RuleChain.outerRule( reuse.getRule() ).around( threads ).around( new RepeatRule( 100 ) );
 
     protected abstract DatabaseRule createDatabaseRule();
 
@@ -693,7 +693,7 @@ public abstract class IsolationLevelsTestTemplate
 
             beginForked()
                     .then( (db,innerTx) -> setIsolationLevel( innerTx, level ) )
-                    .then( (db,innerTx) -> deleteCreateRelationship( db, innerTx, nodeId ) )
+                    .then( (db,innerTx) -> deleteCreateRelationship( db, nodeId ) )
                     .commit()
                     .run( threadCount, threads );
 
@@ -705,21 +705,55 @@ public abstract class IsolationLevelsTestTemplate
         }
     }
 
-    private void deleteCreateRelationship( GraphDatabaseService db, Transaction innerTx, long nodeId )
+    @Theory
+    public void preventUnstableIteratorOfNodeRelationshipsWithTypes( IsolationLevel level )
+    {
+        if ( shouldIgnoreTestForLevel( level, IsolationLevel.Anomaly.UnstableIterator ) )
+        {
+            return;
+        }
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.createRelationshipTo( node, REL );
+            tx.success();
+        }
+
+        int threadCount = 10;
+        try ( Transaction tx = db.beginTx() )
+        {
+            setIsolationLevel( tx, level );
+
+            beginForked()
+                    .then( (db,innerTx) -> setIsolationLevel( innerTx, level ) )
+                    .then( db -> deleteCreateRelationship( db, nodeId ) )
+                    .commit()
+                    .run( threadCount, threads );
+
+            while ( !threads.allDone() )
+            {
+                Node node = db.getNodeById( nodeId );
+                assertThat( Iterables.count( node.getRelationships( REL ) ), is( 1L ) );
+            }
+        }
+    }
+
+    private void deleteCreateRelationship( GraphDatabaseService db, long nodeId )
     {
         Node node = db.getNodeById( nodeId );
-        innerTx.acquireWriteLock( node );
-        node.getRelationships().forEach( Relationship::delete );
-        node.createRelationshipTo( node, REL );
-//        try
-//        {
-//        }
-//        catch ( DeadlockDetectedException e )
-//        {
-//            // ignore these, because after iteration, we competed with another transaction to delete this relationship
-//        }
+        try
+        {
+            node.getRelationships().forEach( Relationship::delete );
+            node.createRelationshipTo( node, REL );
+        }
+        catch ( DeadlockDetectedException ignore )
+        {
+            // this is fine
+        }
     }
-    // todo prevent unstable iterator of node relationships
     // todo prevent unstable iterator of node labels
     // todo prevent unstable iterator of relationship properties
 

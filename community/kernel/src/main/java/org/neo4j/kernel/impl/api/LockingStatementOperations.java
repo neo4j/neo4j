@@ -658,15 +658,7 @@ public class LockingStatementOperations implements
     public Cursor<RelationshipItem> nodeGetRelationships( KernelStatement statement,
                                                           NodeItem node, Direction direction )
     {
-//        statement.locks().entityIterateAcquireShared( ResourceTypes.NODE, node.id() );
-        return new OnCloseCursorDelegate<RelationshipItem>( entityReadDelegate.nodeGetRelationships( statement, node, direction ) )
-        {
-            @Override
-            protected void onClose()
-            {
-                statement.locks().entityIterateReleaseShared( ResourceTypes.NODE, node.id() );
-            }
-        };
+        return entityReadDelegate.nodeGetRelationships( statement, node, direction );
     }
 
     @Override
