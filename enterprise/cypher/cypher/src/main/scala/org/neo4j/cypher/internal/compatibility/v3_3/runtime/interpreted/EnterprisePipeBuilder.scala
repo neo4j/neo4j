@@ -236,14 +236,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case Apply(_, _) =>
         ApplyRegisterPipe(lhs, rhs)(id)
 
-      case SemiApply(_, _) =>
-        SemiApplyPipe(lhs, rhs, negated = false)(id)
-
-      case AntiSemiApply(_, _) =>
-        SemiApplyPipe(lhs, rhs, negated = true)(id)
-
-      case _: CartesianProduct |
-           _: SemiApply |
+      case _: SemiApply |
            _: AntiSemiApply =>
         fallback.build(plan, lhs, rhs)
 

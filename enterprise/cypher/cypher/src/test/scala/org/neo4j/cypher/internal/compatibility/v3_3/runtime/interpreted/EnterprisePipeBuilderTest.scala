@@ -406,7 +406,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(apply)
 
     // then
-    pipe should equal(ApplyPipe(
+    pipe should equal(ApplyRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
         PipelineInformation(Map(
           "x" -> LongSlot(0, nullable = false, CTNode, "x")),
@@ -538,7 +538,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     ), numberOfLongs = 3, numberOfReferences = 0)
 
 
-    pipe should equal(ApplyPipe(
+    pipe should equal(ApplyRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel(LABEL), lhsPipeline)(),
       ExpandAllRegisterPipe(
         ArgumentRegisterPipe(lhsPipeline)(), 0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsPipeline)())())
