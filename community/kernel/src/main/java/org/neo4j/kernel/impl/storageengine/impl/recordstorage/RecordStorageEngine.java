@@ -186,6 +186,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IdGeneratorFactory idGeneratorFactory,
             IdController idController )
     {
+        if ( takePropertyReadLocks && takeRelationshipChainReadLocks )
+        {
+            throw new IllegalStateException( "The feature toggles takePropertyReadLocks and " +
+                                             "takeRelationshipChainReadLocks cannot both be enabled." );
+        }
+
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
         this.labelTokenHolder = labelTokens;

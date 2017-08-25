@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
@@ -31,6 +32,9 @@ import org.neo4j.storageengine.api.lock.ResourceType;
  */
 public class SimpleStatementLocks implements StatementLocks
 {
+    private static final String defaultIsolationLevel = FeatureToggles.getString(
+            StatementLocks.class, "defaultIsolationLevel", null );
+
     private final Locks.Client client;
     private Supplier<LockTracer> lockTracerSupplier;
     private IsolationLevel isolationLevel;
@@ -40,6 +44,10 @@ public class SimpleStatementLocks implements StatementLocks
     {
         this.client = client;
         lockTracerSupplier = DEFAULT_LOCK_TRACER_SUPPLIER;
+        if ( defaultIsolationLevel != null )
+        {
+            setIsolationLevel( IsolationLevel.valueOf( defaultIsolationLevel ) );
+        }
     }
 
     @Override
