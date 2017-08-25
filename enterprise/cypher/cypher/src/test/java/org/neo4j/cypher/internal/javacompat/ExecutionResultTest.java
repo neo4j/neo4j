@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,6 +32,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -136,6 +138,30 @@ public class ExecutionResultTest
             // Then
             // just close result without consuming it
         }
+    }
+
+    @Test
+    public void shouldCreateAndDropUniqueConstraints()
+    {
+        Result create = db.execute( "CREATE CONSTRAINT ON (n:L) ASSERT n.prop IS UNIQUE" );
+        Result drop = db.execute( "DROP CONSTRAINT ON (n:L) ASSERT n.prop IS UNIQUE" );
+
+        Assert.assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
+    }
+
+    @Test
+    public void shouldCreateAndDropExistenceConstraints()
+    {
+        Result create = db.execute( "CREATE CONSTRAINT ON (n:L) ASSERT exists(n.prop)" );
+        Result drop = db.execute( "DROP CONSTRAINT ON (n:L) ASSERT exists(n.prop)" );
+
+        Assert.assertThat( create.getQueryStatistics().getConstraintsAdded(), equalTo( 1 ) );
+        Assert.assertThat( create.getQueryStatistics().getConstraintsRemoved(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsAdded(), equalTo( 0 ) );
+        Assert.assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
     }
 
     private void createNode()
