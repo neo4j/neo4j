@@ -63,7 +63,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
                   predicates ++= coveringPredicates(p2)
                   producer.planUnion(p1, p2)
               }
-              val orPlan = context.logicalPlanProducer.planDistinct(singlePlan)
+              val orPlan = context.logicalPlanProducer.planDistinctStar(singlePlan)
 
               Some(context.logicalPlanProducer.updateSolvedForOr(orPlan, orPredicate, predicates.toSet))
           }

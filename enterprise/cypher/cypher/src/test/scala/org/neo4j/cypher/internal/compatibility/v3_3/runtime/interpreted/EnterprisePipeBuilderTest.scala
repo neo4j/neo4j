@@ -471,9 +471,13 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     val pipelineInfo = PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
     val nodeByLabelScan = NodesByLabelScanRegisterPipe("x", LazyLabel("label"), pipelineInfo)()
+    val grouping = Map(
+      "x" -> Variable("x"),
+      "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey))
+    )
     pipe should equal(EagerAggregationPipe(
       OptionalRegisteredPipe(nodeByLabelScan, Seq(0), pipelineInfo)(),
-      keyExpressions = Set("x", "x.propertyKey"),
+      keyExpressions = grouping,
       aggregations = Map("count" -> commands.expressions.CountStar())
     )())
   }

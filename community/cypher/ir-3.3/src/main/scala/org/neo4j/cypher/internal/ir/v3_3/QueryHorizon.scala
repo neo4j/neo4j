@@ -122,20 +122,35 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
     "Everything can't be empty"
   )
 
-  def projections: Map[String, Expression] = groupingKeys
+  override def projections: Map[String, Expression] = groupingKeys
 
-  def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
+  override def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
 
   override def dependingExpressions = super.dependingExpressions ++ groupingKeys.values ++ aggregationExpressions.values
 
   override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
     copy(groupingKeys = groupingKeys)
 
-  def withAggregatingExpressions(aggregationExpressions: Map[String, Expression]) =
-    copy(aggregationExpressions = aggregationExpressions)
-
-  def withShuffle(shuffle: QueryShuffle) =
+  override def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
   override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
+}
+
+final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
+                                         shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
+
+  def projections: Map[String, Expression] = groupingKeys
+
+  def keySet: Set[String] = groupingKeys.keySet
+
+  override def dependingExpressions: Seq[Expression] = super.dependingExpressions ++ groupingKeys.values
+
+  override def withProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
+    copy(groupingKeys = groupingKeys)
+
+  override def withShuffle(shuffle: QueryShuffle): DistinctQueryProjection =
+    copy(shuffle = shuffle)
+
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = groupingKeys.keys.map(IdName.apply).toSet
 }

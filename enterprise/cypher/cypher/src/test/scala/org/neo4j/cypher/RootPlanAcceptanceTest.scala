@@ -31,7 +31,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
     given("MATCH (n) RETURN n, count(*)")
       .withCypherVersion(CypherVersion.v3_3)
       .shouldHaveCypherVersion(CypherVersion.v3_3)
-      .shouldHaveRuntime(InterpretedRuntimeName)
+      .shouldHaveRuntime(EnterpriseInterpretedRuntimeName)
   }
 
   test("query that lacks support from the compiled runtime") {

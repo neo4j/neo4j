@@ -50,7 +50,7 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
     val runtimeName: Option[RuntimeName] = runtime match {
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
-      case CypherRuntime.compiled => throw new IllegalArgumentException("Compiled runtime is not supported in Cypher 2.3")
+      case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 2.3")
     }
 
     val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])

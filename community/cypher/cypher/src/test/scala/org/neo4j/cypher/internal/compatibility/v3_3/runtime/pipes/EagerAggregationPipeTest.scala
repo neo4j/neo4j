@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.VirtualValues
 
 class EagerAggregationPipeTest extends CypherFunSuite {
 
-  private def createReturnItemsFor(names: String*): Set[String] = names.toSet
+  private def createReturnItemsFor(names: String*): Map[String, Variable] = names.map(k => k -> Variable(k)).toMap
 
   test("should aggregate count(*) on single grouping column") {
     val source = new FakePipe(List(
