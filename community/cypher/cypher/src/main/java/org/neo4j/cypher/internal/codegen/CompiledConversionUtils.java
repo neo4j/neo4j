@@ -759,5 +759,17 @@ public abstract class CompiledConversionUtils
         }
         throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
     }
-
+    @SuppressWarnings( "unchecked" )
+    public static Object mapGetProperty( Object object, String key )
+    {
+        try
+        {
+            Map<String,Object> map = (Map<String,Object>) object;
+            return map.get( key );
+        }
+        catch ( ClassCastException e )
+        {
+            throw new CypherTypeException( "Type mismatch: expected a map but was " + object, e );
+        }
+    }
 }

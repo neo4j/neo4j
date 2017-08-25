@@ -477,8 +477,6 @@ Returning label predicate on null node
 `type()` on mixed null and non-null relationships
 `type()` on null relationship
 Respect predicates on the OPTIONAL MATCH
-Optionally matching self-loops
-Optionally matching self-loops without matches
 OPTIONAL MATCH with labels on the optional end node
 OPTIONAL MATCH and bound nodes
 MATCH and OPTIONAL MATCH on same pattern

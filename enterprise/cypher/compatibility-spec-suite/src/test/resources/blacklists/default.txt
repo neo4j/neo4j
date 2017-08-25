@@ -1,0 +1,11 @@
+// unsupported YIELD -
+In-query call to procedure that takes no arguments and yields no results
+In-query call to procedure with explicit arguments that drops all result fields
+
+// type hierarchy bugs/coercion rules
+Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
+In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
+
+// TODO tck enforces specific order of `keys`, remove from blacklist when tck has been updated.
+Copying properties from literal map with ON CREATE
+Copying properties from literal map with ON MATCH
