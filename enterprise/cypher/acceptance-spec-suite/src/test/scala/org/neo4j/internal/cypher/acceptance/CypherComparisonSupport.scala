@@ -117,10 +117,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
         val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
         if (expectedToSucceed) {
-          val thisResult = tryResult.get
-          thisScenario.checkStateForSuccess(query)
-          thisScenario.checkResultForSuccess(query, thisResult)
-          Some(thisResult -> thisScenario)
+          tryResult match {
+            case Success(thisResult) =>
+              thisScenario.checkStateForSuccess(query)
+              thisScenario.checkResultForSuccess(query, thisResult)
+              Some(thisResult -> thisScenario)
+            case Failure(e) =>
+              fail(s"Expected to succeed in ${thisScenario.name} but got exception", e)
+          }
         } else {
           thisScenario.checkStateForFailure(query)
           thisScenario.checkResultForFailure(query, tryResult)
@@ -179,13 +183,17 @@ trait CypherComparisonSupport extends CypherTestSupport {
         val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
         if (expectedToSucceed) {
-          val thisResult = tryResult.get
-          thisScenario.checkStateForSuccess(query)
-          thisScenario.checkResultForSuccess(query, thisResult)
-          if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(thisScenario)) {
-            assertPlansSimilar(firstResult, thisResult, "${firstScenario.name} returned different results than ${thisScenario.name}")
+          tryResult match {
+            case Success(thisResult) =>
+              thisScenario.checkStateForSuccess(query)
+              thisScenario.checkResultForSuccess(query, thisResult)
+              if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(thisScenario)) {
+                assertPlansSimilar(firstResult, thisResult, "${firstScenario.name} returned different results than ${thisScenario.name}")
+              }
+              assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
+            case Failure(e) =>
+              fail(s"Expected to succeed in ${thisScenario.name} but got exception.", e)
           }
-          assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
         } else {
           thisScenario.checkStateForFailure(query)
           thisScenario.checkResultForFailure(query, tryResult)
@@ -259,27 +267,38 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     def Compiled: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
-    def Interpreted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
+    def Interpreted: TestConfiguration =
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def CommunityInterpreted: TestConfiguration = AbsolutelyAll - Compiled - Procs - SlottedInterpreted
+    def CommunityInterpreted: TestConfiguration =
+      TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
-    def Version2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default) + Cost2_3
+    def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
 
-    def Version3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default) + TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
+    def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
 
-    def Version3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
+    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.all, Runtimes.Default)
 
-    def Version3_3: TestConfiguration = Compiled + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) + TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+    def Version3_3: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.V3_2, Versions.Default), Planners.Rule, Runtimes.Default)
 
-    def Cost: TestConfiguration = Compiled + TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
+    def Cost: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
 
-    def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1 + Version3_2
+    def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default)
 
     def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
 
@@ -287,11 +306,23 @@ trait CypherComparisonSupport extends CypherTestSupport {
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
     interesting scenarios.
      */
-    def All: TestConfiguration = AbsolutelyAll - Procs
+    def All: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AllExceptSlotted: TestConfiguration = All - SlottedInterpreted
+    def AllExceptSleipnir: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AbsolutelyAll: TestConfiguration = Version3_3 + BackwardsCompatibility + Procs
+    def AbsolutelyAll: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def Empty: TestConfiguration = TestConfiguration.empty
 
@@ -320,10 +351,11 @@ object CypherComparisonSupport {
   object Versions {
     val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_2, V3_3)
 
-    implicit def versionToVersions(version: Version) : Versions = Versions(version)
+    implicit def versionToVersions(version: Version): Versions = Versions(version)
 
     val oldest = orderedVersions.head
     val latest = orderedVersions.last
+    val all = Versions(orderedVersions: _*)
 
     object V2_3 extends Version("2.3")
 
@@ -351,7 +383,9 @@ object CypherComparisonSupport {
 
   object Planners {
 
-    implicit def plannerToPlanners(planner: Planner) : Planners = Planners(planner)
+    val all = Planners(Cost, Rule)
+
+    implicit def plannerToPlanners(planner: Planner): Planners = Planners(planner)
 
     object Cost extends Planner(Set("COST", "IDP"), "planner=cost")
 
@@ -367,7 +401,7 @@ object CypherComparisonSupport {
 
   object Runtimes {
 
-    implicit def runtimeToRuntimes(runtime: Runtime) : Runtimes = Runtimes(runtime)
+    implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
     object CompiledSource extends Runtime("COMPILED", "runtime=compiled debug=generate_java_source")
 
@@ -479,7 +513,7 @@ object CypherComparisonSupport {
       TestConfiguration(Nil: _*)
     }
 
-    implicit def scenarioToTestConfiguration(scenario: TestScenario) : TestConfiguration = TestConfiguration(scenario)
+    implicit def scenarioToTestConfiguration(scenario: TestScenario): TestConfiguration = TestConfiguration(scenario)
   }
 
 }
