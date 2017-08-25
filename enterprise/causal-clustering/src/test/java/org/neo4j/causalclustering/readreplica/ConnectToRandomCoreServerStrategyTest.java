@@ -33,6 +33,7 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -58,7 +59,7 @@ public class ConnectToRandomCoreServerStrategyTest
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
         ConnectToRandomCoreServerStrategy connectionStrategy = new ConnectToRandomCoreServerStrategy();
-        connectionStrategy.setTopologyService( topologyService );
+        connectionStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
 
         // when
         Optional<MemberId> memberId = connectionStrategy.upstreamDatabase();

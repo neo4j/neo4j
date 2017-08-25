@@ -79,7 +79,7 @@ public class UpstreamDatabaseStrategySelectorTest
                 mapOf( memberId, mock( CoreServerInfo.class ) ) ) );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
-        defaultStrategy.setTopologyService( topologyService );
+        defaultStrategy.inject( topologyService, null, NullLogProvider.getInstance(), null );
 
         UpstreamDatabaseStrategySelector selector = new UpstreamDatabaseStrategySelector( defaultStrategy );
 

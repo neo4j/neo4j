@@ -20,38 +20,43 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 public abstract class UpstreamDatabaseSelectionStrategy extends Service
 {
     protected TopologyService topologyService;
     protected Config config;
+    protected Log log;
     protected MemberId myself;
+    protected String readableName;
 
     public UpstreamDatabaseSelectionStrategy( String key, String... altKeys )
     {
         super( key, altKeys );
     }
 
-    // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
+    // Service loader can't inject via the constructor
+    void inject( TopologyService topologyService, Config config, LogProvider logProvider, MemberId myself )
     {
         this.topologyService = topologyService;
-    }
-
-    void setConfig( Config config )
-    {
         this.config = config;
+        this.log = logProvider.getLog( this.getClass() );
+        this.myself = myself;
+
+        readableName = StreamSupport.stream( getKeys().spliterator(), false ).collect( Collectors.joining( ", " ) );
+        log.info( "Using upstream selection strategy " + readableName );
+        init();
     }
 
-    void setMyself( MemberId myself )
-    {
-        this.myself = myself;
-    }
+    void init() {}
 
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 
@@ -63,20 +68,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
 
     private static String nicelyCommaSeparatedList( Iterable<String> keys )
     {
-        StringBuilder sb = new StringBuilder();
-        for ( String key : keys )
-        {
-            sb.append( key );
-            sb.append( "," );
-            sb.append( " " );
-        }
-
-        int trimThese = sb.lastIndexOf( ", " );
-        if ( trimThese > 1 )
-        {
-            sb.replace( trimThese, sb.length(), "" );
-        }
-
-        return sb.toString();
+        return StreamSupport.stream( keys.spliterator(), false )
+                .collect( Collectors.joining( ", " ) );
     }
 }
