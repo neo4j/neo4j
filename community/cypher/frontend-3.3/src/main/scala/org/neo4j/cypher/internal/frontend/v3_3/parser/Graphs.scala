@@ -27,58 +27,57 @@ trait Graphs
     ((Parameter ~~> (Left(_))) | (StringLiteral ~~> (Right(_)))) ~~>> (ast.GraphUrl(_))
   }
 
-  def GraphRef: Rule1[ast.GraphRef] =
-    Variable ~~>> (ast.GraphRef(_))
+  def GraphRef: Rule1[ast.Variable] = Variable
 
-  def GraphRefList: Rule1[List[ast.GraphRef]] =
+  def GraphRefList: Rule1[List[ast.Variable]] =
     oneOrMore(GraphRef, separator = CommaSep)
 
-  private def GraphAlias: Rule1[ast.Variable] =
+  private def GraphAs: Rule1[ast.Variable] =
     keyword("AS") ~~ Variable
 
-  private def GraphRefAlias: Rule1[ast.GraphRefAlias] = rule("<graph-ref> AS <name>") {
-    GraphRef ~~ optional(GraphAlias) ~~>> (ast.GraphRefAlias(_, _))
+  private def GraphAlias: Rule1[ast.GraphAlias] = rule("<graph-ref> AS <name>") {
+    GraphRef ~~ optional(GraphAs) ~~>> (ast.GraphAlias(_, _))
   }
 
-  private def GraphRefAliasList: Rule1[List[ast.GraphRefAlias]] =
-    oneOrMore(GraphRefAlias, separator = CommaSep)
+  private def GraphAliasList: Rule1[List[ast.GraphAlias]] =
+    oneOrMore(GraphAlias, separator = CommaSep)
 
-  private def GraphRefAliasItem: Rule1[ast.GraphRefAliasItem] = rule("GRAPH <graph-ref> [AS <name>]") {
-    keyword("GRAPH") ~~ GraphRefAlias ~~>> (ast.GraphRefAliasItem(_))
+  private def GraphAliasItem: Rule1[ast.GraphAliasItem] = rule("GRAPH <graph-ref> [AS <name>]") {
+    keyword("GRAPH") ~~ GraphAlias ~~>> (ast.GraphAliasItem(_))
   }
 
   private def GraphOfItem: Rule1[ast.GraphOfItem] = rule("GRAPH OF <pattern> [AS <name>]") {
-    keyword("GRAPH") ~~ keyword("OF") ~~ Pattern ~~ optional(GraphAlias) ~~>> (ast.GraphOfItem(_, _))
+    keyword("GRAPH") ~~ keyword("OF") ~~ Pattern ~~ optional(GraphAs) ~~>> (ast.GraphOfItem(_, _))
   }
 
   private def GraphAtItem: Rule1[ast.GraphAtItem] = rule("GRAPH <graph-url> AT [AS <name>]") {
-    keyword("GRAPH") ~~ keyword("AT") ~~ GraphUrl ~~ optional(GraphAlias) ~~>>(ast.GraphAtItem(_, _))
+    keyword("GRAPH") ~~ keyword("AT") ~~ GraphUrl ~~ optional(GraphAs) ~~>>(ast.GraphAtItem(_, _))
   }
 
   private def SourceGraphItem: Rule1[ast.SourceGraphItem] = rule("SOURCE GRAPH [AS <name>]") {
-    keyword("SOURCE") ~~ keyword("GRAPH") ~~ optional(GraphAlias) ~~>> (ast.SourceGraphItem(_))
+    keyword("SOURCE") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.SourceGraphItem(_))
   }
 
   private def TargetGraphItem: Rule1[ast.TargetGraphItem] = rule("TARGET GRAPH [AS <name>]") {
-    keyword("TARGET") ~~ keyword("GRAPH") ~~ optional(GraphAlias) ~~>> (ast.TargetGraphItem(_))
+    keyword("TARGET") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.TargetGraphItem(_))
   }
 
   private def GraphOfShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.GraphRef, of: ast.Pattern) => ast.GraphOfItem(of, Some(ref.name)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.Variable, of: ast.Pattern) => ast.GraphOfItem(of, Some(ref)) }
 
   private def GraphAtShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.GraphRef, url: ast.GraphUrl) => ast.GraphAtItem(url, Some(ref.name)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.Variable, url: ast.GraphUrl) => ast.GraphAtItem(url, Some(ref)) }
 
   private def GraphAliasFirstItem = GraphOfShorthand | GraphAtShorthand
 
   def SingleGraphItem: Rule1[ast.SingleGraphItem] =
-    SourceGraphItem | TargetGraphItem | GraphAtItem | GraphOfItem | GraphAliasFirstItem | GraphRefAliasItem
+    SourceGraphItem | TargetGraphItem | GraphAtItem | GraphOfItem | GraphAliasFirstItem | GraphAliasItem
 
   private def SingleGraphItemList: Rule1[List[ast.SingleGraphItem]] =
     oneOrMore(SingleGraphItem, separator = CommaSep)
 
   private def ShortGraphItem: Rule1[ast.SingleGraphItem] =
-    GraphRefAlias ~~>> (ast.GraphRefAliasItem(_))
+    GraphAlias ~~>> (ast.GraphAliasItem(_))
 
   private def GraphItem: Rule1[ast.SingleGraphItem] =
     SingleGraphItem | ShortGraphItem

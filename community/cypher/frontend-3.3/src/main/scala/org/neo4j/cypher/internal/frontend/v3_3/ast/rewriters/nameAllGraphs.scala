@@ -28,8 +28,8 @@ case object nameAllGraphs extends Rewriter {
   private val rewriter = Rewriter.lift {
     case item: SourceGraphItem => item
     case item: TargetGraphItem => item
-    case graphItem@GraphRefAliasItem(alias@GraphRefAlias(ref, None)) =>
-      graphItem.copy(alias = alias.copy(as = Some(ref.name))(alias.position))(graphItem.position)
+    case graphItem@GraphAliasItem(alias@GraphAlias(ref, None)) =>
+      graphItem.copy(alias = alias.copy(as = Some(ref))(alias.position))(graphItem.position)
     case graphItem: SingleGraphItem if graphItem.as.isEmpty =>
       val pos = graphItem.position.bumped()
       graphItem.withNewName(Variable(UnNamedNameGenerator.name(pos))(pos))

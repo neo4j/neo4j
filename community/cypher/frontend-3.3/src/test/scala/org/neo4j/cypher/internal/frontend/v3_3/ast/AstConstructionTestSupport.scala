@@ -67,10 +67,10 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     GraphUrl(Right(StringLiteral(addr)(pos)))(pos)
 
   def graph(name: String): SingleGraphItem =
-    GraphRefAliasItem(GraphRefAlias(GraphRef(varFor(name))(pos), None)(pos))(pos)
+    GraphAliasItem(GraphAlias(varFor(name), None)(pos))(pos)
 
   def graphAs(name: String, alias: String): SingleGraphItem =
-    GraphRefAliasItem(GraphRefAlias(GraphRef(varFor(name))(pos), Some(varFor(alias)))(pos))(pos)
+    GraphAliasItem(GraphAlias(varFor(name), Some(varFor(alias)))(pos))(pos)
 
   def graphAt(name: String, address: String): SingleGraphItem =
     GraphAtItem(url(address), Some(varFor(name)))(pos)

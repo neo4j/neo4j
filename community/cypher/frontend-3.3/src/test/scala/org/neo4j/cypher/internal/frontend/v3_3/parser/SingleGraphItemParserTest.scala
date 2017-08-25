@@ -45,11 +45,11 @@ class SingleGraphItemParserTest
   }
 
   test("GRAPH foo") {
-    yields(ast.GraphRefAliasItem(ast.GraphRefAlias(ast.GraphRef(v("foo"))(pos), None)(pos)))
+    yields(ast.GraphAliasItem(ast.GraphAlias(v("foo"), None)(pos)))
   }
 
   test("GRAPH foo AS bar") {
-    yields(ast.GraphRefAliasItem(ast.GraphRefAlias(ast.GraphRef(v("foo"))(pos), Some(v("bar")))(pos)))
+    yields(ast.GraphAliasItem(ast.GraphAlias(v("foo"), Some(v("bar")))(pos)))
   }
 
   test("GRAPH AT 'url'") {

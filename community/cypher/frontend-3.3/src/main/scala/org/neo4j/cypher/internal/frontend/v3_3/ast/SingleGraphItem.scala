@@ -53,7 +53,7 @@ final case class TargetGraphItem(as: Option[Variable])(val position: InputPositi
   override protected def inner: SemanticCheck = SemanticCheckResult.success
 }
 
-final case class GraphRefAliasItem(alias: GraphRefAlias)(val position: InputPosition) extends SingleGraphItem {
+final case class GraphAliasItem(alias: GraphAlias)(val position: InputPosition) extends SingleGraphItem {
   def ref = alias.ref
   override def as = alias.as
 
