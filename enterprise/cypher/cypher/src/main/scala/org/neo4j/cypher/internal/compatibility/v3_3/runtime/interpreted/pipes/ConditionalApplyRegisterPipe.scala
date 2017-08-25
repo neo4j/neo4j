@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
@@ -37,7 +38,11 @@ case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, items: Seq[String]
           val rhsState = state.withInitialContext(lhsContext)
           rhs.createResults(rhsState)
         }
-        else Iterator.single(lhsContext)
+        else {
+          val output = PrimitiveExecutionContext(pipelineInformation)
+          output.copyFrom(lhsContext)
+          Iterator.single(output)
+        }
     }
 
   private def condition(context: ExecutionContext) = {
