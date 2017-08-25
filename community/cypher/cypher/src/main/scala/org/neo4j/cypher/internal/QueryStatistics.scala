@@ -48,7 +48,7 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded
 
   @BeanProperty
-  val constraintsRemoved = uniqueConstraintsAdded + existenceConstraintsAdded
+  val constraintsRemoved: Int = uniqueConstraintsRemoved + existenceConstraintsRemoved
 
   def containsUpdates: Boolean =
     nodesCreated > 0 ||
