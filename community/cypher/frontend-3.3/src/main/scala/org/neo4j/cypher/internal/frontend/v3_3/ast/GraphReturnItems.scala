@@ -48,8 +48,9 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
 
   val graphs: List[SingleGraphItem] = items.flatMap(_.graphs)
 
-  def newSource: Option[SingleGraphItem] = items.flatMap(_.newSource).headOption
-  def newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption orElse newSource
+  val singleGraph: Option[SingleGraphItem] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
+  val newSource: Option[SingleGraphItem] = singleGraph orElse items.flatMap(_.newSource).headOption
+  val newTarget: Option[SingleGraphItem] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
     graphs.semanticCheck chain

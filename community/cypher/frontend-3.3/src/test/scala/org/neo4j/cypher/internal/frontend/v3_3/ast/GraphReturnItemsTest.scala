@@ -68,6 +68,33 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
     errors.exists(_.msg.contains("Setting multiple target graphs is not allowed")) should be(true)
   }
 
+  test("set correct source and target from single graph") {
+    val items = GraphReturnItems(false, List(
+      ReturnedGraph(baz)(pos)
+    ))(pos)
+
+    items.newSource should equal(Some(baz))
+    items.newTarget should equal(Some(baz))
+  }
+
+  test("set correct source and target from single source") {
+    val items = GraphReturnItems(false, List(
+      NewContextGraphs(baz, Some(baz))(pos)
+    ))(pos)
+
+    items.newSource should equal(Some(baz))
+    items.newTarget should equal(Some(baz))
+  }
+
+  test("set correct source and target from single target") {
+    val items = GraphReturnItems(false, List(
+      NewTargetGraph(baz)(pos)
+    ))(pos)
+
+    items.newSource should equal(Some(baz))
+    items.newTarget should equal(Some(baz))
+  }
+
   test("disallow declaring variable multiple times") {
     val items = GraphReturnItems(false, List(
       ReturnedGraph(graphAt("foo", "url"))(pos),
