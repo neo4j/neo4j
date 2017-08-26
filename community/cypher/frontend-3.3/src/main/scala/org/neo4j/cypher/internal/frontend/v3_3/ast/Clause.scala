@@ -62,20 +62,61 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   }
 }
 
-sealed trait GraphSelectorClause extends Clause with SemanticChecking {
-
-  def graph: SingleGraphItem
+sealed trait MultiGraphClause extends Clause with SemanticChecking {
 
   override def semanticCheck: SemanticCheck =
-    graph.semanticCheck chain ClauseError(name, position)
+    requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-final case class FromGraph(graph: SingleGraphItem)(val position: InputPosition) extends GraphSelectorClause {
+sealed trait GraphSelectorClause extends MultiGraphClause {
+
+  def graph: SingleGraph
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+    graph.semanticCheck
+}
+
+final case class From(graph: SingleGraph)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "FROM"
 }
 
-final case class IntoGraph(graph: SingleGraphItem)(val position: InputPosition) extends GraphSelectorClause {
+final case class Into(graph: SingleGraph)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "INTO"
+}
+
+final case class CreateGraph(snapshot: Boolean, graph: Variable, at: GraphUrl)(val position: InputPosition)
+  extends MultiGraphClause {
+
+  override def name = "CREATE GRAPH"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain graph.declareGraph
+}
+
+final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition) extends MultiGraphClause {
+  override def name = "DELETE GRAPHS"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain graphs.foldSemanticCheck(_.ensureDefined())
+}
+
+final case class Persist(snapshot: Boolean, graph: BoundGraph, to: GraphUrl)(val position: InputPosition)
+  extends MultiGraphClause {
+
+  override def name = "PERSIST"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain graph.semanticCheck
+}
+
+final case class Relocate(snapshot: Boolean, graph: BoundGraph, to: GraphUrl)(val position: InputPosition)
+  extends MultiGraphClause {
+
+  override def name = "RELOCATE"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain graph.semanticCheck
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {

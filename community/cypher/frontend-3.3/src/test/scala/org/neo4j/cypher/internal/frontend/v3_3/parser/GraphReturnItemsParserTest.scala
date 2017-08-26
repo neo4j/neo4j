@@ -24,7 +24,7 @@ import scala.language.implicitConversions
 class GraphReturnItemsParserTest
   extends ParserAstTest[ast.GraphReturnItems]
   with Graphs
-  with Expressions 
+  with Expressions
   with AstConstructionTestSupport {
 
   implicit val parser = GraphReturnItems

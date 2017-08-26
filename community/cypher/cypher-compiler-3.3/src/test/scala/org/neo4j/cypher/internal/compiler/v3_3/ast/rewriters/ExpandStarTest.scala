@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, bottomUp, inSequence}
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
+
   import parser.ParserFixture.parser
 
   test("rewrites * in return") {
@@ -68,7 +69,6 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       "from graph foo at 'url' from graph bar at 'url2' return - graphs *",
       "from graph foo at 'url' from graph bar at 'url2' return - graphs bar as bar, foo as foo"
     )
-
   }
 
   test("rewrites * in with graphs") {
@@ -137,7 +137,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
 
-    val checkResult = original.semanticCheck(SemanticState.clean)
+    val checkResult = original.semanticCheck(SemanticState.clean.withFeature('multigraph))
     val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)

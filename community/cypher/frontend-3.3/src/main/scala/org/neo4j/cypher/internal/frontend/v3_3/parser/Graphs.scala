@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.parboiled.scala.{Parser, Rule1}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.parboiled.scala.{Parser, Rule1, Rule2}
 
 trait Graphs
   extends Parser
@@ -35,76 +36,73 @@ trait Graphs
   private def GraphAs: Rule1[ast.Variable] =
     keyword("AS") ~~ Variable
 
-  private def GraphAlias: Rule1[ast.GraphAlias] = rule("<graph-ref> AS <name>") {
-    GraphRef ~~ optional(GraphAs) ~~>> (ast.GraphAlias(_, _))
+  private def GraphAlias: Rule2[Variable, Option[Variable]] = rule("<graph-ref> AS <name>") {
+    GraphRef ~~ optional(GraphAs)
   }
 
-  private def GraphAliasList: Rule1[List[ast.GraphAlias]] =
-    oneOrMore(GraphAlias, separator = CommaSep)
-
-  private def GraphAliasItem: Rule1[ast.GraphAliasItem] = rule("GRAPH <graph-ref> [AS <name>]") {
-    keyword("GRAPH") ~~ GraphAlias ~~>> (ast.GraphAliasItem(_))
+  private def GraphAliasItem: Rule1[ast.GraphAlias] = rule("GRAPH <graph-ref> [AS <name>]") {
+    keyword("GRAPH") ~~ GraphAlias ~~>> (ast.GraphAlias(_, _))
   }
 
-  private def GraphOfItem: Rule1[ast.GraphOfItem] = rule("GRAPH OF <pattern> [AS <name>]") {
-    keyword("GRAPH") ~~ keyword("OF") ~~ Pattern ~~ optional(GraphAs) ~~>> (ast.GraphOfItem(_, _))
+  private def GraphOfItem: Rule1[ast.GraphOf] = rule("GRAPH OF <pattern> [AS <name>]") {
+    keyword("GRAPH") ~~ keyword("OF") ~~ Pattern ~~ optional(GraphAs) ~~>> (ast.GraphOf(_, _))
   }
 
-  private def GraphAtItem: Rule1[ast.GraphAtItem] = rule("GRAPH <graph-url> AT [AS <name>]") {
-    keyword("GRAPH") ~~ keyword("AT") ~~ GraphUrl ~~ optional(GraphAs) ~~>>(ast.GraphAtItem(_, _))
+  private def GraphAtItem: Rule1[ast.GraphAt] = rule("GRAPH <graph-url> AT [AS <name>]") {
+    keyword("GRAPH") ~~ keyword("AT") ~~ GraphUrl ~~ optional(GraphAs) ~~>>(ast.GraphAt(_, _))
   }
 
-  private def SourceGraphItem: Rule1[ast.SourceGraphItem] = rule("SOURCE GRAPH [AS <name>]") {
-    keyword("SOURCE") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.SourceGraphItem(_))
+  private def SourceGraphItem: Rule1[ast.SourceGraph] = rule("SOURCE GRAPH [AS <name>]") {
+    keyword("SOURCE") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.SourceGraph(_))
   }
 
-  private def TargetGraphItem: Rule1[ast.TargetGraphItem] = rule("TARGET GRAPH [AS <name>]") {
-    keyword("TARGET") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.TargetGraphItem(_))
+  private def TargetGraphItem: Rule1[ast.TargetGraph] = rule("TARGET GRAPH [AS <name>]") {
+    keyword("TARGET") ~~ keyword("GRAPH") ~~ optional(GraphAs) ~~>> (ast.TargetGraph(_))
   }
 
-  private def GraphOfShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.Variable, of: ast.Pattern) => ast.GraphOfItem(of, Some(ref)) }
+  private def GraphOfShorthand: Rule1[ast.SingleGraph] =
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.Variable, of: ast.Pattern) => ast.GraphOf(of, Some(ref)) }
 
-  private def GraphAtShorthand: Rule1[ast.SingleGraphItem] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.Variable, url: ast.GraphUrl) => ast.GraphAtItem(url, Some(ref)) }
+  private def GraphAtShorthand: Rule1[ast.SingleGraph] =
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.Variable, url: ast.GraphUrl) => ast.GraphAt(url, Some(ref)) }
 
   private def GraphAliasFirstItem = GraphOfShorthand | GraphAtShorthand
 
-  def SingleGraphItem: Rule1[ast.SingleGraphItem] =
+  def SingleGraphItem: Rule1[ast.SingleGraph] =
     SourceGraphItem | TargetGraphItem | GraphAtItem | GraphOfItem | GraphAliasFirstItem | GraphAliasItem
 
-  private def SingleGraphItemList: Rule1[List[ast.SingleGraphItem]] =
+  private def SingleGraphItemList: Rule1[List[ast.SingleGraph]] =
     oneOrMore(SingleGraphItem, separator = CommaSep)
 
-  private def ShortGraphItem: Rule1[ast.SingleGraphItem] =
-    GraphAlias ~~>> (ast.GraphAliasItem(_))
+  private def ShortGraphItem: Rule1[ast.SingleGraph] =
+    GraphAlias ~~>> (ast.GraphAlias(_, _))
 
-  private def GraphItem: Rule1[ast.SingleGraphItem] =
+  private def GraphItem: Rule1[ast.SingleGraph] =
     SingleGraphItem | ShortGraphItem
 
   // a >> b?
   private def ShortNewContextGraphs: Rule1[ast.NewContextGraphs] =
-    GraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraphItem, target: Option[ast.SingleGraphItem]) => ast.NewContextGraphs(source, target)}
+    GraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraph, target: Option[ast.SingleGraph]) => ast.NewContextGraphs(source, target)}
 
   // >> b
   private def ShortNewTargetGraph: Rule1[ast.NewTargetGraph] =
-    keyword(">>") ~~ GraphItem ~~>> { (target: ast.SingleGraphItem) => ast.NewTargetGraph(target) }
+    keyword(">>") ~~ GraphItem ~~>> { (target: ast.SingleGraph) => ast.NewTargetGraph(target) }
 
   // a
   private def ShortReturnedGraph: Rule1[ast.ReturnedGraph] =
-    ShortGraphItem ~~>> { item: ast.SingleGraphItem => ast.ReturnedGraph(item) }
+    ShortGraphItem ~~>> { item: ast.SingleGraph => ast.ReturnedGraph(item) }
 
   // GRAPH a >> (GRAPH b)?
   private def NewContextGraphs: Rule1[ast.NewContextGraphs] =
-    SingleGraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraphItem, target: Option[ast.SingleGraphItem]) => ast.NewContextGraphs(source, target)}
+    SingleGraphItem ~~ keyword(">>") ~~ optional(GraphItem) ~~>> { (source: ast.SingleGraph, target: Option[ast.SingleGraph]) => ast.NewContextGraphs(source, target)}
 
   // >> GRAPH b
   private def NewTargetGraph: Rule1[ast.NewTargetGraph] =
-    keyword(">>") ~~ SingleGraphItem ~~>> { (target: ast.SingleGraphItem) => ast.NewTargetGraph(target) }
+    keyword(">>") ~~ SingleGraphItem ~~>> { (target: ast.SingleGraph) => ast.NewTargetGraph(target) }
 
   // GRAPH a
   private def ReturnedGraph: Rule1[ast.ReturnedGraph] =
-    SingleGraphItem ~~>> { item: ast.SingleGraphItem => ast.ReturnedGraph(item) }
+    SingleGraphItem ~~>> { item: ast.SingleGraph => ast.ReturnedGraph(item) }
 
   private def GraphReturnItem: Rule1[ast.GraphReturnItem] =
     NewContextGraphs | NewTargetGraph | ReturnedGraph | ShortNewContextGraphs | ShortNewTargetGraph | ShortReturnedGraph

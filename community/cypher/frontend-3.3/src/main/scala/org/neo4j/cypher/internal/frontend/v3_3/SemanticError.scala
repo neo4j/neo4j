@@ -26,12 +26,6 @@ final case class SemanticError(msg: String, position: InputPosition, references:
 
 sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 
-final case class ClauseError(clause: String, position: InputPosition) extends UnsupportedOpenCypher {
-
-  override val msg: String = s"The referenced clause $clause is not supported by Neo4j"
-  override def references = Seq.empty
-}
-
 final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
   override def references = Seq.empty
 }

@@ -26,11 +26,11 @@ case object nameAllGraphs extends Rewriter {
 
   // TODO: resolve source and target graph
   private val rewriter = Rewriter.lift {
-    case item: SourceGraphItem => item
-    case item: TargetGraphItem => item
-    case graphItem@GraphAliasItem(alias@GraphAlias(ref, None)) =>
-      graphItem.copy(alias = alias.copy(as = Some(ref))(alias.position))(graphItem.position)
-    case graphItem: SingleGraphItem if graphItem.as.isEmpty =>
+    case item: SourceGraph => item
+    case item: TargetGraph => item
+    case graphItem@GraphAlias(ref, None) =>
+      graphItem.copy(as = Some(ref))(graphItem.position)
+    case graphItem: SingleGraph if graphItem.as.isEmpty =>
       val pos = graphItem.position.bumped()
       graphItem.withNewName(Variable(UnNamedNameGenerator.name(pos))(pos))
   }

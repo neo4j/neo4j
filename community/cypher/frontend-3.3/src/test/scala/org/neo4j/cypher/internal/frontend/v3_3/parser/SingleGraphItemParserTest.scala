@@ -22,66 +22,66 @@ import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, as
 import scala.language.implicitConversions
 
 class SingleGraphItemParserTest
-  extends ParserAstTest[ast.SingleGraphItem]
+  extends ParserAstTest[ast.SingleGraph]
   with Graphs
   with Expressions {
 
   implicit val parser = SingleGraphItem
 
   test("SOURCE GRAPH") {
-    yields(ast.SourceGraphItem(None))
+    yields(ast.SourceGraph(None))
   }
 
   test("SOURCE GRAPH AS foo") {
-    yields(ast.SourceGraphItem(Some(v("foo"))))
+    yields(ast.SourceGraph(Some(v("foo"))))
   }
 
   test("TARGET GRAPH") {
-    yields(ast.TargetGraphItem(None))
+    yields(ast.TargetGraph(None))
   }
 
   test("TARGET GRAPH AS foo") {
-    yields(ast.TargetGraphItem(Some(v("foo"))))
+    yields(ast.TargetGraph(Some(v("foo"))))
   }
 
   test("GRAPH foo") {
-    yields(ast.GraphAliasItem(ast.GraphAlias(v("foo"), None)(pos)))
+    yields(ast.GraphAlias(v("foo"), None))
   }
 
   test("GRAPH foo AS bar") {
-    yields(ast.GraphAliasItem(ast.GraphAlias(v("foo"), Some(v("bar")))(pos)))
+    yields(ast.GraphAlias(v("foo"), Some(v("bar"))))
   }
 
   test("GRAPH AT 'url'") {
-    yields(ast.GraphAtItem(url("url"), None))
+    yields(ast.GraphAt(url("url"), None))
   }
 
   test("GRAPH AT 'url' AS foo") {
-    yields(ast.GraphAtItem(url("url"), Some(v("foo"))))
+    yields(ast.GraphAt(url("url"), Some(v("foo"))))
   }
 
   test("GRAPH OF ()") {
-    yields(ast.GraphOfItem(nodePattern, None))
+    yields(ast.GraphOf(nodePattern, None))
   }
 
   test("GRAPH OF p=(), q=()") {
-    yields(ast.GraphOfItem(complexPattern, None))
+    yields(ast.GraphOf(complexPattern, None))
   }
 
   test("GRAPH OF () AS foo") {
-    yields(ast.GraphOfItem(nodePattern, Some(v("foo"))))
+    yields(ast.GraphOf(nodePattern, Some(v("foo"))))
   }
 
   test("GRAPH OF p=(), q=() AS foo") {
-    yields(ast.GraphOfItem(complexPattern, Some(v("foo"))))
+    yields(ast.GraphOf(complexPattern, Some(v("foo"))))
   }
 
   test("GRAPH foo AT 'url'") {
-    yields(ast.GraphAtItem(url("url"), Some(v("foo"))))
+    yields(ast.GraphAt(url("url"), Some(v("foo"))))
   }
 
   test("GRAPH foo OF ()") {
-    yields(ast.GraphOfItem(nodePattern, Some(v("foo"))))
+    yields(ast.GraphOf(nodePattern, Some(v("foo"))))
   }
 
   private def url(addr: String): GraphUrl = ast.GraphUrl(Right(ast.StringLiteral(addr)(pos)))(pos)

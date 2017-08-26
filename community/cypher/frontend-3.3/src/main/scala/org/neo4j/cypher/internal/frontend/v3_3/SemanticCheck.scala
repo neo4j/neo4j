@@ -26,8 +26,8 @@ case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDe
 
 trait SemanticChecking {
 
-  protected def requireMultigraphSupport(position: InputPosition): SemanticCheck = {
-    val error: SemanticCheck = FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+  protected def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck = {
+    val error: SemanticCheck = FeatureError(s"$msg is not available in this implementation of Cypher due to lack of support for multiple graphs.", position)
     error.unlessFeatureEnabled('multigraph)
   }
 
@@ -43,12 +43,10 @@ trait SemanticChecking {
     pushStateScope chain check chain popStateScope
 }
 
-
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
     option.fold(SemanticCheckResult.success)(check)
 }
-
 
 class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {

@@ -143,6 +143,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope],
     self.dumpSingle("", builder)
     builder.toString()
   }
+
   import scala.compat.Platform.EOL
 
   private def dumpSingle(indent: String, builder: StringBuilder): Unit = {

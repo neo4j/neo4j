@@ -67,11 +67,9 @@ case class expandStar(state: SemanticState) extends Rewriter {
       val expr = Variable(id)(idPos)
       val alias = expr.copyId
       ReturnedGraph(
-        GraphAliasItem(
-          GraphAlias(
-            expr,
-            Some(alias)
-          )(idPos)
+        GraphAlias(
+          expr,
+          Some(alias)
         )(clausePos)
       )(clausePos)
     }.toList ++ listedItems

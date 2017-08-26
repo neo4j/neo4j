@@ -38,12 +38,12 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def FromGraph: Rule1[ast.FromGraph] = rule("FROM") {
-    keyword("FROM") ~~ SingleGraphItem ~~>> (ast.FromGraph(_))
+  def From: Rule1[ast.From] = rule("FROM") {
+    keyword("FROM") ~~ SingleGraphItem ~~>> (ast.From(_))
   }
 
-  def IntoGraph: Rule1[ast.IntoGraph] = rule("INTO") {
-    keyword("INTO") ~~ SingleGraphItem ~~>> (ast.IntoGraph(_))
+  def Into: Rule1[ast.Into] = rule("INTO") {
+    keyword("INTO") ~~ SingleGraphItem ~~>> (ast.Into(_))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {
