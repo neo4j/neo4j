@@ -30,7 +30,7 @@ case class ArgumentRegisterPipe(pipelineInformation: PipelineInformation)
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val context = PrimitiveExecutionContext(pipelineInformation)
-    state.copyArgumentStateTo(context, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
+    state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
     Iterator(context)
   }
 }

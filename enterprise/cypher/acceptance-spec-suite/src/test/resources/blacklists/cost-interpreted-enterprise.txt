@@ -60,7 +60,6 @@ Using a variable-length pattern expression in a WITH
 Using pattern expression in RETURN
 Aggregating on pattern expression
 Pattern expression inside list comprehension
-Filter using a variable length relationship pattern predicate with properties
 Filter using a pattern predicate that is a logical OR between an expression and a subquery
 Filter using a pattern predicate that is a logical OR between two expressions and a subquery
 Filter using a pattern predicate that is a logical OR between one expression and a negated subquery
