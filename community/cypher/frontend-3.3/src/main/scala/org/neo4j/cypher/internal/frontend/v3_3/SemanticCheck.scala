@@ -28,7 +28,7 @@ trait SemanticChecking {
 
   protected def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck = {
     val error: SemanticCheck = FeatureError(s"$msg is not available in this implementation of Cypher due to lack of support for multiple graphs.", position)
-    error.unlessFeatureEnabled('multigraph)
+    error.unlessFeatureEnabled(SemanticFeature.MultipleGraphs)
   }
 
   protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>

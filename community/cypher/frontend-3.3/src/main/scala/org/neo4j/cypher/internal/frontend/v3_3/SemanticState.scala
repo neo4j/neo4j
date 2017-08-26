@@ -169,6 +169,9 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope],
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
 
+  def withFeatures(features: SemanticFeature*): SemanticState =
+    features.foldLeft(SemanticState.clean)(_.withFeature(_))
+
   val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
@@ -207,11 +210,17 @@ object SemanticState {
   }
 }
 
+sealed trait SemanticFeature
+
+object SemanticFeature {
+  case object MultipleGraphs extends SemanticFeature
+}
+
 case class SemanticState(currentScope: ScopeLocation,
                          typeTable: ASTAnnotationMap[ast.Expression, ExpressionTypeInfo],
                          recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope],
                          notifications: Set[InternalNotification] = Set.empty,
-                         features: Set[scala.Symbol] = Set.empty
+                         features: Set[SemanticFeature] = Set.empty
                         ) {
   def scopeTree = currentScope.rootScope
 
@@ -320,5 +329,5 @@ case class SemanticState(currentScope: ScopeLocation,
   def scope(astNode: ast.ASTNode): Option[Scope] =
     recordedScopes.get(astNode)
 
-  def withFeature(feature: scala.Symbol): SemanticState = copy(features=features + feature)
+  def withFeature(feature: SemanticFeature): SemanticState = copy(features = features + feature)
 }

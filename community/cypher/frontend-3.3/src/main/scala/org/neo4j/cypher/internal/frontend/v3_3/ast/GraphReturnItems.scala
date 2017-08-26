@@ -59,7 +59,7 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
       checkNoMultipleTargets chain
       checkUniqueGraphReference chain
       updateSetContextGraphs()
-    ).ifFeatureEnabled('multigraph)
+    ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
 
   private def updateSetContextGraphs(): SemanticCheck = {
     val check = (_: SemanticState).updateSetContextGraphs(newSource.flatMap(_.as), newTarget.flatMap(_.as))

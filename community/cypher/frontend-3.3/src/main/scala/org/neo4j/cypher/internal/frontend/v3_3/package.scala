@@ -88,11 +88,11 @@ package object v3_3 {
   implicit final class RichSemanticCheck(val check: SemanticCheck) extends AnyVal {
 
     // Only run a check if a given feature is enabled
-    def ifFeatureEnabled(feature: scala.Symbol): SemanticCheck =
+    def ifFeatureEnabled(feature: SemanticFeature): SemanticCheck =
       (s: SemanticState) => if(s.features(feature)) check(s) else SemanticCheckResult.success(s)
 
     // Only run a check if a given feature is *not* enabled
-    def unlessFeatureEnabled(feature: scala.Symbol): SemanticCheck =
+    def unlessFeatureEnabled(feature: SemanticFeature): SemanticCheck =
       (s: SemanticState) => if(!s.features(feature)) check(s) else SemanticCheckResult.success(s)
   }
 }

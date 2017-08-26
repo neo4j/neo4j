@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, EmptyReturnItems}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, bottomUp, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticFeature, SemanticState, bottomUp, inSequence}
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -137,7 +137,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
 
-    val checkResult = original.semanticCheck(SemanticState.clean.withFeature('multigraph))
+    val checkResult = original.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
     val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)
