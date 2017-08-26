@@ -19,38 +19,38 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
-  def graphs: List[SingleGraph]
+  def graphs: List[SingleGraphAs]
 
-  def newSource: Option[SingleGraph] = None
-  def newTarget: Option[SingleGraph] = None
+  def newSource: Option[SingleGraphAs] = None
+  def newTarget: Option[SingleGraphAs] = None
 }
 
-final case class ReturnedGraph(item: SingleGraph)(val position: InputPosition) extends GraphReturnItem {
+final case class ReturnedGraph(item: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
   override def graphs = List(item)
 }
 
-final case class NewTargetGraph(target: SingleGraph)(val position: InputPosition) extends GraphReturnItem {
+final case class NewTargetGraph(target: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
   override def graphs = List(target)
   override def newTarget = Some(target)
 }
 
-final case class NewContextGraphs(source: SingleGraph,
-                                  override val newTarget: Option[SingleGraph] = None)
+final case class NewContextGraphs(source: SingleGraphAs,
+                                  override val newTarget: Option[SingleGraphAs] = None)
                                  (val position: InputPosition) extends GraphReturnItem {
   override def graphs = List(source) ++ newTarget.toList
 
-  override def newSource: Option[SingleGraph] = Some(source)
+  override def newSource: Option[SingleGraphAs] = Some(source)
 }
 
 final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
-  val graphs: List[SingleGraph] = items.flatMap(_.graphs)
+  val graphs: List[SingleGraphAs] = items.flatMap(_.graphs)
 
-  val singleGraph: Option[SingleGraph] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
-  val newSource: Option[SingleGraph] = singleGraph orElse items.flatMap(_.newSource).headOption
-  val newTarget: Option[SingleGraph] = items.flatMap(_.newTarget).headOption orElse newSource
+  val singleGraph: Option[SingleGraphAs] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
+  val newSource: Option[SingleGraphAs] = singleGraph orElse items.flatMap(_.newSource).headOption
+  val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
     graphs.semanticCheck chain

@@ -70,28 +70,76 @@ sealed trait MultiGraphClause extends Clause with SemanticChecking {
 
 sealed trait GraphSelectorClause extends MultiGraphClause {
 
-  def graph: SingleGraph
+  def graph: SingleGraphAs
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     graph.semanticCheck
 }
 
-final case class From(graph: SingleGraph)(val position: InputPosition) extends GraphSelectorClause {
+final case class From(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "FROM"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain updateSetContextGraphs()
+
+  private def updateSetContextGraphs(): SemanticCheck = {
+    val check = (_: SemanticState).updateSetContextGraphs(graph.as, graph.as)
+    check: SemanticCheck
+  }
 }
 
-final case class Into(graph: SingleGraph)(val position: InputPosition) extends GraphSelectorClause {
+final case class Into(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "INTO"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain updateSetContextGraphs()
+
+  private def updateSetContextGraphs(): SemanticCheck = {
+    val check = (_: SemanticState).updateSetContextGraphs(None, graph.as)
+    check: SemanticCheck
+  }
 }
 
-final case class CreateGraph(snapshot: Boolean, graph: Variable, at: GraphUrl)(val position: InputPosition)
-  extends MultiGraphClause {
+sealed trait CreateGraphClause extends MultiGraphClause {
+  def snapshot: Boolean
+  def graph: Variable
+  def at: GraphUrl
+  def of: Option[Pattern]
 
   override def name = "CREATE GRAPH"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain graph.declareGraph
+    super.semanticCheck chain
+    graph.declareGraph chain
+    of.foldSemanticCheck(_.semanticCheck(Pattern.SemanticContext.Create))
+}
+
+final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
+  extends CreateGraphClause
+
+final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
+  extends CreateGraphClause {
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain updateSetContextGraphs()
+
+  private def updateSetContextGraphs(): SemanticCheck = {
+    val check = (_: SemanticState).updateSetContextGraphs(Some(graph), Some(graph))
+    check: SemanticCheck
+  }
+}
+
+final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
+  extends CreateGraphClause {
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain updateSetContextGraphs()
+
+  private def updateSetContextGraphs(): SemanticCheck = {
+    val check = (_: SemanticState).updateSetContextGraphs(None, Some(graph))
+    check: SemanticCheck
+  }
 }
 
 final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition) extends MultiGraphClause {
@@ -101,7 +149,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
     super.semanticCheck chain graphs.foldSemanticCheck(_.ensureDefined())
 }
 
-final case class Persist(snapshot: Boolean, graph: BoundGraph, to: GraphUrl)(val position: InputPosition)
+final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
   extends MultiGraphClause {
 
   override def name = "PERSIST"
@@ -110,7 +158,7 @@ final case class Persist(snapshot: Boolean, graph: BoundGraph, to: GraphUrl)(val
     super.semanticCheck chain graph.semanticCheck
 }
 
-final case class Relocate(snapshot: Boolean, graph: BoundGraph, to: GraphUrl)(val position: InputPosition)
+final case class Relocate(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
   extends MultiGraphClause {
 
   override def name = "RELOCATE"

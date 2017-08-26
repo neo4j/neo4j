@@ -52,13 +52,17 @@ trait Query extends Parser
     | Match
     | Unwind
     | Merge
+    | CreateGraph
     | Create
     | SetClause
+    | DeleteGraphs
     | Delete
     | Remove
     | Foreach
     | With
     | Call
+    | Persist
+    | Relocate
     | Return
     | Pragma
   )

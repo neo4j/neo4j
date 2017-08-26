@@ -19,11 +19,11 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
-sealed trait SingleGraph extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+sealed trait SingleGraphAs extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
   def as: Option[Variable]
 
-  def withNewName(newName: Variable): SingleGraph
+  def withNewName(newName: Variable): SingleGraphAs
 
   override def semanticCheck: SemanticCheck =
     inner chain checkAlias
@@ -35,20 +35,20 @@ sealed trait SingleGraph extends ASTNode with ASTParticle with SemanticCheckable
     as.foldSemanticCheck(v => v.declareGraph)
 }
 
-sealed trait BoundGraph extends SingleGraph
+sealed trait BoundGraphAs extends SingleGraphAs
 
-final case class SourceGraph(as: Option[Variable])(val position: InputPosition) extends BoundGraph {
+final case class SourceGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundGraphAs {
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
   override protected def inner: SemanticCheck = SemanticCheckResult.success
 }
 
-final case class TargetGraph(as: Option[Variable])(val position: InputPosition) extends BoundGraph {
+final case class TargetGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundGraphAs {
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
   override protected def inner: SemanticCheck = SemanticCheckResult.success
 }
 
-final case class GraphAlias(ref: Variable, as: Option[Variable])(val position: InputPosition)
-  extends BoundGraph {
+final case class GraphAs(ref: Variable, as: Option[Variable])(val position: InputPosition)
+  extends BoundGraphAs {
 
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
   override protected def inner: SemanticCheck = ref.ensureDefined() chain ref.expectType(CTGraphRef.covariant)
@@ -58,17 +58,17 @@ final case class GraphAlias(ref: Variable, as: Option[Variable])(val position: I
   }
 }
 
-sealed trait NewGraph extends SingleGraph
+sealed trait NewGraphAs extends SingleGraphAs
 
-final case class GraphOf(of: Pattern, as: Option[Variable])(val position: InputPosition)
-  extends NewGraph {
+final case class GraphOfAs(of: Pattern, as: Option[Variable])(val position: InputPosition)
+  extends NewGraphAs {
 
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
   override protected def inner: SemanticCheck = of.semanticCheck(Pattern.SemanticContext.Create)
 }
 
-final case class GraphAt(at: GraphUrl, as: Option[Variable])(val position: InputPosition)
-  extends NewGraph {
+final case class GraphAtAs(at: GraphUrl, as: Option[Variable])(val position: InputPosition)
+  extends NewGraphAs {
 
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
   override protected def inner: SemanticCheck = at.semanticCheck

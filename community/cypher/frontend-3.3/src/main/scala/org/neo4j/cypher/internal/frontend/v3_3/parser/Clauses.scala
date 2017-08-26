@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticChecking, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -32,20 +33,67 @@ trait Clauses extends Parser
   def LoadCSV: Rule1[ast.LoadCSV] = rule("LOAD CSV") {
     keyword("LOAD CSV") ~~
       group(keyword("WITH HEADERS") ~ push(true) | push(false)) ~~
-      keyword("FROM") ~~ (Expression) ~~
+      keyword("FROM") ~~ Expression ~~
       keyword("AS") ~~ Variable ~~
       optional(keyword("FIELDTERMINATOR") ~~ StringLiteral) ~~>>
       (ast.LoadCSV(_, _, _, _))
   }
 
   def From: Rule1[ast.From] = rule("FROM") {
-    keyword("FROM") ~~ SingleGraphItem ~~>> (ast.From(_))
+    keyword("FROM") ~~ SingleGraph ~~>> (ast.From(_))
   }
 
   def Into: Rule1[ast.Into] = rule("INTO") {
-    keyword("INTO") ~~ SingleGraphItem ~~>> (ast.Into(_))
+    keyword("INTO") ~~ SingleGraph ~~>> (ast.Into(_))
   }
 
+  def CreateGraph: Rule1[ast.CreateGraphClause] =
+    CreateNewSourceGraph | CreateNewTargetGraph | CreateRegularGraph
+
+  private def CreateRegularGraph: Rule1[ast.CreateRegularGraph] = rule("CREATE GRAPH") {
+    keyword("CREATE") ~~ CreatedGraph ~~>>(t => ast.CreateRegularGraph(t._1, t._2, t._3, t._4))
+  }
+
+  private def CreateNewSourceGraph: Rule1[ast.CreateNewSourceGraph] = rule("CREATE GRAPH >>") {
+    keyword("CREATE") ~~ CreatedGraph ~~ keyword(">>") ~~>>(t => ast.CreateNewSourceGraph(t._1, t._2, t._3, t._4))
+  }
+
+  private def CreateNewTargetGraph: Rule1[ast.CreateNewTargetGraph] = rule("CREATE GRAPH <<") {
+    keyword("CREATE") ~~ keyword(">>")  ~~ CreatedGraph ~~>>(t => ast.CreateNewTargetGraph(t._1, t._2, t._3, t._4))
+  }
+
+  private def CreatedGraph: Rule1[(Boolean, ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+    CreatedGraphAt | CreatedGraphAs
+
+  private def CreatedGraphAt: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+    Snapshot ~~ keyword("GRAPH") ~~ Variable ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~> {
+      (snapshot, graph, pattern, url) => (snapshot, graph, pattern, url)
+    }
+
+  private def CreatedGraphAs: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+    Snapshot ~~ keyword("GRAPH") ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~ keyword("AS") ~~ Variable ~~> {
+      (snapshot, pattern, url, graph) => (snapshot, graph, pattern, url)
+    }
+
+  def Persist: Rule1[ast.Persist] = rule("PERSIST") {
+    keyword("PERSIST") ~~ Snapshot ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Persist(_, _, _))
+  }
+
+  def Relocate: Rule1[ast.Relocate] = rule("RELOCATE") {
+    keyword("RELOCATE") ~~ Snapshot ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Relocate(_, _, _))
+  }
+
+  def DeleteGraphs: Rule1[ast.DeleteGraphs] = rule("DELETE GRAPHS") {
+    keyword("DELETE") ~~ (
+      (keyword("GRAPHS") ~~ oneOrMore(Variable, separator = CommaSep) ~~>>(ast.DeleteGraphs(_)))
+      |
+      (oneOrMore(keyword("GRAPH") ~~ Variable, separator = CommaSep) ~~>>(ast.DeleteGraphs(_)))
+    )
+  }
+
+  private def Snapshot: Rule1[Boolean] = rule("SNAPSHOT") {
+    optional(keyword("SNAPSHOT") ~~ push(true)) ~~>(_.getOrElse(false))
+  }
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

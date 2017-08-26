@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class SingleGraphItemTest extends CypherFunSuite with AstConstructionTestSupport {
+class SingleGraphTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Self alias does not produce a semantic error") {
 

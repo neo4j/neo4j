@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.SingleGraph
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SingleGraphAs
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
 case object noUnnamedGraphs extends Condition {
   def apply(that: Any): Seq[String] = {
-    val graphs = collectNodesOfType[SingleGraph].apply(that)
+    val graphs = collectNodesOfType[SingleGraphAs].apply(that)
     val unnamed = graphs.filter(_.as.isEmpty)
     unnamed.map { graphDef => s"GraphDef at ${graphDef.position} is unnamed" }
   }

@@ -68,12 +68,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def url(addr: String): GraphUrl =
     GraphUrl(Right(StringLiteral(addr)(pos)))(pos)
 
-  def graph(name: String): SingleGraph =
-    GraphAlias(varFor(name), None)(pos)
+  def graph(name: String): BoundGraphAs =
+    GraphAs(varFor(name), None)(pos)
 
-  def graphAs(name: String, alias: String): SingleGraph =
-    GraphAlias(varFor(name), Some(varFor(alias)))(pos)
+  def graphAs(name: String, alias: String): BoundGraphAs =
+    GraphAs(varFor(name), Some(varFor(alias)))(pos)
 
-  def graphAt(name: String, address: String): SingleGraph =
-    GraphAt(url(address), Some(varFor(name)))(pos)
+  def graphAt(name: String, address: String): SingleGraphAs =
+    GraphAtAs(url(address), Some(varFor(name)))(pos)
 }
