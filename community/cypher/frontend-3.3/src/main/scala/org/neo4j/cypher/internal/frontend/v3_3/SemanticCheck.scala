@@ -25,6 +25,12 @@ object SemanticCheckResult {
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
 
 trait SemanticChecking {
+
+  protected def requireMultigraphSupport(position: InputPosition): SemanticCheck = {
+    val error: SemanticCheck = FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+    error.unlessFeatureEnabled('multigraph)
+  }
+
   protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
     if (condition)
       check(state)

@@ -54,15 +54,17 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
 
   override def semanticCheck: SemanticCheck =
     graphs.semanticCheck chain
-      reportNoMultigraphSupport.unlessFeatureEnabled('multigraph) chain(
-        checkNoMultipleSources chain
-        checkNoMultipleTargets chain
-        checkUniqueGraphReference chain
-        (updateSetContextGraphs: SemanticCheck)
+    requireMultigraphSupport(position) chain(
+      checkNoMultipleSources chain
+      checkNoMultipleTargets chain
+      checkUniqueGraphReference chain
+      updateSetContextGraphs()
     ).ifFeatureEnabled('multigraph)
 
-  private def updateSetContextGraphs: (SemanticState) => Either[SemanticError, SemanticState] =
-    (_: SemanticState).updateSetContextGraphs(newSource.flatMap(_.as), newTarget.flatMap(_.as))
+  private def updateSetContextGraphs(): SemanticCheck = {
+    val check = (_: SemanticState).updateSetContextGraphs(newSource.flatMap(_.as), newTarget.flatMap(_.as))
+    check: SemanticCheck
+  }
 
   private def checkNoMultipleSources: SemanticCheck =
     (s: SemanticState) =>
@@ -75,9 +77,6 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
       if (items.flatMap(_.newTarget).size > 1)
         SemanticCheckResult.error(s, SemanticError("Setting multiple target graphs is not allowed", position))
       else SemanticCheckResult.success(s)
-
-  private def reportNoMultigraphSupport: SemanticCheck =
-    FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
 
   private def checkUniqueGraphReference: SemanticCheck = {
     (s: SemanticState) => {
