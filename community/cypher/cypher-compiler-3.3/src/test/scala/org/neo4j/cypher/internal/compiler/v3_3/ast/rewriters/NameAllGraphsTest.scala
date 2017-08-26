@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.nameAllGraphs
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeGraphReturnItems
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NameAllGraphsTest extends CypherFunSuite {
@@ -30,14 +30,14 @@ class NameAllGraphsTest extends CypherFunSuite {
   test("do not rename source graph") {
     val original = parser.parse("FROM GRAPH foo AT 'url' WITH * SOURCE GRAPH RETURN 1")
 
-    val result = original.rewrite(nameAllGraphs)
+    val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === original)
   }
 
   test("do not rename TARGET graph") {
     val original = parser.parse("INTO GRAPH foo AT 'url' WITH * TARGET GRAPH RETURN 1")
 
-    val result = original.rewrite(nameAllGraphs)
+    val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === original)
   }
 
@@ -45,7 +45,7 @@ class NameAllGraphsTest extends CypherFunSuite {
     val original = parser.parse("FROM GRAPH foo RETURN 1")
     val expected = parser.parse("FROM GRAPH foo AS foo RETURN 1")
 
-    val result = original.rewrite(nameAllGraphs)
+    val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === expected)
   }
 
@@ -53,7 +53,7 @@ class NameAllGraphsTest extends CypherFunSuite {
     val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
     val expected = parser.parse("FROM GRAPH AT 'url' AS `  UNNAMED21` RETURN 1")
 
-    val result = original.rewrite(nameAllGraphs)
+    val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === expected)
   }
 }

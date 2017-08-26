@@ -46,6 +46,10 @@ trait ParserTest[T, J] extends CypherFunSuite {
       }
     }
 
+    def shouldVerify(expected: PartialFunction[J, Unit]): Unit = {
+      actuals foreach expected
+    }
+
     override def toString: String = s"ResultCheck( $text -> $actuals )"
   }
 

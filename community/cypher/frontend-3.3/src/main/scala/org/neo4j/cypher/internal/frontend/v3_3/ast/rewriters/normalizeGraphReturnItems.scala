@@ -20,11 +20,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
-case object nameAllGraphs extends Rewriter {
+case object normalizeGraphReturnItems extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  // TODO: resolve source and target graph
+  // TODO: resolve source and target graph, maybe better done during expandStar
   private val rewriter = Rewriter.lift {
     case item: SourceGraphAs => item
     case item: TargetGraphAs => item

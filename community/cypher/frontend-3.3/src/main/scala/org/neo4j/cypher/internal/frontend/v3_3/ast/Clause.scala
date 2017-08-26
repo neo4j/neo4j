@@ -81,7 +81,10 @@ final case class From(graph: SingleGraphAs)(val position: InputPosition) extends
   override def name = "FROM"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain updateSetContextGraphs()
+    super.semanticCheck chain
+    updateSetContextGraphs() chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
     val check = (_: SemanticState).updateSetContextGraphs(graph.as, graph.as)
@@ -93,7 +96,10 @@ final case class Into(graph: SingleGraphAs)(val position: InputPosition) extends
   override def name = "INTO"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain updateSetContextGraphs()
+    super.semanticCheck chain
+    updateSetContextGraphs() chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
     val check = (_: SemanticState).updateSetContextGraphs(None, graph.as)
@@ -101,7 +107,7 @@ final case class Into(graph: SingleGraphAs)(val position: InputPosition) extends
   }
 }
 
-sealed trait CreateGraphClause extends MultiGraphClause {
+sealed trait CreateGraphClause extends MultiGraphClause with UpdateClause {
   def snapshot: Boolean
   def graph: Variable
   def at: GraphUrl
@@ -116,13 +122,22 @@ sealed trait CreateGraphClause extends MultiGraphClause {
 }
 
 final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
-  extends CreateGraphClause
+  extends CreateGraphClause {
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
+}
 
 final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain updateSetContextGraphs()
+    super.semanticCheck chain
+    updateSetContextGraphs() chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
     val check = (_: SemanticState).updateSetContextGraphs(Some(graph), Some(graph))
@@ -134,7 +149,10 @@ final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Op
   extends CreateGraphClause {
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain updateSetContextGraphs()
+    super.semanticCheck chain
+    updateSetContextGraphs() chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
     val check = (_: SemanticState).updateSetContextGraphs(None, Some(graph))
@@ -142,15 +160,20 @@ final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Op
   }
 }
 
-final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition) extends MultiGraphClause {
+final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)
+  extends MultiGraphClause with UpdateClause{
+
   override def name = "DELETE GRAPHS"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain graphs.foldSemanticCheck(_.ensureDefined())
+    super.semanticCheck chain
+    graphs.foldSemanticCheck(_.ensureDefined()) chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 }
 
 final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultiGraphClause {
+  extends MultiGraphClause with UpdateClause {
 
   override def name = "PERSIST"
 
@@ -159,7 +182,7 @@ final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(v
 }
 
 final case class Relocate(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
-  extends MultiGraphClause {
+  extends MultiGraphClause with UpdateClause {
 
   override def name = "RELOCATE"
 
@@ -487,9 +510,11 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      returnItems.semanticCheck chain
-      graphItems.semanticCheck chain
-      ensureOneIsNonEmpty
+    returnItems.semanticCheck chain
+    graphItems.semanticCheck chain
+    ensureOneIsNonEmpty chain
+    recordCurrentScope chain
+    recordCurrentGraphScope
 
   def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
     if (returnItems.checkUserEmpty && graphItems.isEmpty)

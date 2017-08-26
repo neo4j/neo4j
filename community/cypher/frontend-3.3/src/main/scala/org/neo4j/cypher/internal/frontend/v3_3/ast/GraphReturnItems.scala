@@ -53,8 +53,8 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    graphs.semanticCheck chain
     requireMultigraphSupport("Projecting and returning graphs", position) chain(
+      graphs.semanticCheck chain
       checkNoMultipleSources chain
       checkNoMultipleTargets chain
       checkUniqueGraphReference chain

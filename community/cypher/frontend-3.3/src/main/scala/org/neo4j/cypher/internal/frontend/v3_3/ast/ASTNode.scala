@@ -29,6 +29,8 @@ trait ASTNode
 
   def recordCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentScope(this))
 
+  def recordCurrentGraphScope: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentGraphScope(this))
+
   def position: InputPosition
 
   def dup(children: Seq[AnyRef]): this.type =

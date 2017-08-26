@@ -58,7 +58,7 @@ trait Clauses extends Parser
     keyword("CREATE") ~~ CreatedGraph ~~ keyword(">>") ~~>>(t => ast.CreateNewSourceGraph(t._1, t._2, t._3, t._4))
   }
 
-  private def CreateNewTargetGraph: Rule1[ast.CreateNewTargetGraph] = rule("CREATE GRAPH <<") {
+  private def CreateNewTargetGraph: Rule1[ast.CreateNewTargetGraph] = rule("CREATE >> GRAPH") {
     keyword("CREATE") ~~ keyword(">>")  ~~ CreatedGraph ~~>>(t => ast.CreateNewTargetGraph(t._1, t._2, t._3, t._4))
   }
 
