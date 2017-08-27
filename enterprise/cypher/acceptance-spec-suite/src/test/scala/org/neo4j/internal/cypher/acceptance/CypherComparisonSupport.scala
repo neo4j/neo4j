@@ -312,7 +312,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
         TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
-    def AllExceptSleipnir: TestConfiguration =
+    def AllExceptSlotted: TestConfiguration =
       TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
