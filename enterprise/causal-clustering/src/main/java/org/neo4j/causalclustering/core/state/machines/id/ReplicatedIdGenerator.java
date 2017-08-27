@@ -138,7 +138,7 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public  synchronized IdRange nextIdBatch( int size )
     {
         IdRange range = idQueue.nextIdBatch( size );
         if ( range.totalSize() == 0 )
