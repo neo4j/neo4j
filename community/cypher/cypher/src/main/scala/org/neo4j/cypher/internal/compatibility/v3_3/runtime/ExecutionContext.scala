@@ -85,32 +85,32 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     m.foreach(f)
   }
 
-  override def +=(kv: (String, AnyValue)) = {
+  override def +=(kv: (String, AnyValue)): MapExecutionContext.this.type = {
     m += kv
     this
   }
 
   override def toMap[T, U](implicit ev: (String, AnyValue) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
-  def newWith(newEntries: Seq[(String, AnyValue)]) =
+  override def newWith(newEntries: Seq[(String, AnyValue)]): MapExecutionContext.this.type =
     createWithNewMap(m.clone() ++= newEntries)
 
   // This may seem silly but it has measurable impact in tight loops
 
-  override def newWith1(key1: String, value1: AnyValue) = {
+  override def newWith1(key1: String, value1: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     createWithNewMap(newMap)
   }
 
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue) = {
+  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
     createWithNewMap(newMap)
   }
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue) = {
+  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
