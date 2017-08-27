@@ -29,6 +29,8 @@ import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.System.arraycopy;
 
+import static org.neo4j.io.ByteUnit.kibiBytes;
+
 /**
  * A buffering implementation of {@link ReadableClosableChannel}. This class also allows subclasses to read content
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
@@ -36,7 +38,7 @@ import static java.lang.System.arraycopy;
  */
 public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosableChannel, PositionableChannel
 {
-    public static final int DEFAULT_READ_AHEAD_SIZE = 1024 * 4;
+    public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact( kibiBytes( 4 ) );
 
     protected T channel;
     private final ByteBuffer aheadBuffer;
@@ -60,7 +62,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
      * underlying channel, which will generally be further ahead).
      *
      * @return The position within the buffered stream.
-     * @throws IOException
+     * @throws IOException on I/O error.
      */
     public long position() throws IOException
     {
@@ -175,6 +177,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
      * argument, which is the condition for indicating no more content, resulting in a {@link ReadPastEndException} being
      * thrown.
      * @param channel The channel that has just been exhausted.
+     * @throws IOException on I/O error.
      */
     protected T next( T channel ) throws IOException
     {

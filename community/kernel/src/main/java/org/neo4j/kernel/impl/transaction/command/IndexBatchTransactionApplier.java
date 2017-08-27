@@ -45,10 +45,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.RecoveryIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
-
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -65,24 +62,25 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
+    private long txId;
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter,
-            TransactionApplicationMode mode )
+            PropertyPhysicalToLogicalConverter indexUpdateConverter )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.transactionApplier = new SingleTransactionApplier( nodeStore, mode );
+        this.transactionApplier = new SingleTransactionApplier( nodeStore );
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
+        txId = transaction.transactionId();
         return transactionApplier;
     }
 
@@ -136,14 +134,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private class SingleTransactionApplier extends TransactionApplier.Adapter
     {
         private final NodeStore nodeStore;
-        private final TransactionApplicationMode mode;
         private final NodePropertyCommandsExtractor indexUpdatesExtractor = new NodePropertyCommandsExtractor();
         private List<IndexRule> createdIndexes;
 
-        SingleTransactionApplier( NodeStore nodeStore, TransactionApplicationMode mode )
+        SingleTransactionApplier( NodeStore nodeStore )
         {
             this.nodeStore = nodeStore;
-            this.mode = mode;
         }
 
         @Override
@@ -170,15 +166,9 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = createIndexUpdates();
+                indexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter );
             }
             return indexUpdates;
-        }
-
-        private IndexUpdates createIndexUpdates()
-        {
-            return mode == TransactionApplicationMode.RECOVERY ? new RecoveryIndexUpdates() :
-                new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter );
         }
 
         @Override

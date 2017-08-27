@@ -458,6 +458,16 @@ public abstract class ArrayUtil
         return length == result.length ? result : Arrays.copyOf( result, length );
     }
 
+    public static <T> void reverse( T[] array )
+    {
+        for ( int low = 0, high = array.length - 1; high - low > 0; low++, high-- )
+        {
+            T lowItem = array[low];
+            array[low] = array[high];
+            array[high] = lowItem;
+        }
+    }
+
     private ArrayUtil()
     {   // No instances allowed
     }

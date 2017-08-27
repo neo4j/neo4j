@@ -25,7 +25,12 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
@@ -46,15 +51,27 @@ public class Recovery extends LifecycleAdapter
         default void recoveryCompleted( int numberOfRecoveredTransactions )
         { // no-op by default
         }
+
+        default void reverseStoreRecoveryCompleted( long checkpointTxId )
+        { // no-op by default
+        }
+    }
+
+    public interface RecoveryApplier extends Visitor<CommittedTransactionRepresentation,Exception>, AutoCloseable
+    {
     }
 
     public interface SPI
     {
-        TransactionCursor getTransactions( LogPosition position ) throws IOException;
+        TransactionCursor getTransactions( LogPosition recoveryFromPosition ) throws IOException;
+
+        TransactionCursor getTransactionsInReverseOrder( LogPosition recoveryFromPosition ) throws IOException;
 
         LogPosition getPositionToRecoverFrom() throws IOException;
 
-        Visitor<CommittedTransactionRepresentation,Exception> startRecovery();
+        void startRecovery();
+
+        RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception;
 
         void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
                 LogPosition positionAfterLastRecoveredTransaction ) throws Exception;
@@ -82,11 +99,27 @@ public class Recovery extends LifecycleAdapter
         }
 
         monitor.recoveryRequired( recoveryFromPosition );
+        spi.startRecovery();
 
+        // Backwards for neo store only
+        long checkpointTxId = TransactionIdStore.BASE_TX_ID;
+        try (   TransactionCursor transactionsToRecover = spi.getTransactionsInReverseOrder( recoveryFromPosition );
+                RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( REVERSE_RECOVERY ); )
+        {
+            while ( transactionsToRecover.next() )
+            {
+                recoveryVisitor.visit( transactionsToRecover.get() );
+                checkpointTxId = transactionsToRecover.get().getCommitEntry().getTxId();
+            }
+        }
+
+        monitor.reverseStoreRecoveryCompleted( checkpointTxId );
+
+        // Forward with all appliers
         LogPosition recoveryToPosition;
         CommittedTransactionRepresentation lastTransaction = null;
-        Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor = spi.startRecovery();
-        try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition ) )
+        try (   TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition );
+                RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( RECOVERY ); )
         {
             while ( transactionsToRecover.next() )
             {

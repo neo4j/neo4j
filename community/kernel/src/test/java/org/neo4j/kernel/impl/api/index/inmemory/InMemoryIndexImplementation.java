@@ -139,4 +139,6 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
     {
         void visitEntry( Object key, Set<Long> nodeId ) throws Exception;
     }
+
+    abstract boolean hasSameContentsAs( InMemoryIndexImplementation other );
 }

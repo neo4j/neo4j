@@ -86,7 +86,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 public class NeoStoreTransactionApplierTest
 {
@@ -927,7 +926,7 @@ public class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore,
-                new PropertyPhysicalToLogicalConverter( propertyStore ), INTERNAL );
+                new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     // SCHEMA RULE COMMAND

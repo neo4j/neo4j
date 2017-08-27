@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -170,16 +169,6 @@ public class LuceneIndexAccessor implements IndexAccessor
             {
                 luceneIndex.maybeRefreshBlocking();
             }
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds ) throws IOException
-        {
-            nodeIds.visitKeys( nodeId ->
-            {
-                remove( nodeId );
-                return false;
-            } );
         }
 
         private void addRecovered( long nodeId, Value[] values ) throws IOException

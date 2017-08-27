@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -74,12 +73,6 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
             writer.close();
         }
         closed = true;
-    }
-
-    @Override
-    public void remove( PrimitiveLongSet nodeIds ) throws IOException
-    {
-        assertOpen();
     }
 
     private void assertOpen()

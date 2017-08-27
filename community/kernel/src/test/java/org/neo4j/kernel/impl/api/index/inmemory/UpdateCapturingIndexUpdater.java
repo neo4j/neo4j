@@ -17,26 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index.updater;
+package org.neo4j.kernel.impl.api.index.inmemory;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-public abstract class DelegatingIndexUpdater implements IndexUpdater
+public class UpdateCapturingIndexUpdater implements IndexUpdater
 {
-    protected final IndexUpdater delegate;
+    private final IndexUpdater actual;
+    private final Collection<IndexEntryUpdate> updatesTarget;
 
-    public DelegatingIndexUpdater( IndexUpdater delegate )
+    public UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate> updatesTarget )
     {
-        this.delegate = delegate;
+        this.actual = actual;
+        this.updatesTarget = updatesTarget;
     }
 
     @Override
     public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
     {
-        delegate.process( update );
+        actual.process( update );
+        updatesTarget.add( update );
+    }
+
+    @Override
+    public void close() throws IOException, IndexEntryConflictException
+    {
+        actual.close();
     }
 }

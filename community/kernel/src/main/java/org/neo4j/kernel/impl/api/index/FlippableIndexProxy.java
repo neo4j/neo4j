@@ -57,6 +57,7 @@ public class FlippableIndexProxy implements IndexProxy
     // But it turns out that that may not be the case. F.ex. ReentrantReadWriteLock
     // code uses unsafe compareAndSwap that sort of circumvents an equivalent of a volatile read.
     private volatile IndexProxy delegate;
+    private boolean started;
 
     public FlippableIndexProxy()
     {
@@ -75,6 +76,7 @@ public class FlippableIndexProxy implements IndexProxy
         try
         {
             delegate.start();
+            started = true;
         }
         finally
         {
@@ -402,6 +404,10 @@ public class FlippableIndexProxy implements IndexProxy
             {
                 actionDuringFlip.call();
                 this.delegate = flipTarget.create();
+                if ( started )
+                {
+                    this.delegate.start();
+                }
             }
             catch ( Exception e )
             {

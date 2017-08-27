@@ -165,6 +165,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
+    private boolean started;
 
     public RecordStorageEngine(
             File storeDir,
@@ -357,7 +358,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        appliers.add( new NeoStoreBatchTransactionApplier( neoStores, cacheAccess, lockService ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode.version(), neoStores, cacheAccess, lockService() ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
@@ -366,23 +367,30 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
+        if ( mode.needsAuxiliaryStores() )
+        {
+            // Counts store application
+            appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
 
-        // Counts store application
-        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
+            // Schema index application
+            appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
+                    neoStores.getNodeStore(),
+                    indexUpdatesConverter ) );
 
-        // Schema index application
-        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(),
-                indexUpdatesConverter, mode ) );
-
-        // Legacy index application
-        appliers.add(
-                new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
-                        mode ) );
+            // Legacy index application
+            appliers.add(
+                    new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
+                            mode ) );
+        }
 
         // Perform the application
         return new BatchTransactionApplierFacade(
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
+    }
+
+    private LockService lockService()
+    {
+        return started ? lockService : NO_LOCK_SERVICE;
     }
 
     public void satisfyDependencies( DependencySatisfier satisfier )
@@ -422,6 +430,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         indexingService.start();
         labelScanStore.start();
         idController.start();
+        started = true;
     }
 
     @Override

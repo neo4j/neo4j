@@ -91,6 +91,28 @@ public abstract class Command implements StorageCommand
         }
     }
 
+    public enum Version
+    {
+        BEFORE
+        {
+            @Override
+            <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command )
+            {
+                return command.getBefore();
+            }
+        },
+        AFTER
+        {
+            @Override
+            <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command )
+            {
+                return command.getAfter();
+            }
+        };
+
+        abstract <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command );
+    }
+
     protected final void setup( long key, Mode mode )
     {
         this.mode = mode;
@@ -471,26 +493,11 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public abstract static class TokenCommand<RECORD extends TokenRecord> extends Command
+    public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD>
     {
-        protected final RECORD before;
-        protected final RECORD after;
-
         public TokenCommand( RECORD before, RECORD after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
-        }
-
-        public RECORD getBefore()
-        {
-            return before;
-        }
-
-        public RECORD getAfter()
-        {
-            return after;
+            super( before, after );
         }
 
         @Override

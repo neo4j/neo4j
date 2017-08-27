@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -238,12 +237,6 @@ public class IndexCRUDIT
                 public void close() throws IOException, IndexEntryConflictException
                 {
                     updatesCommitted.addAll( updates );
-                }
-
-                @Override
-                public void remove( PrimitiveLongSet nodeIds ) throws IOException
-                {
-                    throw new UnsupportedOperationException( "not expected" );
                 }
             };
         }

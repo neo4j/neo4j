@@ -76,12 +76,6 @@ public class OnlineIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void collectUpdatedNodeIds( PrimitiveLongSet target )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void feed( PrimitiveLongObjectMap<List<PropertyCommand>> propertyCommands,
             PrimitiveLongObjectMap<NodeCommand> nodeCommands )
     {

@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ResourceIterator;
@@ -119,25 +118,6 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
         try
         {
             updater.process( simpleUpdate() );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // then good
-        }
-    }
-
-    @Test
-    public void removeMustThrowAfterClose() throws Exception
-    {
-        // given
-        IndexUpdater updater = accessor.newUpdater( ONLINE );
-        updater.close();
-
-        // when
-        try
-        {
-            updater.remove( Primitive.longSet() );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )

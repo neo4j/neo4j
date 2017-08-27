@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -33,10 +32,7 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.hamcrest.Matchers.hasToString;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -53,22 +49,6 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
     private static final int SAMPLING_BUFFER_SIZE_LIMIT = 100;
     private static final LabelSchemaDescriptor COMPOSITE_SCHEMA_DESCRIPTOR = SchemaDescriptorFactory
             .forLabel( 1, 42, 43 );
-
-    @Test
-    public void removeNotSupported()
-    {
-        NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater();
-
-        try
-        {
-            updater.remove( PrimitiveLongCollections.setOf( 1, 2, 3 ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
-    }
 
     @Test
     public void addedNodePropertiesIncludedInSample() throws Exception
@@ -224,7 +204,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         String expectedString1 = documentRepresentingProperties( (long) 1, "foo" ).toString();
         String expectedString2 = documentRepresentingProperties( (long) 2, "bar" ).toString();
         String expectedString3 = documentRepresentingProperties( (long) 3, "qux" ).toString();
-        String expectedString4 = documentRepresentingProperties( (long) 4, "git", "bit" ).toString();
+        String expectedString4 = documentRepresentingProperties( 4, "git", "bit" ).toString();
 
         updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
         verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );
@@ -247,7 +227,7 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
 
         String expectedString1 = documentRepresentingProperties( (long) 1, "after1" ).toString();
         String expectedString2 = documentRepresentingProperties( (long) 2, "after2" ).toString();
-        String expectedString3 = documentRepresentingProperties( (long) 3, "bit", "after2" ).toString();
+        String expectedString3 = documentRepresentingProperties( 3, "bit", "after2" ).toString();
 
         updater.process( change( 1, SCHEMA_DESCRIPTOR, "before1", "after1" ) );
         verifydocument( writer, newTermForChangeOrRemove( 1 ), expectedString1 );

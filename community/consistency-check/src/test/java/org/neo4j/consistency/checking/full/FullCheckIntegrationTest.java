@@ -74,12 +74,15 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -100,6 +103,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
@@ -558,15 +562,26 @@ public class FullCheckIntegrationTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexRule> indexRuleIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+        NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
+                fixture.directStoreAccess().nativeStores().getRawNeoStores() );
         while ( indexRuleIterator.hasNext() )
         {
             IndexRule indexRule = indexRuleIterator.next();
+            IndexDescriptor descriptor = indexRule.getIndexDescriptor();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
                     apply( indexRule.getProviderDescriptor() ).getOnlineAccessor(
-                            indexRule.getId(), indexRule.getIndexDescriptor(), samplingConfig );
-            IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
-            updater.remove( asPrimitiveLongSet( indexedNodes ) );
-            updater.close();
+                            indexRule.getId(), descriptor, samplingConfig );
+            try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+            {
+                for ( long nodeId : indexedNodes )
+                {
+                    NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
+                    for ( IndexEntryUpdate update : updates.forIndexKeys( asList( descriptor ) ) )
+                    {
+                        updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
+                    }
+                }
+            }
             accessor.force();
             accessor.close();
         }

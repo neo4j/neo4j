@@ -28,6 +28,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import static java.lang.Integer.max;
+
 /**
  * Set a test to loop a number of times. If you find yourself using this in a production test, you are probably doing
  * something wrong.
@@ -46,17 +48,33 @@ public class RepeatRule implements TestRule
         int times();
     }
 
+    private final boolean printRepeats;
+    private final int defaultTimes;
+
     private int count;
+
+    public RepeatRule()
+    {
+        this( false, 1 );
+    }
+
+    public RepeatRule( boolean printRepeats, int defaultRepeats )
+    {
+        this.printRepeats = printRepeats;
+        this.defaultTimes = defaultRepeats;
+    }
 
     private class RepeatStatement extends Statement
     {
         private final int times;
         private final Statement statement;
+        private final String testName;
 
-        private RepeatStatement( int times, Statement statement )
+        private RepeatStatement( int times, Statement statement, Description testDescription )
         {
             this.times = times;
             this.statement = statement;
+            this.testName = testDescription.getDisplayName();
         }
 
         @Override
@@ -64,6 +82,10 @@ public class RepeatRule implements TestRule
         {
             for ( count = 0; count < times; count++ )
             {
+                if ( printRepeats )
+                {
+                    System.out.println( testName + " iteration " + (count + 1) + "/" + times );
+                }
                 statement.evaluate();
             }
         }
@@ -73,9 +95,9 @@ public class RepeatRule implements TestRule
     public Statement apply( Statement base, Description description )
     {
         Repeat repeat = description.getAnnotation( Repeat.class );
-        if ( repeat != null )
+        if ( repeat != null || defaultTimes > 1 )
         {
-            return new RepeatStatement( repeat.times(), base );
+            return new RepeatStatement( max( repeat != null ? repeat.times() : 1, defaultTimes ), base, description );
         }
         return base;
     }

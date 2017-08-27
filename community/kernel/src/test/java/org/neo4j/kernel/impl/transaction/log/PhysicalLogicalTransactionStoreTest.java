@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -44,7 +43,9 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -195,10 +196,16 @@ public class PhysicalLogicalTransactionStoreTest
         life.add( new Recovery( new Recovery.SPI()
         {
             @Override
-            public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
+            public void startRecovery()
             {
                 recoveryRequired.set( true );
-                return visitor;
+            }
+
+            @Override
+            public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
+                    throws Exception
+            {
+                return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock( RecoveryApplier.class ) : visitor;
             }
 
             @Override
@@ -211,6 +218,12 @@ public class PhysicalLogicalTransactionStoreTest
             public TransactionCursor getTransactions( LogPosition position ) throws IOException
             {
                 return txStore.getTransactions( position );
+            }
+
+            @Override
+            public TransactionCursor getTransactionsInReverseOrder( LogPosition position ) throws IOException
+            {
+                return txStore.getTransactionsInReverseOrder( position );
             }
 
             @Override
@@ -411,7 +424,7 @@ public class PhysicalLogicalTransactionStoreTest
         assertEquals( expectedMetadata, actualMetadata );
     }
 
-    private static class FakeRecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
+    private static class FakeRecoveryVisitor implements RecoveryApplier
     {
         private final byte[] additionalHeader;
         private final int masterId;
@@ -449,6 +462,11 @@ public class PhysicalLogicalTransactionStoreTest
         public int getVisitedTransactions()
         {
             return visitedTransactions;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
         }
     }
 }

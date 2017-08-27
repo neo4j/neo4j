@@ -24,10 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -41,12 +38,6 @@ import org.neo4j.values.storable.ValueTuple;
 class UniqueInMemoryIndex extends InMemoryIndex
 {
     private final LabelSchemaDescriptor schema;
-
-    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = nodeId ->
-    {
-        UniqueInMemoryIndex.this.remove( nodeId );
-        return false;
-    };
 
     UniqueInMemoryIndex( LabelSchemaDescriptor schema )
     {
@@ -90,12 +81,6 @@ class UniqueInMemoryIndex extends InMemoryIndex
                             break;
                     }
                 }
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds )
-            {
-                nodeIds.visitKeys( removeFromIndex );
             }
         };
     }
@@ -176,7 +161,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
             }
         }
 
-        ValueTuple getValues( long nodeId ) throws PropertyNotFoundException, EntityNotFoundException
+        ValueTuple getValues( long nodeId ) throws EntityNotFoundException
         {
             int[] propertyIds = schema.getPropertyIds();
             Value[] values = new Value[propertyIds.length];

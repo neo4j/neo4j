@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 
 /**
@@ -38,6 +37,4 @@ public interface IndexUpdater extends AutoCloseable
 
     @Override
     void close() throws IOException, IndexEntryConflictException;
-
-    void remove( PrimitiveLongSet nodeIds ) throws IOException;
 }

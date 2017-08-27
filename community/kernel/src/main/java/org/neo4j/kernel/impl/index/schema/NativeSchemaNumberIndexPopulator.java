@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Exceptions;
@@ -127,7 +126,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         return new IndexUpdater()
         {
             private boolean closed;
-            private Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
             public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
@@ -141,11 +140,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             {
                 applyWithWorkSync( updates );
                 closed = true;
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds ) throws IOException
-            {   // no-op
             }
 
             private void assertOpen()

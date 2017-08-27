@@ -59,7 +59,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -151,26 +153,47 @@ public class RecoveryTest
                 private int nr;
 
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
+                public void startRecovery()
                 {
                     recoveryRequired.set( true );
-                    final Visitor<CommittedTransactionRepresentation,Exception> actual = super.startRecovery();
-                    return tx ->
+                }
+
+                @Override
+                public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode )
+                        throws Exception
+                {
+                    RecoveryApplier actual = super.getRecoveryApplier( mode );
+                    if ( mode == TransactionApplicationMode.REVERSE_RECOVERY )
                     {
-                        actual.visit( tx );
-                        switch ( nr++ )
+                        return actual;
+                    }
+
+                    return new RecoveryApplier()
+                    {
+                        @Override
+                        public void close() throws Exception
                         {
-                        case 0:
-                            assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
-                            assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
-                            break;
-                        case 1:
-                            assertEquals( expectedStartEntry, tx.getStartEntry() );
-                            assertEquals( expectedCommitEntry, tx.getCommitEntry() );
-                            break;
-                        default: fail( "Too many recovered transactions" );
+                            actual.close();
                         }
-                        return false;
+
+                        @Override
+                        public boolean visit( CommittedTransactionRepresentation tx ) throws Exception
+                        {
+                            actual.visit( tx );
+                            switch ( nr++ )
+                            {
+                            case 0:
+                                assertEquals( lastCommittedTxStartEntry, tx.getStartEntry() );
+                                assertEquals( lastCommittedTxCommitEntry, tx.getCommitEntry() );
+                                break;
+                            case 1:
+                                assertEquals( expectedStartEntry, tx.getStartEntry() );
+                                assertEquals( expectedCommitEntry, tx.getCommitEntry() );
+                                break;
+                            default: fail( "Too many recovered transactions" );
+                            }
+                            return false;
+                        }
                     };
                 }
             }, monitor ) );
@@ -231,10 +254,9 @@ public class RecoveryTest
                     logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
+                public void startRecovery()
                 {
                     fail( "Recovery should not be required" );
-                    return null; // <-- to satisfy the compiler
                 }
             }, monitor ));
 
@@ -370,10 +392,9 @@ public class RecoveryTest
                     logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
-                public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
+                public void startRecovery()
                 {
                     recoveryRequired.set( true );
-                    return super.startRecovery();
                 }
             }, monitor ) );
 

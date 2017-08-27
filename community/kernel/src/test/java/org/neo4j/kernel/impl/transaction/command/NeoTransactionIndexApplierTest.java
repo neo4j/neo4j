@@ -41,8 +41,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
-
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Matchers.any;
@@ -99,8 +97,7 @@ public class NeoTransactionIndexApplierTest
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService,
                 labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                new PropertyPhysicalToLogicalConverter( propertyStore ),
-                TransactionApplicationMode.INTERNAL );
+                new PropertyPhysicalToLogicalConverter( propertyStore ) );
     }
 
     @Test

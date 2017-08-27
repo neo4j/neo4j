@@ -142,6 +142,11 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         this.providerDescriptor = descriptor;
     }
 
+    public int priority()
+    {
+        return this.priority;
+    }
+
     /**
      * Used for initially populating a created index, using batch insertion.
      */

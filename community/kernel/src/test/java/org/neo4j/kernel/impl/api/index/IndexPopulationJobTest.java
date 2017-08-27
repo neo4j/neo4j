@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -509,12 +508,6 @@ public class IndexPopulationJobTest
                 public void close() throws IOException, IndexEntryConflictException
                 {
                 }
-
-                @Override
-                public void remove( PrimitiveLongSet nodeIds )
-                {
-                    throw new UnsupportedOperationException( "not expected" );
-                }
             };
         }
 
@@ -588,12 +581,6 @@ public class IndexPopulationJobTest
                 @Override
                 public void close() throws IOException, IndexEntryConflictException
                 {
-                }
-
-                @Override
-                public void remove( PrimitiveLongSet nodeIds )
-                {
-                    throw new UnsupportedOperationException( "not expected" );
                 }
             };
         }
