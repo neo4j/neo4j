@@ -21,14 +21,13 @@ package org.neo4j.kernel.impl.traversal;
 
 import org.junit.Test;
 
-import java.util.Collections;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -36,7 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
 
 public class TraversalBranchImplTest
@@ -51,7 +49,8 @@ public class TraversalBranchImplTest
         TraversalBranchImpl branch = new TraversalBranchImpl( parent, source );
         @SuppressWarnings( "rawtypes" )
         PathExpander expander = mock( PathExpander.class );
-        when( expander.expand( eq( branch ), any( BranchState.class ) ) ).thenReturn( Collections.emptySet() );
+        when( expander.expand( eq( branch ), any( BranchState.class ) ) )
+                .thenReturn( Iterables.emptyResourceIterable() );
         TraversalContext context = mock( TraversalContext.class );
         when( context.evaluate( eq( branch ), any( BranchState.class ) ) ).thenReturn( INCLUDE_AND_CONTINUE );
 

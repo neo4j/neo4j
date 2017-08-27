@@ -19,18 +19,17 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.util.Iterator;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 /**
- * Limits the amount of items returned by an {@link Iterable}, or rather
- * {@link Iterator}s spawned from it.
- *
- * @author Mattias Persson
+ * Limits the amount of items returned by an {@link ResourceIterable}, or rather
+ * {@link ResourceIterator}s spawned from it.
  *
  * @param <T> the type of items in this {@link Iterable}.
- * @see LimitingIterator
+ * @see LimitingResourceIterator
  */
-public class LimitingIterable<T> implements Iterable<T>
+public class LimitingResourceIterable<T> implements ResourceIterable<T>
 {
     private final Iterable<T> source;
     private final int limit;
@@ -42,15 +41,15 @@ public class LimitingIterable<T> implements Iterable<T>
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    public LimitingIterable( Iterable<T> source, int limit )
+    public LimitingResourceIterable( ResourceIterable<T> source, int limit )
     {
         this.source = source;
         this.limit = limit;
     }
 
     @Override
-    public Iterator<T> iterator()
+    public ResourceIterator<T> iterator()
     {
-        return new LimitingIterator<T>( source.iterator(), limit );
+        return new LimitingResourceIterator<T>( Iterators.asResourceIterator( source.iterator() ), limit );
     }
 }

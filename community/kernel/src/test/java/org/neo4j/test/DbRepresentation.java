@@ -183,15 +183,17 @@ public class DbRepresentation
                 Index<Node> tempIndex = db.index().forNodes( indexName );
                 for ( Map.Entry<String,Serializable> property : properties.props.entrySet() )
                 {
-                    IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() );
-                    if ( content.hasNext() )
+                    try ( IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() ) )
                     {
-                        for ( Node hit : content )
+                        if ( content.hasNext() )
                         {
-                            if ( hit.getId() == id )
+                            for ( Node hit : content )
                             {
-                                thisIndex.put( property.getKey(), property.getValue() );
-                                break;
+                                if ( hit.getId() == id )
+                                {
+                                    thisIndex.put( property.getKey(), property.getValue() );
+                                    break;
+                                }
                             }
                         }
                     }

@@ -108,6 +108,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
         assertRels( readOperations.nodeGetRelationships( refNode, OUTGOING, new int[]{relType1, relType2} ),
                 fromRefToOther1, fromRefToOther2, fromRefToThird, fromRefToRef );
+        commit();
     }
 
     @Test
@@ -142,6 +143,7 @@ public class RelationshipIT extends KernelIntegrationTest
             // Then
             assertRels( statement.readOperations().nodeGetRelationships( refNode, BOTH ), fromRefToOther2, localTxRel);
             assertRelsInSeparateTx( refNode, BOTH, fromRefToOther1, fromRefToOther2);
+            commit();
         }
     }
 
@@ -193,6 +195,7 @@ public class RelationshipIT extends KernelIntegrationTest
 
         // Then the node should still load the real rels
         assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, new int[]{relTypeTheNodeDoesUse} ), rels );
+        commit();
     }
 
     private void assertRelsInSeparateTx( final long refNode, final Direction both, final long ... longs ) throws
@@ -200,9 +203,10 @@ public class RelationshipIT extends KernelIntegrationTest
     {
         assertTrue( otherThread.execute( state ->
         {
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                    Statement statement = statementContextSupplier.get() )
             {
-                ReadOperations stmt = statementContextSupplier.get().readOperations();
+                ReadOperations stmt = statement.readOperations();
                 assertRels( stmt.nodeGetRelationships( refNode, both ), longs );
             }
             return true;

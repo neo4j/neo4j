@@ -552,8 +552,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         Index<Node> index = nodeIndex( LuceneIndexImplementation.EXACT_CONFIG );
         Node theNode = graphDb.createNode();
         index.remove( theNode );
-        IndexHits<Node> hits = index.query( "someRandomKey", theNode.getId() );
-        assertTrue( hits.size() >= 0 );
+        try ( IndexHits<Node> hits = index.query( "someRandomKey", theNode.getId() ) )
+        {
+            assertTrue( hits.size() >= 0 );
+        }
     }
 
     @Test
@@ -1290,14 +1292,18 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node2, key, "once upon a time there was" );
         restartTx();
 
-        IndexHits<Node> hits = index.query( key, new QueryContext( "once upon a time was" ).sort( Sort.RELEVANCE ) );
-        Node hit1 = hits.next();
-        float score1 = hits.currentScore();
-        Node hit2 = hits.next();
-        float score2 = hits.currentScore();
-        assertEquals( node2, hit1 );
-        assertEquals( node1, hit2 );
-        assertTrue( "Score 1 (" + score1 + ") should have been higher than score 2 (" + score2 + ")", score1 > score2 );
+        QueryContext queryContext = new QueryContext( "once upon a time was" ).sort( Sort.RELEVANCE );
+        try ( IndexHits<Node> hits = index.query( key, queryContext ) )
+        {
+            Node hit1 = hits.next();
+            float score1 = hits.currentScore();
+            Node hit2 = hits.next();
+            float score2 = hits.currentScore();
+            assertEquals( node2, hit1 );
+            assertEquals( node1, hit2 );
+            assertTrue( "Score 1 (" + score1 + ") should have been higher than score 2 (" + score2 + ")",
+                    score1 > score2 );
+        }
     }
 
     @Test
@@ -1354,8 +1360,10 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         index.add( node2, key, value );
         restartTx();
         index.add( node3, key, value );
-        IndexHits<Node> hits = index.get( key, value );
-        assertEquals( 3, hits.size() );
+        try ( IndexHits<Node> hits = index.get( key, value ) )
+        {
+            assertEquals( 3, hits.size() );
+        }
     }
 
     @SuppressWarnings( "unchecked" )

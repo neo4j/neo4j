@@ -143,6 +143,7 @@ public class NodePropertyExistenceConstraintCreationIT
             Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
 
             assertEquals( constraint, single( constraints ) );
+            commit();
         }
     }
 }

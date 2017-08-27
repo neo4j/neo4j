@@ -393,47 +393,50 @@ public class CompositeCountsTest
      */
     private long countsForRelationship( Label start, RelationshipType type, Label end )
     {
-        ReadOperations read = statementSupplier.get().readOperations();
-        int startId;
-        int typeId;
-        int endId;
-        // start
-        if ( start == null )
+        try ( Statement statement = statementSupplier.get() )
         {
-            startId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+            ReadOperations read = statement.readOperations();
+            int startId;
+            int typeId;
+            int endId;
+            // start
+            if ( start == null )
             {
-                return 0;
+                startId = ReadOperations.ANY_LABEL;
             }
-        }
-        // type
-        if ( type == null )
-        {
-            typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
-        }
-        else
-        {
-            if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+            else
             {
-                return 0;
+                if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+                {
+                    return 0;
+                }
             }
-        }
-        // end
-        if ( end == null )
-        {
-            endId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+            // type
+            if ( type == null )
             {
-                return 0;
+                typeId = ReadOperations.ANY_RELATIONSHIP_TYPE;
             }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+                {
+                    return 0;
+                }
+            }
+            // end
+            if ( end == null )
+            {
+                endId = ReadOperations.ANY_LABEL;
+            }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+                {
+                    return 0;
+                }
+            }
+            return read.countsForRelationship( startId, typeId, endId );
         }
-        return read.countsForRelationship( startId, typeId, endId );
     }
 
     private Supplier<Statement> statementSupplier;

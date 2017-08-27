@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Label
 import org.neo4j.kernel.api.Statement
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.mutable
@@ -59,7 +60,12 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       case (firstQuery, secondQuery) =>
         // Flush cache
         cacheListener.clear()
-        graph.inTx { statement.readOperations().schemaStateFlush() }
+
+        graph.inTx {
+          val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+          statement.readOperations().schemaStateFlush()
+          statement.close()
+        }
 
         graph.execute(firstQuery).resultAsString()
         graph.execute(secondQuery).resultAsString()

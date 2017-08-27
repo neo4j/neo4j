@@ -56,8 +56,9 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.helpers.collection.IterableWrapper;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
+import org.neo4j.helpers.collection.ResourceIterableWrapper;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -643,12 +644,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
         return () -> nodes.iterator().map( ReadOnlyNodeProxy::new );
     }
 
-    public Iterable<Relationship> relationships( Iterable<Relationship> relationships )
+    public ResourceIterable<Relationship> relationships( Iterable<Relationship> relationships )
     {
-        return new IterableWrapper<Relationship, Relationship>( relationships )
+        return new ResourceIterableWrapper<Relationship,Relationship>( Iterables.asResourceIterable( relationships ) )
         {
             @Override
-            protected Relationship underlyingObjectToObject( Relationship relationship )
+            protected Relationship map( Relationship relationship )
             {
                 return new ReadOnlyRelationshipProxy( relationship );
             }

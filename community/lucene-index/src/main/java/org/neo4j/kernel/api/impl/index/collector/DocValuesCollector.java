@@ -52,8 +52,8 @@ import java.util.Map;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.impl.lucene.legacy.AbstractIndexHits;
 import org.neo4j.index.impl.lucene.legacy.EmptyIndexHits;
+import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
 
 /**
  * Collector to record per-segment {@code DocIdSet}s and {@code LeafReaderContext}s for every

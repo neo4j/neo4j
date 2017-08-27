@@ -81,7 +81,14 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         }
 
         otherBranch = otherSelector.next( metadata );
-        return otherBranch != null ? otherBranch : branch;
+        if ( otherBranch != null )
+        {
+            return otherBranch;
+        }
+        else
+        {
+            return branch;
+        }
     }
 
     static class Entry

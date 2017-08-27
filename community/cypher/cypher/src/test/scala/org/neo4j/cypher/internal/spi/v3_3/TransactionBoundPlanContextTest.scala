@@ -70,6 +70,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
       }
     }
 
+    transactionalContext.close(true)
     transaction.close()
   }
 
@@ -101,6 +102,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     statistics.cardinalityByLabelsAndRelationshipType(
       None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
 
+    transactionalContext.close(true)
     transaction.close()
   }
 }

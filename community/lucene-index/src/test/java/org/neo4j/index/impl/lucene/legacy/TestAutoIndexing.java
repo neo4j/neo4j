@@ -19,12 +19,12 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -33,10 +33,11 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,7 +46,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.Iterators.count;
 
 public class TestAutoIndexing
@@ -600,8 +600,11 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(),
-                equalTo( 1 ) );
+        try ( IndexHits<Relationship> relationshipIndexHits = graphDb.index()
+                .forRelationships( "relationship_auto_index" ).query( "_id_:*" ) )
+        {
+            assertThat( relationshipIndexHits.size(), equalTo( 1 ) );
+        }
 
         newTransaction();
 
@@ -609,8 +612,11 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertThat( graphDb.index().forRelationships( "relationship_auto_index" ).query( "_id_:*" ).size(),
-                equalTo( 0 ) );
+        try ( IndexHits<Relationship> relationshipIndexHits = graphDb.index()
+                .forRelationships( "relationship_auto_index" ).query( "_id_:*" ) )
+        {
+            assertThat( relationshipIndexHits.size(), equalTo( 0 ) );
+        }
     }
 
     @Test
@@ -627,15 +633,19 @@ public class TestAutoIndexing
 
         newTransaction();
 
-        assertThat( graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ).size(),
-                equalTo( 1 ) );
+        try ( IndexHits<Node> nodeIndexHits = graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ) )
+        {
+            assertThat( nodeIndexHits.size(), equalTo( 1 ) );
+        }
 
         node1.delete();
 
         newTransaction();
 
-        assertThat( graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ).size(),
-                equalTo( 0 ) );
+        try ( IndexHits<Node> nodeIndexHits = graphDb.index().forNodes( "node_auto_index" ).query( "_id_:*" ) )
+        {
+            assertThat( nodeIndexHits.size(), equalTo( 0 ) );
+        }
     }
 
     @Test

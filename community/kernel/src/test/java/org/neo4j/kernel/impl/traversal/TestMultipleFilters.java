@@ -29,6 +29,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Evaluator;
@@ -76,14 +78,20 @@ public class TestMultipleFilters extends TraversalTestBase
         @Override
         public boolean test( Path item )
         {
-            for ( Relationship rel : item.endNode().getRelationships( Direction.OUTGOING ) )
+            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) item.endNode()
+                    .getRelationships( Direction.OUTGOING );
+            try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
             {
-                if ( rel.getEndNode().equals( node ) )
+                while ( iterator.hasNext() )
                 {
-                    return true;
+                    Relationship rel = iterator.next();
+                    if ( rel.getEndNode().equals( node ) )
+                    {
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
         }
 
         public Evaluation evaluate( Path path )

@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -47,6 +54,9 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
 
+import static java.lang.String.format;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
  * {@link KernelTransactionImplementation} instance, even across transactions since this instances itself
@@ -68,6 +78,9 @@ import org.neo4j.storageengine.api.StorageStatement;
  */
 public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 {
+    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", true );
+    private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
+
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
     private final AccessCapability accessCapability;
@@ -78,6 +91,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     private int referenceCount;
     private volatile ExecutingQueryList executingQueryList;
     private final LockTracer systemLockTracer;
+    private final Deque<StackTraceElement[]> statementOpenCloseCalls;
 
     public KernelStatement( KernelTransactionImplementation transaction,
                             TxStateHolder txStateHolder,
@@ -93,6 +107,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
+        this.statementOpenCloseCalls = TRACK_STATEMENTS ? new ArrayDeque<>() : null;
     }
 
     @Override
@@ -177,6 +192,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         {
             cleanupResources();
         }
+        recordOpenCloseMethods();
     }
 
     @Override
@@ -224,6 +240,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         {
             storeStatement.acquire();
         }
+        recordOpenCloseMethods();
     }
 
     final boolean isAcquired()
@@ -235,8 +252,16 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     {
         if ( referenceCount > 0 )
         {
+            int leakedStatements = referenceCount;
             referenceCount = 0;
             cleanupResources();
+            if ( TRACK_STATEMENTS && transaction.isSuccess() )
+            {
+                throw new StatementNotClosedException(
+                        format("Statements were not correctly closed. Number of leaked statements: %d. " +
+                                "See attached open/close stack traces for details.", leakedStatements),
+                        statementOpenCloseCalls );
+            }
         }
         pageCursorTracer.reportEvents();
     }
@@ -284,8 +309,70 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         if ( !allows.apply( accessMode ) )
         {
             throw accessMode.onViolation(
-                    String.format( "%s operations are not allowed for %s.", mode,
+                    format( "%s operations are not allowed for %s.", mode,
                             transaction.securityContext().description() ) );
+        }
+    }
+
+    private void recordOpenCloseMethods()
+    {
+        if ( TRACK_STATEMENTS )
+        {
+            if ( statementOpenCloseCalls.size() > STATEMENT_TRACK_HISTORY_MAX_SIZE )
+            {
+                statementOpenCloseCalls.pop();
+            }
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            statementOpenCloseCalls.add( Arrays.copyOfRange(stackTrace, 2, stackTrace.length) );
+        }
+    }
+
+    static class StatementNotClosedException extends IllegalStateException
+    {
+
+        StatementNotClosedException( String s, Deque<StackTraceElement[]> openCloseTraces )
+        {
+            super( s );
+            this.addSuppressed( new StatementTraceException( buildMessage( openCloseTraces ) ) );
+        }
+
+        private static String buildMessage( Deque<StackTraceElement[]> openCloseTraces )
+        {
+            int separatorLength = 80;
+            String paddingString = "=";
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            PrintStream printStream = new PrintStream( out );
+            printStream.println();
+            printStream.println( "Last " + STATEMENT_TRACK_HISTORY_MAX_SIZE + " statements open/close stack traces are:" );
+            int element = 0;
+            for ( StackTraceElement[] traceElements : openCloseTraces )
+            {
+                printStream.println( StringUtils.center( "*StackTrace " + element + "*", separatorLength, paddingString ) );
+                for ( StackTraceElement traceElement : traceElements )
+                {
+                    printStream.println( "\tat " + traceElement );
+                }
+                printStream.println( StringUtils.center( "", separatorLength, paddingString ) );
+                printStream.println();
+                element++;
+            }
+            printStream.println( "All statement open/close stack traces printed." );
+            return out.toString();
+        }
+
+        private class StatementTraceException extends RuntimeException
+        {
+            StatementTraceException( String message )
+            {
+                super( message );
+            }
+
+            @Override
+            public synchronized Throwable fillInStackTrace()
+            {
+                return this;
+            }
         }
     }
 }

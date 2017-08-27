@@ -19,6 +19,8 @@
  */
 package org.neo4j.index.impl.lucene.legacy;
 
+import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
+
 /**
  * Empty implementation of {@link AbstractIndexHits} with no matches and {@link Float#NaN} as a score
  * @param <T> index hits type

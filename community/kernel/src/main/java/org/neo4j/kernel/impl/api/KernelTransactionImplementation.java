@@ -243,6 +243,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.success = true;
     }
 
+    boolean isSuccess()
+    {
+        return success;
+    }
+
     @Override
     public void failure()
     {
@@ -398,7 +403,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         assertTransactionOpen();
         closed = true;
+        notifyListeners( txId );
         closeCurrentStatementIfAny();
+    }
+
+    private void notifyListeners( long txId )
+    {
         for ( CloseListener closeListener : closeListeners )
         {
             closeListener.notify( txId );

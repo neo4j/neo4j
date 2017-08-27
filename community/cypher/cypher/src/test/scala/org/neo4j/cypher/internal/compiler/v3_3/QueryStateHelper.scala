@@ -50,5 +50,15 @@ object QueryStateHelper {
     newWith(db = db, query = queryContext, params = params)
   }
 
+  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, AnyValue] = Map.empty, f: (QueryState) => T)  = {
+    val queryState = queryStateFrom(db, tx, params)
+    try {
+      f(queryState)
+    } finally {
+      queryState.query.transactionalContext.close(true)
+    }
+
+  }
+
   def countStats(q: QueryState) = q.withQueryContext(query = new UpdateCountingQueryContext(q.query))
 }

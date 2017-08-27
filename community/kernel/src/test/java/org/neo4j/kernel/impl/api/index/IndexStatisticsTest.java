@@ -314,8 +314,10 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            statement.dataWriteOperations().nodeDelete( nodeId );
+            try ( Statement statement = bridge.get() )
+            {
+                statement.dataWriteOperations().nodeDelete( nodeId );
+            }
             tx.success();
         }
     }
@@ -324,9 +326,11 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( newValue ) );
+            try ( Statement statement = bridge.get() )
+            {
+                int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
+                statement.dataWriteOperations().nodeSetProperty( nodeId, propertyKeyId, Values.of( newValue ) );
+            }
             tx.success();
         }
     }
@@ -335,13 +339,15 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            for ( String name : NAMES )
+            try ( Statement statement = bridge.get() )
             {
-                long nodeId = createNode( statement, "Person", "name", name );
-                if ( nodes != null )
+                for ( String name : NAMES )
                 {
-                    nodes[offset++] = nodeId;
+                    long nodeId = createNode( statement, "Person", "name", name );
+                    if ( nodes != null )
+                    {
+                        nodes[offset++] = nodeId;
+                    }
                 }
             }
             tx.success();
@@ -406,8 +412,10 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            statement.schemaWriteOperations().indexDrop( index );
+            try ( Statement statement = bridge.get() )
+            {
+                statement.schemaWriteOperations().indexDrop( index );
+            }
             tx.success();
         }
     }
@@ -430,10 +438,17 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            double selectivity = statement.readOperations().indexUniqueValuesSelectivity( descriptor );
+            double selectivity = getSelectivity( descriptor );
             tx.success();
             return selectivity;
+        }
+    }
+
+    private double getSelectivity( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        try ( Statement statement = bridge.get() )
+        {
+            return statement.readOperations().indexUniqueValuesSelectivity( descriptor );
         }
     }
 
@@ -447,11 +462,13 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            createNode( statement, "Person", "name", "Davide" );
-            createNode( statement, "Person", "name", "Stefan" );
-            createNode( statement, "Person", "name", "John" );
-            createNode( statement, "Person", "name", "John" );
+            try ( Statement statement = bridge.get() )
+            {
+                createNode( statement, "Person", "name", "Davide" );
+                createNode( statement, "Person", "name", "Stefan" );
+                createNode( statement, "Person", "name", "John" );
+                createNode( statement, "Person", "name", "John" );
+            }
             tx.success();
         }
     }
@@ -471,11 +488,14 @@ public class IndexStatisticsTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            Statement statement = bridge.get();
-            int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
-            int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
-            LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
-            IndexDescriptor index = statement.schemaWriteOperations().indexCreate( descriptor );
+            IndexDescriptor index;
+            try ( Statement statement = bridge.get() )
+            {
+                int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( labelName );
+                int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyKeyName );
+                LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
+                index = statement.schemaWriteOperations().indexCreate( descriptor );
+            }
             tx.success();
             return index;
         }
@@ -495,17 +515,19 @@ public class IndexStatisticsTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                Statement statement = bridge.get();
-                switch ( statement.readOperations().indexGetState( index ) )
+                try ( Statement statement = bridge.get() )
                 {
-                case ONLINE:
-                    return index;
+                    switch ( statement.readOperations().indexGetState( index ) )
+                    {
+                    case ONLINE:
+                        return index;
 
-                case FAILED:
-                    throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
+                    case FAILED:
+                        throw new IllegalStateException( "Index failed instead of becoming ONLINE" );
 
-                default:
-                    break;
+                    default:
+                        break;
+                    }
                 }
                 tx.success();
 

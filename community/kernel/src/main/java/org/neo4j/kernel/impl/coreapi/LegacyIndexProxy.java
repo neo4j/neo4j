@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
 
 import static java.lang.String.format;
@@ -295,54 +296,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
     protected IndexHits<T> wrapIndexHits( final LegacyIndexHits ids )
     {
-        return new AbstractIndexHits<T>()
-        {
-            @Override
-            public int size()
-            {
-                return ids.size();
-            }
-
-            @Override
-            public float currentScore()
-            {
-                return ids.currentScore();
-            }
-
-            @Override
-            protected T fetchNextOrNull()
-            {
-                statementContextBridge.get();
-                while ( ids.hasNext() )
-                {
-                    long id = ids.next();
-                    try
-                    {
-                        return entityOf( id );
-                    }
-                    catch ( NotFoundException e )
-                    {   // By contract this is OK. So just skip it.
-                        // But first, let's try to repair the index so this doesn't happen again.
-                        try ( Statement statement = statementContextBridge.get() )
-                        {
-                            internalRemove( statement, id );
-                        }
-                        catch ( LegacyIndexNotFoundKernelException |
-                                InvalidTransactionTypeKernelException | EntityNotFoundException ignore )
-                        {
-                            // Ignore these failures because we are going to skip the entity anyway
-                        }
-                    }
-                }
-                return null;
-            }
-
-            @Override
-            public void close()
-            {
-                ids.close();
-            }
-        };
+        return new LegacyIndexWrapHits( ids );
     }
 
     private T entityOf( long id )
@@ -546,5 +500,69 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     public String toString()
     {
         return "Index[" + type + ", " + name + "]";
+    }
+
+    private class LegacyIndexWrapHits extends AbstractIndexHits<T>
+    {
+        private final LegacyIndexHits ids;
+        private final KernelStatement statement;
+
+        LegacyIndexWrapHits( LegacyIndexHits ids )
+        {
+            this.ids = ids;
+            this.statement = (KernelStatement) statementContextBridge.get();
+        }
+
+        @Override
+        public int size()
+        {
+            return ids.size();
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return ids.currentScore();
+        }
+
+        @Override
+        protected T fetchNextOrNull()
+        {
+            assertOpen();
+            while ( ids.hasNext() )
+            {
+                long id = ids.next();
+                try
+                {
+                    return entityOf( id );
+                }
+                catch ( NotFoundException e )
+                {   // By contract this is OK. So just skip it.
+                    // But first, let's try to repair the index so this doesn't happen again.
+                    try
+                    {
+                        internalRemove( statement, id );
+                    }
+                    catch ( LegacyIndexNotFoundKernelException | InvalidTransactionTypeKernelException | EntityNotFoundException ignore )
+                    {
+                        // Ignore these failures because we are going to skip the entity anyway
+                    }
+                }
+            }
+            close();
+            return null;
+        }
+
+        private void assertOpen()
+        {
+            statement.assertOpen();
+        }
+
+        @Override
+        public void close()
+        {
+            ids.close();
+            statement.close();
+        }
     }
 }

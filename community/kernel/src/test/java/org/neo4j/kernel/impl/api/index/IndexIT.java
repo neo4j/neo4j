@@ -226,6 +226,7 @@ public class IndexIT extends KernelIntegrationTest
             assertEquals( "Unable to drop index on :label[" + labelId + "](property[" + propertyKeyId + "]): " +
                           "No such INDEX ON :label[" + labelId + "](property[" + propertyKeyId + "]).", e.getMessage() );
         }
+        commit();
     }
 
     @Test
@@ -253,6 +254,7 @@ public class IndexIT extends KernelIntegrationTest
             assertEquals( "Label '" + LABEL + "' and property '" + PROPERTY_KEY + "' have a unique constraint defined" +
                           " on them, so an index is already created that matches this.", e.getMessage() );
         }
+        commit();
     }
 
     @Test
@@ -311,6 +313,7 @@ public class IndexIT extends KernelIntegrationTest
         ReadOperations readOperations = readOperationsInNewTransaction();
         List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
+        commit();
     }
 
     private Runnable createIndex( GraphDatabaseAPI db, Label label, String propertyKey )

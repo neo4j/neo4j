@@ -30,7 +30,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -98,32 +97,34 @@ public abstract class StorageLayerTest
 
     protected int labelId( Label label )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+                Statement statement = statement() )
         {
-            return readOps().labelGetForName( label.name() );
+            return statement.readOperations().labelGetForName( label.name() );
         }
     }
 
     protected int relationshipTypeId( RelationshipType type )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+                Statement statement = statement() )
         {
-            return readOps().relationshipTypeGetForName( type.name() );
+            return statement.readOperations().relationshipTypeGetForName( type.name() );
         }
     }
 
     protected int propertyKeyId( String propertyKey )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+                Statement statement = statement() )
         {
-            return readOps().propertyKeyGetForName( propertyKey );
+            return statement.readOperations().propertyKeyGetForName( propertyKey );
         }
     }
 
-    protected ReadOperations readOps()
+    protected Statement statement()
     {
         DependencyResolver dependencyResolver = db.getDependencyResolver();
-        Statement statement = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
-        return statement.readOperations();
+        return dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ).get();
     }
 }

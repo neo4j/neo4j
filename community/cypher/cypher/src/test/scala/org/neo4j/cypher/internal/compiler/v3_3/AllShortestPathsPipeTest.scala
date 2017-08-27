@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, ShortestPathPipe}
-import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
+import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.Node
@@ -40,7 +40,9 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
                                                      SemanticDirection.BOTH, allowZeroLength = false, Some(15),
                                                      single = false, relIterator = None))()
     graph.withTx { tx =>
-      pipe.createResults(queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[PathValue])
+      withQueryState(graph, tx, Map.empty, {queryState =>
+        pipe.createResults(queryState).toList.map(m => m("p").asInstanceOf[PathValue])
+      })
     }
   }
 

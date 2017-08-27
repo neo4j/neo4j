@@ -45,9 +45,9 @@ public class MyCoreAPI
     public long makeNode( String label ) throws ProcedureException
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.write() );
+                Statement statement = this.txBridge.get() )
         {
-            Statement statement = this.txBridge.get();
             long nodeId = statement.dataWriteOperations().nodeCreate();
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label );
             statement.dataWriteOperations().nodeAddLabel( nodeId, labelId );
@@ -66,9 +66,9 @@ public class MyCoreAPI
     public long countNodes()
     {
         long result;
-        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() ) )
+        try ( Transaction tx = graph.beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.read() );
+                Statement statement = this.txBridge.get() )
         {
-            Statement statement = this.txBridge.get();
             result = statement.readOperations().countsForNode( -1 );
             tx.success();
         }

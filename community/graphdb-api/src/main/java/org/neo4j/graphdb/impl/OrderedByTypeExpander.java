@@ -22,7 +22,6 @@ package org.neo4j.graphdb.impl;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.Direction;
@@ -30,8 +29,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
-import org.neo4j.helpers.collection.NestingIterator;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.NestingResourceIterator;
 import org.neo4j.helpers.collection.Pair;
 
 public final class OrderedByTypeExpander extends StandardExpander.RegularExpander
@@ -95,20 +96,21 @@ public final class OrderedByTypeExpander extends StandardExpander.RegularExpande
     }
 
     @Override
-    Iterator<Relationship> doExpand( final Path path, BranchState state )
+    ResourceIterator<Relationship> doExpand( final Path path, BranchState state )
     {
         final Node node = path.endNode();
-        return new NestingIterator<Relationship, Pair<RelationshipType, Direction>>(
+        return new NestingResourceIterator<Relationship, Pair<RelationshipType, Direction>>(
                 orderedTypes.iterator() )
         {
             @Override
-            protected Iterator<Relationship> createNestedIterator(
+            protected ResourceIterator<Relationship> createNestedIterator(
                     Pair<RelationshipType, Direction> entry )
             {
                 RelationshipType type = entry.first();
                 Direction dir = entry.other();
-                return ( ( dir == Direction.BOTH ) ? node.getRelationships( type ) :
-                        node.getRelationships( type, dir ) ).iterator();
+                Iterable relationshipsIterable = (dir == Direction.BOTH) ? node.getRelationships( type ) :
+                                                                           node.getRelationships( type, dir );
+                return Iterables.asResourceIterable( relationshipsIterable ).iterator();
             }
         };
     }

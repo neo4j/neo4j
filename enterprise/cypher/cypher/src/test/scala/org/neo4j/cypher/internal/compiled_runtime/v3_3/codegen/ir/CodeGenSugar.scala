@@ -75,10 +75,11 @@ trait CodeGenSugar extends MockitoSugar {
                       graphDb: GraphDatabaseQueryService,
                       mode: ExecutionMode = NormalMode): InternalExecutionResult = {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
+    var transactionalContext: TransactionalContextWrapper = null
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
-      val transactionalContext = TransactionalContextWrapper(
+      transactionalContext = TransactionalContextWrapper(
         contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
                                   "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
@@ -88,6 +89,7 @@ trait CodeGenSugar extends MockitoSugar {
       result.size
       result
     } finally {
+      transactionalContext.close(true)
       tx.close()
     }
   }

@@ -180,10 +180,13 @@ public class Schema extends TransactionProvidingApp
 
         validateLabelsAndProperty( labels, property );
 
-        Statement statement = getServer().getStatement();
-
-        int labelKey = statement.readOperations().labelGetForName( labels[0].name() );
-        int propertyKey = statement.readOperations().propertyKeyGetForName( property );
+        int labelKey;
+        int propertyKey;
+        try ( Statement statement = getServer().getStatement() )
+        {
+            labelKey = statement.readOperations().labelGetForName( labels[0].name() );
+            propertyKey = statement.readOperations().propertyKeyGetForName( property );
+        }
 
         if ( labelKey == -1 )
         {

@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -124,6 +125,9 @@ public class LegacyIndexTest
 
     private static int sizeOf( Index<?> index )
     {
-        return index.query( "_id_:*" ).size();
+        try ( IndexHits<?> indexHits = index.query( "_id_:*" ) )
+        {
+            return indexHits.size();
+        }
     }
 }

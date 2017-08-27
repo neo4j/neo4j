@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
   var logger: InternalNotificationLogger = _
@@ -95,11 +96,18 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
       val tracer =CompilationPhaseTracer.NO_TRACING
       val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
       val queryGraphSolver = Compatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
-      val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext, parsed.queryText, Set.empty, None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
+      val statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
+      val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext(statement), parsed.queryText, Set.empty,
+        None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
                                                          simpleExpressionEvaluator)
 
-      val normalized = compiler.normalizeQuery(parsed, context)
-      compiler.planPreparedQuery(normalized, context)
+      try {
+        val normalized = compiler.normalizeQuery(parsed, context)
+        compiler.planPreparedQuery(normalized, context)
+      }
+      finally {
+        statement.close()
+      }
     }
   }
   private val configuration = CypherCompilerConfiguration(

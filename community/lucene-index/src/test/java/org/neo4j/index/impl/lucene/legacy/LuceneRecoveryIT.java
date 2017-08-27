@@ -20,6 +20,7 @@
 package org.neo4j.index.impl.lucene.legacy;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,10 +30,11 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -40,12 +42,13 @@ import static org.junit.Assert.fail;
 public class LuceneRecoveryIT
 {
 
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Test
     public void testHardCoreRecovery() throws Exception
     {
-        String path = "target/hcdb";
-        File hcdb = new File( path );
-        FileUtils.deleteRecursively( hcdb );
+        String path = testDirectory.graphDbDir().getPath();
 
         Process process = Runtime.getRuntime().exec( new String[]{
                 ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
@@ -58,7 +61,7 @@ public class LuceneRecoveryIT
         process.destroy();
         process.waitFor();
 
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( hcdb );
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
         try ( Transaction transaction = db.beginTx() )
         {
             assertTrue( db.index().existsForNodes( "myIndex" ) );
@@ -69,12 +72,15 @@ public class LuceneRecoveryIT
                 {
                     String value = (String) node.getProperty( key );
                     boolean found = false;
-                    for ( Node indexedNode : index.get( key, value ) )
+                    try ( IndexHits<Node> indexHits = index.get( key, value ) )
                     {
-                        if ( indexedNode.equals( node ) )
+                        for ( Node indexedNode : indexHits )
                         {
-                            found = true;
-                            break;
+                            if ( indexedNode.equals( node ) )
+                            {
+                                found = true;
+                                break;
+                            }
                         }
                     }
                     if ( !found )
@@ -97,7 +103,7 @@ public class LuceneRecoveryIT
                 // verify the index any further if it happens.
                 System.err.println( "Lucene exception happened during recovery after a real crash. " +
                         "It may be that the index is corrupt somehow and this is out of control and not " +
-                        "something this test can reall improve on right now. Printing the exception for reference" );
+                        "something this test can really improve on right now. Printing the exception for reference" );
                 e.printStackTrace();
                 return;
             }
@@ -107,19 +113,15 @@ public class LuceneRecoveryIT
         }
 
         // Added due to a recovery issue where the lucene data source write wasn't released properly after recovery.
-        Thread t = new Thread()
+        Thread t = new Thread( () ->
         {
-            @Override
-            public void run()
+            try ( Transaction tx = db.beginTx() )
             {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    Index<Node> index = db.index().forNodes( "myIndex" );
-                    index.add( db.createNode(), "one", "two" );
-                    tx.success();
-                }
+                Index<Node> index = db.index().forNodes( "myIndex" );
+                index.add( db.createNode(), "one", "two" );
+                tx.success();
             }
-        };
+        } );
         t.start();
         t.join();
 

@@ -177,9 +177,9 @@ public class HaCountsIT
     private IndexDescriptor createAnIndex( HighlyAvailableGraphDatabase db, Label label, String propertyName )
             throws KernelException
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statement( db ) )
         {
-            Statement statement = statement( db );
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( propertyName );
             IndexDescriptor index = statement.schemaWriteOperations()
@@ -192,9 +192,9 @@ public class HaCountsIT
     private void assertOnNodeCounts( int expectedTotalNodes, int expectedLabelledNodes,
                                      Label label, HighlyAvailableGraphDatabase db )
     {
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+              Statement statement = statement( db ) )
         {
-            final Statement statement = statement( db );
             final int labelId = statement.readOperations().labelGetForName( label.name() );
             assertEquals( expectedTotalNodes, statement.readOperations().countsForNode( -1 ) );
             assertEquals( expectedLabelledNodes, statement.readOperations().countsForNode( labelId ) );
@@ -244,9 +244,10 @@ public class HaCountsIT
         long end = start + 60_000;
         while ( System.currentTimeMillis() < end )
         {
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction tx = db.beginTx();
+                  Statement statement = statement( db ) )
             {
-                switch ( statement( db ).readOperations().indexGetState( index ) )
+                switch ( statement.readOperations().indexGetState( index ) )
                 {
                 case ONLINE:
                     return indexingService( db ).getIndexId( index.schema() );

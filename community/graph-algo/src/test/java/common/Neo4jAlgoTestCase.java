@@ -35,7 +35,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
@@ -154,17 +156,23 @@ public abstract class Neo4jAlgoTestCase
     public void assertPaths( Iterable<? extends Path> paths, List<String> pathDefs )
     {
         List<String> unexpectedDefs = new ArrayList<String>();
-        for ( Path path : paths )
+        try ( ResourceIterator<? extends Path> iterator = Iterators.asResourceIterator( paths.iterator() ) )
         {
-            String pathDef = getPathDef( path );
-            int index = pathDefs.indexOf( pathDef );
-            if ( index != -1 )
+            while ( iterator.hasNext() )
             {
-                pathDefs.remove( index );
-            }
-            else
-            {
-                unexpectedDefs.add( getPathDef( path ) );
+                Path path = iterator.next();
+
+                String pathDef = getPathDef( path );
+                int index = pathDefs.indexOf( pathDef );
+                if ( index != -1 )
+                {
+                    pathDefs.remove( index );
+                }
+                else
+                {
+                    unexpectedDefs.add( getPathDef( path ) );
+                }
+                path.close();
             }
         }
         assertTrue( "These unexpected paths were found: " + unexpectedDefs +

@@ -184,6 +184,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`"
                 } )
         ) );
+        commit();
     }
 
     @Test
@@ -215,6 +216,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel",
                 singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
+
+        commit();
     }
 
     @Test
@@ -252,5 +255,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 new Object[]{"INDEX ON :Age(foo)", "ONLINE", "node_unique_property"},
                 new Object[]{"INDEX ON :Person(foo)", "ONLINE", "node_label_property"}
         ) );
+        commit();
     }
 }

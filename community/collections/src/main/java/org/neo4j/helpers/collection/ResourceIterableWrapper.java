@@ -17,38 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.impl.lucene.legacy;
+package org.neo4j.helpers.collection;
 
-import java.util.Iterator;
-
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 
-public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
+/**
+ * Wraps an {@link ResourceIterable} so that it returns items of another type. The
+ * iteration is done lazily.
+ *
+ * @param <T> the type of items to return
+ * @param <U> the type of items to wrap/convert from
+ */
+public abstract class ResourceIterableWrapper<T, U> implements ResourceIterable<T>
 {
+    private ResourceIterable<U> source;
+
+    public ResourceIterableWrapper( ResourceIterable<U> source )
+    {
+        this.source = source;
+    }
+
+    protected abstract T map( U object );
+
     @Override
     public ResourceIterator<T> iterator()
     {
-        return this;
-    }
-
-    @Override
-    public void close()
-    {   // Nothing to close by default
-    }
-
-    @Override
-    public T getSingle()
-    {
-        try
+        return new MappingResourceIterator<T, U>( source.iterator() )
         {
-            return Iterators.singleOrNull( this );
-        }
-        finally
-        {
-            close();
-        }
+            @Override
+            protected T map( U object )
+            {
+                return ResourceIterableWrapper.this.map( object );
+            }
+        };
     }
 }

@@ -38,6 +38,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IterableWrapper;
@@ -500,19 +501,23 @@ public class TestRelationshipCount
     {
         Relationship last = null;
         int counter = 0;
-        for ( Relationship rel : node.getRelationships( type, direction ) )
+        Iterable<Relationship> relationships = node.getRelationships( type, direction );
+        try ( ResourceIterator<Relationship> relationshipIterator = (ResourceIterator) relationships.iterator() )
         {
-            if ( isLoop( rel ) == (direction == Direction.BOTH) )
+            while ( relationshipIterator.hasNext() )
             {
-                last = rel;
-                if ( counter++ == which )
+                Relationship rel = relationshipIterator.next();
+                if ( isLoop( rel ) == (direction == Direction.BOTH) )
                 {
-                    rel.delete();
-                    return;
+                    last = rel;
+                    if ( counter++ == which )
+                    {
+                        rel.delete();
+                        return;
+                    }
                 }
             }
         }
-
         if ( which == Integer.MAX_VALUE && last != null )
         {
             last.delete();

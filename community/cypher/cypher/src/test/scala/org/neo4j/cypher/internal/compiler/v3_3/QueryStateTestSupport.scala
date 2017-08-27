@@ -30,8 +30,9 @@ trait QueryStateTestSupport {
   def withQueryState[T](f: QueryState => T) = {
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
     try {
-      val queryState = QueryStateHelper.queryStateFrom(graph, tx)
-      f(queryState)
+      QueryStateHelper.withQueryState(graph, tx, Map.empty, queryState => {
+        f(queryState)
+      })
     } finally {
       tx.close()
     }
@@ -40,8 +41,11 @@ trait QueryStateTestSupport {
   def withCountsQueryState[T](f: QueryState => T) = {
     val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AUTH_DISABLED)
     try {
-      val queryState = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
-      f(queryState)
+      QueryStateHelper.withQueryState(graph, tx, Map.empty, queryState =>
+        {
+          val state = QueryStateHelper.countStats(queryState)
+          f(state)
+        })
     } finally {
       tx.close()
     }

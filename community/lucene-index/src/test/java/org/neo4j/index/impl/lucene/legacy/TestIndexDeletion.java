@@ -151,7 +151,10 @@ public class TestIndexDeletion
         index.delete();
         rollbackTx();
         beginTx();
-        index.get( key, value );
+        try ( IndexHits<Node> indexHits = index.get( key, value ) )
+        {
+            //empty
+        }
     }
 
     @Test

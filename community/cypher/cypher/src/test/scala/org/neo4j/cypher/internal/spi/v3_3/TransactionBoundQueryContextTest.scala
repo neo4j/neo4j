@@ -131,6 +131,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     iteratorA.toList should equal(iteratorB.toList)
     2 should equal(iterable.size)
 
+    transactionalContext.close(true)
     tx.success()
     tx.close()
   }
@@ -146,6 +147,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal(Right(new URL("file:///tmp/foo/data.csv")))
     context.getImportURL(new URL("jar:file:/tmp/blah.jar!/tmp/foo/data.csv")) should equal(Left("loading resources via protocol 'jar' is not permitted"))
 
+    transactionalContext.close(true)
     tx.success()
     tx.close()
   }
@@ -163,6 +165,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal (Right(new URL("http://localhost:7474/data.csv")))
     context.getImportURL(new URL("file:///tmp/foo/data.csv")) should equal (Left("configuration property 'dbms.security.allow_csv_import_from_file_urls' is false"))
 
+    transactionalContext.close(true)
     tx.success()
     tx.close()
   }
@@ -187,6 +190,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val accesses = tracer.getPageCacheHits + tracer.getPageCacheMisses
     assertThat(Long.box(accesses), greaterThan(Long.box(1L)))
 
+    transactionalContext.close(true)
     tx.close()
   }
 

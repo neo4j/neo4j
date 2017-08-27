@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphalgo.impl.path;
 
-import java.util.Iterator;
-
 import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
@@ -33,6 +31,7 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -40,6 +39,7 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
@@ -102,7 +102,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
         return Iterables.firstOrNull( findPaths( start, end, false ) );
     }
 
-    private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
+    private ResourceIterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
     {
         PathInterest interest;
         if ( multiplePaths )
@@ -122,7 +122,8 @@ public class TraversalAStar implements PathFinder<WeightedPath>
                 new SelectorFactory( end, interest ) )
                 .evaluator( includeWhereEndNodeIs( end ) )
                 .traverse( start );
-        return () -> new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
+        return Iterators.asResourceIterable(
+                new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight ) );
     }
 
     @Override

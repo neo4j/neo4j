@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.TokenWriteOperations;
@@ -86,9 +85,9 @@ public class SchemaStorageTest
     @BeforeClass
     public static void initStorage() throws Exception
     {
-        try ( Transaction transaction = db.beginTx() )
+        try ( Transaction transaction = db.beginTx();
+                Statement statement = getStatement() )
         {
-            Statement statement = getStatement();
             TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
             tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
             tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
@@ -392,32 +391,29 @@ public class SchemaStorageTest
 
     private static int labelId( String labelName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = getStatement() )
         {
-            return readOps().labelGetForName( labelName );
+            return statement.readOperations().labelGetForName( labelName );
         }
     }
 
     private int propId( String propName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = getStatement() )
         {
-            return readOps().propertyKeyGetForName( propName );
+            return statement.readOperations().propertyKeyGetForName( propName );
         }
     }
 
     private static int typeId( String typeName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+                Statement statement = getStatement() )
         {
-            return readOps().relationshipTypeGetForName( typeName );
+            return statement.readOperations().relationshipTypeGetForName( typeName );
         }
-    }
-
-    private static ReadOperations readOps()
-    {
-        Statement statement = getStatement();
-        return statement.readOperations();
     }
 
     private static Statement getStatement()

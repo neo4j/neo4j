@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.util
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
@@ -502,16 +503,19 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
       val readOperations = statement.readOperations
       val nodes = readOperations.nodesGetAll()
-      var count = 0
+      val nodesArray = PrimitiveLongCollections.asArray(nodes)
+      statement.close()
       new RawIterator[Array[AnyRef], ProcedureException] {
+        var index = 0
+
         override def next(): Array[AnyRef] = {
-          count = count + 1
-          Array(new java.lang.Long(nodes.next()))
+          val value = nodesArray(index)
+          index += 1
+          Array(new java.lang.Long(value))
         }
 
         override def hasNext: Boolean = {
-          if (!nodes.hasNext) statement.close()
-          nodes.hasNext
+          nodesArray.length < index
         }
       }
     }

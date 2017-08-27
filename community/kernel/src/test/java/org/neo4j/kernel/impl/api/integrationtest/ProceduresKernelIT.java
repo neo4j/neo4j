@@ -27,7 +27,9 @@ import java.util.List;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -66,6 +68,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found, equalTo( signature ) );
+        commit();
     }
 
     @Test
@@ -78,6 +81,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
                 .out(  "label", NTString ).build() ) );
+        commit();
     }
 
     @Test
@@ -97,10 +101,12 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             procedure.signature(),
             procedureSignature( "example", "exampleProc2" ).out( "name", NTString ).build(),
             procedureSignature( "example", "exampleProc3" ).out( "name", NTString ).build() ) );
+        commit();
     }
 
     @Test
-    public void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs() throws ProcedureException
+    public void shouldRefuseToRegisterNonVoidProcedureWithoutOutputs()
+            throws ProcedureException, TransactionFailureException
     {
         // Then
         exception.expect( ProcedureException.class );
@@ -108,6 +114,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // When
         kernel.registerProcedure( procedure( procedureSignature( "example", "exampleProc2" ).build() ) );
+        commit();
     }
 
     @Test
@@ -122,6 +129,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
+        commit();
     }
 
     @Test
@@ -133,8 +141,10 @@ public class ProceduresKernelIT extends KernelIntegrationTest
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
             {
-                return RawIterator.<Object[],ProcedureException>of(
-                        new Object[]{ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement().readOperations()} );
+                try ( Statement statement = ctx.get( Context.KERNEL_TRANSACTION ).acquireStatement() )
+                {
+                    return RawIterator.<Object[],ProcedureException>of( new Object[]{statement.readOperations()} );
+                }
             }
         } );
 
@@ -144,6 +154,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );
+        commit();
     }
 
     private static CallableProcedure procedure( final ProcedureSignature signature )

@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -66,9 +68,10 @@ public class TestRecoveryMultipleDataSources
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         // Then
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+              ResourceIterator<RelationshipType> typeResourceIterator = db.getAllRelationshipTypes().iterator() )
         {
-            assertEquals( MyRelTypes.TEST.name(), db.getAllRelationshipTypes().iterator().next().name() );
+            assertEquals( MyRelTypes.TEST.name(), typeResourceIterator.next().name() );
         }
         finally
         {

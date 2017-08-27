@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -89,9 +90,10 @@ public class IndexCRUDIT
         Node node = createNode( map( indexProperty, value1, otherProperty, otherValue ), myLabel );
 
         // Then, for now, this should trigger two NodePropertyUpdates
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+                Statement statement = ctxSupplier.get() )
         {
-            ReadOperations readOperations = ctxSupplier.get().readOperations();
+            ReadOperations readOperations = statement.readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
             int label = readOperations.labelGetForName( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );
@@ -129,9 +131,10 @@ public class IndexCRUDIT
         }
 
         // THEN
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = ctxSupplier.get() )
         {
-            ReadOperations readOperations = ctxSupplier.get().readOperations();
+            ReadOperations readOperations = statement.readOperations();
             int propertyKey1 = readOperations.propertyKeyGetForName( indexProperty );
             int label = readOperations.labelGetForName( myLabel.name() );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( label, propertyKey1 );

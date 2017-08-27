@@ -41,11 +41,15 @@ import java.util.stream.Stream;
 import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public final class Iterables
 {
+
+    @SuppressWarnings( "rawtypes" )
+    private static final ResourceIterable EMPTY_RESOURCE_ITERATOR = new EmptyResourceIterable<>();
 
     private Iterables()
     {
@@ -55,6 +59,11 @@ public final class Iterables
     public static <T> Iterable<T> empty()
     {
         return Collections.emptyList();
+    }
+
+    public static <T> Iterable<T> emptyResourceIterable()
+    {
+        return (Iterable<T>) EMPTY_RESOURCE_ITERATOR;
     }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
@@ -447,6 +456,10 @@ public final class Iterables
      * Returns the given iterable's first element or {@code null} if no
      * element found.
      *
+     * If the {@link Iterable#iterator() iterator} created by the {@code iterable} implements {@link Resource}
+     * it will be {@link Resource#close() closed} in a {@code finally} block after the single item
+     * has been retrieved, or failed to be retrieved.
+     *
      * @param <T> the type of elements in {@code iterable}.
      * @param iterable the {@link Iterable} to get elements from.
      * @return the first element in the {@code iterable}, or {@code null} if no
@@ -454,7 +467,18 @@ public final class Iterables
      */
     public static <T> T firstOrNull( Iterable<T> iterable )
     {
-        return Iterators.firstOrNull( iterable.iterator() );
+        Iterator<T> iterator = iterable.iterator();
+        try
+        {
+            return Iterators.firstOrNull( iterator );
+        }
+        finally
+        {
+            if ( iterator instanceof Resource )
+            {
+                ((Resource) iterator).close();
+            }
+        }
     }
 
     /**
@@ -612,7 +636,18 @@ public final class Iterables
      */
     public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
     {
-        return Iterators.count( iterable.iterator(), filter );
+        Iterator<T> iterator = iterable.iterator();
+        try
+        {
+            return Iterators.count( iterator, filter );
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator )
+            {
+                ((ResourceIterator) iterator).close();
+            }
+        }
     }
 
     /**
@@ -913,5 +948,18 @@ public final class Iterables
         List<String> names = new ArrayList<>();
         EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
         return names;
+    }
+
+    private static class EmptyResourceIterable<T> implements ResourceIterable<T>
+    {
+        private EmptyResourceIterable()
+        {
+        }
+
+        @Override
+        public ResourceIterator<T> iterator()
+        {
+            return Iterators.emptyResourceIterator();
+        }
     }
 }

@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -51,6 +50,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -366,11 +366,11 @@ public class ParallelBatchImporterTest
         // Read all nodes, relationships and properties ad verify against the input data.
         try ( InputIterator<InputNode> nodes = nodes( nodeRandomSeed, nodeCount, inputIdGenerator, groups ).iterator();
               InputIterator<InputRelationship> relationships = relationships( relationshipRandomSeed, relationshipCount,
-                      inputIdGenerator, groups ).iterator() )
+                      inputIdGenerator, groups ).iterator();
+                ResourceIterator<Node> dbNodes = db.getAllNodes().iterator() )
         {
             // Nodes
             Map<String,Node> nodeByInputId = new HashMap<>( nodeCount );
-            Iterator<Node> dbNodes = db.getAllNodes().iterator();
             int verifiedNodes = 0;
             long allNodesScanLabelCount = 0;
             while ( nodes.hasNext() )

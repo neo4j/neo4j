@@ -54,10 +54,9 @@ public class KernelTest
         ThreadToStatementContextBridge stmtBridge =
                 db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
 
-        try ( Transaction ignored = db.beginTx() )
+        try ( Transaction ignored = db.beginTx();
+                Statement statement = stmtBridge.get() )
         {
-            Statement statement = stmtBridge.get();
-
             try
             {
                 statement.schemaWriteOperations().uniquePropertyConstraintCreate( forLabel( 1, 1 ) );

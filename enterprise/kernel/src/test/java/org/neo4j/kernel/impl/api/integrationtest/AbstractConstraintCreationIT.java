@@ -34,7 +34,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
@@ -131,6 +130,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         assertEquals( constraint, single( constraints ) );
+        commit();
     }
 
     @Test
@@ -155,6 +155,8 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         assertEquals( constraint, single( constraints ) );
+
+        commit();
     }
 
     @Test
@@ -173,21 +175,24 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         // then
         Iterator<?> constraints = readOperations.constraintsGetAll();
         assertFalse( "should not have any constraints", constraints.hasNext() );
+        commit();
     }
 
     @Test
     public void shouldNotStoreConstraintThatIsRemovedInTheSameTransaction() throws Exception
     {
         // given
-        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+        try ( Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED ) )
+        {
 
-        Constraint constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
+            Constraint constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
 
-        // when
-        dropConstraint( statement.schemaWriteOperations(), constraint );
+            // when
+            dropConstraint( statement.schemaWriteOperations(), constraint );
 
-        // then
-        assertFalse( "should not have any constraints", statement.readOperations().constraintsGetAll().hasNext() );
+            // then
+            assertFalse( "should not have any constraints", statement.readOperations().constraintsGetAll().hasNext() );
+        }
 
         // when
         commit();
@@ -196,6 +201,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // then
         assertFalse( "should not have any constraints", readOperations.constraintsGetAll().hasNext() );
+        commit();
     }
 
     @Test
@@ -222,6 +228,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
             // then
             assertFalse( "should not have any constraints", statement.constraintsGetAll().hasNext() );
+            commit();
         }
     }
 
@@ -249,6 +256,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
         {
             // good
         }
+        commit();
     }
 
     @Test
@@ -281,6 +289,7 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
             // then
             assertEquals( singletonList( constraint ), asCollection( statement.constraintsGetAll() ) );
             schemaState.assertNotCleared( statement );
+            commit();
         }
     }
 

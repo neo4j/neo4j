@@ -62,6 +62,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -132,7 +133,7 @@ public class SessionResetIT
         // periodic commit query can't be terminated so but reset must fail the transaction
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( LONG_PERIODIC_COMMIT_QUERY, true );
 
-        assertNull( queryResult.get( 60, SECONDS ) );
+        assertNull( queryResult.get( 5,  MINUTES) );
         assertDatabaseIsIdle();
 
         // termination must cause transaction failure and no nodes should be committed

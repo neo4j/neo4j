@@ -170,6 +170,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         // (1) Unbind current transaction
         QueryRegistryOperations oldQueryRegistryOperations = statement.queryRegistration();
+        Statement oldStatement = statement;
         InternalTransaction oldTransaction = transaction;
         KernelTransaction oldKernelTx = txBridge.getKernelTransactionBoundToThisThread( true );
         txBridge.unbindTransactionFromCurrentThread();
@@ -186,6 +187,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         oldQueryRegistryOperations.unregisterExecutingQuery( executingQuery );
         try
         {
+            oldStatement.close();
             oldTransaction.success();
             oldTransaction.close();
         }

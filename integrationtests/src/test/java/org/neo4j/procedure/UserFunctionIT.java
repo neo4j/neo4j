@@ -88,6 +88,7 @@ public class UserFunctionIT
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
+    private static List<Exception> exceptionsInFunction = Collections.synchronizedList( new ArrayList<>() );
     private GraphDatabaseService db;
 
     @Test
@@ -466,12 +467,10 @@ public class UserFunctionIT
     {
         try ( Transaction ignore = db.beginTx() )
         {
-            db.execute( "RETURN org.neo4j.procedure.simpleArgument(12)" );
+            db.execute( "RETURN org.neo4j.procedure.simpleArgument(12)" ).close();
             db.createNode();
         }
     }
-
-    private static List<Exception> exceptionsInFunction = Collections.synchronizedList( new ArrayList<>() );
 
     @Test
     public void shouldPreserveSecurityContextWhenSpawningThreadsCreatingTransactionInFunctions() throws Throwable

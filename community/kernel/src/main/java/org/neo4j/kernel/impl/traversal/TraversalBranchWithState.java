@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.traversal;
 
-import java.util.Iterator;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.helpers.collection.Iterators;
 
 public class TraversalBranchWithState extends TraversalBranchImpl implements BranchState
 {
@@ -65,10 +65,10 @@ public class TraversalBranchWithState extends TraversalBranchImpl implements Bra
     }
 
     @Override
-    protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
+    protected ResourceIterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
     {
-        Iterable<Relationship> iterable = expander.expand( this, this );
-        return iterable.iterator();
+        Iterable expandIterable = expander.expand( this, this );
+        return Iterators.asResourceIterator( expandIterable.iterator() );
     }
 
     @Override

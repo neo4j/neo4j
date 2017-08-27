@@ -239,10 +239,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         LabelScanStore labelScanStore = getLabelScanStore();
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
-        try ( Transaction transaction = embeddedDatabase.beginTx() )
+        try ( Transaction transaction = embeddedDatabase.beginTx();
+              Statement statement = transactionStatementContextBridge.get() )
         {
-            Statement statement = transactionStatementContextBridge.get();
-
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( updates, neoStores, labelScanStore );
 
             SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( getSchemaIndexProvider() );
@@ -324,11 +323,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private Map<String, Integer> getLabelIdsByName( String... names )
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
-        ReadOperations readOperations = transactionStatementContextBridge.get().readOperations();
-        Map<String, Integer> labelNameIdMap = new HashMap<>();
-        for ( String name : names )
+        Map<String,Integer> labelNameIdMap = new HashMap<>();
+        try ( Statement statement = transactionStatementContextBridge.get() )
         {
-            labelNameIdMap.put( name, readOperations.labelGetForName( name ) );
+            ReadOperations readOperations = statement.readOperations();
+            for ( String name : names )
+            {
+                labelNameIdMap.put( name, readOperations.labelGetForName( name ) );
+            }
         }
         return labelNameIdMap;
     }
@@ -336,8 +338,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private int getPropertyIdByName( String name )
     {
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
-        ReadOperations readOperations = transactionStatementContextBridge.get().readOperations();
-        return readOperations.propertyKeyGetForName( name );
+        try ( Statement statement = transactionStatementContextBridge.get() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            return readOperations.propertyKeyGetForName( name );
+        }
     }
 
     private void prepareDb()
