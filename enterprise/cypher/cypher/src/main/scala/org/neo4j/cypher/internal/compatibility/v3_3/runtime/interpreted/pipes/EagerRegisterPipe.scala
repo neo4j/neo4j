@@ -28,10 +28,11 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
   extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input map { inputRow =>
+    input.map(inputRow => {
+      // this is necessary because Eager is the beginning of a new pipeline
       val outputRow = PrimitiveExecutionContext(pipelineInformation)
-      outputRow.copyFrom(inputRow)
+      inputRow.copyTo(outputRow)
       outputRow
-    }
+    }).toIndexedSeq.iterator
   }
 }
