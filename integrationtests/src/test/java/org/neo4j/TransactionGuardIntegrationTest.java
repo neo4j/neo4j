@@ -782,7 +782,8 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private class TerminationIdGenerator implements IdGenerator {
+    private class TerminationIdGenerator implements IdGenerator
+    {
 
         private IdGenerator delegate;
 
