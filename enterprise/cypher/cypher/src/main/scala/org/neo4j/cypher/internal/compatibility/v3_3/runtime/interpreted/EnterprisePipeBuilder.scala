@@ -231,6 +231,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
+    val pipeline = pipelines(plan)
 
     plan match {
       case Apply(_, _) =>
@@ -239,6 +240,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case _: SemiApply |
            _: AntiSemiApply =>
         fallback.build(plan, lhs, rhs)
+
+      case _: CartesianProduct =>
+        val lhsPlan = plan.lhs.get
+        val lhsLongCount = pipelines(lhsPlan).numberOfLongs
+        val lhsRefCount = pipelines(lhsPlan).numberOfReferences
+        CartesianProductRegisterPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }

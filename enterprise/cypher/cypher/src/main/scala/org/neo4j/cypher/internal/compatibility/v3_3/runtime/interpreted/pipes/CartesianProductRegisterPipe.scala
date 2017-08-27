@@ -24,13 +24,21 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QuerySt
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 
-case class ArgumentRegisterPipe(pipelineInformation: PipelineInformation)
-                               (val id: Id = new Id)
-                                extends Pipe {
+case class CartesianProductRegisterPipe(lhs: Pipe, rhs: Pipe,
+                                        lhsLongCount: Int, lhsRefCount: Int,
+                                        pipelineInformation: PipelineInformation)
+                                       (val id: Id = new Id) extends Pipe {
 
-  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val context = PrimitiveExecutionContext(pipelineInformation)
-    state.copyArgumentStateTo(context, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
-    Iterator(context)
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    lhs.createResults(state) flatMap {
+      lhsCtx =>
+        rhs.createResults(state) map {
+          rhsCtx =>
+            val context = PrimitiveExecutionContext(pipelineInformation)
+            lhsCtx.copyTo(context)
+            rhsCtx.copyTo(context, lhsLongCount, lhsRefCount)
+            context
+        }
+    }
   }
 }

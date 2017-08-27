@@ -53,14 +53,9 @@ Support column renaming for aggregates as well
 Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
-Use multiple MATCH clauses to do a Cartesian product
 Using aliased DISTINCT expression in ORDER BY
 `type()` on two relationships
 `type()`
-Returning bound nodes that are not part of the pattern
-Comparing nodes for equality
-Matching disconnected patterns
-No dependencies between the query parts
 
 Nodes are not created when aliases are applied to variable names
 Only a single node is created when an alias is applied to a variable name
@@ -153,7 +148,6 @@ Return relationships by fetching them from the path
 Return a var length path
 Return a var length path of length zero
 Return a named var length path of length zero
-Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false
 Fail when comparing strings and integers using > in an AND'd predicate
 Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
@@ -220,8 +214,6 @@ Variable length optional relationships
 Variable length optional relationships with length predicates
 Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
-Longer pattern with bound nodes
-Longer pattern with bound nodes without matches
 OPTIONAL MATCH and `collect()`
 ORDER BY of a column introduced in RETURN should return salient results in ascending order
 Pattern comprehension and ORDER BY
@@ -293,17 +285,14 @@ Handling triadic friend of a friend that is a friend with different labels
 Handling triadic friend of a friend that is a friend with implicit subset of labels
 Handling triadic friend of a friend that is a friend with implicit superset of labels
 `toBoolean()` on invalid types
-`toInteger()`
 `toInteger()` handling mixed number types
 `toInteger()` handling Any type
 `toInteger()` on a list of strings
 `toInteger()` failing on invalid arguments
-`toFloat()`
 `toFloat()` on mixed number types
 `toFloat()` handling Any type
 `toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
-`toString()`
 `toString()` should work on Any type
 `toString()` on a list of integers
 `toString()` failing on invalid arguments
@@ -478,9 +467,7 @@ Returning label predicate on null node
 `type()` on null relationship
 Respect predicates on the OPTIONAL MATCH
 OPTIONAL MATCH with labels on the optional end node
-OPTIONAL MATCH and bound nodes
 MATCH and OPTIONAL MATCH on same pattern
-Handling correlated optional matches; first does not match implies second does not match
 Do not fail when predicates on optionally matched and missed nodes are invalid
 
 Many CREATE clauses

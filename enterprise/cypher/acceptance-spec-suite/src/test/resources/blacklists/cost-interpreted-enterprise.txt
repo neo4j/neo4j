@@ -60,7 +60,6 @@ Using a variable-length pattern expression in a WITH
 Using pattern expression in RETURN
 Aggregating on pattern expression
 Pattern expression inside list comprehension
-Filter using a variable length relationship pattern predicate with properties
 Filter using a pattern predicate that is a logical OR between an expression and a subquery
 Filter using a pattern predicate that is a logical OR between two expressions and a subquery
 Filter using a pattern predicate that is a logical OR between one expression and a negated subquery
@@ -76,8 +75,6 @@ Returning a relationship from a pattern predicate
 Pattern predicate should uphold the relationship uniqueness constraint
 Pattern predicates on missing optionally matched nodes should simply evaluate to false
 Matching with complex composite pattern predicate
-Handling pattern predicates without matches
-Handling pattern predicates
 Matching named path with variable length pattern and pattern predicates
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call

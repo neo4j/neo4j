@@ -506,13 +506,18 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // when
     val pipe = build(Xproduct)
 
+    val lhsPipeInfo = PipelineInformation.empty.newLong("x", nullable = false, CTNode)
+    val rhsPipeInfo = PipelineInformation.empty.newLong("y", nullable = false, CTNode)
+    val xProdPipeInfo = PipelineInformation.empty
+      .newLong("x", nullable = false, CTNode)
+      .newLong("y", nullable = false, CTNode)
+
     // then
-    pipe should equal(CartesianProductPipe(
-      NodesByLabelScanRegisterPipe("x", LazyLabel("label1"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"))))(),
-      NodesByLabelScanRegisterPipe("y", LazyLabel("label2"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("y" -> LongSlot(0, nullable = false, CTNode, "y"))))()
-    )())
+    pipe should equal(CartesianProductRegisterPipe(
+      NodesByLabelScanRegisterPipe("x", LazyLabel("label1"), lhsPipeInfo)(),
+      NodesByLabelScanRegisterPipe("y", LazyLabel("label2"), rhsPipeInfo)(),
+      lhsLongCount = 1, lhsRefCount = 0, xProdPipeInfo)()
+    )
   }
 
   test("that argument does not apply here") {

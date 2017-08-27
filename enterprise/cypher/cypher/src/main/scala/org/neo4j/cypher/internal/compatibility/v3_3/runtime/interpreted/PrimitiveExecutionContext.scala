@@ -32,19 +32,19 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   private val longs = new Array[Long](pipeline.numberOfLongs)
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
-  override def copyTo(target: ExecutionContext): Unit = target match {
+  override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
       if (pipeline.numberOfLongs > otherPipeline.numberOfLongs ||
         pipeline.numberOfReferences > otherPipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
-        System.arraycopy(longs, 0, other.longs, 0, pipeline.numberOfLongs)
-        System.arraycopy(refs, 0, other.refs, 0, pipeline.numberOfReferences)
+        System.arraycopy(longs, 0, other.longs, longOffset, pipeline.numberOfLongs)
+        System.arraycopy(refs, 0, other.refs, refOffset, pipeline.numberOfReferences)
       }
     case _ => fail()
   }
 
-  def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
+  override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
       if (nLongs > pipeline.numberOfLongs || nRefs > pipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
