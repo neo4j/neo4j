@@ -263,7 +263,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
 
     // only run against one scenario, otherwise count increments unpredictably due to fallback
-    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.EnterpriseInterpreted
+    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.SlottedInterpreted
     succeedScenarios.scenarios.size should equal(1)
     val result = succeedWithAndMaybeCheckPlans(
       succeedScenarios,
@@ -370,7 +370,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
     // only run against one scenario, otherwise count increments unpredictably due to fallback
-    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.EnterpriseInterpreted
+    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.SlottedInterpreted
     succeedScenarios.scenarios.size should equal(1)
     val result = succeedWithAndMaybeCheckPlans(
       succeedScenarios,
