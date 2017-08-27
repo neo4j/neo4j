@@ -92,7 +92,7 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
             finally
             {
                 hasDeterminedNext = false;
-                hasNext();
+                releaseLock();
             }
         }
         throw new NoSuchElementException();
@@ -113,6 +113,14 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         {
             cursor.close();
             cursor = null;
+            releaseLock();
+        }
+    }
+
+    private void releaseLock()
+    {
+        if ( lock != null )
+        {
             lock.release();
             lock = null;
         }

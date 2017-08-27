@@ -762,12 +762,69 @@ public abstract class IsolationLevelsTestTemplate
         }
     }
 
+    @Theory
+    public void doNotPreventUnstableIteratorOfMultipleNodeRelationshipsWithTypes( IsolationLevel level )
+    {
+        if ( shouldIgnoreTestForLevel( level, IsolationLevel.Anomaly.UnstableIterator ) )
+        {
+            return;
+        }
+        RecordStorageEngine.takeRelationshipChainReadLocks = true;
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.createRelationshipTo( node, REL );
+            node.createRelationshipTo( node, REL );
+            tx.success();
+        }
+
+        int threadCount = 10;
+        try ( Transaction tx = db.beginTx() )
+        {
+            setIsolationLevel( tx, level );
+
+            beginForked()
+                    .then( (db,innerTx) -> setIsolationLevel( innerTx, level ) )
+                    .then( db -> deleteCreateTwoRelationship( db, nodeId ) )
+                    .commit()
+                    .run( threadCount, threads );
+
+            while ( !threads.allDone() )
+            {
+                Node node = db.getNodeById( nodeId );
+                assertThat( Iterables.count( node.getRelationships( REL ) ), is( 2L ) );
+            }
+        }
+        finally
+        {
+            RecordStorageEngine.takeRelationshipChainReadLocks = false;
+        }
+    }
+
     private void deleteCreateRelationship( GraphDatabaseService db, long nodeId )
     {
         Node node = db.getNodeById( nodeId );
         try
         {
             node.getRelationships().forEach( Relationship::delete );
+            node.createRelationshipTo( node, REL );
+        }
+        catch ( DeadlockDetectedException | NotFoundException ignore )
+        {
+            // this is fine
+        }
+    }
+
+    private void deleteCreateTwoRelationship( GraphDatabaseService db, long nodeId )
+    {
+        Node node = db.getNodeById( nodeId );
+        try
+        {
+            node.getRelationships().forEach( Relationship::delete );
+            node.createRelationshipTo( node, REL );
             node.createRelationshipTo( node, REL );
         }
         catch ( DeadlockDetectedException | NotFoundException ignore )
