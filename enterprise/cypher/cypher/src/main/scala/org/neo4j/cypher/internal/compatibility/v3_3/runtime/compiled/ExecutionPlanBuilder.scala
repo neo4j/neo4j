@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
+import org.neo4j.values.virtual.MapValue
 
 object ExecutionPlanBuilder {
   type DescriptionProvider =
@@ -74,6 +75,6 @@ trait RunnablePlan {
   def apply(queryContext: QueryContext,
             execMode: ExecutionMode,
             descriptionProvider: DescriptionProvider,
-            params: Map[String, Any],
+            params: MapValue,
             closer: TaskCloser): InternalExecutionResult
 }

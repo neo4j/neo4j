@@ -39,9 +39,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_3.IncomparableValuesException;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
 
@@ -243,67 +242,11 @@ public abstract class CompiledConversionUtils
         throw new CypherTypeException( "Don't know how to treat that as a boolean: " + predicate.toString(), null );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static Object loadParameter( Object value )
+    public static Object loadParameter( AnyValue value, NodeManager manager )
     {
-        if ( value == null )
-        {
-            return null;
-        }
-        else if ( value instanceof Node )
-        {
-            return new NodeIdWrapperImpl( ((Node) value).getId() );
-        }
-        else if ( value instanceof Relationship )
-        {
-            return new RelationshipIdWrapperImpl( ((Relationship) value).getId() );
-        }
-        else if ( value instanceof List<?> )
-        {
-            List<?> list = (List<?>) value;
-            ArrayList<Object> copy = new ArrayList<>( list.size() );
-            for ( Object o : list )
-            {
-                copy.add( loadParameter( o ) );
-            }
-            return copy;
-        }
-        else if ( value instanceof Map<?,?> )
-        {
-            Map<String,?> map = (Map<String,?>) value;
-            HashMap<String,Object> copy = new HashMap<>( map.size() );
-            for ( Map.Entry<String,?> entry : map.entrySet() )
-            {
-                copy.put( entry.getKey(), loadParameter( entry.getValue() ) );
-            }
-            return copy;
-        }
-        else if ( value.getClass().isArray() )
-        {
-            Class<?> componentType = value.getClass().getComponentType();
-            int length = Array.getLength( value );
-
-            if ( componentType.isPrimitive() )
-            {
-                Object copy = Array.newInstance( componentType, length );
-                //noinspection SuspiciousSystemArraycopy
-                System.arraycopy( value, 0, copy, 0, length );
-                return copy;
-            }
-            else
-            {
-                Object[] copy = new Object[length];
-                for ( int i = 0; i < length; i++ )
-                {
-                    copy[i] = loadParameter( Array.get( value, i ) );
-                }
-                return copy;
-            }
-        }
-        else
-        {
-            return value;
-        }
+       ParameterConverter converter = new ParameterConverter( manager );
+       value.writeTo( converter );
+       return converter.value();
     }
 
     @SuppressWarnings( {"unchecked", "WeakerAccess"} )
@@ -759,6 +702,7 @@ public abstract class CompiledConversionUtils
         }
         throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
     }
+
     @SuppressWarnings( "unchecked" )
     public static Object mapGetProperty( Object object, String key )
     {

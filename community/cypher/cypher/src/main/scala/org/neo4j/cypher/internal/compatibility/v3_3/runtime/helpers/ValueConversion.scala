@@ -26,8 +26,8 @@ import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.byteArray
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.virtual.VirtualValues.fromArray
+import org.neo4j.values.virtual.{MapValue, VirtualValues}
 import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
@@ -49,7 +49,7 @@ object ValueConversion {
     case symbols.CTGeometry => o => AnyValues.asPointValue(o.asInstanceOf[Geometry])
   }
 
-  def asValues(params: Map[String, Any]): Map[String, AnyValue] = Eagerly.immutableMapValues(params, asValue)
+  def asValues(params: Map[String, Any]): MapValue = VirtualValues.map(Eagerly.immutableMapValues(params, asValue).asJava)
   def asValue(value: Any): AnyValue = value match {
     case null => Values.NO_VALUE
     case s: String => Values.stringValue(s)

@@ -33,13 +33,12 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
 
@@ -70,7 +69,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
 
     override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
+                     executionMode: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       try {
@@ -82,7 +81,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
                                  compiled.planDescription, READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
-                                          immutableMapValues(params, queryContext.asObject), taskCloser)
+                                          params, taskCloser)
       } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)

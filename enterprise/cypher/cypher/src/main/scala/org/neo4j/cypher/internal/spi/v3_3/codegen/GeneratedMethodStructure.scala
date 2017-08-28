@@ -49,7 +49,7 @@ import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
 import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.mutable
@@ -375,10 +375,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def expectParameter(key: String, variableName: String, codeGenType: CodeGenType) = {
     using(
-      generator.ifStatement(not(invoke(params, mapContains, constant(key))))) { block =>
+      generator.ifStatement(not(invoke(params,  method[MapValue, Boolean]("containsKey", typeRef[String]), constant(key))))) { block =>
       block.throwException(parameterNotFoundException(key))
     }
-    val invokeLoadParameter = invoke(loadParameter, invoke(params, mapGet, constantExpression(key)))
+    val invokeLoadParameter = invoke(loadParameter,
+                                     invoke(params, method[MapValue, AnyValue]("get", typeRef[String]), constantExpression(key)),
+                                     get(generator.self(), fields.entityAccessor))
     generator.assign(lowerType(codeGenType), variableName,
       // We assume the value in the parameter map will always be boxed, so if we are declaring
       // a primitive variable we need to force it to be unboxed

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Notification
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Execution plan for calling procedures
@@ -66,7 +66,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(converter.toCommandExpression) ++
       signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
-    override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
+    override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
       val input = evaluateArguments(ctx, params)
 
       val taskCloser = new TaskCloser
@@ -107,7 +107,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       }
     }
 
-    private def evaluateArguments(ctx: QueryContext, params: Map[String, AnyValue]): Seq[Any] = {
+    private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
       val state = new QueryState(ctx, ExternalCSVResource.empty, params)
       argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
     }

@@ -29,7 +29,8 @@ import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLock
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.mutable
 
@@ -37,12 +38,12 @@ object QueryStateHelper {
   def empty: QueryState = newWith()
 
   def newWith(db: GraphDatabaseQueryService = null, query: QueryContext = null, resources: ExternalCSVResource = null,
-              params: Map[String, AnyValue] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
+              params: MapValue = EMPTY_MAP, decorator: PipeDecorator = NullPipeDecorator) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 
-  def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, AnyValue] = Map.empty): QueryState = {
+  def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: MapValue = EMPTY_MAP): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", Collections.emptyMap()))
@@ -50,7 +51,7 @@ object QueryStateHelper {
     newWith(db = db, query = queryContext, params = params)
   }
 
-  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, AnyValue] = Map.empty, f: (QueryState) => T)  = {
+  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: MapValue = EMPTY_MAP, f: (QueryState) => T)  = {
     val queryState = queryStateFrom(db, tx, params)
     try {
       f(queryState)

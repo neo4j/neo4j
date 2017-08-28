@@ -49,9 +49,9 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.time.Clocks
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.scalatest.mock.MockitoSugar
-
-import scala.collection.JavaConversions
 
 trait CodeGenSugar extends MockitoSugar {
 
@@ -84,7 +84,7 @@ trait CodeGenSugar extends MockitoSugar {
                                   "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan
-        .executionResultBuilder(queryContext, mode, tracer(mode, queryContext), Map.empty, new TaskCloser)
+        .executionResultBuilder(queryContext, mode, tracer(mode, queryContext), EMPTY_MAP, new TaskCloser)
       tx.success()
       result.size
       result
@@ -97,7 +97,7 @@ trait CodeGenSugar extends MockitoSugar {
   def evaluate(instructions: Seq[Instruction],
                qtx: QueryContext = mockQueryContext(),
                columns: Seq[String] = Seq.empty,
-               params: Map[String, AnyRef] = Map.empty,
+               params: MapValue = EMPTY_MAP,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
     val clazz = compile(instructions, columns, operatorIds)
     val result = newInstance(clazz, queryContext = qtx, params = params)
@@ -134,9 +134,9 @@ trait CodeGenSugar extends MockitoSugar {
                   executionMode: ExecutionMode = null,
                   provider: Provider[InternalPlanDescription] = null,
                   queryExecutionTracer: QueryExecutionTracer = QueryExecutionTracer.NONE,
-                  params: Map[String, AnyRef] = Map.empty): InternalExecutionResult = {
+                  params: MapValue = EMPTY_MAP): InternalExecutionResult = {
     val generated = clazz.execute(taskCloser, queryContext,
-                                  executionMode, provider, queryExecutionTracer, JavaConversions.mapAsJavaMap(params))
+                                  executionMode, provider, queryExecutionTracer, params)
     new CompiledExecutionResult(taskCloser, queryContext, generated, provider)
   }
 

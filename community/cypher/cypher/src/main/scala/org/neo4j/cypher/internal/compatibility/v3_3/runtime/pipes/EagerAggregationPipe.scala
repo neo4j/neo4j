@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
 import scala.collection.mutable.{Map => MutableMap}
 
@@ -46,7 +46,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     val keyNamesSize = keyNames.size
     val mapSize = keyNamesSize + aggregationNames.size
 
-    def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
+    def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {
       val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
 

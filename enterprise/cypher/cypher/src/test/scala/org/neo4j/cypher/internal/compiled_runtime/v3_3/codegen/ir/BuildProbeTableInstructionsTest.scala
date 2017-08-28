@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue}
 
 import scala.collection.{JavaConverters, mutable}
@@ -204,7 +205,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
     val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
-    evaluate(instructions, queryContext, Seq(resultRowKey), Map.empty[String, Object], ids)
+    evaluate(instructions, queryContext, Seq(resultRowKey), EMPTY_MAP, ids)
   }
 
   private def buildProbeTableWithTwoAllNodeScans(buildInstruction: BuildProbeTable, nodes: Set[Variable]): Seq[Instruction] = {

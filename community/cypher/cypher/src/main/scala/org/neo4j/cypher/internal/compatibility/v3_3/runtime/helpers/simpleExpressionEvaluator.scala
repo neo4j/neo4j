@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NullPipeDecor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherException}
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable
 
@@ -35,13 +36,12 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val commandExpr = converters.toCommandExpression(expr)
 
-    implicit val emptyQueryState = new QueryState(query = null, resources = null, params = Map.empty,
+    implicit val emptyQueryState = new QueryState(query = null, resources = null, params = VirtualValues.EMPTY_MAP,
                                                   decorator = NullPipeDecorator, triadicState = mutable.Map.empty,
                                                   repeatableReads = mutable.Map.empty)
 
     try {
-      val foo = Some(commandExpr(ExecutionContext.empty))
-      foo
+      Some(commandExpr(ExecutionContext.empty))
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
