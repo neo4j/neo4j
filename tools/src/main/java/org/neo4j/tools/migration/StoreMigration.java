@@ -46,9 +46,6 @@ import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-<<<<<<< HEAD
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
-=======
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
@@ -59,7 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
->>>>>>> LogTailScanner updated
+import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;

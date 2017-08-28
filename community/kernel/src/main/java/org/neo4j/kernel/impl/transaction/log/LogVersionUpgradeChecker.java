@@ -47,7 +47,13 @@ public class LogVersionUpgradeChecker
             LogEntryVersion latestLogEntryVersion = tailScanner.getTailInformation().latestLogEntryVersion;
             if ( latestLogEntryVersion != null && LogEntryVersion.moreRecentVersionExists( latestLogEntryVersion ) )
             {
-                throw new UpgradeNotAllowedByConfigurationException();
+                String message = String.format(
+                        "The version your upgrading to is using a new transaction log format. This is a non-reversible " +
+                                "upgrade and you wont be able to downgrade after starting. To allow upgrade, please set " +
+                                "configuration parameter \"%s=true\"",
+                        GraphDatabaseSettings.allow_upgrade.name() );
+
+                throw new UpgradeNotAllowedByConfigurationException( message );
             }
         }
     }
