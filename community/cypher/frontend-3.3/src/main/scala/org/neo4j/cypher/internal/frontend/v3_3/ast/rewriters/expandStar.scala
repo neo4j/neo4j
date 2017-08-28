@@ -31,13 +31,13 @@ case class expandStar(state: SemanticState) extends Rewriter {
         case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems)
         case _ => graphs
       }
-      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems)(clause.position)
+      clause.copy(returnItems = newReturnItems, graphReturnItems = newGraphItems)(clause.position)
 
     case clause: PragmaWithout =>
       With(
         distinct = false,
         returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-        graphItems = graphReturnItems(clause, List.empty, clause.excludedNames),
+        graphReturnItems = graphReturnItems(clause, List.empty, clause.excludedNames),
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
     case clause@Return(_, values, graphs, _, _, _, excludedNames)
@@ -47,7 +47,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
         case Some(GraphReturnItems(true, graphItems)) => graphReturnItems(clause, graphItems, excludedNames)
         case _ => graphs
       }
-      clause.copy(returnItems = newReturnItems, graphItems = newGraphItems, excludedNames = Set.empty)(clause.position)
+      clause.copy(returnItems = newReturnItems, graphReturnItems = newGraphItems, excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode

@@ -21,10 +21,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState}
 
 class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val foo = graph("foo")
-  val bar = graph("bar")
-  val baz = graph("baz")
-  val moep = graph("moep")
+  val foo: BoundGraphAs = graph("foo")
+  val bar: BoundGraphAs = graph("bar")
+  val baz: BoundGraphAs = graph("baz")
+  val moep: BoundGraphAs = graph("moep")
 
   test("set correct source and target") {
     val items = GraphReturnItems(star = false, List(
@@ -117,7 +117,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       ReturnedGraph(graphAt("foo", "url2"))(pos)
     ))(pos)
 
-    val result = items.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.declareGraphs(None)(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Variable `foo` already declared")) should be(true)

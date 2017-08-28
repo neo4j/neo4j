@@ -23,31 +23,32 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, _}
 case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outerScope: Scope = Scope.empty)
                         (val position: InputPosition)
   extends Expression with SimpleTyping {
-  protected def possibleTypes = CTMap
 
-  override def semanticCheck(ctx: SemanticContext) =
+  protected def possibleTypes: TypeSpec = CTMap
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     items.semanticCheck(ctx) chain
     super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
     recordCurrentScope
 
-  def withOuterScope(outerScope: Scope) =
+  def withOuterScope(outerScope: Scope): MapProjection =
     copy(outerScope = outerScope)(position)
 }
 
 sealed trait MapProjectionElement extends SemanticCheckableWithContext with ASTNode
 
 case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition) extends MapProjectionElement {
-  override def semanticCheck(ctx: SemanticContext) = exp.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = exp.semanticCheck(ctx)
 }
 
 case class VariableSelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
-  override def semanticCheck(ctx: SemanticContext) = id.semanticCheck(ctx)
+  override def semanticCheck(ctx: SemanticContext): (SemanticState) => SemanticCheckResult = id.semanticCheck(ctx)
 }
 
 case class PropertySelector(id: Variable)(val position: InputPosition) extends MapProjectionElement {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
 case class AllPropertiesSelector()(val position: InputPosition) extends MapProjectionElement {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

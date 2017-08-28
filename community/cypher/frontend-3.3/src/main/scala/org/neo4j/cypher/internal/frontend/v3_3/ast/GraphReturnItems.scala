@@ -19,27 +19,35 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
-  def graphs: List[SingleGraphAs]
+  def graphs: Seq[SingleGraphAs]
 
   def newSource: Option[SingleGraphAs] = None
   def newTarget: Option[SingleGraphAs] = None
+
+  def declareGraphs: SemanticCheck
 }
 
 final case class ReturnedGraph(item: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs = List(item)
+  override def graphs: Seq[SingleGraphAs] = Seq(item)
+  override def declareGraphs: SemanticCheck = item.declareGraph
 }
 
 final case class NewTargetGraph(target: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs = List(target)
+  override def graphs: Seq[SingleGraphAs] = Seq(target)
   override def newTarget = Some(target)
+  override def declareGraphs: SemanticCheck = target.declareGraph
 }
 
 final case class NewContextGraphs(source: SingleGraphAs,
                                   override val newTarget: Option[SingleGraphAs] = None)
                                  (val position: InputPosition) extends GraphReturnItem {
-  override def graphs = List(source) ++ newTarget.toList
+  override def graphs: Seq[SingleGraphAs] = newTarget match {
+    case Some(target) => Seq(source, target)
+    case None => Seq(source)
+  }
 
   override def newSource: Option[SingleGraphAs] = Some(source)
+  override def declareGraphs: SemanticCheck = source.declareGraph chain newTarget.foldSemanticCheck(_.declareGraph)
 }
 
 final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
@@ -57,13 +65,22 @@ final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
       graphs.semanticCheck chain
       checkNoMultipleSources chain
       checkNoMultipleTargets chain
-      checkUniqueGraphReference chain
-      updateSetContextGraphs()
+      checkUniqueGraphReference
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
 
-  private def updateSetContextGraphs(): SemanticCheck = {
-    val check = (_: SemanticState).updateSetContextGraphs(newSource.flatMap(_.as), newTarget.flatMap(_.as))
-    check: SemanticCheck
+  def declareGraphs(optContextGraphs: Option[ContextGraphs]): SemanticCheck = {
+    val updateContext = (s: SemanticState) => {
+      val newSourceName = newSource.flatMap(_.name)
+      val newTargetName = newTarget.flatMap(_.name)
+      val optNewContextGraphs =
+        optContextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
+        newSourceName.flatMap(source => newTargetName.map(target => ContextGraphs(source, target)))
+      optNewContextGraphs match {
+        case Some(newContextGraphs) => s.updateContextGraphs(newContextGraphs)
+        case None => Left(SemanticError("No context graphs available", position))
+      }
+    }
+    (items.foldSemanticCheck(_.declareGraphs) chain updateContext).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
   }
 
   private def checkNoMultipleSources: SemanticCheck =

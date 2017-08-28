@@ -68,42 +68,45 @@ sealed trait MultiGraphClause extends Clause with SemanticChecking {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-sealed trait GraphSelectorClause extends MultiGraphClause {
+sealed trait GraphSelectorClause extends HorizonClause with MultiGraphClause {
 
   def graph: SingleGraphAs
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
+    recordCurrentScope chain
     graph.semanticCheck
 }
 
 final case class From(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "FROM"
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    updateSetContextGraphs() chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
-
-  private def updateSetContextGraphs(): SemanticCheck = {
-    val check = (_: SemanticState).updateSetContextGraphs(graph.as, graph.as)
-    check: SemanticCheck
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
+    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
+      s.currentScope.contextGraphs match {
+        case Some(context) =>
+          s.updateContextGraphs(context.updated(graph.name))
+        case None =>
+          Left(SemanticError("No context graphs in scope", position))
+      }
+    }
+    graph.declareGraph chain check
   }
 }
 
 final case class Into(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "INTO"
 
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    updateSetContextGraphs() chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
-
-  private def updateSetContextGraphs(): SemanticCheck = {
-    val check = (_: SemanticState).updateSetContextGraphs(None, graph.as)
-    check: SemanticCheck
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
+    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
+      s.currentScope.contextGraphs match {
+        case Some(context) =>
+          s.updateContextGraphs(context.updated(Some(context.source), graph.name))
+        case None =>
+          Left(SemanticError("No context graphs in scope", position))
+      }
+    }
+    graph.declareGraph chain check
   }
 }
 
@@ -126,8 +129,7 @@ final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Opti
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
+    recordCurrentScope
 }
 
 final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
@@ -136,12 +138,18 @@ final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Op
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     updateSetContextGraphs() chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
+    recordCurrentScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
-    val check = (_: SemanticState).updateSetContextGraphs(Some(graph), Some(graph))
-    check: SemanticCheck
+    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
+      s.currentScope.contextGraphs match {
+        case Some(context) =>
+          s.updateContextGraphs(context.updated(Some(graph.name)))
+        case None =>
+          Left(SemanticError("No context graph in scope", position))
+      }
+    }
+    graph.declareGraph chain check
   }
 }
 
@@ -151,12 +159,18 @@ final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Op
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     updateSetContextGraphs() chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
+    recordCurrentScope
 
   private def updateSetContextGraphs(): SemanticCheck = {
-    val check = (_: SemanticState).updateSetContextGraphs(None, Some(graph))
-    check: SemanticCheck
+    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
+      s.currentScope.contextGraphs match {
+        case Some(context) =>
+          s.updateContextGraphs(context.updated(Some(context.source), Some(graph.name)))
+        case None =>
+          Left(SemanticError("No context graph in scope", position))
+      }
+    }
+    graph.declareGraph chain check
   }
 }
 
@@ -168,8 +182,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     graphs.foldSemanticCheck(_.ensureDefined()) chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
+    recordCurrentScope
 }
 
 final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -503,7 +516,7 @@ sealed trait HorizonClause extends Clause with SemanticChecking {
 sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def distinct: Boolean
   def returnItems: ReturnItemsDef
-  def graphItems: Option[GraphReturnItems]
+  def graphReturnItems: Option[GraphReturnItems]
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
   def limit: Option[Limit]
@@ -511,13 +524,11 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     returnItems.semanticCheck chain
-    graphItems.semanticCheck chain
-    ensureOneIsNonEmpty chain
-    recordCurrentScope chain
-    recordCurrentGraphScope
+    graphReturnItems.semanticCheck chain
+    ensureOneIsNonEmpty
 
   def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
-    if (returnItems.checkUserEmpty && graphItems.isEmpty)
+    if (returnItems.checkUserEmpty && graphReturnItems.isEmpty)
       error(s, FeatureError("At least one element must be specified for the projection", position))
     else
       success(s)
@@ -540,8 +551,10 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       case _ =>
         orderByResult
     }
-
-    SemanticCheckResult(fixedOrderByResult.state, fixedOrderByResult.errors ++ shuffleErrors)
+    val tabularState = fixedOrderByResult.state
+    val contextGraphs = tabularState.currentScope.contextGraphs
+    val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(contextGraphs))(tabularState)
+    graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
   }
 
   private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
@@ -577,7 +590,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 case class With(
                  distinct: Boolean,
                  returnItems: ReturnItemsDef,
-                 graphItems: Option[GraphReturnItems],
+                 graphReturnItems: Option[GraphReturnItems],
                  orderBy: Option[OrderBy],
                  skip: Option[Skip],
                  limit: Option[Limit],
@@ -601,7 +614,7 @@ case class With(
 
 case class Return(distinct: Boolean,
                   returnItems: ReturnItemsDef,
-                  graphItems: Option[GraphReturnItems],
+                  graphReturnItems: Option[GraphReturnItems],
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],

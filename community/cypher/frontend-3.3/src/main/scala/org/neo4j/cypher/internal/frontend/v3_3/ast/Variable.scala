@@ -18,47 +18,55 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, SymbolUse}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticError, SemanticState, SymbolUse}
 
 case class Variable(name: String)(val position: InputPosition) extends Expression {
 
   def toSymbolUse = SymbolUse(name, position)
 
   // check the variable is defined and, if not, define it so that later errors are suppressed
-  def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
+  def semanticCheck(ctx: SemanticContext): (SemanticState) => SemanticCheckResult = s => this.ensureDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
     case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
   }
 
   // double-dispatch helpers
-  def declareGraph =
+
+  def declareGraph: (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareGraphVariable(this)
 
-  def declare(possibleTypes: TypeSpec) =
+  def implicitGraphDeclaration: (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).implicitGraphVariable(this)
+
+  def declare(possibleTypes: TypeSpec): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareVariable(this, possibleTypes)
 
-  def declare(typeGen: SemanticState => TypeSpec, positions: Set[InputPosition] = Set.empty) =
+  def declare(typeGen: SemanticState => TypeSpec, positions: Set[InputPosition] = Set.empty)
+  : (SemanticState) => Either[SemanticError, SemanticState] =
     (s: SemanticState) => s.declareVariable(this, typeGen(s), positions)
 
-  def implicitDeclaration(possibleType: CypherType) =
+  def implicitDeclaration(possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(this, possibleType)
 
-  def ensureDefined() =
+  def ensureGraphDefined(): SemanticCheck =
+    ensureDefined() chain expectType(CTGraphRef.covariant)
+
+  def ensureDefined(): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).ensureVariableDefined(this)
 
-  def copyId = copy()(position)
+  def copyId: Variable = copy()(position)
 
-  def renameId(newName: String) = copy(name = newName)(position)
+  def renameId(newName: String): Variable = copy(name = newName)(position)
 
-  def bumpId = copy()(position.bumped())
+  def bumpId: Variable = copy()(position.bumped())
 
-  def asAlias = AliasedReturnItem(this.copyId, this.copyId)(this.position)
+  def asAlias: AliasedReturnItem = AliasedReturnItem(this.copyId, this.copyId)(this.position)
 
   override def asCanonicalStringVal: String = name
 }
 
 object Variable {
-  implicit val byName =
+  implicit val byName: Ordering[Variable] =
     Ordering.by { (variable: Variable) =>
       (variable.name, variable.position)
     }(Ordering.Tuple2(implicitly[Ordering[String]], InputPosition.byOffset))

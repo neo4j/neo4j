@@ -51,7 +51,7 @@ class NameAllGraphsTest extends CypherFunSuite {
 
   test("name load graph") {
     val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
-    val expected = parser.parse("FROM GRAPH AT 'url' AS `  UNNAMED21` RETURN 1")
+    val expected = parser.parse("FROM GRAPH AT 'url' AS `  FRESHID21` RETURN 1")
 
     val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === expected)
