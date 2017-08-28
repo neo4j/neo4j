@@ -79,7 +79,7 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.toggle;
  */
 public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 {
-    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", true );
+    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
     private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>( 0 );
@@ -110,7 +110,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
-        this.statementOpenCloseCalls = TRACK_STATEMENTS ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
+        this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
     }
 
     @Override
