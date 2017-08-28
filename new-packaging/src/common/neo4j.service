@@ -1,6 +1,7 @@
 [Unit]
 Description=Neo4j Graph Database
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 ExecStart=/usr/share/neo4j/bin/neo4j console
