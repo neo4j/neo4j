@@ -22,8 +22,6 @@ package org.neo4j.internal.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.nio.ByteOrder;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -32,10 +30,12 @@ import org.neo4j.internal.kernel.api.EdgeGroupCursor;
 import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
@@ -118,7 +118,7 @@ public class EdgeTraversalCursorTest
     @Test
     public void shouldTraverseEdgesOfGivenType() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
@@ -177,7 +177,7 @@ public class EdgeTraversalCursorTest
     @Test
     public void shouldFollowSpecificEdge() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();

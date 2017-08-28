@@ -19,15 +19,14 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
-import java.nio.ByteOrder;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,10 +34,12 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.EdgeScanCursor;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
@@ -189,8 +190,7 @@ public class EdgeScanCursorTest
     @Test
     public void shouldAccessNodes() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
-
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
         // given
         try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
         {

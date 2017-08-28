@@ -19,12 +19,11 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,10 +31,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
@@ -149,7 +150,7 @@ public class NodeCursorTest
     @Test
     public void shouldReadLabels() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor nodes = graph.allocateNodeCursor() )
