@@ -224,7 +224,7 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress()  );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
         builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
         builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
