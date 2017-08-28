@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.values.storable.Values
 
 case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, longOffsets: Seq[Int], refOffsets: Seq[Int], negated: Boolean,
                                         pipelineInformation: PipelineInformation)
@@ -40,13 +41,14 @@ case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, longOffsets: Seq[I
         }
         else {
           val output = PrimitiveExecutionContext(pipelineInformation)
-          output.copyFrom(lhsContext)
+          output.copyFrom(lhsContext, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
           Iterator.single(output)
         }
     }
 
   private def condition(context: ExecutionContext) = {
-    val cond = longOffsets.exists(context.getLongAt(_) != -1L) && refOffsets.exists(context.getRefAt(_) != -1L)
+    val cond = longOffsets.exists(offset => !NullChecker.nodeIsNull(context.getLongAt(offset))) ||
+      refOffsets.exists(context.getRefAt(_) != Values.NO_VALUE)
     if (negated) !cond else cond
   }
 

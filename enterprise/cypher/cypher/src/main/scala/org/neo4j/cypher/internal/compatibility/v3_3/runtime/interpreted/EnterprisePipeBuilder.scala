@@ -266,7 +266,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         })
         val longOffsets = longIds.map(e => pipeline.getLongOffsetFor(e.name))
         val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
-        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = false, pipeline)(id)
+        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
