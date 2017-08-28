@@ -284,6 +284,10 @@ public class ForsetiFalseDeadlockTest
         loopRunTest( testRuns );
     }
 
+    /**
+     * See comment above.
+     */
+    @Ignore
     @Test
     public void testMildlyForFalseDeadlocks() throws Exception
     {
