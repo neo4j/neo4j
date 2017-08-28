@@ -28,10 +28,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -43,7 +45,8 @@ import static org.junit.Assert.assertNotNull;
 public class FusionIndexIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
+    public DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
 
     private File storeDir;
     private Label label = Label.label( "label" );
