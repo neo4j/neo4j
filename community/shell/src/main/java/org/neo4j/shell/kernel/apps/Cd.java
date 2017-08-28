@@ -312,26 +312,28 @@ public class Cd extends TransactionProvidingApp
             ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( currentNode.getRelationships() );
             try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
             {
-                Relationship rel = resourceIterator.next();
-                if ( newId.isNode() )
+                while ( resourceIterator.hasNext() )
                 {
-                    if ( rel.getOtherNode( currentNode ).getId() ==
-                            newId.getId() )
+                    Relationship rel = resourceIterator.next();
+                    if ( newId.isNode() )
                     {
+                        if ( rel.getOtherNode( currentNode ).getId() == newId.getId() )
+                        {
+                            return true;
+                        }
+                    }
+                    else
+                    {
+                        if ( rel.getId() == newId.getId() )
+                        {
+                            return true;
+                        }
+                    }
+                    if ( System.currentTimeMillis() - startTime > 350 )
+                    {
+                        // DOn't spend too long time in here
                         return true;
                     }
-                }
-                else
-                {
-                    if ( rel.getId() == newId.getId() )
-                    {
-                        return true;
-                    }
-                }
-                if ( System.currentTimeMillis() - startTime > 350 )
-                {
-                    // DOn't spend too long time in here
-                    return true;
                 }
             }
         }
