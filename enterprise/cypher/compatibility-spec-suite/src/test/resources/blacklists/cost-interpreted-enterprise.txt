@@ -453,8 +453,6 @@ Returning nested expressions based on list property
 `type()` on mixed null and non-null relationships
 `type()` on mixed null and non-null relationships
 `type()` on null relationship
-OPTIONAL MATCH and bound nodes
-Handling correlated optional matches; first does not match implies second does not match
 
 Many CREATE clauses
 
