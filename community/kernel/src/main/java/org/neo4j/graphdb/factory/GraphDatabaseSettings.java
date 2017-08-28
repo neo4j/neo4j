@@ -411,7 +411,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     public static final Setting<Boolean> enable_native_schema_index =
-            setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, FALSE );
 
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
