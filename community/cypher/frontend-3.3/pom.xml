@@ -24,7 +24,7 @@
 
   <properties>
     <version-package>cypher.internal.frontend.v3_1</version-package>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <license.header>${project.baseUri}/ASL-2-header.txt</license.header>
   </properties>
