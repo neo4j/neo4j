@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{LogicalPlanState, CompilerContext}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, _}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.ir.v3_3.{RegularPlannerQuery, UnionQuery, _}
 
@@ -36,65 +36,71 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
   override def description: String = "remove optional match when possible"
 
-  override def postConditions = Set.empty
+  override def postConditions: Set[Condition] = Set.empty
 
   override def instance(ignored: CompilerContext): Rewriter = topDown(Rewriter.lift {
     case RegularPlannerQuery(graph, proj@AggregatingQueryProjection(distinctExpressions, aggregations, _), tail)
       if validAggregations(aggregations) =>
+      val projectionDeps: Iterable[Variable] = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
+      rewrite(projectionDeps, graph, proj, tail)
 
-      // The variables that are needed by the return/with clause
-
-      val projectionDeps = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-      val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
-      val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
-
-      val optionalMatches = graph.optionalMatches.flatMapWithTail {
-        (original: QueryGraph, tail: Seq[QueryGraph]) =>
-
-          //The dependencies on an optional match are:
-          val allDeps =
-          // dependencies from optional matches listed later in the query
-            tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
-              // any dependencies from the next horizon
-              dependencies --
-              // But we don't need to solve variables already present by the non-optional part of the QG
-              graph.coveredIds
-
-          val mustInclude = allDeps -- original.argumentIds
-          val mustKeep = original.smallestGraphIncluding(mustInclude)
-
-          if (mustKeep.isEmpty)
-            // We did not find anything in this OPTIONAL MATCH. Since there are no variable deps from this clause,
-          // and it can't change cardinality, it's safe to ignore it
-            None
-          else {
-            val (predicatesForPatterns, remaining) = {
-              val elementsToKeep1 = original.smallestGraphIncluding(mustInclude ++ original.argumentIds)
-              partitionPredicates(original.selections.predicates, elementsToKeep1)
-            }
-
-            val elementsToKeep = {
-              val variablesNeededForPredicates =
-                remaining.flatMap(expression => expression.dependencies.map(IdName.fromVariable))
-              original.smallestGraphIncluding(mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
-            }
-
-            val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
-            val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
-            val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, _))
-
-            val newOptionalGraph = original.
-              withPatternRelationships(patternsToKeep).
-              withPatternNodes(patternNodes).
-              withSelections(Selections.from(remaining) ++ patternPredicates)
-
-            Some(newOptionalGraph)
-          }
-      }
-
-      val matches = graph.withOptionalMatches(optionalMatches)
-      RegularPlannerQuery(matches, horizon = proj, tail = tail)
+    case RegularPlannerQuery(graph, proj@DistinctQueryProjection(distinctExpressions, _), tail) =>
+      val projectionDeps: Iterable[Variable] = distinctExpressions.values.flatMap(_.dependencies)
+      rewrite(projectionDeps, graph, proj, tail)
   })
+
+  private def rewrite(projectionDeps: Iterable[Variable], graph: QueryGraph, proj: QueryProjection, tail: Option[PlannerQuery]): RegularPlannerQuery = {
+    val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
+    val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
+
+    val optionalMatches = graph.optionalMatches.flatMapWithTail {
+      (original: QueryGraph, tail: Seq[QueryGraph]) =>
+
+        //The dependencies on an optional match are:
+        val allDeps =
+        // dependencies from optional matches listed later in the query
+          tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
+            // any dependencies from the next horizon
+            dependencies --
+            // But we don't need to solve variables already present by the non-optional part of the QG
+            graph.coveredIds
+
+        val mustInclude = allDeps -- original.argumentIds
+        val mustKeep = original.smallestGraphIncluding(mustInclude)
+
+        if (mustKeep.isEmpty)
+        // We did not find anything in this OPTIONAL MATCH. Since there are no variable deps from this clause,
+        // and it can't change cardinality, it's safe to ignore it
+          None
+        else {
+          val (predicatesForPatterns, remaining) = {
+            val elementsToKeep1 = original.smallestGraphIncluding(mustInclude ++ original.argumentIds)
+            partitionPredicates(original.selections.predicates, elementsToKeep1)
+          }
+
+          val elementsToKeep = {
+            val variablesNeededForPredicates =
+              remaining.flatMap(expression => expression.dependencies.map(IdName.fromVariable))
+            original.smallestGraphIncluding(mustInclude ++ original.argumentIds ++ variablesNeededForPredicates)
+          }
+
+          val (patternsToKeep, patternsToFilter) = original.patternRelationships.partition(r => elementsToKeep(r.name))
+          val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
+          val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, _))
+
+          val newOptionalGraph = original.
+            withPatternRelationships(patternsToKeep).
+            withPatternNodes(patternNodes).
+            withSelections(Selections.from(remaining) ++ patternPredicates)
+
+          Some(newOptionalGraph)
+        }
+    }
+
+    val matches = graph.withOptionalMatches(optionalMatches)
+    RegularPlannerQuery(matches, horizon = proj, tail = tail)
+
+  }
 
   private object LabelsAndEquality {
     def empty = new LabelsAndEquality(Seq.empty, Seq.empty)
@@ -126,11 +132,11 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
     }
 
     predicates.foreach {
-      case Predicate(deps, HasLabels(Variable(v), labels)) if deps.size == 1 && !kept(deps.head) =>
+      case Predicate(deps, HasLabels(Variable(_), labels)) if deps.size == 1 && !kept(deps.head) =>
         assert(labels.size == 1) // We know there is only a single label here because AST rewriting
         addLabel(deps.head, labels.head)
 
-      case Predicate(deps, Equals(Property(Variable(v), prop), rhs)) if deps.size == 1 && !kept(deps.head) =>
+      case Predicate(deps, Equals(Property(Variable(_), prop), rhs)) if deps.size == 1 && !kept(deps.head) =>
         addProperty(deps.head, prop, rhs)
 
       case Predicate(_, expr) =>
