@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
-case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, items: Seq[String], negated: Boolean,
+case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, longOffsets: Seq[Int], refOffsets: Seq[Int], negated: Boolean,
                                         pipelineInformation: PipelineInformation)
                                        (val id: Id = new Id)
   extends PipeWithSource(lhs) with Pipe {
@@ -46,14 +46,7 @@ case class ConditionalApplyRegisterPipe(lhs: Pipe, rhs: Pipe, items: Seq[String]
     }
 
   private def condition(context: ExecutionContext) = {
-
-    def notNull(name: String): Boolean = pipelineInformation.get(name) match {
-      case Some(s: LongSlot) => context.getLongAt(s.offset) != -1L
-      case Some(s: RefSlot) => context.getRefAt(s.offset) != null
-      case _ => throw new InternalException(s"Uh oh... There was no slot for `$name`")
-    }
-
-    val cond = items.exists(notNull(_))
+    val cond = longOffsets.exists(context.getLongAt(_) != -1L) && refOffsets.exists(context.getRefAt(_) != -1L)
     if (negated) !cond else cond
   }
 

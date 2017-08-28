@@ -251,10 +251,22 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         CartesianProductRegisterPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
 
       case ConditionalApply(_, _, items) =>
-        ConditionalApplyRegisterPipe(lhs, rhs, items.map(_.name), negated = false, pipeline)(id)
+        val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {
+          case Some(s: LongSlot) => true
+          case Some(s: RefSlot) => false
+        })
+        val longOffsets = longIds.map(e => pipeline.getLongOffsetFor(e.name))
+        val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
+        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = false, pipeline)(id)
 
       case AntiConditionalApply(_, _, items) =>
-        ConditionalApplyRegisterPipe(lhs, rhs, items.map(_.name), negated = true, pipeline)(id)
+        val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {
+          case Some(s: LongSlot) => true
+          case Some(s: RefSlot) => false
+        })
+        val longOffsets = longIds.map(e => pipeline.getLongOffsetFor(e.name))
+        val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
+        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = false, pipeline)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }

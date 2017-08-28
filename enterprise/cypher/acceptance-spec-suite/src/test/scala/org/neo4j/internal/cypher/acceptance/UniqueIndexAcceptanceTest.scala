@@ -126,7 +126,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       result shouldNot use("NodeUniqueIndexSeek(Locking)")
     }
 
-    test(s"$constraintCreator: should use locking unique index for merge node queries") {
+     test(s"$constraintCreator: should use locking unique index for merge node queries") {
       //GIVEN
       createLabeledNode(Map("name" -> "Andres"), "Person")
       constraintCreator.createConstraint(graph, "Person", "name")
@@ -134,7 +134,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.SlottedInterpreted, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")

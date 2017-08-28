@@ -228,6 +228,7 @@ object RegisterAllocation {
 
       case MergeCreateRelationship(_, IdName(name), startNode, typ, endNode, props) =>
         incomingPipeline.newLong(name, nullable = false, CTRelationship)
+        incomingPipeline
 
       case EmptyResult(_) =>
         incomingPipeline
