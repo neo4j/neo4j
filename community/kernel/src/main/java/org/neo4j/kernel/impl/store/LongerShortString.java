@@ -24,8 +24,9 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.util.Bits;
-import org.neo4j.string.UTF8;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
 /**
  * Supports encoding alphanumerical and <code>SP . - + , ' : / _</code>
@@ -897,17 +898,17 @@ public enum LongerShortString
      * @param block the value to decode to a short string.
      * @return the decoded short string
      */
-    public static String decode( PropertyBlock block )
+    public static TextValue decode( PropertyBlock block )
     {
         return decode( block.getValueBlocks(), 0, block.getValueBlocks().length );
     }
 
-    public static String decode( long[] blocks, int offset, int length )
+    public static TextValue decode( long[] blocks, int offset, int length )
     {
         long firstLong = blocks[offset];
         if ( (firstLong & 0xFFFFFF0FFFFFFFFFL) == 0 )
         {
-            return "";
+            return Values.EMPTY_STRING;
         }
         // key(24b) + type(4) = 28
         int encoding = (int) ((firstLong & 0x1F0000000L) >>> 28); // 5 bits of encoding
@@ -930,7 +931,7 @@ public enum LongerShortString
         decode( result, blocks, offset, table );
 
         // We know the char array is unshared, so use sharing constructor explicitly
-        return UnsafeUtil.newSharedArrayString( result );
+        return Values.stringValue( UnsafeUtil.newSharedArrayString( result ) );
     }
 
     private static void decode( char[] result, long[] blocks, int offset, LongerShortString table )
@@ -1055,7 +1056,7 @@ public enum LongerShortString
         }
     }
 
-    private static String decodeLatin1( long[] blocks, int offset, int stringLength )
+    private static TextValue decodeLatin1( long[] blocks, int offset, int stringLength )
     {
         char[] result = new char[stringLength];
         int block = offset;
@@ -1071,10 +1072,10 @@ public enum LongerShortString
             }
             result[i] = codePoint;
         }
-        return UnsafeUtil.newSharedArrayString( result );
+        return Values.stringValue( UnsafeUtil.newSharedArrayString( result ) );
     }
 
-    private static String decodeUTF8( long[] blocks, int offset, int stringLength )
+    private static TextValue decodeUTF8( long[] blocks, int offset, int stringLength )
     {
         byte[] result = new byte[stringLength];
         int block = offset;
@@ -1090,7 +1091,7 @@ public enum LongerShortString
             }
             result[i] = codePoint;
         }
-        return UTF8.decode( result );
+        return Values.utf8Value( result );
     }
 
     public static int calculateNumberOfBlocksUsed( long firstBlock )

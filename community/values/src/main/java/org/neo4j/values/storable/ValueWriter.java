@@ -28,6 +28,7 @@ package org.neo4j.values.storable;
  */
 public interface ValueWriter<E extends Exception>
 {
+
     enum ArrayType
     {
         BYTE,
@@ -61,18 +62,14 @@ public interface ValueWriter<E extends Exception>
 
     void writeString( char value ) throws E;
 
+    void writeUTF8( byte[] bytes, int offset, int length ) throws E;
+
     default void writeString( char[] value ) throws E
     {
         writeString( value, 0, value.length );
     }
 
     void writeString( char[] value, int offset, int length ) throws E;
-
-    void beginUTF8( int size ) throws E;
-
-    void copyUTF8( long fromAddress, int length ) throws E;
-
-    void endUTF8() throws E;
 
     void beginArray( int size, ArrayType arrayType ) throws E;
 
@@ -133,22 +130,12 @@ public interface ValueWriter<E extends Exception>
         }
 
         @Override
+        public void writeUTF8( byte[] bytes, int offset, int length ) throws E
+        { //no-op
+        }
+
+        @Override
         public void writeString( char[] value, int offset, int length ) throws E
-        {   // no-op
-        }
-
-        @Override
-        public void beginUTF8( int size ) throws E
-        {   // no-op
-        }
-
-        @Override
-        public void copyUTF8( long fromAddress, int length ) throws E
-        {   // no-op
-        }
-
-        @Override
-        public void endUTF8() throws E
         {   // no-op
         }
 

@@ -25,13 +25,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.string.UTF8;
+
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginArray;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.BeginUTF8;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.CopyUTF8;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndArray;
-import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.EndUTF8;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteByteArray;
 import static org.neo4j.values.storable.BufferValueWriter.SpecialKind.WriteCharArray;
 
@@ -41,9 +40,6 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     {
         WriteCharArray,
         WriteByteArray,
-        BeginUTF8,
-        CopyUTF8,
-        EndUTF8,
         BeginArray,
         EndArray,
     }
@@ -159,27 +155,15 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     }
 
     @Override
+    public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
+    {
+        buffer.add( UTF8.decode( bytes, offset, length ) );
+    }
+
+    @Override
     public void writeString( char[] value, int offset, int length )
     {
         buffer.add( Specials.charArray( value, offset, length ) );
-    }
-
-    @Override
-    public void beginUTF8( int size )
-    {
-        buffer.add( Specials.beginUTF8( size ) );
-    }
-
-    @Override
-    public void copyUTF8( long fromAddress, int length )
-    {
-        buffer.add( Specials.copyUTF8( fromAddress, length ) );
-    }
-
-    @Override
-    public void endUTF8()
-    {
-        buffer.add( Specials.endUTF8() );
     }
 
     @Override
@@ -210,22 +194,7 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
 
         public static Special byteArray( byte[] value )
         {
-            return new Special( WriteByteArray,  Arrays.hashCode( value ) );
-        }
-
-        public static Special beginUTF8( int size )
-        {
-            return new Special( BeginUTF8, size );
-        }
-
-        public static Special copyUTF8( long fromAddress, int length )
-        {
-            return new Special( CopyUTF8, format( "%d %d", fromAddress, length ) );
-        }
-
-        public static Special endUTF8()
-        {
-            return new Special( EndUTF8, 0 );
+            return new Special( WriteByteArray, Arrays.hashCode( value ) );
         }
 
         public static Special beginArray( int size, ArrayType arrayType )

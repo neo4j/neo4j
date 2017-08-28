@@ -39,7 +39,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.NodeUpdates.PropertyValueType.NoValue;
-import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
 
 /**
  * Subclasses of this represent events related to property changes due to node addition, deletion or update.
@@ -48,6 +47,7 @@ import static org.neo4j.kernel.impl.store.ShortArray.EMPTY_LONG_ARRAY;
 public class NodeUpdates implements PropertyLoader.PropertyLoadSink
 {
     private final long nodeId;
+    private static final long[] EMPTY_LONG_ARRAY = new long[0];
 
     // ASSUMPTION: these long arrays are actually sorted sets
     private final long[] labelsBefore;

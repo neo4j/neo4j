@@ -31,6 +31,16 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ByteValue;
+import org.neo4j.values.storable.CharValue;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.FloatValue;
+import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -135,81 +145,81 @@ class StorePropertyPayloadCursor
         return PropertyBlock.keyIndexId( currentHeader() );
     }
 
-    boolean booleanValue()
+    private BooleanValue booleanValue()
     {
         assertOfType( BOOL );
-        return PropertyBlock.fetchByte( currentHeader() ) == 1;
+        return Values.booleanValue( PropertyBlock.fetchByte( currentHeader() ) == 1 );
     }
 
-    byte byteValue()
+    private ByteValue byteValue()
     {
         assertOfType( BYTE );
-        return PropertyBlock.fetchByte( currentHeader() );
+        return Values.byteValue( PropertyBlock.fetchByte( currentHeader() ) );
     }
 
-    short shortValue()
+    private ShortValue shortValue()
     {
         assertOfType( SHORT );
-        return PropertyBlock.fetchShort( currentHeader() );
+        return Values.shortValue( PropertyBlock.fetchShort( currentHeader() ) );
     }
 
-    char charValue()
+    private CharValue charValue()
     {
         assertOfType( CHAR );
-        return (char) PropertyBlock.fetchShort( currentHeader() );
+        return Values.charValue( (char) PropertyBlock.fetchShort( currentHeader() ) );
     }
 
-    int intValue()
+    private IntValue intValue()
     {
         assertOfType( INT );
-        return PropertyBlock.fetchInt( currentHeader() );
+        return Values.intValue( PropertyBlock.fetchInt( currentHeader() ) );
     }
 
-    float floatValue()
+    private FloatValue floatValue()
     {
         assertOfType( FLOAT );
-        return Float.intBitsToFloat( PropertyBlock.fetchInt( currentHeader() ) );
+        return Values.floatValue( Float.intBitsToFloat( PropertyBlock.fetchInt( currentHeader() ) ) );
     }
 
-    long longValue()
+    private LongValue longValue()
     {
         assertOfType( LONG );
         if ( PropertyBlock.valueIsInlined( currentHeader() ) )
         {
-            return PropertyBlock.fetchLong( currentHeader() ) >>> 1;
+            return Values.longValue( PropertyBlock.fetchLong( currentHeader() ) >>> 1 );
         }
 
-        return data[position + 1];
+        return Values.longValue( data[position + 1] );
     }
 
-    double doubleValue()
+    private DoubleValue doubleValue()
     {
         assertOfType( DOUBLE );
-        return Double.longBitsToDouble( data[position + 1] );
+        return Values.doubleValue( Double.longBitsToDouble( data[position + 1] ) );
     }
 
-    String shortStringValue()
+    private TextValue shortStringValue()
     {
         assertOfType( SHORT_STRING );
         return LongerShortString.decode( data, position, currentBlocksUsed() );
     }
 
-    String stringValue()
+    TextValue stringValue()
     {
         assertOfType( STRING );
         readFromStore( stringRecordCursor );
         buffer.flip();
-        return UTF8.decode( buffer.array(), 0, buffer.limit() );
+        return Values.utf8Value( buffer.array(), 0, buffer.limit() );
     }
 
-    Object shortArrayValue()
+    private Value shortArrayValue()
     {
         assertOfType( SHORT_ARRAY );
         Bits bits = valueAsBits();
         return ShortArray.decode( bits );
     }
 
-    Object arrayValue()
+    Value arrayValue()
     {
         assertOfType( ARRAY );
         readFromStore( arrayRecordCursor );
@@ -222,29 +232,29 @@ class StorePropertyPayloadCursor
         switch ( type() )
         {
         case BOOL:
-            return Values.booleanValue( booleanValue() );
+            return booleanValue();
         case BYTE:
-            return Values.byteValue( byteValue() );
+            return byteValue();
         case SHORT:
-            return Values.shortValue( shortValue() );
+            return shortValue();
         case CHAR:
-            return Values.charValue( charValue() );
+            return charValue();
         case INT:
-            return Values.intValue( intValue() );
+            return intValue();
         case LONG:
-            return Values.longValue( longValue() );
+            return longValue();
         case FLOAT:
-            return Values.floatValue( floatValue() );
+            return floatValue();
         case DOUBLE:
-            return Values.doubleValue( doubleValue() );
+            return doubleValue();
         case SHORT_STRING:
-            return Values.stringValue( shortStringValue() );
+            return shortStringValue();
         case STRING:
-            return Values.stringValue( stringValue() );
+            return stringValue();
         case SHORT_ARRAY:
-            return Values.of( shortArrayValue() );
+            return shortArrayValue();
         case ARRAY:
-            return Values.of( arrayValue() );
+            return arrayValue();
         default:
             throw new IllegalStateException( "No such type:" + type() );
         }
@@ -308,7 +318,7 @@ class StorePropertyPayloadCursor
         return ByteBuffer.allocate( newCapacity ).order( ByteOrder.LITTLE_ENDIAN );
     }
 
-    private static Object readArrayFromBuffer( ByteBuffer buffer )
+    private static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
     {
         if ( buffer.limit() <= 0 )
         {
@@ -330,7 +340,7 @@ class StorePropertyPayloadCursor
                     result[i] = UTF8.decode( buffer.array(), buffer.position(), byteLength );
                     buffer.position( buffer.position() + byteLength );
                 }
-                return result;
+                return Values.stringArray( result );
             }
             else
             {
@@ -341,20 +351,18 @@ class StorePropertyPayloadCursor
                 {
                     return type.createEmptyArray();
                 }
-                Object result;
                 if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
                 {   // Optimization for byte arrays (probably large ones)
                     byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                     buffer.get( byteArray );
-                    result = byteArray;
+                    return Values.byteArray( byteArray );
                 }
                 else
                 {   // Fallback to the generic approach, which is a slower
                     Bits bits = Bits.bitsFromBytes( buffer.array(), buffer.position() );
                     int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
-                    result = type.createArray( length, bits, requiredBits );
+                    return type.createArray( length, bits, requiredBits );
                 }
-                return result;
             }
         }
         finally

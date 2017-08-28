@@ -47,6 +47,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -57,7 +58,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.param;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Param.paramArg;
 import static org.neo4j.kernel.impl.api.store.StorePropertyPayloadCursorTest.Params.params;
-import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 
 @RunWith( Enclosed.class )
 public class StorePropertyPayloadCursorTest
@@ -176,6 +176,7 @@ public class StorePropertyPayloadCursorTest
             // When
             assertTrue( cursor.next() );
             assertNotNull( cursor.stringValue() );
+            assertNotEquals( Values.NO_VALUE, cursor.stringValue() );
 
             assertTrue( cursor.next() );
             assertNotNull( cursor.arrayValue() );

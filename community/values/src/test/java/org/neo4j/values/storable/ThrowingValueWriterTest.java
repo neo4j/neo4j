@@ -110,25 +110,13 @@ public class ThrowingValueWriterTest
         }
 
         @Override
+        public void writeUTF8( byte[] bytes, int offset, int length ) throws TestException
+        {
+            throw new TestException();
+        }
+
+        @Override
         public void writeString( char[] value, int offset, int length ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void beginUTF8( int size ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void copyUTF8( long fromAddress, int length ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
-        public void endUTF8() throws TestException
         {
             throw new TestException();
         }

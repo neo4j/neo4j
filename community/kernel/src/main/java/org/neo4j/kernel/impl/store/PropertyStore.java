@@ -348,13 +348,13 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return decodeString( source.other() );
     }
 
-    public Object getArrayFor( PropertyBlock propertyBlock )
+    public Value getArrayFor( PropertyBlock propertyBlock )
     {
         ensureHeavy( propertyBlock );
         return getArrayFor( propertyBlock.getValueRecords() );
     }
 
-    public Object getArrayFor( Iterable<DynamicRecord> records )
+    public Value getArrayFor( Iterable<DynamicRecord> records )
     {
         return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }

@@ -51,6 +51,14 @@ public final class Values
     public static final TextValue EMPTY_STRING = Values.stringValue( "" );
     public static final DoubleValue E = Values.doubleValue( Math.E );
     public static final DoubleValue PI = Values.doubleValue( Math.PI );
+    public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray( new short[0] );
+    public static final ArrayValue EMPTY_BOOLEAN_ARRAY = Values.booleanArray( new boolean[0] );
+    public static final ArrayValue EMPTY_BYTE_ARRAY = Values.byteArray( new byte[0] );
+    public static final ArrayValue EMPTY_CHAR_ARRAY = Values.charArray( new char[0] );
+    public static final ArrayValue EMPTY_INT_ARRAY = Values.intArray( new int[0] );
+    public static final ArrayValue EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
+    public static final ArrayValue EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
+    public static final ArrayValue EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
 
     private Values()
     {
@@ -98,6 +106,16 @@ public final class Values
     // DIRECT FACTORY METHODS
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
+
+    public static TextValue utf8Value( byte[] bytes )
+    {
+        return utf8Value( bytes, 0, bytes.length );
+    }
+
+    public static TextValue utf8Value( byte[] bytes, int offset, int length )
+    {
+        return new StringValue.UTF8StringValue( bytes, offset, length );
+    }
 
     public static TextValue stringValue( String value )
     {
@@ -190,7 +208,7 @@ public final class Values
         return new FloatValue( value );
     }
 
-    public static TextArray stringArray( String...value )
+    public static TextArray stringArray( String... value )
     {
         return new StringArray.Direct( value );
     }

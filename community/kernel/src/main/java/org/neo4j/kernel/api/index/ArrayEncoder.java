@@ -123,6 +123,12 @@ public final class ArrayEncoder
         }
 
         @Override
+        public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
+        {
+            writeString( UTF8.decode( bytes, offset, length ) );
+        }
+
+        @Override
         public void writeString( char value )
         {
             builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
@@ -134,24 +140,6 @@ public final class ArrayEncoder
         {
             builder.append( value, offset, length );
             builder.append( '|' );
-        }
-
-        @Override
-        public void beginUTF8( int size )
-        {
-            throw new UnsupportedOperationException( "direct UTF8 encoding is not supported yet!" );
-        }
-
-        @Override
-        public void copyUTF8( long fromAddress, int length )
-        {
-            throw new UnsupportedOperationException( "direct UTF8 encoding is not supported yet!" );
-        }
-
-        @Override
-        public void endUTF8()
-        {
-            throw new UnsupportedOperationException( "direct UTF8 encoding is not supported yet!" );
         }
 
         @Override

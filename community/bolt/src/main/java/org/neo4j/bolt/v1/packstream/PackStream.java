@@ -334,6 +334,19 @@ public class PackStream
             }
         }
 
+        public void packUTF8( byte[] bytes, int offset, int length ) throws IOException
+        {
+            if ( bytes == null )
+            {
+                packNull();
+            }
+            else
+            {
+                packStringHeader( length );
+                out.writeBytes( bytes, offset, length );
+            }
+        }
+
         protected void packBytesHeader( int size ) throws IOException
         {
             if ( size <= Byte.MAX_VALUE )
@@ -786,7 +799,7 @@ public class PackStream
         public Unexpected( PackType expectedType, byte unexpectedMarkerByte )
         {
             super( "Wrong type received. Expected " + expectedType + ", received: " + type( unexpectedMarkerByte ) +
-                    " " + "(" + toHexString( unexpectedMarkerByte ) + ")." );
+                   " " + "(" + toHexString( unexpectedMarkerByte ) + ")." );
         }
 
         private static String toHexString( byte unexpectedMarkerByte )

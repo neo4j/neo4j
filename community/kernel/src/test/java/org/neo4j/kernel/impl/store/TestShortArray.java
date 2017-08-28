@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.Test;
 
-import java.lang.reflect.Array;
-
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.values.AnyValues;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -36,28 +35,28 @@ public class TestShortArray
     @Test
     public void canEncodeSomeSampleArraysWithDefaultPayloadSize() throws Exception
     {
-        assertCanEncodeAndDecodeToSameValue( new boolean[] { true, false, true,
-                true, true, true, true, true, true, true, false, true } );
-        assertCanEncodeAndDecodeToSameValue( new byte[] { -1, -10, 43, 127, 0, 4, 2, 3, 56, 47, 67, 43 } );
-        assertCanEncodeAndDecodeToSameValue( new short[] { 1,2,3,45,5,6,7 } );
-        assertCanEncodeAndDecodeToSameValue( new int[] { 1,2,3,4,5,6,7 } );
-        assertCanEncodeAndDecodeToSameValue( new long[] { 1,2,3,4,5,6,7 } );
-        assertCanEncodeAndDecodeToSameValue( new float[] { 0.34f, 0.21f } );
-        assertCanEncodeAndDecodeToSameValue( new long[] { 1 << 63, 1 << 63 } );
-        assertCanEncodeAndDecodeToSameValue( new long[] { 1 << 63, 1 << 63,
-                1 << 63 } );
-        assertCanEncodeAndDecodeToSameValue( new byte[] { 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0 } );
-        assertCanEncodeAndDecodeToSameValue( new long[] { 0, 0, 0, 0, 0, 0, 0,
+        assertCanEncodeAndDecodeToSameValue( new boolean[]{true, false, true,
+                true, true, true, true, true, true, true, false, true} );
+        assertCanEncodeAndDecodeToSameValue( new byte[]{-1, -10, 43, 127, 0, 4, 2, 3, 56, 47, 67, 43} );
+        assertCanEncodeAndDecodeToSameValue( new short[]{1, 2, 3, 45, 5, 6, 7} );
+        assertCanEncodeAndDecodeToSameValue( new int[]{1, 2, 3, 4, 5, 6, 7} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{1, 2, 3, 4, 5, 6, 7} );
+        assertCanEncodeAndDecodeToSameValue( new float[]{0.34f, 0.21f} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{1 << 63, 1 << 63} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{1 << 63, 1 << 63,
+                1 << 63} );
+        assertCanEncodeAndDecodeToSameValue( new byte[]{0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0} );
+        assertCanEncodeAndDecodeToSameValue( new long[]{0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0 } );
+                0, 0, 0} );
     }
 
     @Test
     public void testCannotEncodeMarginal() throws Exception
     {
-        assertCanNotEncode( new long[] { 1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
-                1, 1, 1, 1, 1 } );
+        assertCanNotEncode( new long[]{1L << 15, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1} );
     }
 
     @Test
@@ -98,21 +97,6 @@ public class TestShortArray
         PropertyBlock target = new PropertyBlock();
         boolean encoded = ShortArray.encode( 0, value, target, payloadSize );
         assertTrue( encoded );
-        assertArraysEquals( value, ShortArray.decode( target ) );
-    }
-
-    private void assertArraysEquals( Object value1, Object value2 )
-    {
-        assertEquals( value1.getClass().getComponentType(), value2.getClass().getComponentType() );
-        int length1 = Array.getLength( value1 );
-        int length2 = Array.getLength( value2 );
-        assertEquals( length1, length2 );
-
-        for ( int i = 0; i < length1; i++ )
-        {
-            Object item1 = Array.get( value1, i );
-            Object item2 = Array.get( value2, i );
-            assertEquals( item1, item2 );
-        }
+        assertEquals( AnyValues.of( value ), ShortArray.decode( target ) );
     }
 }
