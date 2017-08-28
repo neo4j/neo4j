@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -71,7 +72,9 @@ public class PageCacheMetricsIT
                 .setConfig( MetricsSettings.neoPageCacheEnabled, Settings.TRUE  )
                 .setConfig( MetricsSettings.csvEnabled, Settings.TRUE )
                 .setConfig( MetricsSettings.csvInterval, "100ms" )
-                .setConfig( MetricsSettings.csvPath, metricsDirectory.getAbsolutePath() ).newGraphDatabase();
+                .setConfig( MetricsSettings.csvPath, metricsDirectory.getAbsolutePath() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
     }
 
     @After

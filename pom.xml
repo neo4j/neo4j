@@ -43,6 +43,7 @@
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
+    <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
   </properties>
 
   <modules>

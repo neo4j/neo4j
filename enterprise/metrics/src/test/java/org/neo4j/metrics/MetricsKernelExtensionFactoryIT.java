@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -84,7 +85,8 @@ public class MetricsKernelExtensionFactoryIT
                 cypher_min_replan_interval.name(), "0m",
                 csvPath.name(), outputPath.getAbsolutePath(),
                 check_point_interval_time.name(), "100ms",
-                graphiteInterval.name(), "1s"
+                graphiteInterval.name(), "1s",
+                OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE
         );
         db = clusterRule.withSharedConfig( config ).withCluster( clusterOfSize( 1 ) ).startCluster().getMaster();
         addNodes( 1 ); // to make sure creation of label and property key tokens do not mess up with assertions in tests
@@ -233,6 +235,7 @@ public class MetricsKernelExtensionFactoryIT
                 builder.setConfig( MetricsSettings.neoEnabled, Settings.TRUE ).setConfig( csvEnabled, Settings.TRUE )
                         .setConfig( csvPath, outputPath.getAbsolutePath() )
                         .setConfig( GraphDatabaseFacadeFactory.Configuration.tracer, "null" ) // key point!
+                        .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                         .newGraphDatabase();
         try ( Transaction tx = nullTracerDatabase.beginTx() )
         {
