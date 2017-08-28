@@ -45,10 +45,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
+                      reportedGrouping: Map[String, Expression],
                       reportedAggregation: Map[String, Expression])
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.withHorizon(
-      AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = reportedAggregation)
+      AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
     Aggregation(left, grouping, aggregation)(solved)
   }

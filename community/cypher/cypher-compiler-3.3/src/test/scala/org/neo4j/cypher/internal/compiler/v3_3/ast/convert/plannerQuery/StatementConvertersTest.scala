@@ -946,7 +946,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(
       AggregatingQueryProjection(
-        groupingKeys = Map.empty,
+        groupingExpressions = Map.empty,
         aggregationExpressions = Map("rows" -> functionInvocation),
         shuffle = QueryShuffle.empty
       )

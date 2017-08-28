@@ -31,13 +31,6 @@ import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 import scala.collection.immutable
 import scala.collection.mutable.{Map => MutableMap}
 
-/*
-grouping values are all longs
-RETURN n, count(*)
- */
-
-import scala.collection.mutable.{Map => MutableMap}
-
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
@@ -48,6 +41,7 @@ case class EagerAggregationRegisterPipe(source: Pipe,
   extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
+  groupingExpressions.values.foreach(_.registerOwningPipe(this))
 
   private val (aggregationOffsets: IndexedSeq[Int], aggregationFunctions: IndexedSeq[AggregationExpression]) = {
     val (a,b) = aggregations.unzip

@@ -113,28 +113,28 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
   override def dependingExpressions = super.dependingExpressions ++ projections.values
 }
 
-final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
+final case class AggregatingQueryProjection(groupingExpressions: Map[String, Expression] = Map.empty,
                                             aggregationExpressions: Map[String, Expression] = Map.empty,
                                             shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
 
   assert(
-    !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),
+    !(groupingExpressions.isEmpty && aggregationExpressions.isEmpty),
     "Everything can't be empty"
   )
 
-  override def projections: Map[String, Expression] = groupingKeys
+  override def projections: Map[String, Expression] = groupingExpressions
 
-  override def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
+  override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
-  override def dependingExpressions = super.dependingExpressions ++ groupingKeys.values ++ aggregationExpressions.values
+  override def dependingExpressions = super.dependingExpressions ++ groupingExpressions.values ++ aggregationExpressions.values
 
   override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
-    copy(groupingKeys = groupingKeys)
+    copy(groupingExpressions = groupingKeys)
 
   override def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingExpressions.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
 }
 
 final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,

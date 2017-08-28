@@ -36,6 +36,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
                                (val id: Id = new Id) extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
+  keyExpressions.values.foreach(_.registerOwningPipe(this))
 
   private val expressionOrder: immutable.Seq[(String, Expression)] = keyExpressions.toIndexedSeq
 

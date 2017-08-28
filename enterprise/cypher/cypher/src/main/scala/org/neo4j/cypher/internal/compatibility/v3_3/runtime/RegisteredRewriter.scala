@@ -212,6 +212,9 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
       case _: ScopeExpression | _: NestedPlanExpression =>
         throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")
+
+      case _: PatternExpression =>
+        throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

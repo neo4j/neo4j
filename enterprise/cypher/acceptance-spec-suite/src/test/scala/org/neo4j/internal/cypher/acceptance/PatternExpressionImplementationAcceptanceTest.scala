@@ -299,7 +299,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     result should use("Expand(All)")
   }
 
-  test("should use varlength expand into when variables are bound") {
+  test("should use varlength expandInto when variables are bound") {
     val a = createLabeledNode("Start")
     val b = createLabeledNode("End")
     relate(a, b)
