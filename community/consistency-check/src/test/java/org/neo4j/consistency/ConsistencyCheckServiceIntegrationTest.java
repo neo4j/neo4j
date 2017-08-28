@@ -161,6 +161,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = Config.defaults( settings() );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
 
         String propertyKey = "itemId";
