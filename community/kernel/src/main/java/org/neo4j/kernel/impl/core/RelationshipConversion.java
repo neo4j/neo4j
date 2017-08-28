@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.core;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
@@ -82,6 +83,10 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
         if ( !closed )
         {
             statement.close();
+            if ( iterator instanceof Resource )
+            {
+                ((Resource) iterator).close();
+            }
             closed = true;
         }
     }

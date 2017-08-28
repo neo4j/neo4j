@@ -113,8 +113,8 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         {
             cursor.close();
             cursor = null;
-            releaseLock();
         }
+        releaseLock();
     }
 
     private void releaseLock()
