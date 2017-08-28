@@ -125,7 +125,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public static final boolean takePropertyReadLocks = FeatureToggles.flag(
             RecordStorageEngine.class, "propertyReadLocks", false );
     public static boolean takeRelationshipChainReadLocks = FeatureToggles.flag(
-            RecordStorageEngine.class, "takeRelationshipChainReadLocks", true );
+            RecordStorageEngine.class, "takeRelationshipChainReadLocks", false );
 
     private final StoreReadLayer storeLayer;
     private final IndexingService indexingService;
