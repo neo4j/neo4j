@@ -22,7 +22,6 @@ package org.neo4j.internal.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,9 +32,11 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
 public class PropertyCursorTest
@@ -129,7 +130,7 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessSingleProperty() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         assertAccessSingleProperty( byteProp, Values.of( (byte)13 ) );
         assertAccessSingleProperty( shortProp, Values.of( (short)13 ) );
@@ -148,7 +149,7 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessAllNodeProperties() throws Exception
     {
-        org.junit.Assume.assumeTrue( ByteOrder.LITTLE_ENDIAN.equals( ByteOrder.nativeOrder() ) );
+        assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
