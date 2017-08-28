@@ -126,6 +126,15 @@ trait CypherComparisonSupport extends CypherTestSupport {
                                                     query: String,
                                                     checkPlans: Boolean,
                                                     params: (String, Any)*): InternalExecutionResult = {
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, checkPlans, () => {}, params: _*)
+  }
+
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    ignoreScenarios: TestConfiguration,
+                                                    query: String,
+                                                    checkPlans: Boolean,
+                                                    executeBefore: () => Unit,
+                                                    params: (String, Any)*): InternalExecutionResult = {
     assertHasNoOverlap(expectedSuccessFrom, ignoreScenarios)
     val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
 
@@ -134,7 +143,12 @@ trait CypherComparisonSupport extends CypherTestSupport {
     val positiveResults = (runAgainstScenarios.scenarios - firstScenario).flatMap {
       thisScenario =>
         thisScenario.prepare()
-        val tryResult = graph.rollback(Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)))
+        val tryResult: Try[InternalExecutionResult] = graph.rollback(
+          {
+            executeBefore()
+            Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
+          }
+        )
 
         val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
@@ -156,6 +170,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
 
     firstScenario.prepare()
+    executeBefore()
     val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
     firstScenario.checkStateForSuccess(query)
     firstScenario.checkResultForSuccess(query, lastResult)

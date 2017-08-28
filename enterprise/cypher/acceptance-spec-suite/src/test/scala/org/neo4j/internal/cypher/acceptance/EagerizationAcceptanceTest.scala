@@ -221,8 +221,8 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
 
     val result = updateWithAndExpectPlansToBeSimilar(
-      Configs.CommunityInterpreted - Configs.Compiled  - Configs.AllRulePlanners - Configs.Cost3_1 - Configs.Version2_3,
-      Configs.Cost3_1,
+      Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3 - Configs.Cost3_1 - Configs.Version3_2,
+      Configs.Cost3_1 + Configs.Version3_2,
       query,
       checkPlans = false)
     result.size should equal(4)
@@ -751,24 +751,23 @@ class EagerizationAcceptanceTest
     createNode()
     createNode()
 
-    graph.inTx {
+    val executeBefore: () => Unit = () => {
       createNode()
       createNode()
       createNode()
-
-      val query = "MATCH () CREATE () RETURN count(*)"
-
-      val expectedSuccessFrom = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - Configs.Version3_2
-      val ignoreScenarios = Configs.AbsolutelyAll - expectedSuccessFrom
-      val result = updateWithAndExpectPlansToBeSimilar(
-        expectedSuccessFrom,
-        ignoreScenarios,
-        query,
-        checkPlans = false)
-      result.columnAs[Long]("count(*)").next shouldBe 6
-      assertStats(result, nodesCreated = 6)
-      assertNumberOfEagerness(query, 0)
     }
+
+    val query = "MATCH () CREATE () RETURN count(*)"
+
+    val result = updateWithAndExpectPlansToBeSimilar(
+      Configs.CommunityInterpreted - Configs.Cost2_3,
+      Configs.Empty,
+      query,
+      checkPlans = false,
+      executeBefore)
+    result.columnAs[Long]("count(*)").next shouldBe 6
+    assertStats(result, nodesCreated = 6)
+    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness for leaf create match") {
