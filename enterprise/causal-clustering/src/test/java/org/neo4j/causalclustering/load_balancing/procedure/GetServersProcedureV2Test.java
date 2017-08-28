@@ -35,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 
 public class GetServersProcedureV2Test
@@ -54,7 +55,7 @@ public class GetServersProcedureV2Test
 
         assertThat( signature.outputSignature(), containsInAnyOrder(
                 FieldSignature.outputField( "ttl", NTInteger ),
-                FieldSignature.outputField( "servers", NTMap ) ) );
+                FieldSignature.outputField( "servers", NTList( NTMap ) ) ) );
     }
 
     @Test
@@ -67,7 +68,7 @@ public class GetServersProcedureV2Test
         Map<String,String> clientContext = stringMap( "key", "value", "key2", "value2" );
 
         // when
-        getServers.apply( null, new Object[] { clientContext } );
+        getServers.apply( null, new Object[]{clientContext} );
 
         // then
         verify( plugin ).run( clientContext );

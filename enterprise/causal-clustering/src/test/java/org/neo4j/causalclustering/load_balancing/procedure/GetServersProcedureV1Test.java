@@ -68,6 +68,7 @@ import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -83,14 +84,14 @@ public class GetServersProcedureV1Test
     @Parameterized.Parameter( 2 )
     public boolean expectFollowersAsReadEndPoints;
 
-    @Parameterized.Parameters( name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> params()
     {
         return Arrays.asList(
                 new Object[]{"with followers as read end points", Config.defaults().augment(
-                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ) ), true },
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ) ), true},
                 new Object[]{"no followers as read end points", Config.defaults().augment(
-                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ) ), false }
+                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ) ), false}
         );
     }
 
@@ -133,7 +134,7 @@ public class GetServersProcedureV1Test
         // then
         assertThat( signature.outputSignature(), containsInAnyOrder(
                 FieldSignature.outputField( "ttl", NTInteger ),
-                FieldSignature.outputField( "servers", NTMap ) ) );
+                FieldSignature.outputField( "servers", NTList( NTMap ) ) ) );
     }
 
     @Test
@@ -225,7 +226,7 @@ public class GetServersProcedureV1Test
 
         // then
         ClusterView.Builder builder = new ClusterView.Builder();
-        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress()  );
+        builder.writeAddress( adressesForCore( 0 ).connectors().boltAddress() );
         builder.readAddress( adressesForCore( 0 ).connectors().boltAddress() );
         builder.routeAddress( adressesForCore( 0 ).connectors().boltAddress() );
 
