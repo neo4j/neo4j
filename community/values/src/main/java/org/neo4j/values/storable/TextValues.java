@@ -49,13 +49,17 @@ public final class TextValues
     public static int compareTextArrays( TextArray a, TextArray b )
     {
         int i = 0;
-        int length = a.length();
-        int x = length - b.length();
+        int x = 0;
+        int length = Math.min( a.length(), b.length() );
 
         while ( x == 0 && i < length )
         {
             x = a.stringValue( i ).compareTo( b.stringValue( i ) );
             i++;
+        }
+        if ( x == 0 )
+        {
+            x = a.length() - b.length();
         }
         return x;
     }

@@ -38,6 +38,23 @@ public class ValueComparisonTest
     private Comparator<Value> comparator = Values.COMPARATOR;
 
     private Object[] objs = new Object[]{
+            // ARRAYS
+            new String[]{},
+            new String[]{"a"},
+            new String[]{"a", "aa"},
+            new char[]{'a', 'b'},
+            new String[]{"aa"},
+            new boolean[]{},
+            new boolean[]{false},
+            new boolean[]{false, true},
+            new boolean[]{true},
+            new int[]{},
+            new double[]{-1.0},
+            new long[]{-1, 44},
+            new float[]{2},
+            new short[]{2, 3},
+            new byte[]{3, -99, -99},
+
             // STRING
             "",
             Character.MIN_VALUE,

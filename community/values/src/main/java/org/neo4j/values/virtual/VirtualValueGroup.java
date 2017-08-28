@@ -25,13 +25,11 @@ package org.neo4j.values.virtual;
  */
 public enum VirtualValueGroup
 {
+    MAP,
     NODE,
     EDGE,
-    PATH,
-    LABEL,
-    LABEL_SET,
-    POINT,
     LIST,
-    MAP,
+    PATH,
+    POINT,
     NO_VALUE,
 }
