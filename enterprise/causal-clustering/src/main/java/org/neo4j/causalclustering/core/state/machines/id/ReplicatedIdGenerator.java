@@ -140,6 +140,11 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public synchronized IdRange nextIdBatch( int size )
     {
+        IdRange idBatch = getReusableIdBatch( size );
+        if ( idBatch.totalSize() > 0 )
+        {
+            return idBatch;
+        }
         IdRange range = idQueue.nextIdBatch( size );
         if ( range.totalSize() == 0 )
         {
@@ -195,6 +200,19 @@ class ReplicatedIdGenerator implements IdGenerator
         try
         {
             return idContainer.getReusableId();
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
+    }
+
+    private IdRange getReusableIdBatch( int maxSize )
+    {
+        idContainerLock.lock();
+        try
+        {
+            return idContainer.getReusableIdBatch( maxSize );
         }
         finally
         {

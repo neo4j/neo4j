@@ -232,6 +232,24 @@ public class IdContainer
         return freeIdKeeper.getId();
     }
 
+    public IdRange getReusableIdBatch( int maxSize )
+    {
+        long[] tmpIdArr = new long[maxSize];
+        int count = 0;
+        while ( count < maxSize )
+        {
+            long id = freeIdKeeper.getId();
+            if ( id == FreeIdKeeper.NO_RESULT )
+            {
+                break;
+            }
+            tmpIdArr[count++] = id;
+        }
+        long[] defragIdArr = new long[count];
+        System.arraycopy( tmpIdArr, 0, defragIdArr, 0, count );
+        return new IdRange( defragIdArr, 0, 0 );
+    }
+
     public void freeId( long id )
     {
         freeIdKeeper.freeId( id );
