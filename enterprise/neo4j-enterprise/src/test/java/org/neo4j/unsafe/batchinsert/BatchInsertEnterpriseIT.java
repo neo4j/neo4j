@@ -56,7 +56,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * that exist in enterprise edition.
  */
 @RunWith( Parameterized.class )
-public class BatchInsertEnterpriseTest
+public class BatchInsertEnterpriseIT
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();

@@ -19,15 +19,15 @@
  */
 package org.neo4j.consistency;
 
-import org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest;
+import org.neo4j.consistency.checking.full.FullCheckIntegrationTest;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimitWithSmallRecords;
 
-public class HighLimitExecutionOrderIntegrationTest extends ExecutionOrderIntegrationTest
+public class HighLimitFullCheckIT extends FullCheckIntegrationTest
 {
-
     @Override
     protected String getRecordFormatName()
     {
         return HighLimitWithSmallRecords.NAME;
     }
+
 }
