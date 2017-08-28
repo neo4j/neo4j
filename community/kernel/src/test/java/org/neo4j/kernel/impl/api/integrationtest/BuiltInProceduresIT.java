@@ -165,7 +165,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Create a RelationshipType"
                 } ),
                 equalTo( new Object[]{"db.nodeManualIndexSearch",
-                        "db.nodeManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (node :: NODE?)",
+                        "db.nodeManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
                         "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`"
                 } ),
                 equalTo( new Object[]{"db.nodeManualIndexSeek",
@@ -175,9 +175,58 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 } ),
                 equalTo( new Object[]{"db.relationshipManualIndexSearch",
                         "db.relationshipManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
-                        "RELATIONSHIP?)",
+                        "RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`"
                 } ),
+                equalTo( new Object[]{ "db.nodeAutoIndexSearch",
+                        "db.nodeAutoIndexSearch(query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
+                        "Search nodes from automatic index. Replaces `START n=node:node_auto_index('key:foo*')`"} ),
+                equalTo( new Object[]{ "db.nodeAutoIndexSeek",
+                        "db.nodeAutoIndexSeek(key :: STRING?, value :: ANY?) :: (node :: NODE?)",
+                        "Get node from automatic index. Replaces `START n=node:node_auto_index(key = 'A')`"} ),
+                equalTo( new Object[]{ "db.relationshipAutoIndexSearch",
+                        "db.relationshipAutoIndexSearch(query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship from automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`"} ),
+                equalTo( new Object[]{ "db.relationshipAutoIndexSeek",
+                        "db.relationshipAutoIndexSeek(key :: STRING?, value :: ANY?) :: " +
+                        "(relationship :: RELATIONSHIP?)",
+                        "Get relationship from automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`"} ),
+                equalTo( new Object[]{ "db.nodeManualIndexAdd",
+                        "db.nodeManualIndexAdd(indexName :: STRING?, node :: NODE?, key :: STRING?, value :: ANY?) :: (success :: BOOLEAN?)",
+                        "Add a node to a manual index based on a specified key and value"} ),
+                equalTo( new Object[]{ "db.relationshipManualIndexAdd",
+                        "db.relationshipManualIndexAdd(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?, value :: ANY?) :: " +
+                        "(success :: BOOLEAN?)",
+                        "Add a relationship to a manual index based on a specified key and value"} ),
+                equalTo( new Object[]{ "db.nodeManualIndexRemove",
+                        "db.nodeManualIndexRemove(indexName :: STRING?, node :: NODE?, key :: STRING?) :: (success :: BOOLEAN?)",
+                        "Remove a node from a manual index with an optional key"} ),
+                equalTo( new Object[]{ "db.relationshipManualIndexRemove",
+                        "db.relationshipManualIndexRemove(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?) :: " +
+                        "(success :: BOOLEAN?)",
+                        "Remove a relationship from a manual index with an optional key"} ),
+                equalTo( new Object[]{ "db.manualIndexDrop",
+                        "db.manualIndexDrop(indexName :: STRING?) :: " +
+                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "Remove a manual index - YIELD type,name,config"} ),
+                equalTo( new Object[]{ "db.nodeManualIndex",
+                        "db.nodeManualIndex(indexName :: STRING?) :: " +
+                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "Get or create a node manual index - YIELD type,name,config"} ),
+                equalTo( new Object[]{ "db.relationshipManualIndex",
+                        "db.relationshipManualIndex(indexName :: STRING?) :: " +
+                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "Get or create a relationship manual index - YIELD type,name,config"} ),
+                equalTo( new Object[]{ "db.nodeManualIndexExists",
+                        "db.nodeManualIndexExists(indexName :: STRING?) :: (success :: BOOLEAN?)",
+                        "Check if a node manual index exists"} ),
+                equalTo( new Object[]{ "db.relationshipManualIndexExists",
+                        "db.relationshipManualIndexExists(indexName :: STRING?) :: (success :: BOOLEAN?)",
+                        "Check if a relationship manual index exists"} ),
+                equalTo( new Object[]{ "db.manualIndexes",
+                        "db.manualIndexes() :: (type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "List all manual indexes - YIELD type,name,config"} ),
+
                 equalTo( new Object[]{"db.relationshipManualIndexSeek",
                         "db.relationshipManualIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
                         "(relationship :: RELATIONSHIP?)",

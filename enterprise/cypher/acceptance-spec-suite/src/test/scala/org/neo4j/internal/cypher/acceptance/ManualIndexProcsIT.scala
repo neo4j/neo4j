@@ -228,10 +228,10 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   test("Maunal relationships index should exist") {
     val a = createNode(Map("name" -> "Neo"))
     val b = createNode()
-    val rel = relate(a, b, "weight" -> 12)
+    val rel = relate(a, b, "distance" -> 12)
 
     val addResult = execute(
-      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'distance', 12) YIELD success as s RETURN s"""
         .stripMargin).toList
 
     addResult should be(List(Map("s" -> true)))
@@ -239,7 +239,6 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val result = execute(
       """CALL db.relationshipManualIndexExists('relIndex')
         |YIELD success AS s RETURN s""".stripMargin).toList
-
 
     result should equal(List(Map("s" -> true)))
   }
@@ -249,34 +248,34 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val node = createNode(Map("name" -> "Neo"))
 
     // When adding a node to the index
-    val addResult = execute(
-      """MATCH (n) WITH n CALL db.nodeManualIndexAdd('usernames', n, 'name', 'Neo') YIELD success as s RETURN s"""
-        .stripMargin).toList
+    graph.inTx {
+      graph.index().forNodes("usernames").add(node, "name", "Neo");
+    }
 
-    // Then the index should exist
+    // Then the index should be possible to drop
     val result = execute("CALL db.manualIndexDrop('usernames')").toList
 
-    result should be(List(Map("success" -> true)))
+    result should be(List(Map("name" -> "usernames", "type" -> "NODE", "config" -> Map("provider" -> "lucene", "type" -> "exact"))))
   }
 
   test("Should be able to drop relationship index") {
+    // Given a relationship with property
     val a = createNode(Map("name" -> "Neo"))
     val b = createNode()
-    val rel = relate(a, b, "weight" -> 12)
+    val rel = relate(a, b, "distance" -> 12)
 
-    val addResult = execute(
-      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
-        .stripMargin).toList
+    // When adding the relationship to an index
+    graph.inTx {
+      graph.index().forRelationships("relIndex").add(rel, "distance", 12);
+    }
 
-    val result = execute(
-      """CALL db.manualIndexDrop('relIndex')
-        |YIELD success AS s RETURN s""".stripMargin).toList
+    // Then the index should be possible to drop
+    val result = execute("CALL db.manualIndexDrop('relIndex')").toList
 
-
-    result should equal(List(Map("s" -> true)))
+    result should be(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP", "config" -> Map("provider" -> "lucene", "type" -> "exact"))))
   }
 
-  test("Should able to remove a node from manual index") {
+  test("Should able to add and remove a node from manual index") {
     val node = createNode(Map("name" -> "Neo"))
 
     val addResult = execute(
@@ -301,33 +300,94 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
   }
 
-  test("Should able to remove a relationship from manual index") {
+  test("Should able to add and remove a relationship from manual index") {
     val a = createNode(Map("name" -> "Neo"))
     val b = createNode()
-    val rel = relate(a, b, "weight" -> 12)
+    val rel = relate(a, b, "distance" -> 12)
 
     val addResult = execute(
-      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'weight', 12) YIELD success as s RETURN s"""
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexAdd('relIndex', r, 'distance', 12) YIELD success as s RETURN s"""
         .stripMargin).toList
 
     addResult should be(List(Map("s" -> true)))
 
-    val seekResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'weight', '12') YIELD relationship AS r ").toList
+    val seekResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'distance', '12') YIELD relationship AS r ").toList
 
     seekResult should equal(List(Map("r" -> rel)))
 
     val result = execute(
-      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexRemove('relIndex', r, 'weight') YIELD success as s RETURN s"""
+      """MATCH (n)-[r]-(m) WHERE n.name = 'Neo' WITH r CALL db.relationshipManualIndexRemove('relIndex', r, 'distance') YIELD success as s RETURN s"""
         .stripMargin).toList
 
     result should equal(List(Map("s" -> true)))
 
-    val emptyResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'weight', '12') YIELD relationship AS r ").toList
+    val emptyResult = execute("CALL db.relationshipManualIndexSeek('relIndex', 'distance', '12') YIELD relationship AS r ").toList
 
     emptyResult should equal(List.empty)
 
   }
 
+  test("should be able to get or create a node index") {
+    //Given the node index does not exist
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(false)
+    }
+
+    //When calling nodeManualIndex
+    graph.execute("CALL db.nodeManualIndex('usernames')")
+
+    //Then the index should exist
+    graph.inTx {
+      graph.index().existsForNodes("usernames") should be(true)
+    }
+  }
+
+  test("should be able to get or create a relationship index") {
+    //Given the relationship index does not exist
+    graph.inTx {
+      graph.index().existsForRelationships("relIndex") should be(false)
+    }
+
+    //When calling nodeManualIndex
+    graph.execute("CALL db.relationshipManualIndex('relIndex')")
+
+    //Then the index should exist
+    graph.inTx {
+      graph.index().existsForRelationships("relIndex") should be(true)
+    }
+  }
+
+  test("should be able to list manual and automatic indexes") {
+    //Given the node and relationship indexes do not exist
+    graph.inTx {
+      graph.index.nodeIndexNames().length should be(0)
+    }
+
+    //When creating indexes both manually and automatically
+    graph.execute("CALL db.nodeManualIndex('manual1')")
+    graph.execute("CALL db.relationshipManualIndex('manual2')")
+    graph.execute("CREATE (n) WITH n CALL db.nodeManualIndexAdd('usernames',n,'username','Neo') YIELD success RETURN success")
+    graph.execute("CREATE (n), (m), (n)-[r:KNOWS]->(m) WITH r CALL db.relationshipManualIndexAdd('relIndex',r,'distance',42) YIELD success RETURN success")
+    graph.execute("CREATE (n {email:'joe@soap.net'})")
+    graph.execute("CREATE (n), (m), (n)-[r:KNOWS {weight:42}]->(m)")
+
+    //Then the indexes should all exist
+    graph.inTx {
+      graph.index.nodeIndexNames().toSet should be(Set("manual1",  "usernames", "node_auto_index"))
+      graph.index.relationshipIndexNames().toSet should be(Set("manual2", "relIndex", "relationship_auto_index"))
+    }
+
+    //And have the right types
+    val result = execute("CALL db.manualIndexes").toSet
+    result should be(Set(
+      Map("name" -> "manual1", "type" -> "NODE", "config" -> Map("provider" -> "lucene", "type" -> "exact")),
+      Map("name" -> "manual2", "type" -> "RELATIONSHIP", "config" -> Map("provider" -> "lucene", "type" -> "exact")),
+      Map("name" -> "usernames", "type" -> "NODE", "config" -> Map("provider" -> "lucene", "type" -> "exact")),
+      Map("name" -> "relIndex", "type" -> "RELATIONSHIP", "config" -> Map("provider" -> "lucene", "type" -> "exact")),
+      Map("name" -> "node_auto_index", "type" -> "NODE", "config" -> Map("provider" -> "lucene", "type" -> "exact")),
+      Map("name" -> "relationship_auto_index", "type" -> "RELATIONSHIP", "config" -> Map("provider" -> "lucene", "type" -> "exact"))
+    ))
+  }
 }
 
 
