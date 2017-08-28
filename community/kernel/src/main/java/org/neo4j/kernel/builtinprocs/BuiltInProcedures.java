@@ -132,11 +132,13 @@ public class BuiltInProcedures
                         type = IndexType.NODE_LABEL_PROPERTY.typeName();
                     }
 
-                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ), operations.indexGetState( index ).toString(), type ) );
+                    result.add( new IndexResult( "INDEX ON " + index.schema().userDescription( tokens ),
+                            operations.indexGetState( index ).toString(), type ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
-                    throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on ", index.userDescription( tokens ) );
+                    throw new ProcedureException( Status.Schema.IndexNotFound, e,
+                            "No index on ", index.userDescription( tokens ) );
                 }
             }
             return result.stream();
@@ -145,7 +147,9 @@ public class BuiltInProcedures
 
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
-    public void awaitIndex( @Name( "index" ) String index, @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
+    public void awaitIndex( @Name( "index" ) String index,
+            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
+            throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
@@ -155,7 +159,8 @@ public class BuiltInProcedures
 
     @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
-    public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
+    public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
+            throws ProcedureException
     {
         graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
@@ -196,14 +201,19 @@ public class BuiltInProcedures
             ReadOperations operations = statement.readOperations();
             TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-            return asList( operations.constraintsGetAll() ).stream().map( ( constraint ) -> constraint.prettyPrint( tokens ) ).sorted().map(
-                    ConstraintResult::new );
+            return asList( operations.constraintsGetAll() )
+                    .stream()
+                    .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
+                    .sorted()
+                    .map( ConstraintResult::new );
         }
     }
 
     @Description( "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`" )
     @Procedure( name = "db.nodeManualIndexSeek", mode = READ )
-    public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String legacyIndexName, @Name( "key" ) String key, @Name( "value" ) Object value )
+    public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String legacyIndexName,
+            @Name( "key" ) String key,
+            @Name( "value" ) Object value )
             throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -214,13 +224,16 @@ public class BuiltInProcedures
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found", legacyIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
         }
     }
 
     @Description( "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`" )
     @Procedure( name = "db.nodeManualIndexSearch", mode = READ )
-    public Stream<NodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName, @Name( "query" ) Object query ) throws ProcedureException
+    public Stream<NodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
+            @Name( "query" ) Object query )
+            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -230,14 +243,17 @@ public class BuiltInProcedures
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found", manualIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    manualIndexName );
         }
     }
 
     @Description( "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`" )
     @Procedure( name = "db.relationshipManualIndexSeek", mode = READ )
-    public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName, @Name( "key" ) String key,
-            @Name( "value" ) Object value ) throws ProcedureException
+    public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName,
+            @Name( "key" ) String key,
+            @Name( "value" ) Object value )
+            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -247,13 +263,15 @@ public class BuiltInProcedures
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found", manualIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
         }
     }
 
     @Description( "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`" )
     @Procedure( name = "db.relationshipManualIndexSearch", mode = READ )
-    public Stream<RelationshipResult> relationshipManualIndexSearch( @Name( "indexName" ) String manualIndexName, @Name( "query" ) Object query )
+    public Stream<RelationshipResult> relationshipManualIndexSearch( @Name( "indexName" ) String manualIndexName,
+            @Name( "query" ) Object query )
             throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -264,7 +282,8 @@ public class BuiltInProcedures
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found", manualIndexName );
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
         }
     }
 
