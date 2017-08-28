@@ -92,7 +92,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         rewrites += (oldPlan -> newPlan)
 
         newPlan
-        
+
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val incomingPipeline = pipelineInformation(oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way")))
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
