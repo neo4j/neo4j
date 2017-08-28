@@ -139,7 +139,7 @@ public class IdReusabilityStressTesting
         catch ( Throwable e )
         {
             System.out.println( "Exception thrown from execution service:" );
-            e.printStackTrace();
+            e.printStackTrace( System.out );
         }
         finally
         {
@@ -273,7 +273,7 @@ public class IdReusabilityStressTesting
 
                 // Ignore throws for now
                 System.out.println( "InsertionWorkload encountered error:" );
-                e.printStackTrace();
+                e.printStackTrace( System.out );
             }
         }
     }
@@ -311,7 +311,7 @@ public class IdReusabilityStressTesting
 
                 // Ignore throws for now
                 System.out.println( "ReelectionWorkload encountered error:" );
-                e.printStackTrace();
+                e.printStackTrace( System.out );
             }
         }
     }
@@ -357,7 +357,7 @@ public class IdReusabilityStressTesting
 
                 // Ignore throws for now
                 System.out.println( "DeletionWorkload encountered error:" );
-                e.printStackTrace();
+                e.printStackTrace( System.out );
             }
         }
     }
