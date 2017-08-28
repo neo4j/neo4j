@@ -99,7 +99,7 @@ class EagerizationAcceptanceTest
                   |RETURN n.val AS nv, m.val AS mv
                 """.stripMargin
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Cost3_1 - Configs.AllRulePlanners,
       Configs.AllRulePlanners + Configs.Cost3_1,
       query,
@@ -121,7 +121,7 @@ class EagerizationAcceptanceTest
                   |RETURN r.val AS rv
                 """.stripMargin
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.AllRulePlanners - Configs.Cost3_1,
       Configs.Cost3_1 + Configs.AllRulePlanners,
       query,
@@ -143,7 +143,7 @@ class EagerizationAcceptanceTest
                   |RETURN r.val AS rv
                 """.stripMargin
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.AllRulePlanners - Configs.Cost3_1,
       Configs.Cost3_1 + Configs.AllRulePlanners,
       query,
@@ -165,7 +165,7 @@ class EagerizationAcceptanceTest
                   |RETURN count(*)
                 """.stripMargin
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.AllRulePlanners - Configs.Cost3_1,
       Configs.AllRulePlanners + Configs.Cost3_1,
       query,
@@ -182,7 +182,7 @@ class EagerizationAcceptanceTest
     relate(a, b, "T")
     val query = "MATCH (a)-[t:T]-(b) DELETE t RETURN count(*) as count"
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.AllRulePlanners - Configs.Cost3_1,
       Configs.AllRulePlanners + Configs.Cost3_1,
       query,
@@ -220,7 +220,7 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
 
-    val result = succeedWithAndMaybeCheckPlans(
+    val result = updateWithAndExpectPlansToBeSimilar(
       Configs.CommunityInterpreted - Configs.Compiled  - Configs.AllRulePlanners - Configs.Cost3_1 - Configs.Version2_3,
       Configs.Cost3_1,
       query,
@@ -758,12 +758,13 @@ class EagerizationAcceptanceTest
 
       val query = "MATCH () CREATE () RETURN count(*)"
 
-      val expectedSuccessFrom = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1
+      val expectedSuccessFrom = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1 - Configs.Version3_2
       val ignoreScenarios = Configs.AbsolutelyAll - expectedSuccessFrom
-      val result = updateWith(
+      val result = updateWithAndExpectPlansToBeSimilar(
         expectedSuccessFrom,
         ignoreScenarios,
-        query)
+        query,
+        checkPlans = false)
       result.columnAs[Long]("count(*)").next shouldBe 6
       assertStats(result, nodesCreated = 6)
       assertNumberOfEagerness(query, 0)
