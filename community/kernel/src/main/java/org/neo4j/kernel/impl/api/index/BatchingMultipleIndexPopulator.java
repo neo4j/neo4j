@@ -36,7 +36,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;
@@ -153,9 +152,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     /**
      * Insert all batched updates into corresponding indexes.
      */
-    private void flushAll()
+    @Override
+    protected void flushAll()
     {
-        populations.forEach( population -> flush( population ) );
+        populations.forEach( this::flush );
     }
 
     /**
@@ -272,13 +272,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      *
      * @param <E> type of the exception this store scan might get.
      */
-    private class BatchingStoreScan<E extends Exception> implements StoreScan<E>
+    private class BatchingStoreScan<E extends Exception> extends DelegatingStoreScan<E>
     {
-        final StoreScan<E> delegate;
-
         BatchingStoreScan( StoreScan<E> delegate )
         {
-            this.delegate = delegate;
+            super( delegate );
         }
 
         @Override
@@ -286,7 +284,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         {
             try
             {
-                delegate.run();
+                super.run();
                 log.info( "Completed node store scan. " +
                           "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
                 flushAll();
@@ -304,31 +302,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
                 throw scanError;
             }
             shutdownExecutor( false );
-        }
-
-        @Override
-        public void stop()
-        {
-            delegate.stop();
-        }
-
-        @Override
-        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate update,
-                long currentlyIndexedNodeId )
-        {
-            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        }
-
-        @Override
-        public PopulationProgress getProgress()
-        {
-            return delegate.getProgress();
-        }
-
-        @Override
-        public void configure( Collection<IndexPopulation> populations )
-        {
-            delegate.configure( populations );
         }
     }
 }

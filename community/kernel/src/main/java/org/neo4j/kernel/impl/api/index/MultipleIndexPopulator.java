@@ -51,6 +51,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
@@ -170,7 +171,15 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
         storeScan.configure( populations );
-        return storeScan;
+        return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
+        {
+            @Override
+            public void run() throws IndexPopulationFailedKernelException
+            {
+                super.run();
+                flushAll();
+            }
+        };
     }
 
     /**
@@ -347,6 +356,21 @@ public class MultipleIndexPopulator implements IndexPopulator
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         populateFromQueueIfAvailable( currentlyIndexedNodeId );
+    }
+
+    protected void flushAll()
+    {
+        for ( IndexPopulation population : populations )
+        {
+            try
+            {
+                population.populator.add( population.takeCurrentBatch() );
+            }
+            catch ( Throwable failure )
+            {
+                fail( population, failure );
+            }
+        }
     }
 
     private void populateFromQueueIfAvailable( long currentlyIndexedNodeId )
@@ -566,6 +590,46 @@ public class MultipleIndexPopulator implements IndexPopulator
                     fail( indexUpdate.indexKey(), failure );
                 }
             }
+        }
+    }
+
+    protected class DelegatingStoreScan<E extends Exception> implements StoreScan<E>
+    {
+        private final StoreScan<E> delegate;
+
+        DelegatingStoreScan( StoreScan<E> delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() throws E
+        {
+            delegate.run();
+        }
+
+        @Override
+        public void stop()
+        {
+            delegate.stop();
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate update, long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
+        }
+
+        @Override
+        public PopulationProgress getProgress()
+        {
+            return delegate.getProgress();
+        }
+
+        @Override
+        public void configure( Collection<IndexPopulation> populations )
+        {
+            delegate.configure( populations );
         }
     }
 }

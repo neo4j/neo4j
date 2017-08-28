@@ -162,7 +162,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
-        verify( populator ).add( any( Collection.class) );
+        verify( populator, times( 2 ) ).add( any( Collection.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -211,7 +211,7 @@ public class IndexPopulationJobTest
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator ).add( Matchers.anyCollection() );
+        verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
