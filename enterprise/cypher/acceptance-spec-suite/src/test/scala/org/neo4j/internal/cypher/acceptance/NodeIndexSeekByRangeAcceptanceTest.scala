@@ -93,7 +93,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("NAME" -> "LONDON")))
