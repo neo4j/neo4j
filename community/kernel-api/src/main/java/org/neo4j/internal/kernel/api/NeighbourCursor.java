@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * This is an example of an abstraction on top of {@link EdgeScanCursor} and {@link EdgeGroupCursor}.
+ * This is an example of an abstraction on top of {@link RelationshipScanCursor} and {@link RelationshipGroupCursor}.
  */
 public abstract class NeighbourCursor implements NodeCursor
 {
@@ -34,9 +34,9 @@ public abstract class NeighbourCursor implements NodeCursor
         return new Builder( cursors ).outgoing( label );
     }
 
-    public static Builder outgoing( CursorFactory cursors, int label, PropertyPredicate edgeProperties )
+    public static Builder outgoing( CursorFactory cursors, int label, PropertyPredicate relationshipProperties )
     {
-        return new Builder( cursors ).outgoing( label, edgeProperties );
+        return new Builder( cursors ).outgoing( label, relationshipProperties );
     }
 
     public static Builder incoming( CursorFactory cursors, int label )
@@ -44,9 +44,9 @@ public abstract class NeighbourCursor implements NodeCursor
         return new Builder( cursors ).incoming( label );
     }
 
-    public static Builder incoming( CursorFactory cursors, int label, PropertyPredicate edgeProperties )
+    public static Builder incoming( CursorFactory cursors, int label, PropertyPredicate relationshipProperties )
     {
-        return new Builder( cursors ).incoming( label, edgeProperties );
+        return new Builder( cursors ).incoming( label, relationshipProperties );
     }
 
     public static Builder any( CursorFactory cursors, int label )
@@ -54,9 +54,9 @@ public abstract class NeighbourCursor implements NodeCursor
         return new Builder( cursors ).any( label );
     }
 
-    public static Builder any( CursorFactory cursors, int label, PropertyPredicate edgeProperties )
+    public static Builder any( CursorFactory cursors, int label, PropertyPredicate relationshipProperties )
     {
-        return new Builder( cursors ).any( label, edgeProperties );
+        return new Builder( cursors ).any( label, relationshipProperties );
     }
 
     public static NeighbourCursor outgoing( CursorFactory cursors )
@@ -64,10 +64,10 @@ public abstract class NeighbourCursor implements NodeCursor
         return new AnyLabel( cursors, true, false );
     }
 
-    public static NeighbourCursor outgoing( CursorFactory cursors, PropertyPredicate edgeProperties )
+    public static NeighbourCursor outgoing( CursorFactory cursors, PropertyPredicate relationshipProperties )
     {
-        Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" );
-        return new FilteringAnyLabel( cursors, true, false, edgeProperties );
+        Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" );
+        return new FilteringAnyLabel( cursors, true, false, relationshipProperties );
     }
 
     public static NeighbourCursor incoming( CursorFactory cursors )
@@ -75,10 +75,10 @@ public abstract class NeighbourCursor implements NodeCursor
         return new AnyLabel( cursors, false, true );
     }
 
-    public static NeighbourCursor incoming( CursorFactory cursors, PropertyPredicate edgeProperties )
+    public static NeighbourCursor incoming( CursorFactory cursors, PropertyPredicate relationshipProperties )
     {
-        Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" );
-        return new FilteringAnyLabel( cursors, false, true, edgeProperties );
+        Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" );
+        return new FilteringAnyLabel( cursors, false, true, relationshipProperties );
     }
 
     public static NeighbourCursor any( CursorFactory cursors )
@@ -86,10 +86,10 @@ public abstract class NeighbourCursor implements NodeCursor
         return new AnyLabel( cursors, true, true );
     }
 
-    public static NeighbourCursor any( CursorFactory cursors, PropertyPredicate edgeProperties )
+    public static NeighbourCursor any( CursorFactory cursors, PropertyPredicate relationshipProperties )
     {
-        Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" );
-        return new FilteringAnyLabel( cursors, true, true, edgeProperties );
+        Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" );
+        return new FilteringAnyLabel( cursors, true, true, relationshipProperties );
     }
 
     public static final class Builder
@@ -113,9 +113,9 @@ public abstract class NeighbourCursor implements NodeCursor
             return outgoing( label, NO_FILTER );
         }
 
-        public Builder outgoing( int label, PropertyPredicate edgeProperties )
+        public Builder outgoing( int label, PropertyPredicate relationshipProperties )
         {
-            if ( Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" ) != NO_FILTER )
+            if ( Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" ) != NO_FILTER )
             {
                 filterProperties = true;
             }
@@ -125,7 +125,7 @@ public abstract class NeighbourCursor implements NodeCursor
                 {
                     entry = new Entry( key );
                 }
-                entry.outgoing( edgeProperties );
+                entry.outgoing( relationshipProperties );
                 return entry;
             } );
             return this;
@@ -136,9 +136,9 @@ public abstract class NeighbourCursor implements NodeCursor
             return incoming( label, NO_FILTER );
         }
 
-        public Builder incoming( int label, PropertyPredicate edgeProperties )
+        public Builder incoming( int label, PropertyPredicate relationshipProperties )
         {
-            if ( Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" ) != NO_FILTER )
+            if ( Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" ) != NO_FILTER )
             {
                 filterProperties = true;
             }
@@ -148,7 +148,7 @@ public abstract class NeighbourCursor implements NodeCursor
                 {
                     entry = new Entry( key );
                 }
-                entry.incoming( edgeProperties );
+                entry.incoming( relationshipProperties );
                 return entry;
             } );
             return this;
@@ -159,9 +159,9 @@ public abstract class NeighbourCursor implements NodeCursor
             return any( label, NO_FILTER );
         }
 
-        public Builder any( int label, PropertyPredicate edgeProperties )
+        public Builder any( int label, PropertyPredicate relationshipProperties )
         {
-            if ( Objects.requireNonNull( edgeProperties, "Edge PropertyPredicate" ) != NO_FILTER )
+            if ( Objects.requireNonNull( relationshipProperties, "Relationship PropertyPredicate" ) != NO_FILTER )
             {
                 filterProperties = true;
             }
@@ -171,7 +171,7 @@ public abstract class NeighbourCursor implements NodeCursor
                 {
                     entry = new Entry( key );
                 }
-                entry.any( edgeProperties );
+                entry.any( relationshipProperties );
                 return entry;
             } );
             return this;
@@ -252,14 +252,14 @@ public abstract class NeighbourCursor implements NodeCursor
     }
 
     private final NodeCursor neighbours;
-    private final EdgeGroupCursor group;
-    private final EdgeTraversalCursor edges;
+    private final RelationshipGroupCursor group;
+    private final RelationshipTraversalCursor relationships;
 
     public NeighbourCursor( CursorFactory cursors )
     {
         this.neighbours = cursors.allocateNodeCursor();
-        this.group = cursors.allocateEdgeGroupCursor();
-        this.edges = cursors.allocateEdgeTraversalCursor();
+        this.group = cursors.allocateRelationshipGroupCursor();
+        this.relationships = cursors.allocateRelationshipTraversalCursor();
     }
 
     /**
@@ -270,31 +270,31 @@ public abstract class NeighbourCursor implements NodeCursor
      */
     public final void of( NodeCursor node )
     {
-        node.edges( group );
+        node.relationships( group );
         // make sure these don't have state from previous use
         group.close();
-        edges.close();
+        relationships.close();
     }
 
     @Override
     public final boolean next()
     {
-        while ( !edges.next() )
+        while ( !relationships.next() )
         {
-            if ( !next( group, edges ) )
+            if ( !next( group, relationships ) )
             {
                 return false;
             }
         }
         do
         {
-            edges.neighbour( neighbours );
+            relationships.neighbour( neighbours );
         }
-        while ( edges.shouldRetry() );
+        while ( relationships.shouldRetry() );
         return neighbours.next();
     }
 
-    protected abstract boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges );
+    protected abstract boolean next( RelationshipGroupCursor group, RelationshipTraversalCursor relationships );
 
     @Override
     public final boolean shouldRetry()
@@ -307,7 +307,7 @@ public abstract class NeighbourCursor implements NodeCursor
     {
         neighbours.close();
         group.close();
-        edges.close();
+        relationships.close();
     }
 
     @Override
@@ -329,27 +329,27 @@ public abstract class NeighbourCursor implements NodeCursor
     }
 
     @Override
-    public final void edges( EdgeGroupCursor cursor )
+    public final void relationships( RelationshipGroupCursor cursor )
     {
-        neighbours.edges( cursor );
+        neighbours.relationships( cursor );
     }
 
     @Override
-    public void outgoingEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    public void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
     {
-        neighbours.outgoingEdges( groups, edges );
+        neighbours.outgoingRelationships( groups, relationships );
     }
 
     @Override
-    public void incomingEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    public void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
     {
-        neighbours.incomingEdges( groups, edges );
+        neighbours.incomingRelationships( groups, relationships );
     }
 
     @Override
-    public void allEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    public void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
     {
-        neighbours.allEdges( groups, edges );
+        neighbours.allRelationships( groups, relationships );
     }
 
     @Override
@@ -359,9 +359,9 @@ public abstract class NeighbourCursor implements NodeCursor
     }
 
     @Override
-    public final long edgeGroupReference()
+    public final long relationshipGroupReference()
     {
-        return neighbours.edgeGroupReference();
+        return neighbours.relationshipGroupReference();
     }
 
     @Override
@@ -383,7 +383,7 @@ public abstract class NeighbourCursor implements NodeCursor
         }
 
         @Override
-        protected boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges )
+        protected boolean next( RelationshipGroupCursor group, RelationshipTraversalCursor relationships )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -406,7 +406,7 @@ public abstract class NeighbourCursor implements NodeCursor
         }
 
         @Override
-        protected boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges )
+        protected boolean next( RelationshipGroupCursor group, RelationshipTraversalCursor relationships )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -420,7 +420,7 @@ public abstract class NeighbourCursor implements NodeCursor
         }
 
         @Override
-        protected boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges )
+        protected boolean next( RelationshipGroupCursor group, RelationshipTraversalCursor relationships )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -437,7 +437,7 @@ public abstract class NeighbourCursor implements NodeCursor
         }
 
         @Override
-        protected boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges )
+        protected boolean next( RelationshipGroupCursor group, RelationshipTraversalCursor relationships )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }

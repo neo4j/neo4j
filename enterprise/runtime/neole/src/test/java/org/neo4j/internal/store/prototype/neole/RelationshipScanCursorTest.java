@@ -32,7 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.EdgeScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
@@ -43,9 +43,9 @@ import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
-public class EdgeScanCursorTest
+public class RelationshipScanCursorTest
 {
-    private static List<Long> EDGE_IDS;
+    private static List<Long> RELATIONSHIP_IDS;
     private static long none, loop, one, c, d;
     @ClassRule
     public static final GraphSetup graph = new GraphSetup()
@@ -70,8 +70,8 @@ public class EdgeScanCursorTest
                 a.createRelationshipTo( c, withName( "TRIANGLE" ) );
                 b.createRelationshipTo( c, withName( "TRIANGLE" ) );
                 none = (deleted = c.createRelationshipTo( b, withName( "TRIANGLE" ) )).getId();
-                EdgeScanCursorTest.c = c.getId();
-                EdgeScanCursorTest.d = d.getId();
+                RelationshipScanCursorTest.c = c.getId();
+                RelationshipScanCursorTest.d = d.getId();
 
                 d.createRelationshipTo( e, withName( "TRIANGLE" ) );
                 e.createRelationshipTo( f, withName( "TRIANGLE" ) );
@@ -82,14 +82,14 @@ public class EdgeScanCursorTest
                 tx.success();
             }
 
-            EDGE_IDS = new ArrayList<>();
+            RELATIONSHIP_IDS = new ArrayList<>();
             try ( Transaction tx = graphDb.beginTx() )
             {
                 deleted.delete();
                 long time = System.nanoTime();
                 for ( Relationship relationship : graphDb.getAllRelationships() )
                 {
-                    EDGE_IDS.add( relationship.getId() );
+                    RELATIONSHIP_IDS.add( relationship.getId() );
                 }
                 time = System.nanoTime() - time;
                 System.out.printf( "neo4j scan time: %.3fms%n", time / 1_000_000.0 );
@@ -101,77 +101,77 @@ public class EdgeScanCursorTest
         @Override
         protected void cleanup()
         {
-            EDGE_IDS = null;
+            RELATIONSHIP_IDS = null;
         }
     }.withConfig( dense_node_threshold, "1" );
 
     @Test
-    public void shouldScanEdges() throws Exception
+    public void shouldScanRelationships() throws Exception
     {
         // given
         List<Long> ids = new ArrayList<>();
-        try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
+        try ( RelationshipScanCursor relationships = graph.allocateRelationshipScanCursor() )
         {
             // when
             long time = System.nanoTime();
-            graph.allEdgesScan( edges );
-            while ( edges.next() )
+            graph.allRelationshipsScan( relationships );
+            while ( relationships.next() )
             {
-                ids.add( edges.edgeReference() );
+                ids.add( relationships.relationshipReference() );
             }
             time = System.nanoTime() - time;
             System.out.printf( "cursor scan time: %.3fms%n", time / 1_000_000.0 );
         }
 
-        assertEquals( EDGE_IDS, ids );
+        assertEquals( RELATIONSHIP_IDS, ids );
     }
 
     @Test
-    public void shouldAccessEdgeByReference() throws Exception
+    public void shouldAccessRelationshipByReference() throws Exception
     {
         // given
-        try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
+        try ( RelationshipScanCursor relationships = graph.allocateRelationshipScanCursor() )
         {
-            for ( long id : EDGE_IDS )
+            for ( long id : RELATIONSHIP_IDS )
             {
                 // when
-                graph.singleEdge( id, edges );
+                graph.singleRelationship( id, relationships );
 
                 // then
-                assertTrue( "should access defined edge", edges.next() );
-                assertEquals( "should access the correct edge", id, edges.edgeReference() );
-                assertFalse( "should only access a single edge", edges.next() );
+                assertTrue( "should access defined relationship", relationships.next() );
+                assertEquals( "should access the correct relationship", id, relationships.relationshipReference() );
+                assertFalse( "should only access a single relationship", relationships.next() );
             }
         }
     }
 
     @Test
-    public void shouldNotAccessDeletedEdge() throws Exception
+    public void shouldNotAccessDeletedRelationship() throws Exception
     {
         // given
-        try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
+        try ( RelationshipScanCursor relationships = graph.allocateRelationshipScanCursor() )
         {
             // when
-            graph.singleEdge( none, edges );
+            graph.singleRelationship( none, relationships );
 
             // then
-            assertFalse( "should not access deleted edge", edges.next() );
+            assertFalse( "should not access deleted relationship", relationships.next() );
         }
     }
 
     @Test
-    public void shouldAccessEdgeLabels() throws Exception
+    public void shouldAccessRelationshipLabels() throws Exception
     {
         // given
         Map<Integer,Integer> counts = new HashMap<>();
 
-        try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
+        try ( RelationshipScanCursor relationships = graph.allocateRelationshipScanCursor() )
         {
             // when
-            graph.allEdgesScan( edges );
-            while ( edges.next() )
+            graph.allRelationshipsScan( relationships );
+            while ( relationships.next() )
             {
-                counts.compute( edges.label(), ( k, v ) -> v == null ? 1 : v + 1 );
+                counts.compute( relationships.label(), ( k, v ) -> v == null ? 1 : v + 1 );
             }
         }
 
@@ -184,7 +184,7 @@ public class EdgeScanCursorTest
             values[i++] = value;
         }
         Arrays.sort( values );
-        assertArrayEquals( new int[] {1, 6, 6}, values );
+        assertArrayEquals( new int[]{1, 6, 6}, values );
     }
 
     @Test
@@ -192,24 +192,24 @@ public class EdgeScanCursorTest
     {
         assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
         // given
-        try ( EdgeScanCursor edges = graph.allocateEdgeScanCursor() )
+        try ( RelationshipScanCursor relationships = graph.allocateRelationshipScanCursor() )
         {
             // when
-            graph.singleEdge( one, edges );
+            graph.singleRelationship( one, relationships );
 
             // then
-            assertTrue( edges.next() );
-            assertEquals( c, edges.sourceNodeReference() );
-            assertEquals( d, edges.targetNodeReference() );
-            assertFalse( edges.next() );
+            assertTrue( relationships.next() );
+            assertEquals( c, relationships.sourceNodeReference() );
+            assertEquals( d, relationships.targetNodeReference() );
+            assertFalse( relationships.next() );
 
             // when
-            graph.singleEdge( loop, edges );
+            graph.singleRelationship( loop, relationships );
 
             // then
-            assertTrue( edges.next() );
-            assertEquals( edges.sourceNodeReference(), edges.targetNodeReference() );
-            assertFalse( edges.next() );
+            assertTrue( relationships.next() );
+            assertEquals( relationships.sourceNodeReference(), relationships.targetNodeReference() );
+            assertFalse( relationships.next() );
         }
     }
 }

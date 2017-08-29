@@ -20,21 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for scanning edges of a schema index.
+ * Cursor for accessing manual index relationships.
  */
-public interface EdgeIndexCursor extends Cursor
+public interface RelationshipManualIndexCursor extends RelationshipIndexCursor, ManualIndexCursor
 {
-    void edge( EdgeScanCursor cursor );
-
-    void sourceNode( NodeCursor cursor );
-
-    void targetNode( NodeCursor cursor );
-
-    int edgeLabel();
-
-    long sourceNodeReference();
-
-    long targetNodeReference();
-
-//  long edgeReference(); // not sure edges will have independent references, so exposing this might be leakage.
 }

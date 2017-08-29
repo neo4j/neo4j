@@ -21,12 +21,13 @@ package org.neo4j.internal.store.prototype.neole;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.internal.store.cursors.ReadCursor;
 
 import static org.neo4j.internal.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.internal.store.prototype.neole.ReadStore.combineReference;
 
-abstract class EdgeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.EdgeDataAccessor
+abstract class RelationshipCursor extends ReadCursor implements RelationshipDataAccessor
 {
     /**
      * <pre>
@@ -58,10 +59,10 @@ abstract class EdgeCursor extends ReadCursor implements org.neo4j.internal.kerne
      * </pre>
      */
     static final int RECORD_SIZE = 34;
-    static final long NO_EDGE = -1;
+    static final long NO_RELATIONSHIP = -1;
     protected final ReadStore store;
 
-    EdgeCursor( ReadStore store )
+    RelationshipCursor( ReadStore store )
     {
         this.store = store;
     }
@@ -78,7 +79,7 @@ abstract class EdgeCursor extends ReadCursor implements org.neo4j.internal.kerne
     }
 
     @Override
-    public long edgeReference()
+    public long relationshipReference()
     {
         return virtualAddress();
     }
@@ -107,22 +108,22 @@ abstract class EdgeCursor extends ReadCursor implements org.neo4j.internal.kerne
         return combineReference( unsignedInt( 29 ), ((long) unsignedByte( 0 ) & 0xF0L) << 28 );
     }
 
-    long sourcePrevEdgeReference()
+    long sourcePrevRelationshipReference()
     {
         return combineReference( unsignedInt( 13 ), ((long) unsignedShort( 9 ) & 0x0E00L) << 23 );
     }
 
-    long sourceNextEdgeReference()
+    long sourceNextRelationshipReference()
     {
         return combineReference( unsignedInt( 17 ), ((long) unsignedShort( 9 ) & 0x01C0L) << 26 );
     }
 
-    long targetPrevEdgeReference()
+    long targetPrevRelationshipReference()
     {
         return combineReference( unsignedInt( 21 ), ((long) unsignedShort( 9 ) & 0x0038L) << 29 );
     }
 
-    long targetNextEdgeReference()
+    long targetNextRelationshipReference()
     {
         return combineReference( unsignedInt( 25 ), ((long) unsignedShort( 9 ) & 0x0007L) << 32 );
     }
@@ -148,6 +149,6 @@ abstract class EdgeCursor extends ReadCursor implements org.neo4j.internal.kerne
     @Override
     public void properties( PropertyCursor cursor )
     {
-        store.edgeProperties( propertiesReference(), cursor );
+        store.relationshipProperties( propertiesReference(), cursor );
     }
 }

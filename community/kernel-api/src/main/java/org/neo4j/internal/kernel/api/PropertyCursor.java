@@ -26,7 +26,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 
 /**
- * Cursor for scanning the properties of a node or edge.
+ * Cursor for scanning the properties of a node or relationship.
  */
 public interface PropertyCursor extends Cursor
 {

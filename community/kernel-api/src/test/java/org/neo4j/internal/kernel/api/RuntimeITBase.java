@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -92,7 +92,7 @@ public abstract class RuntimeITBase
     }
 
     @Test
-    public void shouldDoAllEdgeScan()
+    public void shouldDoAllRelationshipScan()
     {
         // given
         Runtime r = runtime();
@@ -100,32 +100,32 @@ public abstract class RuntimeITBase
         long n2 = createNode( r );
         long n3 = createNode( r );
 
-        r.write().edgeCreate( n1, LABEL, n2 );
-        r.write().edgeCreate( n2, LABEL, n3 );
-        r.write().edgeCreate( n3, LABEL, n1 );
+        r.write().relationshipCreate( n1, LABEL, n2 );
+        r.write().relationshipCreate( n2, LABEL, n3 );
+        r.write().relationshipCreate( n3, LABEL, n1 );
 
         // when
-        EdgeScanCursor cursor = r.cursorFactory().allocateEdgeScanCursor();
-        r.read().allEdgesScan( cursor );
+        RelationshipScanCursor cursor = r.cursorFactory().allocateRelationshipScanCursor();
+        r.read().allRelationshipsScan( cursor );
 
-        List<Edge> scannedSet = new ArrayList<>();
+        List<Relationship> scannedSet = new ArrayList<>();
         while ( cursor.next() )
         {
-            scannedSet.add( Edge.asDefined( cursor ) );
+            scannedSet.add( Relationship.asDefined( cursor ) );
         }
 
         // then
         assertThat(
                 scannedSet,
                 containsInAnyOrder(
-                        new Edge( n1, LABEL, n2 ),
-                        new Edge( n2, LABEL, n3 ),
-                        new Edge( n3, LABEL, n1 )
+                        new Relationship( n1, LABEL, n2 ),
+                        new Relationship( n2, LABEL, n3 ),
+                        new Relationship( n3, LABEL, n1 )
                 ) );
     }
 
     @Test
-    public void shouldExpandByEdgeGroup()
+    public void shouldExpandByRelationshipGroup()
     {
         // given
         Runtime r = runtime();
@@ -137,50 +137,50 @@ public abstract class RuntimeITBase
         int label2 = 22;
         int label3 = 33;
 
-        r.write().edgeCreate( n1, label1, n2 );
-        r.write().edgeCreate( n1, label1, n2 );
+        r.write().relationshipCreate( n1, label1, n2 );
+        r.write().relationshipCreate( n1, label1, n2 );
 
-        r.write().edgeCreate( n2, label1, n3 );
-        r.write().edgeCreate( n2, label2, n3 );
-        r.write().edgeCreate( n2, label2, n3 );
+        r.write().relationshipCreate( n2, label1, n3 );
+        r.write().relationshipCreate( n2, label2, n3 );
+        r.write().relationshipCreate( n2, label2, n3 );
 
-        r.write().edgeCreate( n3, label3, n1 );
-        r.write().edgeCreate( n3, label3, n1 );
-        r.write().edgeCreate( n3, label2, n1 );
-        r.write().edgeCreate( n3, label1, n1 );
-        r.write().edgeCreate( n3, label1, n1 );
+        r.write().relationshipCreate( n3, label3, n1 );
+        r.write().relationshipCreate( n3, label3, n1 );
+        r.write().relationshipCreate( n3, label2, n1 );
+        r.write().relationshipCreate( n3, label1, n1 );
+        r.write().relationshipCreate( n3, label1, n1 );
 
         // when
         NodeCursor nodeCursor = r.cursorFactory().allocateNodeCursor();
-        EdgeTraversalCursor edgeCursor = r.cursorFactory().allocateEdgeTraversalCursor();
-        EdgeGroupCursor groupCursor = r.cursorFactory().allocateEdgeGroupCursor();
+        RelationshipTraversalCursor relationshipCursor = r.cursorFactory().allocateRelationshipTraversalCursor();
+        RelationshipGroupCursor groupCursor = r.cursorFactory().allocateRelationshipGroupCursor();
         r.read().allNodesScan( nodeCursor );
 
-        List<Edge> scannedSet = new ArrayList<>();
+        List<Relationship> scannedSet = new ArrayList<>();
         while ( nodeCursor.next() )
         {
-            nodeCursor.edges( groupCursor );
+            nodeCursor.relationships( groupCursor );
             while ( groupCursor.next() )
             {
-                int groupLabel = groupCursor.edgeLabel();
+                int groupLabel = groupCursor.relationshipLabel();
                 for ( int dir = 0; dir < 3; dir++ )
                 {
                     if ( dir == 0 )
                     {
-                        groupCursor.outgoing( edgeCursor );
+                        groupCursor.outgoing( relationshipCursor );
                     }
                     else if ( dir == 1 )
                     {
-                        groupCursor.incoming( edgeCursor );
+                        groupCursor.incoming( relationshipCursor );
                     }
                     else
                     {
-                        groupCursor.loops( edgeCursor );
+                        groupCursor.loops( relationshipCursor );
                     }
-                    while ( edgeCursor.next() )
+                    while ( relationshipCursor.next() )
                     {
-                        assertThat( edgeCursor.label(), equalTo( groupLabel ) );
-                        scannedSet.add( Edge.asTraversed( edgeCursor ) );
+                        assertThat( relationshipCursor.label(), equalTo( groupLabel ) );
+                        scannedSet.add( Relationship.asTraversed( relationshipCursor ) );
                     }
                 }
             }
@@ -191,32 +191,32 @@ public abstract class RuntimeITBase
                 scannedSet,
                 containsInAnyOrder(
                         // forward direction
-                        new Edge( n1, label1, n2 ),
-                        new Edge( n1, label1, n2 ),
+                        new Relationship( n1, label1, n2 ),
+                        new Relationship( n1, label1, n2 ),
 
-                        new Edge( n2, label1, n3 ),
-                        new Edge( n2, label2, n3 ),
-                        new Edge( n2, label2, n3 ),
+                        new Relationship( n2, label1, n3 ),
+                        new Relationship( n2, label2, n3 ),
+                        new Relationship( n2, label2, n3 ),
 
-                        new Edge( n3, label3, n1 ),
-                        new Edge( n3, label3, n1 ),
-                        new Edge( n3, label2, n1 ),
-                        new Edge( n3, label1, n1 ),
-                        new Edge( n3, label1, n1 ),
+                        new Relationship( n3, label3, n1 ),
+                        new Relationship( n3, label3, n1 ),
+                        new Relationship( n3, label2, n1 ),
+                        new Relationship( n3, label1, n1 ),
+                        new Relationship( n3, label1, n1 ),
 
                         // backward direction
-                        new Edge( n2, label1, n1 ),
-                        new Edge( n2, label1, n1 ),
+                        new Relationship( n2, label1, n1 ),
+                        new Relationship( n2, label1, n1 ),
 
-                        new Edge( n3, label1, n2 ),
-                        new Edge( n3, label2, n2 ),
-                        new Edge( n3, label2, n2 ),
+                        new Relationship( n3, label1, n2 ),
+                        new Relationship( n3, label2, n2 ),
+                        new Relationship( n3, label2, n2 ),
 
-                        new Edge( n1, label3, n3 ),
-                        new Edge( n1, label3, n3 ),
-                        new Edge( n1, label2, n3 ),
-                        new Edge( n1, label1, n3 ),
-                        new Edge( n1, label1, n3 )
+                        new Relationship( n1, label3, n3 ),
+                        new Relationship( n1, label3, n3 ),
+                        new Relationship( n1, label2, n3 ),
+                        new Relationship( n1, label1, n3 ),
+                        new Relationship( n1, label1, n3 )
                 ) );
     }
 
@@ -230,30 +230,30 @@ public abstract class RuntimeITBase
         return nodeId;
     }
 
-    static class Edge
+    static class Relationship
     {
         final long from;
         final int label;
         final long to;
 
-        Edge( long from, int label, long to )
+        Relationship( long from, int label, long to )
         {
             this.from = from;
             this.label = label;
             this.to = to;
         }
 
-        static Edge asDefined( EdgeScanCursor cursor )
+        static Relationship asDefined( RelationshipScanCursor cursor )
         {
-            return new Edge( cursor.sourceNodeReference(), cursor.label(), cursor.targetNodeReference() );
+            return new Relationship( cursor.sourceNodeReference(), cursor.label(), cursor.targetNodeReference() );
         }
 
-        static Edge asTraversed( EdgeTraversalCursor cursor )
+        static Relationship asTraversed( RelationshipTraversalCursor cursor )
         {
             long neighbourNodeRef = cursor.neighbourNodeReference();
             long homeNodeRef = cursor.sourceNodeReference() == neighbourNodeRef ?
                     cursor.targetNodeReference() : cursor.sourceNodeReference();
-            return new Edge( homeNodeRef, cursor.label(), neighbourNodeRef );
+            return new Relationship( homeNodeRef, cursor.label(), neighbourNodeRef );
         }
 
         @Override
@@ -268,17 +268,17 @@ public abstract class RuntimeITBase
                 return false;
             }
 
-            Edge edge = (Edge) o;
+            Relationship relationship = (Relationship) o;
 
-            if ( from != edge.from )
+            if ( from != relationship.from )
             {
                 return false;
             }
-            if ( to != edge.to )
+            if ( to != relationship.to )
             {
                 return false;
             }
-            return label == edge.label;
+            return label == relationship.label;
         }
 
         @Override

@@ -20,25 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Surface for accessing edge data.
+ * Cursor for scanning relationships, that is listing relationships without grouping by source or target node.
  */
-public interface EdgeDataAccessor
+public interface RelationshipScanCursor extends RelationshipDataAccessor, Cursor
 {
-    long edgeReference(); // not sure edges will have independent references, so exposing this might be leakage.
-
-    int label();
-
-    boolean hasProperties();
-
-    void source( NodeCursor cursor );
-
-    void target( NodeCursor cursor );
-
-    void properties( PropertyCursor cursor );
-
-    long sourceNodeReference();
-
-    long targetNodeReference();
-
-    long propertiesReference();
 }

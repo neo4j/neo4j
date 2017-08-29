@@ -30,9 +30,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.EdgeGroupCursor;
-import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -41,11 +41,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
-public class RandomEdgeTraversalCursorTest
+public class RandomRelationshipTraversalCursorTest
 {
     private static final int N_TRAVERSALS = 10_000;
     private static int N_NODES = 100;
-    private static int N_EDGES = 1000;
+    private static int N_RELATIONSHIPS = 1000;
     private static Random random = new Random( 666 );
     private static List<Long> nodeIds = new ArrayList<>();
 
@@ -66,12 +66,12 @@ public class RandomEdgeTraversalCursorTest
 
             try ( Transaction tx = graphDb.beginTx() )
             {
-                for ( int i = 0; i < N_EDGES; i++ )
+                for ( int i = 0; i < N_RELATIONSHIPS; i++ )
                 {
                     Long source = nodeIds.get( random.nextInt( N_NODES ) );
                     Long target = nodeIds.get( random.nextInt( N_NODES ) );
                     graphDb.getNodeById( source ).createRelationshipTo( graphDb.getNodeById( target ),
-                            RelationshipType.withName( "REL" + ( i % 10 ) ) );
+                            RelationshipType.withName( "REL" + (i % 10) ) );
                 }
                 tx.success();
             }
@@ -85,8 +85,8 @@ public class RandomEdgeTraversalCursorTest
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
-              EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
-              EdgeTraversalCursor edge = graph.allocateEdgeTraversalCursor() )
+              RelationshipGroupCursor group = graph.allocateRelationshipGroupCursor();
+              RelationshipTraversalCursor relationship = graph.allocateRelationshipTraversalCursor() )
         {
             for ( int i = 0; i < N_TRAVERSALS; i++ )
             {
@@ -94,29 +94,29 @@ public class RandomEdgeTraversalCursorTest
                 long nodeId = nodeIds.get( random.nextInt( N_NODES ) );
                 graph.singleNode( nodeId, node );
                 assertTrue( "access root node", node.next() );
-                node.edges( group );
+                node.relationships( group );
                 assertFalse( "single root", node.next() );
 
                 // then
                 while ( group.next() )
                 {
-                    group.incoming( edge );
-                    while ( edge.next() )
+                    group.incoming( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "incoming origin", nodeId, edge.originNodeReference() );
-                        edge.neighbour( node );
+                        assertEquals( "incoming origin", nodeId, relationship.originNodeReference() );
+                        relationship.neighbour( node );
                     }
-                    group.outgoing( edge );
-                    while ( edge.next() )
+                    group.outgoing( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "outgoing origin", nodeId, edge.originNodeReference() );
-                        edge.neighbour( node );
+                        assertEquals( "outgoing origin", nodeId, relationship.originNodeReference() );
+                        relationship.neighbour( node );
                     }
-                    group.loops( edge );
-                    while ( edge.next() )
+                    group.loops( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "loop origin", nodeId, edge.originNodeReference() );
-                        edge.neighbour( node );
+                        assertEquals( "loop origin", nodeId, relationship.originNodeReference() );
+                        relationship.neighbour( node );
                     }
                 }
             }

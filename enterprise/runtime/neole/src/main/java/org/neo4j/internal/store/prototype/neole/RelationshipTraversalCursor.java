@@ -21,19 +21,20 @@ package org.neo4j.internal.store.prototype.neole;
 
 import static java.lang.String.format;
 
-class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.internal.kernel.api.EdgeTraversalCursor
+class RelationshipTraversalCursor extends RelationshipCursor
+        implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 {
     private long originNodeReference;
 
-    EdgeTraversalCursor( ReadStore store )
+    RelationshipTraversalCursor( ReadStore store )
     {
         super( store );
         this.originNodeReference = Long.MIN_VALUE;
     }
 
-    void init( StoreFile edges, long originNodeReference, long reference )
+    void init( StoreFile relationships, long originNodeReference, long reference )
     {
-        edges.initializeCursor( reference, this );
+        relationships.initializeCursor( reference, this );
         this.originNodeReference = ~originNodeReference;
     }
 
@@ -104,9 +105,9 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.internal.kerne
         }
         else
         {
-            next = nextEdgeReference();
+            next = nextRelationshipReference();
         }
-        if ( next == NO_EDGE )
+        if ( next == NO_RELATIONSHIP )
         {
             close();
             return false;
@@ -114,20 +115,20 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.internal.kerne
         return moveToVirtualAddress( next );
     }
 
-    private long nextEdgeReference()
+    private long nextRelationshipReference()
     {
         final long source = sourceNodeReference(), target = targetNodeReference();
         if ( source == originNodeReference )
         {
-            return sourceNextEdgeReference();
+            return sourceNextRelationshipReference();
         }
         if ( target == originNodeReference )
         {
-            return targetNextEdgeReference();
+            return targetNextRelationshipReference();
         }
         throw new IllegalStateException( format(
                 "%d is not part of this chain! source=0x%x, target=0x%x, origin=0x%x",
-                edgeReference(),
+                relationshipReference(),
                 source,
                 target,
                 originNodeReference ) );

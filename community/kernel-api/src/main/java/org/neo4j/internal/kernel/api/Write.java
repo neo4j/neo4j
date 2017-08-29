@@ -30,9 +30,9 @@ interface Write
 
     void nodeDelete( long node );
 
-    long edgeCreate( long sourceNode, int edgeLabel, long targetNode );
+    long relationshipCreate( long sourceNode, int relationshipLabel, long targetNode );
 
-    void edgeDelete( long edge );
+    void relationshipDelete( long relationship );
 
     void nodeAddLabel( long node, int nodeLabel );
 
@@ -49,7 +49,7 @@ interface Write
 
     void nodeRemoveProperty( long node, int propertyKey );
 
-    void edgeSetProperty( long edge, int propertyKey, Value value );
+    void relationshipSetProperty( long relationship, int propertyKey, Value value );
 
-    void edgeRemoveProperty( long node, int propertyKey );
+    void relationshipRemoveProperty( long node, int propertyKey );
 }
