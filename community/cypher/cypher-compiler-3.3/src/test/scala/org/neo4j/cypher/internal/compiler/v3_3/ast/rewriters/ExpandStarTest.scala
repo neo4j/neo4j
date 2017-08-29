@@ -137,7 +137,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
     val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
 
-    val checkResult = original.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val checkResult = original.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)

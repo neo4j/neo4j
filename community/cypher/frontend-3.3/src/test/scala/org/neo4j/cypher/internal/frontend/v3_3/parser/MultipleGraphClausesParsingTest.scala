@@ -17,17 +17,18 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, Clause}
+import org.parboiled.scala.Rule1
 
 import scala.language.implicitConversions
 
-class MultigraphClausesParserTest
+class MultipleGraphClausesParsingTest
   extends ParserAstTest[ast.Clause]
   with Query
   with Expressions
   with AstConstructionTestSupport {
 
-  implicit val parser = Clause
+  implicit val parser: Rule1[Clause] = Clause
 
   test("CREATE GRAPH foo AT 'url'") {
     yields(ast.CreateRegularGraph(snapshot = false, varFor("foo"), None, url("url")))

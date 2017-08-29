@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.parser.ParserTest
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, PlannerName, SemanticCheckResult, SemanticFeature, SemanticState, SemanticTable, ast, parser}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, PlannerName, SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState, SemanticTable, ast, parser}
 import org.parboiled.scala.Rule1
 
-class MultigraphClauseSemanticCheckingTest
+class MultipleGraphClauseSemanticCheckingTest
   extends ParserTest[ast.Statement, SemanticCheckResult]
   with parser.Statement
   with AstConstructionTestSupport {
@@ -54,10 +54,9 @@ class MultigraphClauseSemanticCheckingTest
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN a""".stripMargin) shouldVerify {
-      case SemanticCheckResult(state, errors) =>
-        errors shouldBe empty
-
-        contextsByPosition(state) should equal(strip(
+      case result: SemanticCheckResult =>
+        result.errors shouldBe empty
+        result.formattedContexts should equal(strip(
           """
             |// Start
             |--
@@ -67,7 +66,7 @@ class MultigraphClauseSemanticCheckingTest
             |--
             |// End
             """))
-        fullScopeTree(state) should equal(strip(
+        result.formattedScopes should equal(strip(
           """{
             |  {
             |  }
@@ -87,9 +86,9 @@ class MultigraphClauseSemanticCheckingTest
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source
         |RETURN a""".stripMargin) shouldVerify {
-      case SemanticCheckResult(state, errors) =>
-        errors shouldBe empty
-        contextsByPosition(state) should equal(strip(
+      case result: SemanticCheckResult =>
+        result.errors shouldBe empty
+        result.formattedContexts should equal(strip(
           """
             |// Start
             |--
@@ -101,7 +100,7 @@ class MultigraphClauseSemanticCheckingTest
             |--
             |// End
           """))
-        fullScopeTree(state) should equal(strip(
+        result.formattedScopes should equal(strip(
           """{
             |  {
             |  }
@@ -125,8 +124,133 @@ class MultigraphClauseSemanticCheckingTest
         |WITH a GRAPH source
         |WITH a GRAPH target
         |RETURN a""".stripMargin) shouldVerify {
-      case SemanticCheckResult(state, errors) =>
-        errors.map(_.msg).toSet should equal(Set("Variable `target` not defined"))
+      case result: SemanticCheckResult =>
+        result.errorMessages should equal(Set("Variable `target` not defined"))
+    }
+  }
+
+  test("Intermediary clauses don't loose graphs") {
+    parsing(
+      """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt' LIMIT 1
+        |MATCH (b)
+        |WITH a GRAPHS source, target LIMIT 1
+        |MATCH (c)
+        |RETURN a, c""".stripMargin) shouldVerify {
+      case result: SemanticCheckResult =>
+        result.dumpAndExit()
+        result.errors shouldBe empty
+        result.formattedContexts should equal(strip(
+          """
+            |// Start
+            |--
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,Some(Limit(SignedDecimalIntegerLiteral(1))),None)
+            |source >> target
+            |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
+            |source >> target
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(source),Some(Variable(source)))), ReturnedGraph(GraphAs(Variable(target),Some(Variable(target))))))),None,None,Some(Limit(SignedDecimalIntegerLiteral(1))),None)
+            |--
+            |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(c)),List(),None)))),List(),None)
+            |--
+            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)), AliasedReturnItem(Variable(c),Variable(c)))),None,None,None,None,Set())
+            |--
+            |// End
+          """))
+        result.formattedScopes should equal(strip(
+          """{
+            |  {
+            |  }
+            |  { /* source >> target */
+            |    a: 10 82
+            |    b: 74
+            |    GRAPH source: 18 91
+            |    GRAPH target: 43 99
+            |  }
+            |  {
+            |    a: 10 131 82 83
+            |    c: 121 134
+            |    GRAPH source: 91
+            |    GRAPH target: 99
+            |  }
+            |  {
+            |    a: 10 131 132 82 83
+            |    c: 121 134 135
+            |  }
+            |}"""))
+    }
+  }
+
+  test("FROM introduces new source and target graphs") {
+    fail("This aint right")
+    parsing(
+      """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
+        |FROM GRAPH new AT 'new'
+        |RETURN a""".stripMargin) shouldVerify {
+      case result: SemanticCheckResult =>
+        result.formattedContexts should equal(strip(
+          """
+            |// Start
+            |--
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |new >> new
+            |// From(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new))))
+            |new >> new
+            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
+            |--
+            |// End
+          """))
+        result.formattedScopes should equal(strip(
+          """{
+            |  {
+            |  }
+            |  { /* new >> new */
+            |    a: 10 90
+            |    GRAPH new: 70
+            |    GRAPH source: 18
+            |    GRAPH target: 43
+            |  }
+            |  {
+            |    a: 10 90 91
+            |  }
+            |}"""))
+    }
+  }
+
+  test("INTO introduces new target graph") {
+    fail("This aint right")
+    parsing(
+      """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
+        |INTO GRAPH new AT 'new'
+        |RETURN a""".stripMargin) shouldVerify {
+      case result: SemanticCheckResult =>
+        result.dumpAndExit()
+
+        // TODO: Investigate source >> new after WITH
+        result.formattedContexts should equal(strip(
+          """// Start
+            |--
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |source >> new
+            |// Into(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new))))
+            |source >> new
+            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
+            |--
+            |// End
+          """))
+        result.formattedScopes should equal(strip(
+          """{
+            |  {
+            |  }
+            |  { /* source >> new */
+            |    a: 10 90
+            |    GRAPH new: 70
+            |    GRAPH source: 18
+            |    GRAPH target: 43
+            |  }
+            |  {
+            |    a: 10 90 91
+            |  }
+            |}
+            |"""))
     }
   }
 
@@ -145,8 +269,43 @@ class MultigraphClauseSemanticCheckingTest
 
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting.transform(TestState(astNode), TestContext).statement()
-    val initialState = SemanticState.withFeatures(SemanticFeature.MultipleGraphs)
+    val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs)
     rewritten.semanticCheck(initialState)
+  }
+
+  implicit final class RichSemanticCheckResult(val result: SemanticCheckResult) {
+    def state: SemanticState = result.state
+    def errors: Seq[SemanticErrorDef] = result.errors
+    def errorMessages: Set[String] = errors.map(_.msg).toSet
+
+    def formattedContexts: String = contextsByPosition(state)
+    def formattedScopes: String = fullScopeTree(state)
+
+    // Useful for working on these tests
+
+    def dumpAndExit(): Unit = {
+      dump()
+      System.exit(1)
+    }
+
+    def dumpAndFail(): Unit = {
+      dump()
+      fail()
+    }
+
+    def dumpAndFail(msg: String): Unit = {
+      dump()
+      fail(msg)
+    }
+
+    def dump(): Unit = {
+      println("\n// *** ERRORS")
+      println(errorMessages.mkString("\n"))
+      println("\n// *** CONTEXTS")
+      println(contextsByPosition(state))
+      println("\n// *** SCOPES")
+      println(fullScopeTree(state))
+    }
   }
 
   //noinspection TypeAnnotation

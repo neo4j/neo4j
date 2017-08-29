@@ -66,7 +66,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       NewContextGraphs(baz, None)(pos)
     ))(pos)
 
-    val result = items.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Setting multiple source graphs is not allowed")) should be(true)
@@ -78,7 +78,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       NewTargetGraph(bar)(pos)
     ))(pos)
 
-    val result = items.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Setting multiple target graphs is not allowed")) should be(true)
@@ -117,7 +117,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       ReturnedGraph(graphAt("foo", "url2"))(pos)
     ))(pos)
 
-    val result = items.declareGraphs(None)(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.declareGraphs(None)(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Variable `foo` already declared")) should be(true)
@@ -129,7 +129,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       ReturnedGraph(graphAs("foo", "foo"))(pos)
     ))(pos)
 
-    val result = items.semanticCheck(SemanticState.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Multiple result graphs with the same name are not supported")) should be(true)

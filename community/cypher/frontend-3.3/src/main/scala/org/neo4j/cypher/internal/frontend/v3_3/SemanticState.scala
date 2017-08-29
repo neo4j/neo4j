@@ -203,9 +203,6 @@ final case class Scope(symbolTable: Map[String, Symbol],
 object SemanticState {
   implicit object ScopeZipper extends TreeZipper[Scope]
 
-  def withFeatures(features: SemanticFeature*): SemanticState =
-    features.foldLeft(SemanticState.clean)(_.withFeature(_))
-
   val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
@@ -291,6 +288,17 @@ case class SemanticState(currentScope: ScopeLocation,
       Right(copy(currentScope = newScope))
   }
 
+  def updateSourceGraph(source: String): Either[SemanticError, SemanticState] =
+    updateContextGraphs(ContextGraphs(source, source))
+
+  def updateTargetGraph(target: String): Either[SemanticError, SemanticState] =
+    currentScope.contextGraphs match {
+      case Some(contextGraphs) =>
+        updateContextGraphs(contextGraphs.updated(None, Some(target)))
+      case None =>
+        Left(SemanticError("No source graph is available in scope", InputPosition.NONE))
+    }
+
   def declareGraphVariable(variable: ast.Variable, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case None =>
@@ -366,6 +374,9 @@ case class SemanticState(currentScope: ScopeLocation,
     val updated = expType.expect(possibleTypes)
     (copy(typeTable = typeTable.updated(expression, updated)), updated.actual)
   }
+
+  def withFeatures(features: SemanticFeature*): SemanticState =
+    features.foldLeft(this)(_.withFeature(_))
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
 
