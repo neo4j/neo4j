@@ -142,7 +142,7 @@ public class LuceneRecoveryIT
 
     private void awaitFile( File file ) throws InterruptedException
     {
-        long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
+        long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 300 );
         while ( !file.exists() && System.currentTimeMillis() < end )
         {
             Thread.sleep( 100 );
