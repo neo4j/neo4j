@@ -19,10 +19,14 @@
  */
 package org.neo4j.harness;
 
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.harness.CausalClusterInProcessRunner.CausalCluster;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
@@ -35,7 +39,24 @@ public class CausalClusterInProcessRunnerIT
     @Test
     public void shouldBootAndShutdownCluster() throws Exception
     {
-        CausalCluster cluster = new CausalCluster( 3, 3, testDirectory.absolutePath().toPath(), NullLogProvider.getInstance() );
+        Path clusterPath = testDirectory.absolutePath().toPath();
+        CausalClusterInProcessRunner.PortPickingStrategy portPickingStrategy = new CausalClusterInProcessRunner.PortPickingStrategy()
+        {
+            Map<Integer, Integer> cache = new HashMap<>();
+
+            @Override
+            int port( int offset, int id )
+            {
+                int key = offset + id;
+                if ( ! cache.containsKey( key ) )
+                {
+                    cache.put( key, PortAuthority.allocatePort() );
+                }
+
+                return cache.get( key );
+            }
+        };
+        CausalCluster cluster = new CausalCluster( 3, 3, clusterPath, NullLogProvider.getInstance(), portPickingStrategy );
 
         cluster.boot();
         cluster.shutdown();
