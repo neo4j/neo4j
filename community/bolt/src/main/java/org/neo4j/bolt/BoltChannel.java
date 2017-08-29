@@ -20,10 +20,10 @@
 
 package org.neo4j.bolt;
 
+import java.net.SocketAddress;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-
-import java.net.SocketAddress;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
 
@@ -71,15 +71,7 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
         if ( rawChannel.isOpen() )
         {
             messageLogger.serverEvent( "CLOSE" );
-            try
-            {
-                // closing of channel is asynchronous, wait for it to complete
-                rawChannel.close().sync();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-            }
+            rawChannel.close().syncUninterruptibly();
         }
     }
 
