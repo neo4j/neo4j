@@ -20,4 +20,5 @@ sealed trait SemanticFeature
 
 object SemanticFeature {
   case object MultipleGraphs extends SemanticFeature
+  case object WithInitialQuerySignature extends SemanticFeature
 }

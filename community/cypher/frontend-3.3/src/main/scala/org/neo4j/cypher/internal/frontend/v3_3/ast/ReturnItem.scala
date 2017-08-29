@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.{error, success}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 object ReturnItems {
