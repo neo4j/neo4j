@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.frontend.v3_2.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
-import org.neo4j.cypher.internal.frontend.v3_2.{Rewriter, SemanticState, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, Rewriter, SemanticState, bottomUp}
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
@@ -51,7 +51,9 @@ case class expandStar(state: SemanticState) extends Rewriter {
     val clausePos = clause.position
     val symbolNames = scope.symbolNames -- excludedNames
     val expandedItems = symbolNames.toIndexedSeq.sorted.map { id =>
-      val idPos = scope.symbolTable(id).definition.position
+      val idPos = scope.symbolTable(id).positions.toSeq.sorted(InputPosition.byOffset).reduceLeft((best, p) =>
+        // Pick the preceding position closest to the clause, or the first available one (so one always get picked).
+        if (p.offset > best.offset && p.offset <= clausePos.offset) p else best)
       val expr = Variable(id)(idPos)
       val alias = expr.copyId
       AliasedReturnItem(expr, alias)(clausePos)
