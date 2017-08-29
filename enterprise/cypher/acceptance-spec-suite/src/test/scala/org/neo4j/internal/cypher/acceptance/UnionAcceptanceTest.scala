@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -39,7 +40,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
         |M.a as B
       """.stripMargin
 
-    val result = succeedWith(Configs.Interpreted - Configs.SlottedInterpreted, query)
+    val result = succeedWith(Configs.CommunityInterpreted, query)
     val expected = List(Map("A" -> "a", "B" -> "b"), Map("A" -> "b", "B" -> "a"))
 
     result.toList should equal(expected)
@@ -62,7 +63,8 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
       """.stripMargin
 
     // TODO we expect this test to succeed with 3.2.4
-    val expectedToWorkIn = Configs.CommunityInterpreted - Scenarios.Compatibility3_1Cost - Scenarios.Compatibility2_3Cost - Scenarios.Compatibility3_2
+    val expectedToWorkIn = Configs.CommunityInterpreted -
+      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.Cost, Runtimes.Default)
     val result = succeedWith(expectedToWorkIn, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 

@@ -77,7 +77,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result = succeedWith(Configs.All, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
