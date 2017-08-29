@@ -27,7 +27,7 @@ import org.neo4j.harness.CausalClusterInProcessRunner.CausalCluster;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 
-public class CausalClusterInProcessRunnerTest
+public class CausalClusterInProcessRunnerIT
 {
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();

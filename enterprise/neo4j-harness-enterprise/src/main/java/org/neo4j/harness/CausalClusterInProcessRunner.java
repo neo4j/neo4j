@@ -80,8 +80,87 @@ public class CausalClusterInProcessRunner
         System.exit( 0 );
     }
 
+    abstract static class PortPickingStrategy
+    {
+        public static final PortPickingStrategy DEFAULT = new PortPickingStrategy()
+        {
+            @Override
+            int hazelcastPort( int coreId )
+            {
+                return 55000 + coreId;
+            }
+
+            @Override
+            int txCorePort( int coreId )
+            {
+                return 56000 + coreId;
+            }
+
+            @Override
+            int raftCorePort( int coreId )
+            {
+                return 57000 + coreId;
+            }
+
+            @Override
+            int boltCorePort( int coreId )
+            {
+                return 58000 + coreId;
+            }
+
+            @Override
+            int httpCorePort( int coreId )
+            {
+                return 59000 + coreId;
+            }
+
+            @Override
+            int httpsCorePort( int coreId )
+            {
+                return 60000 + coreId;
+            }
+
+            @Override
+            int txReadReplicaPort( int replicaId )
+            {
+                return 56500 + replicaId;
+            }
+
+            @Override
+            int boltReadReplicaPort( int replicaId )
+            {
+                return 58500 + replicaId;
+            }
+
+            @Override
+            int httpReadReplicaPort( int replicaId )
+            {
+                return 59500 + replicaId;
+            }
+
+            @Override
+            int httpsReadReplicaPort( int replicaId )
+            {
+                return 60500 + replicaId;
+            }
+        };
+
+        abstract int hazelcastPort( int coreId );
+        abstract int txCorePort( int coreId );
+        abstract int raftCorePort( int coreId );
+        abstract int boltCorePort( int coreId );
+        abstract int httpCorePort( int coreId );
+        abstract int httpsCorePort( int coreId );
+        abstract int txReadReplicaPort( int replicaId );
+        abstract int boltReadReplicaPort( int replicaId );
+        abstract int httpReadReplicaPort( int replicaId );
+        abstract int httpsReadReplicaPort( int replicaId );
+    }
+
     static class CausalCluster
     {
+        private static final PortPickingStrategy PortPickingStrategy = CausalClusterInProcessRunner.PortPickingStrategy.DEFAULT;
+
         private final int nCores;
         private final int nReplicas;
         private final Path clusterPath;
@@ -104,7 +183,7 @@ public class CausalClusterInProcessRunner
 
             for ( int coreId = 0; coreId < nCores; coreId++ )
             {
-                int hazelcastPort = 55000 + coreId;
+                int hazelcastPort = PortPickingStrategy.hazelcastPort( coreId );
                 initialMembers.add( "localhost:" + hazelcastPort );
             }
 
@@ -113,12 +192,12 @@ public class CausalClusterInProcessRunner
 
             for ( int coreId = 0; coreId < nCores; coreId++ )
             {
-                int hazelcastPort = 55000 + coreId;
-                int txPort = 56000 + coreId;
-                int raftPort = 57000 + coreId;
-                int boltPort = 58000 + coreId;
-                int httpPort = 59000 + coreId;
-                int httpsPort = 60000 + coreId;
+                int hazelcastPort = PortPickingStrategy.hazelcastPort( coreId );
+                int txPort = PortPickingStrategy.txCorePort( coreId );
+                int raftPort = PortPickingStrategy.raftCorePort( coreId );
+                int boltPort = PortPickingStrategy.boltCorePort( coreId );
+                int httpPort = PortPickingStrategy.httpCorePort( coreId );
+                int httpsPort = PortPickingStrategy.httpsCorePort( coreId );
 
                 String homeDir = "core-" + coreId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -160,10 +239,10 @@ public class CausalClusterInProcessRunner
 
             for ( int replicaId = 0; replicaId < nReplicas; replicaId++ )
             {
-                int txPort = 56500 + replicaId;
-                int boltPort = 58500 + replicaId;
-                int httpPort = 59500 + replicaId;
-                int httpsPort = 60500 + replicaId;
+                int txPort = PortPickingStrategy.txReadReplicaPort( replicaId );
+                int boltPort = PortPickingStrategy.boltReadReplicaPort( replicaId );
+                int httpPort = PortPickingStrategy.httpReadReplicaPort( replicaId );
+                int httpsPort = PortPickingStrategy.httpsReadReplicaPort( replicaId );
 
                 String homeDir = "replica-" + replicaId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -182,7 +261,6 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
                 builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
-                
                 int finalReplicaId = replicaId;
                 Thread replicaThread = new Thread( () ->
                 {
