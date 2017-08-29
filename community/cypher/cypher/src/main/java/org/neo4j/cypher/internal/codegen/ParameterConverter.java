@@ -289,19 +289,19 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeInteger( byte value ) throws RuntimeException
     {
-        writeValue( value );
+        writeValue( (long) value );
     }
 
     @Override
     public void writeInteger( short value ) throws RuntimeException
     {
-        writeValue( value );
+        writeValue( (long) value );
     }
 
     @Override
     public void writeInteger( int value ) throws RuntimeException
     {
-        writeValue( value );
+        writeValue( (long) value );
     }
 
     @Override
@@ -313,7 +313,7 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     @Override
     public void writeFloatingPoint( float value ) throws RuntimeException
     {
-        writeValue( value );
+        writeValue( (double) value );
     }
 
     @Override
