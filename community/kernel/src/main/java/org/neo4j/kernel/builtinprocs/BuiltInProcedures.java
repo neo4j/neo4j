@@ -617,12 +617,14 @@ public class BuiltInProcedures
         }
     }
 
-    public static class LegacyIndexInfo {
+    public static class LegacyIndexInfo
+    {
         public final String type;
         public final String name;
         public final Map<String,String> config;
 
-        public LegacyIndexInfo(String type, String name, Map<String, String> config) {
+        public LegacyIndexInfo( String type, String name, Map<String,String> config )
+        {
             this.type = type;
             this.name = name;
             this.config = config;
