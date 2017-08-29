@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, as
 
 import scala.language.implicitConversions
 
-class SingleGraphParserTest
+class GraphsParserTest
   extends ParserAstTest[ast.SingleGraphAs]
   with Graphs
   with Expressions {

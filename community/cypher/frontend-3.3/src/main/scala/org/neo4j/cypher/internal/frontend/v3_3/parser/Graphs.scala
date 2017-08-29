@@ -48,7 +48,7 @@ trait Graphs
     keyword("GRAPH") ~~ keyword("OF") ~~ Pattern ~~ optional(AsGraph) ~~>> (ast.GraphOfAs(_, _))
   }
 
-  private def GraphAtAs: Rule1[ast.GraphAtAs] = rule("GRAPH <graph-url> AT [AS <name>]") {
+  private def GraphAtAs: Rule1[ast.GraphAtAs] = rule("GRAPH AT <graph-url> [AS <name>]") {
     keyword("GRAPH") ~~ keyword("AT") ~~ GraphUrl ~~ optional(AsGraph) ~~>>(ast.GraphAtAs(_, _))
   }
 
