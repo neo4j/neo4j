@@ -38,7 +38,7 @@ public class MadeUpServer extends Server<MadeUpCommunicationInterface, Void>
     private volatile boolean responseWritten;
     private volatile boolean responseFailureEncountered;
     private final byte internalProtocolVersion;
-    public static final int FRAME_LENGTH = 1024 * 1024 * 1;
+    public static final int FRAME_LENGTH = 1024 * 1024;
 
     public MadeUpServer( MadeUpCommunicationInterface requestTarget, final int port, byte internalProtocolVersion,
                          byte applicationProtocolVersion, TxChecksumVerifier txVerifier, final int chunkSize )
