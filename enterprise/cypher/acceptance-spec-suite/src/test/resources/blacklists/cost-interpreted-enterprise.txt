@@ -63,7 +63,6 @@ Filter using a pattern predicate that is a logical OR between one negated subque
 Using a pattern predicate after aggregation 1
 Using a pattern predicate after aggregation 2
 Returning a relationship from a pattern predicate
-Pattern predicate should uphold the relationship uniqueness constraint
 Matching with complex composite pattern predicate
 Matching named path with variable length pattern and pattern predicates
 In-query call to procedure that takes no arguments
