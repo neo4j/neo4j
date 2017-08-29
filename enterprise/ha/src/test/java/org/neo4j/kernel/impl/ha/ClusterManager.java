@@ -1268,7 +1268,7 @@ public class ClusterManager
          */
         public void await( Predicate<ManagedCluster> predicate )
         {
-            await( predicate, 240 );
+            await( predicate, DEFAULT_TIMEOUT_SECONDS );
         }
 
         /**
@@ -1279,7 +1279,7 @@ public class ClusterManager
          * @throws IllegalStateException if the condition wasn't met
          * during within the max time.
          */
-        public void await( Predicate<ManagedCluster> predicate, int maxSeconds )
+        public void await( Predicate<ManagedCluster> predicate, long maxSeconds )
         {
             long end = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( maxSeconds );
             while ( System.currentTimeMillis() < end )
