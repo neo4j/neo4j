@@ -232,77 +232,77 @@ public class ProcedureResourcesIT
         case "dbms.listActiveLocks":
             proc.withParam( "'query-1234'" );
             break;
-        case "db.nodeManualIndexSeek":
+        case "db.index.manual.seek.nodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.nodeManualIndexSearch":
+        case "db.index.manual.nodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipManualIndexSearch":
+        case "db.index.manual.relationships":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipManualIndexSeek":
+        case "db.index.manual.seek.relationships":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.nodeAutoIndexSeek":
+        case "db.index.auto.seek.nodes":
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.nodeAutoIndexSearch":
+        case "db.index.auto.nodes":
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipAutoIndexSearch":
+        case "db.index.auto.relationships":
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipAutoIndexSeek":
+        case "db.index.auto.seek.relationships":
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.nodeManualIndexExists":
+        case "db.index.manual.exists.forNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.relationshipManualIndexExists":
+        case "db.index.manual.exists.forRelationships":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.nodeManualIndex":
+        case "db.index.manual.forNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.relationshipManualIndex":
+        case "db.index.manual.forRelationships":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.nodeManualIndexAdd":
+        case "db.index.manual.add.node":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'prop'" );
             proc.withParam( "'value'");
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.relationshipManualIndexAdd":
+        case "db.index.manual.add.relationship":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "r" );
             proc.withParam( "'prop'" );
             proc.withParam( "'value'");
             proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.nodeManualIndexRemove":
+        case "db.index.manual.remove.node":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'prop'" );
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.relationshipManualIndexRemove":
+        case "db.index.manual.remove.relationship":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "r" );
             proc.withParam( "'prop'" );
             proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.manualIndexDrop":
+        case "db.index.manual.drop":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
         case "dbms.setConfigValue":

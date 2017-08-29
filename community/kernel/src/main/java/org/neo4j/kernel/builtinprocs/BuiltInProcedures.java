@@ -211,7 +211,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`" )
-    @Procedure( name = "db.nodeManualIndexSeek", mode = READ )
+    @Procedure( name = "db.index.manual.seek.nodes", mode = READ )
     public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String legacyIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
@@ -231,7 +231,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`" )
-    @Procedure( name = "db.nodeManualIndexSearch", mode = READ )
+    @Procedure( name = "db.index.manual.nodes", mode = READ )
     public Stream<WeightedNodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
             throws ProcedureException
@@ -250,7 +250,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`" )
-    @Procedure( name = "db.relationshipManualIndexSeek", mode = READ )
+    @Procedure( name = "db.index.manual.seek.relationships", mode = READ )
     public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName,
             @Name( "key" ) String key,
             @Name( "value" ) Object value )
@@ -270,8 +270,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`" )
-    @Procedure( name = "db.relationshipManualIndexSearch", mode = READ )
-    public Stream<WeightedRelationshipResult> relationshipManualIndexSearch( @Name( "indexName" ) String manualIndexName,
+    @Procedure( name = "db.index.manual.relationships", mode = READ )
+    public Stream<WeightedRelationshipResult> relationshipManualIndexSearch(
+            @Name( "indexName" ) String manualIndexName,
             @Name( "query" ) Object query )
             throws ProcedureException
     {
@@ -289,8 +290,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Get node from automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
-    @Procedure( name = "db.nodeAutoIndexSeek", mode = READ )
-    public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value ) throws ProcedureException
+    @Procedure( name = "db.index.auto.seek.nodes", mode = READ )
+    public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value )
+            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
@@ -306,7 +308,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Search nodes from automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
-    @Procedure( name = "db.nodeAutoIndexSearch", mode = READ )
+    @Procedure( name = "db.index.auto.nodes", mode = READ )
     public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
@@ -322,14 +324,17 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Get relationship from automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`" )
-    @Procedure( name = "db.relationshipAutoIndexSeek", mode = READ )
-    public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value ) throws ProcedureException
+    @Description( "Get relationship from automatic index. Replaces `START r=relationship:relationship_auto_index(key " +
+                  "= 'A')`" )
+    @Procedure( name = "db.index.auto.seek.relationships", mode = READ )
+    public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
+            @Name( "value" ) Object value ) throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            LegacyIndexHits hits = readOperations.relationshipLegacyIndexGet( "relationship_auto_index", key, value, -1, -1 );
+            LegacyIndexHits hits =
+                    readOperations.relationshipLegacyIndexGet( "relationship_auto_index", key, value, -1, -1 );
             return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( LegacyIndexNotFoundKernelException e )
@@ -339,14 +344,17 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`" )
-    @Procedure( name = "db.relationshipAutoIndexSearch", mode = READ )
-    public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
+    @Description( "Search relationship from automatic index. Replaces `START r=relationship:relationship_auto_index" +
+                  "('key:foo*')`" )
+    @Procedure( name = "db.index.auto.relationships", mode = READ )
+    public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )
+            throws ProcedureException
     {
         try ( Statement statement = tx.acquireStatement() )
         {
             ReadOperations readOperations = statement.readOperations();
-            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( "relationship_auto_index", query, -1, -1 );
+            LegacyIndexHits hits =
+                    readOperations.relationshipLegacyIndexQuery( "relationship_auto_index", query, -1, -1 );
             return toWeightedRelationshipResultStream( hits );
         }
         catch ( LegacyIndexNotFoundKernelException e )
@@ -357,7 +365,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Get or create a node manual index - YIELD type,name,config" )
-    @Procedure( name = "db.nodeManualIndex", mode = WRITE )
+    @Procedure( name = "db.index.manual.forNodes", mode = WRITE )
     public Stream<LegacyIndexInfo> nodeManualIndex( @Name( "indexName" ) String legacyIndexName )
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -366,7 +374,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Get or create a relationship manual index - YIELD type,name,config" )
-    @Procedure( name = "db.relationshipManualIndex", mode = WRITE )
+    @Procedure( name = "db.index.manual.forRelationships", mode = WRITE )
     public Stream<LegacyIndexInfo> relationshipManualIndex( @Name( "indexName" ) String legacyIndexName )
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -375,21 +383,21 @@ public class BuiltInProcedures
     }
 
     @Description( "Check if a node manual index exists" )
-    @Procedure( name = "db.nodeManualIndexExists", mode = READ )
+    @Procedure( name = "db.index.manual.exists.forNodes", mode = READ )
     public Stream<BooleanResult> nodeManualIndexExists( @Name( "indexName" ) String legacyIndexName )
     {
         return Stream.of( new BooleanResult( graphDatabaseAPI.index().existsForNodes( legacyIndexName ) ) );
     }
 
     @Description( "Check if a relationship manual index exists" )
-    @Procedure( "db.relationshipManualIndexExists" )
+    @Procedure( "db.index.manual.exists.forRelationships" )
     public Stream<BooleanResult> relationshipManualIndexExists( @Name( "indexName" ) String legacyIndexName )
     {
         return Stream.of( new BooleanResult( graphDatabaseAPI.index().existsForRelationships( legacyIndexName ) ) );
     }
 
-    @Description("List all manual indexes - YIELD type,name,config")
-    @Procedure( name = "db.manualIndexes", mode = READ )
+    @Description( "List all manual indexes - YIELD type,name,config" )
+    @Procedure( name = "db.index.manual.list", mode = READ )
     public Stream<LegacyIndexInfo> list()
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -408,7 +416,7 @@ public class BuiltInProcedures
     }
 
     @Description( "Remove a manual index - YIELD type,name,config" )
-    @Procedure( name = "db.manualIndexDrop", mode = WRITE )
+    @Procedure( name = "db.index.manual.drop", mode = WRITE )
     public Stream<LegacyIndexInfo> manualIndexDrop( @Name( "indexName" ) String legacyIndexName )
     {
         IndexManager mgr = graphDatabaseAPI.index();
@@ -429,8 +437,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Add a node to a manual index based on a specified key and value" )
-    @Procedure( name = "db.nodeManualIndexAdd", mode = WRITE )
-    public Stream<BooleanResult> nodeManualIndexAdd( @Name( "indexName" ) String legacyIndexName, @Name( "node" ) Node node, @Name( "key" ) String key,
+    @Procedure( name = "db.index.manual.add.node", mode = WRITE )
+    public Stream<BooleanResult> nodeManualIndexAdd( @Name( "indexName" ) String legacyIndexName,
+            @Name( "node" ) Node node, @Name( "key" ) String key,
             @Name( "value" ) Object value )
     {
         graphDatabaseAPI.index().forNodes( legacyIndexName ).add( node, key, value );
@@ -439,8 +448,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Add a relationship to a manual index based on a specified key and value" )
-    @Procedure( name = "db.relationshipManualIndexAdd", mode = WRITE )
-    public Stream<BooleanResult> relationshipManualIndexAdd( @Name( "indexName" ) String legacyIndexName, @Name( "relationship" ) Relationship relationship,
+    @Procedure( name = "db.index.manual.add.relationship", mode = WRITE )
+    public Stream<BooleanResult> relationshipManualIndexAdd( @Name( "indexName" ) String legacyIndexName,
+            @Name( "relationship" ) Relationship relationship,
             @Name( "key" ) String key, @Name( "value" ) Object value )
     {
         graphDatabaseAPI.index().forRelationships( legacyIndexName ).add( relationship, key, value );
@@ -449,8 +459,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Remove a node from a manual index with an optional key" )
-    @Procedure( name = "db.nodeManualIndexRemove", mode = WRITE )
-    public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String legacyIndexName, @Name( "node" ) Node node, @Name( "key" ) String key )
+    @Procedure( name = "db.index.manual.remove.node", mode = WRITE )
+    public Stream<BooleanResult> nodeManualIndexRemove( @Name( "indexName" ) String legacyIndexName,
+            @Name( "node" ) Node node, @Name( "key" ) String key )
     {
         if ( key.equals( Name.DEFAULT_VALUE ) )
         {
@@ -465,8 +476,9 @@ public class BuiltInProcedures
     }
 
     @Description( "Remove a relationship from a manual index with an optional key" )
-    @Procedure( name = "db.relationshipManualIndexRemove", mode = WRITE )
-    public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String legacyIndexName, @Name( "relationship" ) Relationship relationship,
+    @Procedure( name = "db.index.manual.remove.relationship", mode = WRITE )
+    public Stream<BooleanResult> relationshipManualIndexRemove( @Name( "indexName" ) String legacyIndexName,
+            @Name( "relationship" ) Relationship relationship,
             @Name( "key" ) String key )
     {
         if ( key.equals( Name.DEFAULT_VALUE ) )
