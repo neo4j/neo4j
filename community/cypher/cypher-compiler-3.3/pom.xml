@@ -23,7 +23,7 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v3_1</version-package>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>
 

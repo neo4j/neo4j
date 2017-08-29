@@ -45,7 +45,7 @@
 
   <properties>
     <version-package>cypher.internal</version-package>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <doclint-groups>none</doclint-groups>
