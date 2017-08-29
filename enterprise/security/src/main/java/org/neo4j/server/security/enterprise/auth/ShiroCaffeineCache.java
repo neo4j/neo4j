@@ -38,23 +38,27 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
 {
     private final com.github.benmanes.caffeine.cache.Cache<K,V> caffCache;
 
-    ShiroCaffeineCache( Ticker ticker, long ttl, int maxCapacity )
+    ShiroCaffeineCache( Ticker ticker, long ttl, int maxCapacity, boolean use_ttl )
     {
-        this( ticker, ForkJoinPool.commonPool(), ttl, maxCapacity );
+        this( ticker, ForkJoinPool.commonPool(), ttl, maxCapacity, use_ttl );
     }
 
-    ShiroCaffeineCache( Ticker ticker, Executor maintenanceExecutor, long ttl, int maxCapacity )
+    ShiroCaffeineCache( Ticker ticker, Executor maintenanceExecutor, long ttl, int maxCapacity, boolean use_ttl )
     {
         if ( ttl <= 0 )
         {
             throw new IllegalArgumentException( "TTL must be larger than zero." );
         }
-        caffCache = Caffeine.newBuilder()
-                .maximumSize( maxCapacity )
-                .expireAfterWrite( ttl, TimeUnit.MILLISECONDS )
-                .executor( maintenanceExecutor )
-                .ticker( ticker )
-                .build();
+
+        Caffeine<Object,Object> builder = Caffeine.newBuilder()
+                                                  .maximumSize( maxCapacity )
+                                                  .executor( maintenanceExecutor )
+                                                  .ticker( ticker );
+        if ( use_ttl )
+        {
+            builder.expireAfterWrite( ttl, TimeUnit.MILLISECONDS );
+        }
+        caffCache = builder.build();
     }
 
     @Override
@@ -105,12 +109,14 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
         private final Ticker ticker;
         private final long ttl;
         private final int maxCapacity;
+        private boolean use_ttl;
 
-        Manager( Ticker ticker, long ttl, int maxCapacity )
+        Manager( Ticker ticker, long ttl, int maxCapacity, boolean use_ttl )
         {
             this.ticker = ticker;
             this.ttl = ttl;
             this.maxCapacity = maxCapacity;
+            this.use_ttl = use_ttl;
             caches = new HashMap<>();
         }
 
@@ -120,7 +126,7 @@ class ShiroCaffeineCache<K, V> implements Cache<K,V>
             //noinspection unchecked
             return (Cache<K,V>) caches.computeIfAbsent( s, ignored -> ttl <= 0 ?
                     new NullCache() :
-                    new ShiroCaffeineCache<K,V>( ticker, ttl, maxCapacity ) );
+                    new ShiroCaffeineCache<K,V>( ticker, ttl, maxCapacity, use_ttl ) );
         }
     }
 
