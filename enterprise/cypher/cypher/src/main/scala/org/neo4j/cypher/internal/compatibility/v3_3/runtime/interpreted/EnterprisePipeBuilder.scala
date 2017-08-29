@@ -184,6 +184,17 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val offset = pipeline.getReferenceOffsetFor(name)
         UnwindRegisterPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
 
+      // Aggregation without grouping, such as RETURN count(*)
+      case Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
+        val aggregation = aggregationExpression.map {
+          case (key, expression) =>
+            pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
+              .asInstanceOf[AggregationExpression]
+        }
+        EagerAggregationWithoutGroupingRegisterPipe(source,
+          pipeline,
+          aggregation)(id)
+
       case Aggregation(_, groupingExpressions, aggregationExpression) =>
         val grouping = groupingExpressions.map {
           case (key, expression) =>
