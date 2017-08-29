@@ -19,6 +19,10 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.security.SecureRandom;
 import java.util.List;
@@ -33,10 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.concurrent.Futures;
@@ -47,6 +47,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helper.RepeatUntilCallable;
 import org.neo4j.helpers.collection.Iterables;
@@ -136,11 +137,6 @@ public class IdReusabilityStressTesting
 
             Futures.combine( insertLoad, deleteLoad1, deleteLoad2, reelectionLoad ).get( durationInMinutes + 5, MINUTES );
         }
-        catch ( Throwable e )
-        {
-            System.out.println( "Exception thrown from execution service:" );
-            e.printStackTrace( System.out );
-        }
         finally
         {
             service.shutdown();
@@ -215,8 +211,11 @@ public class IdReusabilityStressTesting
             return false;
         }
 
-        if ( e instanceof  TimeoutException || e instanceof DatabaseShutdownException ||
-                e instanceof TransactionFailureException || e instanceof AcquireLockTimeoutException )
+        if ( e instanceof  TimeoutException ||
+                e instanceof DatabaseShutdownException ||
+                e instanceof TransactionFailureException ||
+                e instanceof AcquireLockTimeoutException ||
+                e instanceof TransientTransactionFailureException )
         {
             return true;
         }
@@ -271,9 +270,7 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                // Ignore throws for now
-                System.out.println( "InsertionWorkload encountered error:" );
-                e.printStackTrace( System.out );
+                throw new RuntimeException( "InsertionWorkload", e );
             }
         }
     }
@@ -309,9 +306,7 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                // Ignore throws for now
-                System.out.println( "ReelectionWorkload encountered error:" );
-                e.printStackTrace( System.out );
+                throw new RuntimeException( "ReelectionWorkload", e );
             }
         }
     }
@@ -355,9 +350,7 @@ public class IdReusabilityStressTesting
                     return;
                 }
 
-                // Ignore throws for now
-                System.out.println( "DeletionWorkload encountered error:" );
-                e.printStackTrace( System.out );
+                throw new RuntimeException( "DeletionWorkload", e );
             }
         }
     }
