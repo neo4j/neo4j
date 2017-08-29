@@ -19,15 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+  with CypherComparisonSupport {
 
   // TODO: Reflect something like this in the TCK
   test("multiple merges after each other") {
     1 to 100 foreach { prop =>
-      val result = updateWithBothPlannersAndCompatibilityMode(s"merge (a:Label {prop: $prop}) return a.prop")
+      val result = updateWith(Configs.Interpreted - Configs.Cost2_3, s"merge (a:Label {prop: $prop}) return a.prop")
       assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     }
   }
