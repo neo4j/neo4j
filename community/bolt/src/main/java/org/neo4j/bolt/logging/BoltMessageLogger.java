@@ -40,23 +40,23 @@ public interface BoltMessageLogger
 
     void serverError( String eventName, Status status, String message );
 
-    void init( String userAgent, Map<String,Object> authToken );
+    void logInit( String userAgent, Map<String,Object> authToken );
 
-    void run( String statement, Map<String,Object> parameters );
+    void logRun( String statement, Map<String,Object> parameters );
 
-    void pullAll();
+    void logPullAll();
 
-    void discardAll();
+    void logDiscardAll();
 
-    void ackFailure();
+    void logAckFailure();
 
-    void reset();
+    void logReset();
 
-    void success( Object metadata );
+    void logSuccess( Object metadata );
 
-    void failure( Status status, String message );
+    void logFailure( Status status, String message );
 
-    void ignored();
+    void logIgnored();
 
-    void record( Object arg1 );
+    void logRecord( Object arg1 );
 }

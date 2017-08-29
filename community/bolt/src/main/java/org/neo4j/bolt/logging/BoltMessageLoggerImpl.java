@@ -90,62 +90,62 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void init( String userAgent, Map<String,Object> authToken )
+    public void logInit( String userAgent, Map<String,Object> authToken )
     {
         // log only auth toke keys, not values that include password
         messageLog.info( remoteAddress, "C: INIT", userAgent, json( authToken.keySet() ) );
     }
 
     @Override
-    public void run( String statement, Map<String,Object> parameters )
+    public void logRun( String statement, Map<String,Object> parameters )
     {
         messageLog.info( remoteAddress, "C: RUN", statement, json( parameters ) );
     }
 
     @Override
-    public void pullAll()
+    public void logPullAll()
     {
         messageLog.info( remoteAddress, "C: PULL_ALL" );
     }
 
     @Override
-    public void discardAll()
+    public void logDiscardAll()
     {
         messageLog.info( remoteAddress, "C: DISCARD_ALL" );
     }
 
     @Override
-    public void ackFailure()
+    public void logAckFailure()
     {
         messageLog.info( remoteAddress, "C: ACK_FAILURE" );
     }
 
     @Override
-    public void reset()
+    public void logReset()
     {
         messageLog.info( remoteAddress, "C: RESET" );
     }
 
     @Override
-    public void success( Object metadata )
+    public void logSuccess( Object metadata )
     {
         messageLog.info( remoteAddress, "S: SUCCESS", json( metadata ) );
     }
 
     @Override
-    public void failure( Status status, String message )
+    public void logFailure( Status status, String message )
     {
         messageLog.info( remoteAddress, "S: FAILURE", status.code().serialize(), message );
     }
 
     @Override
-    public void ignored()
+    public void logIgnored()
     {
         messageLog.info( remoteAddress, "S: IGNORED" );
     }
 
     @Override
-    public void record( Object arg1 )
+    public void logRecord( Object arg1 )
     {
         messageLog.debug( remoteAddress, "S: RECORD", json( arg1 ) );
     }

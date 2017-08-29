@@ -73,52 +73,52 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void init( String userAgent, Map<String,Object> authToken )
+    public void logInit( String userAgent, Map<String,Object> authToken )
     {
     }
 
     @Override
-    public void run( String statement, Map<String,Object> parameters )
+    public void logRun( String statement, Map<String,Object> parameters )
     {
     }
 
     @Override
-    public void pullAll()
+    public void logPullAll()
     {
     }
 
     @Override
-    public void discardAll()
+    public void logDiscardAll()
     {
     }
 
     @Override
-    public void ackFailure()
+    public void logAckFailure()
     {
     }
 
     @Override
-    public void reset()
+    public void logReset()
     {
     }
 
     @Override
-    public void success( Object metadata )
+    public void logSuccess( Object metadata )
     {
     }
 
     @Override
-    public void failure( Status status, String message )
+    public void logFailure( Status status, String message )
     {
     }
 
     @Override
-    public void ignored()
+    public void logIgnored()
     {
     }
 
     @Override
-    public void record( Object arg1 )
+    public void logRecord( Object arg1 )
     {
     }
 }

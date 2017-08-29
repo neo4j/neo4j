@@ -62,7 +62,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     public void onRecord( QueryResult.Record item ) throws IOException
     {
         AnyValue[] fields = item.fields();
-        messageLogger.record(fields);
+        messageLogger.logRecord(fields);
         packer.packStructHeader( 1, RECORD.signature() );
         packer.packListHeader( fields.length );
         for ( AnyValue field : fields )
@@ -80,7 +80,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
-        messageLogger.success( metadata );
+        messageLogger.logSuccess( metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );
         onMessageComplete.onMessageComplete();
@@ -89,7 +89,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onIgnored() throws IOException
     {
-        messageLogger.ignored();
+        messageLogger.logIgnored();
         packer.packStructHeader( 0, IGNORED.signature() );
         onMessageComplete.onMessageComplete();
     }
@@ -97,7 +97,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onFailure( Status status, String message ) throws IOException
     {
-        messageLogger.failure( status, message );
+        messageLogger.logFailure( status, message );
         packer.packStructHeader( 1, FAILURE.signature() );
         packer.packMapHeader( 2 );
 

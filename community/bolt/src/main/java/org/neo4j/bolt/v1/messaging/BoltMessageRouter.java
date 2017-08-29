@@ -65,14 +65,14 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
     {
         // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
-        messageLogger.init(userAgent, authToken);
+        messageLogger.logInit(userAgent, authToken);
         worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
     @Override
     public void onAckFailure() throws RuntimeException
     {
-        messageLogger.ackFailure();
+        messageLogger.logAckFailure();
         worker.enqueue( session -> session.ackFailure( defaultHandler ) );
     }
 
@@ -80,7 +80,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     public void onReset() throws RuntimeException
     {
         messageLogger.clientEvent("INTERRUPT");
-        messageLogger.reset();
+        messageLogger.logReset();
         worker.interrupt();
         worker.enqueue( session -> session.reset( defaultHandler ) );
     }
@@ -88,7 +88,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onRun( String statement, Map<String,Object> params )
     {
-        messageLogger.run(statement, params);
+        messageLogger.logRun(statement, params);
         worker.enqueue( session -> session.run( statement, params, runHandler ) );
     }
 
@@ -102,14 +102,14 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onDiscardAll()
     {
-        messageLogger.discardAll();
+        messageLogger.logDiscardAll();
         worker.enqueue( session -> session.discardAll( resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
-        messageLogger.pullAll();
+        messageLogger.logPullAll();
         worker.enqueue( session -> session.pullAll( resultHandler ) );
     }
 
