@@ -56,6 +56,7 @@ import org.neo4j.storageengine.api.StorageStatement;
 
 import static java.lang.String.format;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
+import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.toggle;
 
 /**
  * A resource efficient implementation of {@link Statement}. Designed to be reused within a
@@ -78,8 +79,10 @@ import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
  */
 public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 {
-    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", true );
+    private static final boolean TRACK_STATEMENTS = flag( KernelStatement.class, "trackStatements", false );
+    private static final boolean RECORD_STATEMENTS_TRACES = flag( KernelStatement.class, "recordStatementsTraces", false );
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
+    private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>( 0 );
 
     private final TxStateHolder txStateHolder;
     private final StorageStatement storeStatement;
@@ -107,7 +110,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.facade = new OperationsFacade( transaction, this, procedures );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
-        this.statementOpenCloseCalls = TRACK_STATEMENTS ? new ArrayDeque<>() : null;
+        this.statementOpenCloseCalls = RECORD_STATEMENTS_TRACES ? new ArrayDeque<>() : EMPTY_STATEMENT_HISTORY;
     }
 
     @Override
@@ -257,13 +260,21 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
             cleanupResources();
             if ( TRACK_STATEMENTS && transaction.isSuccess() )
             {
-                throw new StatementNotClosedException(
-                        format("Statements were not correctly closed. Number of leaked statements: %d. " +
-                                "See attached open/close stack traces for details.", leakedStatements),
-                        statementOpenCloseCalls );
+                String message = getStatementNotClosedMessage( leakedStatements );
+                throw new StatementNotClosedException( message, statementOpenCloseCalls );
             }
         }
         pageCursorTracer.reportEvents();
+    }
+
+    private String getStatementNotClosedMessage( int leakedStatements )
+    {
+        String additionalInstruction = RECORD_STATEMENTS_TRACES ? StringUtils.EMPTY :
+                                       format(" To see statement open/close stack traces please pass '%s' to your JVM" +
+                                                       " or enable corresponding feature toggle.",
+                                       toggle( KernelStatement.class, "recordStatementsTraces", true ) );
+        return format( "Statements were not correctly closed. Number of leaked statements: %d.%s", leakedStatements,
+                additionalInstruction );
     }
 
     final String username()
@@ -316,7 +327,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 
     private void recordOpenCloseMethods()
     {
-        if ( TRACK_STATEMENTS )
+        if ( RECORD_STATEMENTS_TRACES )
         {
             if ( statementOpenCloseCalls.size() > STATEMENT_TRACK_HISTORY_MAX_SIZE )
             {
@@ -338,6 +349,10 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
 
         private static String buildMessage( Deque<StackTraceElement[]> openCloseTraces )
         {
+            if ( openCloseTraces.isEmpty() )
+            {
+                return StringUtils.EMPTY;
+            }
             int separatorLength = 80;
             String paddingString = "=";
 
