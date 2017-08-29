@@ -24,9 +24,11 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -67,7 +69,9 @@ public class StartOnExistingDbWithIndexIT
     {
         return new TestEnterpriseGraphDatabaseFactory()
                 .setInternalLogProvider( logProvider )
-                .newEmbeddedDatabase( testDirectory.graphDbDir() );
+                .newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
     }
 
     private void waitIndexes( GraphDatabaseService db )

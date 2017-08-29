@@ -91,7 +91,9 @@ public class CommunityLockAcquisitionTimeoutIT
         CustomClockFacadeFactory facadeFactory = new CustomClockFacadeFactory();
         database = new CustomClockTestGraphDatabaseFactory( facadeFactory )
                 .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
-                .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.lock_acquisition_timeout, "2s" )
+                .setConfig( "dbms.backup.enabled", "false" )
+                .newGraphDatabase();
 
         createTestNode( marker );
     }

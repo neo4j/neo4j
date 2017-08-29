@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -41,10 +42,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 
@@ -53,7 +56,9 @@ import static org.junit.Assert.assertTrue;
 @RunWith( Parameterized.class )
 public class ConsistencyCheckServiceRecordFormatIT
 {
-    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    private final DatabaseRule db = new EmbeddedDatabaseRule()
+            .withSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+            .startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );

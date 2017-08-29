@@ -22,16 +22,17 @@ package batchimport;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporterTest;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
 /**
  * Test for {@link ParallelBatchImporter} in an enterprise environment so that enterprise store is used.
  */
-public class ParallelBatchImporterIT extends org.neo4j.unsafe.impl.batchimport.ParallelBatchImporterTest
+public class HighLimitParallelBatchImporterIT extends ParallelBatchImporterTest
 {
-    public ParallelBatchImporterIT( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator,
-                                    boolean multiPassIterators )
+    public HighLimitParallelBatchImporterIT( InputIdGenerator inputIdGenerator, IdMapper idMapper, IdGenerator idGenerator,
+                                             boolean multiPassIterators )
     {
         super( inputIdGenerator, idMapper, idGenerator, multiPassIterators );
     }

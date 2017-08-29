@@ -124,6 +124,7 @@ public class RelationshipChainExplorerTest
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDirectory )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
 
         try ( Transaction transaction = database.beginTx() )
