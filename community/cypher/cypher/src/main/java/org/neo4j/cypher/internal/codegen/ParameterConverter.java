@@ -36,6 +36,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -341,21 +342,9 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void beginUTF8( int size ) throws RuntimeException
+    public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copyUTF8( long fromAddress, int length ) throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void endUTF8() throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
+        writeValue( UTF8.decode( bytes, offset, length ) );
     }
 
     @Override

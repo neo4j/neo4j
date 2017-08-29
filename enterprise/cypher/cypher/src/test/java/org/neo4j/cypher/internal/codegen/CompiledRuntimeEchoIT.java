@@ -39,31 +39,31 @@ public class CompiledRuntimeEchoIT
     public void shouldBeAbleToEchoMaps()
     {
         echo( map( "foo", "bar" ) );
-        echo( map( "foo", 42 ) );
-        echo( map( "foo", map( "bar", map( "baz", 1337 ) ) ) );
+        echo( map( "foo", 42L ) );
+        echo( map( "foo", map( "bar", map( "baz", 1337L ) ) ) );
     }
 
     @Test
     public void shouldBeAbleToEchoLists()
     {
-        echo( asList( 1, 2, 3 ) );
-        echo( asList( "a", 1, 17 ) );
-        echo( map( "foo", asList( asList( 1, 2, 3 ), "foo" ) ) );
+        echo( asList( 1L, 2L, 3L ) );
+        echo( asList( "a", 1L, 17L ) );
+        echo( map( "foo", asList( asList( 1L, 2L, 3L ), "foo" ) ) );
     }
 
     @Test
     public void shouldBeAbleToEchoListsOfMaps()
     {
         echo( singletonList( map( "foo", "bar" ) ) );
-        echo( asList( "a", 1, 17, map( "foo", asList( 1, 2, 3 ) ) ) );
-        echo( asList( "foo", asList( map( "bar", 42 ), "foo" ) ) );
+        echo( asList( "a", 1L, 17L, map( "foo", asList( 1L, 2L, 3L ) ) ) );
+        echo( asList( "foo", asList( map( "bar", 42L ), "foo" ) ) );
     }
 
     @Test
     public void shouldBeAbleToEchoMapsOfLists()
     {
         echo( map( "foo", singletonList( "bar" ) ) );
-        echo( map( "foo", singletonList( map( "bar", map( "baz", 1337 ) ) ) ) );
+        echo( map( "foo", singletonList( map( "bar", map( "baz", 1337L ) ) ) ) );
     }
 
     private void echo( Object value )

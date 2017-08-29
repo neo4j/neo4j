@@ -57,7 +57,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           notifications = Set.empty, converters)
 
     // When
-    proc.run(ctx, NormalMode,EMPTY_MAP)
+    proc.run(ctx, NormalMode, EMPTY_MAP)
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -70,7 +70,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           notifications = Set.empty, converters)
 
     // When
-    proc.run(ctx, NormalMode,EMPTY_MAP)
+    proc.run(ctx, NormalMode, EMPTY_MAP)
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)
