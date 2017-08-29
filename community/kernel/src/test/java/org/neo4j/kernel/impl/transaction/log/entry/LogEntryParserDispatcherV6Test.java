@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 
 public class LogEntryParserDispatcherV6Test
 {
@@ -118,18 +117,6 @@ public class LogEntryParserDispatcherV6Test
 
         // then
         assertEquals( command, logEntry );
-        assertFalse( parser.skip() );
-    }
-
-    @Test
-    public void shouldParseEmptyEntry() throws IOException
-    {
-        // when
-        final LogEntryParser parser = version.entryParser( LogEntryByteCodes.EMPTY );
-        final LogEntry logEntry = parser.parse( version, new InMemoryClosableChannel(), marker, commandReader );
-
-        // then
-        assertNull( logEntry );
         assertFalse( parser.skip() );
     }
 

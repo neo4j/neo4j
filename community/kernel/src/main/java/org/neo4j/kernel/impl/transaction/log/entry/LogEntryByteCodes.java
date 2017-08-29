@@ -26,9 +26,6 @@ public class LogEntryByteCodes
         throw new AssertionError(); // no instances are allowed
     }
 
-    // empty record due to memory mapped file
-    public static final byte EMPTY = (byte) 0;
-
     // Real entries
     public static final byte TX_START = (byte) 1;
     public static final byte COMMAND = (byte) 3;

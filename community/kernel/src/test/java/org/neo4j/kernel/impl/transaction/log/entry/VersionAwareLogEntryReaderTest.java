@@ -144,22 +144,6 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReturnNullWhenLogEntryIsEmpty() throws IOException
-    {
-        // given
-        LogEntryVersion version = LogEntryVersion.CURRENT;
-        final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        channel.put( version.byteCode() );
-        channel.put( LogEntryByteCodes.EMPTY );
-
-        // when
-        final LogEntry logEntry = logEntryReader.readLogEntry( channel );
-
-        // then
-        assertNull( logEntry );
-    }
-
-    @Test
     public void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
     {
         // given
@@ -170,24 +154,6 @@ public class VersionAwareLogEntryReaderTest
 
         // then
         assertNull( logEntry );
-    }
-
-    @Test
-    public void shouldParseStreamOfZerosAsEmptyLogEntries() throws Exception
-    {
-        // GIVEN
-        LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-        InMemoryClosableChannel channel = new InMemoryClosableChannel();
-        int count = 100;
-        channel.put( new byte[count], count );
-
-        // WHEN/THEN
-        for ( int i = 0; i < count; i++ )
-        {
-            LogEntry entry = reader.readLogEntry( channel );
-            assertNull( entry );
-            assertEquals( i + 1, channel.readerPosition() );
-        }
     }
 
     @Test
