@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -140,6 +141,8 @@ public class CausalClusterInProcessRunner
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
+                builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
                 int finalCoreId = coreId;
                 Thread coreThread = new Thread( () ->
                 {
@@ -178,6 +181,8 @@ public class CausalClusterInProcessRunner
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
+                builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+                
                 int finalReplicaId = replicaId;
                 Thread replicaThread = new Thread( () ->
                 {
