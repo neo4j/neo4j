@@ -270,7 +270,7 @@ public class IndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.addKernelExtensions( Arrays.asList( mockedIndexProviderFactory ) );
+        factory.setKernelExtensions( Arrays.asList( mockedIndexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 

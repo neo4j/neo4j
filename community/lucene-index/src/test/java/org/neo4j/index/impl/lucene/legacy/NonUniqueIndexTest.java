@@ -32,8 +32,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -151,9 +151,11 @@ public class NonUniqueIndexTest
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws Exception
     {
         Config config = Config.defaults();
-        SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
-                DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(),
-                Config.defaults(), OperationalMode.single );
+        DefaultFileSystemAbstraction fs = fileSystemRule.get();
+        File storeDir = directory.graphDbDir();
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        OperationalMode operationalMode = OperationalMode.single;
+        SchemaIndexProvider indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config, operationalMode );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
                 IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );

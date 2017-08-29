@@ -44,6 +44,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.graphdb.Label.label;
 
 public class CountsStoreRecoveryTest
@@ -136,7 +139,7 @@ public class CountsStoreRecoveryTest
     private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
     {
         return new TestGraphDatabaseFactory()
-                .setFileSystem( fs ).addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
+                .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
     }
 
     @After

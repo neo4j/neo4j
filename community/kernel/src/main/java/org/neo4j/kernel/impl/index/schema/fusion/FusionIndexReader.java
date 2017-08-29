@@ -100,9 +100,25 @@ class FusionIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision()
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
-        // Since we know that native reader can do this we return true
-        return true;
+        if ( predicates.length > 1 )
+        {
+            return false;
+        }
+
+        IndexQuery predicate = predicates[0];
+        if ( predicate instanceof ExactPredicate )
+        {
+            Value value = ((ExactPredicate) predicate).value();
+            return selector.select(
+                    nativeReader.hasFullNumberPrecision( predicates ),
+                    luceneReader.hasFullNumberPrecision( predicates ), value );
+        }
+        if ( predicates[0] instanceof NumberRangePredicate )
+        {
+            return nativeReader.hasFullNumberPrecision( predicates );
+        }
+        return false;
     }
 }

@@ -48,6 +48,8 @@ import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
 public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 {
+    static final int PRIORITY = 1;
+
     private final IndexStorageFactory indexStorageFactory;
     private final Log log;
     private Config config;
@@ -58,7 +60,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
                                       File storeDir, LogProvider logging, Config config,
                                       OperationalMode operationalMode )
     {
-        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, 1 );
+        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY );
         File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, schemaIndexStoreFolder );
         this.fileSystem = fileSystem;

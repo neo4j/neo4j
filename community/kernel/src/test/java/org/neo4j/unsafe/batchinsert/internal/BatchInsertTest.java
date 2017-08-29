@@ -61,7 +61,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -115,6 +114,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -128,9 +128,11 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -928,7 +930,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( IndexEntryUpdate.add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) );
+        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -962,8 +964,7 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add(
-                IndexEntryUpdate.add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) );
+        verify( populator ).add( argThat( matchesCollection( add( nodeId, internalUniqueIndex.schema(), Values.of( "Jakewins" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();
@@ -997,8 +998,9 @@ public class BatchInsertTest
         verify( provider ).start();
         verify( provider ).getPopulator( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         verify( populator ).create();
-        verify( populator ).add( IndexEntryUpdate.add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ) );
-        verify( populator ).add( IndexEntryUpdate.add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) );
+        verify( populator ).add( argThat( matchesCollection(
+                add( jakewins, internalIndex.schema(), Values.of( "Jakewins" ) ),
+                add( boggle, internalIndex.schema(), Values.of( "b0ggl3" ) ) ) ) );
         verify( populator ).verifyDeferredConstraints( any( PropertyAccessor.class ) );
         verify( populator ).close( true );
         verify( provider ).stop();

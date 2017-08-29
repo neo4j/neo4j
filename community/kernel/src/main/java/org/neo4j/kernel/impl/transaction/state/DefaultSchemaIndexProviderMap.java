@@ -19,34 +19,65 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Consumer;
+
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
 {
-    private final SchemaIndexProvider indexProvider;
+    private final SchemaIndexProvider defaultIndexProvider;
+    private final Map<SchemaIndexProvider.Descriptor,SchemaIndexProvider> indexProviders = new HashMap<>();
 
-    public DefaultSchemaIndexProviderMap( SchemaIndexProvider indexProvider )
+    public DefaultSchemaIndexProviderMap( SchemaIndexProvider defaultIndexProvider )
     {
-        this.indexProvider = indexProvider;
+        this( defaultIndexProvider, Collections.emptyList() );
+    }
+
+    public DefaultSchemaIndexProviderMap( SchemaIndexProvider defaultIndexProvider,
+            Iterable<SchemaIndexProvider> additionalIndexProviders )
+    {
+        this.defaultIndexProvider = defaultIndexProvider;
+        indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
+        for ( SchemaIndexProvider provider : additionalIndexProviders )
+        {
+            Descriptor providerDescriptor = provider.getProviderDescriptor();
+            SchemaIndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            if ( existing != null )
+            {
+                throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
+                        providerDescriptor + ". First loaded " + existing + " then " + provider );
+            }
+        }
     }
 
     @Override
     public SchemaIndexProvider getDefaultProvider()
     {
-        return indexProvider;
+        return defaultIndexProvider;
     }
 
     @Override
     public SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor )
     {
-        if ( indexProvider.getProviderDescriptor().getKey().equals( descriptor.getKey() ) )
+        SchemaIndexProvider provider = indexProviders.get( descriptor );
+        if ( provider != null )
         {
-            return indexProvider;
+            return provider;
         }
 
         throw new IllegalArgumentException( "Tried to get index provider for an existing index with provider " +
-                descriptor + " whereas the default and only supported provider in this session is " +
-                indexProvider.getProviderDescriptor() );
+                descriptor + " whereas available providers in this session being " + indexProviders +
+                ", and default being " + defaultIndexProvider );
+    }
+
+    @Override
+    public void accept( Consumer<SchemaIndexProvider> visitor )
+    {
+        indexProviders.values().forEach( visitor );
     }
 }

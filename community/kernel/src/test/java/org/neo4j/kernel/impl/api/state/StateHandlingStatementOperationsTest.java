@@ -608,7 +608,7 @@ public class StateHandlingStatementOperationsTest
         } );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
         IndexReader indexReader = mock( IndexReader.class );
-        when( indexReader.hasFullNumberPrecision() ).thenReturn( true );
+        when( indexReader.hasFullNumberPrecision( anyVararg() ) ).thenReturn( true );
         when( indexReader.query( anyVararg() ) )
                 .thenAnswer( invocation -> PrimitiveLongCollections.iterator( nodeId ) );
         when( storeStatement.getFreshIndexReader( any() ) ).thenReturn( indexReader );

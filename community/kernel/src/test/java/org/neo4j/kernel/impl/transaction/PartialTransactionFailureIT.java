@@ -38,7 +38,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.EmbeddedGraphDatabase;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -211,7 +209,6 @@ public class PartialTransactionFailureIT
         private static GraphDatabaseFacadeFactory.Dependencies dependencies()
         {
             GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-            state.addKernelExtensions( singletonList( new InMemoryIndexProviderFactory() ) );
             return state.databaseDependencies();
         }
     }

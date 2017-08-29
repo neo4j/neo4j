@@ -52,6 +52,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -301,7 +302,7 @@ public class TestRecoveryScenarios
     private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs, InMemoryIndexProvider indexProvider )
     {
         return new TestGraphDatabaseFactory()
-            .setFileSystem( fs ).addKernelExtension( new InMemoryIndexProviderFactory( indexProvider ) );
+            .setFileSystem( fs ).setKernelExtensions( asList( new InMemoryIndexProviderFactory( indexProvider ) ) );
     }
 
     @After

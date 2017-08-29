@@ -35,14 +35,17 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 
 public class ConstraintIndexFailureIT
 {
+    private static final String INJECTED_FAILURE = "Injected failure";
+
     @Rule
     public final TestDirectory storeDir = TestDirectory.testDirectory();
     @Rule
@@ -53,7 +56,7 @@ public class ConstraintIndexFailureIT
     {
         // given
         dbWithConstraint();
-        storeIndexFailure( "Injected failure" );
+        storeIndexFailure( INJECTED_FAILURE );
 
         // when
         GraphDatabaseService db = startDatabase();
@@ -69,7 +72,9 @@ public class ConstraintIndexFailureIT
             catch ( ConstraintViolationException e )
             {
                 assertThat( e.getCause(), instanceOf( UnableToValidateConstraintException.class ) );
-                assertThat( e.getCause().getCause().getMessage(), equalTo( "The index is in a failed state: 'Injected failure'.") );
+                assertThat( e.getCause().getCause().getMessage(), allOf(
+                        containsString( "The index is in a failed state:" ),
+                        containsString( INJECTED_FAILURE ) ) );
             }
         }
         finally
