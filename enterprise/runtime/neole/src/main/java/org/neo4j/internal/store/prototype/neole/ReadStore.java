@@ -25,26 +25,33 @@ import java.io.IOException;
 import org.neo4j.internal.kernel.api.IndexPredicate;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.store.cursors.MemoryManager;
-import org.neo4j.internal.store.cursors.ReadCursor;
 
-import static org.neo4j.internal.store.prototype.neole.EdgeCursor.NO_EDGE;
 import static org.neo4j.internal.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
+import static org.neo4j.internal.store.prototype.neole.RelationshipCursor.NO_RELATIONSHIP;
 import static org.neo4j.internal.store.prototype.neole.StoreFile.fixedSizeRecordFile;
 
 public class ReadStore extends MemoryManager implements Read
 {
-    private static final String NODE_STORE = "neostore.nodestore.db", EDGE_STORE = "neostore.relationshipstore.db",
-            EDGE_GROUP_STORE = "neostore.relationshipgroupstore.db", PROPERTY_STORE = "neostore.propertystore.db";
+    private static final String NODE_STORE = "neostore.nodestore.db", RELATIONSHIP_STORE =
+            "neostore.relationshipstore.db",
+            RELATIONSHIP_GROUP_STORE = "neostore.relationshipgroupstore.db", PROPERTY_STORE =
+            "neostore.propertystore.db";
     private static final long INTEGER_MINUS_ONE = 0xFFFF_FFFFL;
-    private final StoreFile nodes, edges, edgeGroups, properties;
+    private final StoreFile nodes, relationships, relationshipGroups, properties;
 
     public ReadStore( File storeDir ) throws IOException
     {
         this.nodes = fixedSizeRecordFile( new File( storeDir, NODE_STORE ), NodeCursor.RECORD_SIZE );
-        this.edges = fixedSizeRecordFile( new File( storeDir, EDGE_STORE ), EdgeCursor.RECORD_SIZE );
-        this.edgeGroups = fixedSizeRecordFile( new File( storeDir, EDGE_GROUP_STORE ), EdgeGroupCursor.RECORD_SIZE );
+        this.relationships =
+                fixedSizeRecordFile( new File( storeDir, RELATIONSHIP_STORE ), RelationshipCursor.RECORD_SIZE );
+        this.relationshipGroups =
+                fixedSizeRecordFile( new File( storeDir, RELATIONSHIP_GROUP_STORE ), org.neo4j.internal.store
+                        .prototype.neole.RelationshipGroupCursor.RECORD_SIZE );
         this.properties = fixedSizeRecordFile( new File( storeDir, PROPERTY_STORE ), PropertyCursor.RECORD_SIZE );
     }
 
@@ -94,51 +101,55 @@ public class ReadStore extends MemoryManager implements Read
     }
 
     @Override
-    public void singleEdge( long reference, org.neo4j.internal.kernel.api.EdgeScanCursor cursor )
+    public void singleRelationship( long reference, RelationshipScanCursor cursor )
     {
-        ((EdgeScanCursor) cursor).init( edges, reference, reference );
+        ((org.neo4j.internal.store.prototype.neole.RelationshipScanCursor) cursor)
+                .init( relationships, reference, reference );
     }
 
     @Override
-    public void allEdgesScan( org.neo4j.internal.kernel.api.EdgeScanCursor cursor )
+    public void allRelationshipsScan( RelationshipScanCursor cursor )
     {
-        ((EdgeScanCursor) cursor).init( edges, 0, edges.maxReference );
+        ((org.neo4j.internal.store.prototype.neole.RelationshipScanCursor) cursor).
+                init( relationships, 0, relationships.maxReference );
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.EdgeScanCursor> allEdgesScan()
+    public Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void edgeLabelScan( int label, org.neo4j.internal.kernel.api.EdgeScanCursor cursor )
+    public void relationshipLabelScan( int label, RelationshipScanCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public Scan<org.neo4j.internal.kernel.api.EdgeScanCursor> edgeLabelScan( int label )
+    public Scan<RelationshipScanCursor> relationshipLabelScan( int label )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void edgeGroups( long nodeReference, long reference, org.neo4j.internal.kernel.api.EdgeGroupCursor cursor )
+    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
-        ((EdgeGroupCursor) cursor).init( edgeGroups, edges, nodeReference, reference );
+        ((org.neo4j.internal.store.prototype.neole.RelationshipGroupCursor) cursor).
+                init( relationshipGroups, relationships, nodeReference, reference );
     }
 
     @Override
-    public void edges( long nodeReference, long reference, org.neo4j.internal.kernel.api.EdgeTraversalCursor cursor )
+    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
     {
-        if ( reference == NO_EDGE )
+        if ( reference == NO_RELATIONSHIP )
         {
             cursor.close();
         }
         else
         {
-            ((EdgeTraversalCursor) cursor).init( edges, nodeReference, reference );
+            ((org.neo4j.internal.store.prototype.neole.RelationshipTraversalCursor) cursor)
+                    .init( relationships, nodeReference, reference );
         }
     }
 
@@ -156,7 +167,7 @@ public class ReadStore extends MemoryManager implements Read
     }
 
     @Override
-    public void edgeProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
+    public void relationshipProperties( long reference, org.neo4j.internal.kernel.api.PropertyCursor cursor )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -168,7 +179,7 @@ public class ReadStore extends MemoryManager implements Read
     }
 
     @Override
-    public void futureEdgeReferenceRead( long reference )
+    public void futureRelationshipsReferenceRead( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -180,7 +191,7 @@ public class ReadStore extends MemoryManager implements Read
     }
 
     @Override
-    public void futureEdgePropertyReferenceRead( long reference )
+    public void futureRelationshipPropertyReferenceRead( long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

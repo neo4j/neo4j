@@ -19,29 +19,31 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
-import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.store.cursors.ReadCursor;
 
-import static org.neo4j.internal.store.prototype.neole.EdgeCursor.NO_EDGE;
 import static org.neo4j.internal.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.internal.store.prototype.neole.ReadStore.combineReference;
+import static org.neo4j.internal.store.prototype.neole.RelationshipCursor.NO_RELATIONSHIP;
+import static org.neo4j.internal.store.prototype.neole.RelationshipGroupCursor.encodeDirectRelationshipReference;
 
 class NodeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.NodeCursor
 {
     /**
      * <pre>
-     *  0: in use     (1 byte)
-     *  1: edges      (4 bytes)
-     *  5: properties (4 bytes)
-     *  9: labels     (5 bytes)
-     * 14: extra      (1 byte)
+     *  0: in use        (1 byte)
+     *  1: relationships (4 bytes)
+     *  5: properties    (4 bytes)
+     *  9: labels        (5 bytes)
+     * 14: extra         (1 byte)
      * </pre>
      * <h2>in use</h2>
      * <pre>
      * [    ,   x] in use
-     * [    ,xxx ] high(edges)
+     * [    ,xxx ] high(relationships)
      * [xxxx,    ] high(properties)
      * </pre>
      * <h2>labels</h2>
@@ -125,20 +127,20 @@ class NodeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.Nod
     }
 
     @Override
-    public long edgeGroupReference()
+    public long relationshipGroupReference()
     {
-        long edges = combineReference( unsignedInt( 1 ), (unsignedByte( 0 ) & 0x0EL) << 31 );
+        long relationships = combineReference( unsignedInt( 1 ), (unsignedByte( 0 ) & 0x0EL) << 31 );
         if ( (readByte( 14 ) & 0x01) != 0 )
         {
-            return edges;
+            return relationships;
         }
-        else if ( edges == NO_EDGE )
+        else if ( relationships == NO_RELATIONSHIP )
         {
-            return NO_EDGE;
+            return NO_RELATIONSHIP;
         }
         else
         {
-            return EdgeGroupCursor.encodeDirectEdgeReference( edges );
+            return encodeDirectRelationshipReference( relationships );
         }
     }
 
@@ -163,25 +165,25 @@ class NodeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.Nod
     }
 
     @Override
-    public void edges( org.neo4j.internal.kernel.api.EdgeGroupCursor cursor )
+    public void relationships( RelationshipGroupCursor cursor )
     {
-        store.edgeGroups( nodeReference(), edgeGroupReference(), cursor );
+        store.relationshipGroups( nodeReference(), relationshipGroupReference(), cursor );
     }
 
     @Override
-    public void outgoingEdges( org.neo4j.internal.kernel.api.EdgeGroupCursor groups, org.neo4j.internal.kernel.api.EdgeTraversalCursor edges )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void incomingEdges( org.neo4j.internal.kernel.api.EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    public void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public void allEdges( org.neo4j.internal.kernel.api.EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    public void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

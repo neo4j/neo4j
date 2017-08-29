@@ -20,8 +20,26 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for accessing manual index edges.
+ * Surface for accessing relationship data.
  */
-public interface EdgeManualIndexCursor extends EdgeIndexCursor, ManualIndexCursor
+public interface RelationshipDataAccessor
 {
+    long relationshipReference(); // not sure relationships will have independent references,
+    // so exposing this might be leakage.
+
+    int label();
+
+    boolean hasProperties();
+
+    void source( NodeCursor cursor );
+
+    void target( NodeCursor cursor );
+
+    void properties( PropertyCursor cursor );
+
+    long sourceNodeReference();
+
+    long targetNodeReference();
+
+    long propertiesReference();
 }

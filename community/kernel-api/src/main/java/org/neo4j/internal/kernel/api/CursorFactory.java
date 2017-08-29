@@ -25,9 +25,9 @@ public interface CursorFactory
 
     NodeCursor allocateNodeCursor();
 
-    EdgeScanCursor allocateEdgeScanCursor();
+    RelationshipScanCursor allocateRelationshipScanCursor();
 
-    EdgeTraversalCursor allocateEdgeTraversalCursor();
+    RelationshipTraversalCursor allocateRelationshipTraversalCursor();
 
     // properties
 
@@ -35,7 +35,7 @@ public interface CursorFactory
 
     // traversal
 
-    EdgeGroupCursor allocateEdgeGroupCursor();
+    RelationshipGroupCursor allocateRelationshipGroupCursor();
 
     // schema indexes
 
@@ -47,5 +47,5 @@ public interface CursorFactory
 
     NodeManualIndexCursor allocateNodeManualIndexCursor();
 
-    EdgeManualIndexCursor allocateEdgeManualIndexCursor();
+    RelationshipManualIndexCursor allocateRelationshipManualIndexCursor();
 }

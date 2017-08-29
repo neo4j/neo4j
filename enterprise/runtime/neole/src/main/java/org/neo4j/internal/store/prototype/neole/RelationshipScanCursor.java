@@ -19,18 +19,18 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
-class EdgeScanCursor extends EdgeCursor implements org.neo4j.internal.kernel.api.EdgeScanCursor
+class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.internal.kernel.api.RelationshipScanCursor
 {
     private long maxReference;
 
-    EdgeScanCursor( ReadStore store )
+    RelationshipScanCursor( ReadStore store )
     {
         super( store );
     }
 
-    void init( StoreFile edges, long reference, long maxReference )
+    void init( StoreFile relationships, long reference, long maxReference )
     {
-        edges.initializeCursor( reference, this );
+        relationships.initializeCursor( reference, this );
         initializeScanCursor();
         this.maxReference = maxReference;
     }

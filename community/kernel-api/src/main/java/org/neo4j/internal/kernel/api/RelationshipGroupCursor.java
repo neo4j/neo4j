@@ -20,30 +20,33 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for traversing the edge groups of a node.
+ * Cursor for traversing the relationship groups of a node.
  */
-public interface EdgeGroupCursor extends SuspendableCursor<EdgeGroupCursor.Position>
+public interface RelationshipGroupCursor extends SuspendableCursor<RelationshipGroupCursor.Position>
 {
     abstract class Position extends CursorPosition<Position>
     {
     }
 
     /**
-     * Find the first edge group with a label greater than or equal to the provided label.
+     * Find the first relationship group with a label greater than or equal to the provided label.
      * <p>
      * Note that the default implementation of this method (and most likely any sane use of this method - regardless of
-     * implementation) assumes that edge groups are ordered by label.
+     * implementation) assumes that relationship groups are ordered by label.
      *
-     * @param edgeLabel
-     *         the edge label to search for.
-     * @return {@code true} if a matching edge group was found, {@code false} if all edge groups within reach of this
-     * cursor were exhausted without finding a matching edge group.
+     * @param relationshipLabel the relationship label to search for.
+     * @return {@code true} if a matching relationship group was found, {@code false} if all relationship groups
+     * within
+     * reach
+     * of
+     * this
+     * cursor were exhausted without finding a matching relationship group.
      */
-    default boolean seek( int edgeLabel )
+    default boolean seek( int relationshipLabel )
     {
         while ( next() )
         {
-            if ( edgeLabel < edgeLabel() )
+            if ( relationshipLabel < relationshipLabel() )
             {
                 return true;
             }
@@ -51,7 +54,7 @@ public interface EdgeGroupCursor extends SuspendableCursor<EdgeGroupCursor.Posit
         return false;
     }
 
-    int edgeLabel();
+    int relationshipLabel();
 
     int outgoingCount();
 
@@ -65,11 +68,11 @@ public interface EdgeGroupCursor extends SuspendableCursor<EdgeGroupCursor.Posit
         return outgoingCount() + incomingCount() - loopCount();
     }
 
-    void outgoing( EdgeTraversalCursor cursor );
+    void outgoing( RelationshipTraversalCursor cursor );
 
-    void incoming( EdgeTraversalCursor cursor );
+    void incoming( RelationshipTraversalCursor cursor );
 
-    void loops( EdgeTraversalCursor cursor );
+    void loops( RelationshipTraversalCursor cursor );
 
     long outgoingReference();
 

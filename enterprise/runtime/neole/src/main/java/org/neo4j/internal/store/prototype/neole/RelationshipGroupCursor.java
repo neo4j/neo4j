@@ -19,12 +19,13 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.store.cursors.ReadCursor;
 
-import static org.neo4j.internal.store.prototype.neole.EdgeCursor.NO_EDGE;
 import static org.neo4j.internal.store.prototype.neole.ReadStore.combineReference;
+import static org.neo4j.internal.store.prototype.neole.RelationshipCursor.NO_RELATIONSHIP;
 
-class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.api.EdgeGroupCursor
+class RelationshipGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
     /**
      * <pre>
@@ -53,24 +54,25 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     static final int RECORD_SIZE = 25;
     protected final ReadStore store;
     /** used for accessing counts */
-    private final EdgeTraversalCursor edge;
+    private final org.neo4j.internal.store.prototype.neole.RelationshipTraversalCursor relationship;
     private long originNodeReference;
 
-    EdgeGroupCursor( ReadStore store, EdgeTraversalCursor edge )
+    RelationshipGroupCursor( ReadStore store,
+            org.neo4j.internal.store.prototype.neole.RelationshipTraversalCursor relationship )
     {
         this.store = store;
-        this.edge = edge;
+        this.relationship = relationship;
         this.originNodeReference = Long.MIN_VALUE;
     }
 
-    void init( StoreFile groups, StoreFile edges, long originNodeReference, long reference )
+    void init( StoreFile groups, StoreFile relationships, long originNodeReference, long reference )
     {
         if ( reference < 0 )
         {
             close();
-            if ( reference != NO_EDGE )
+            if ( reference != NO_RELATIONSHIP )
             {
-                edge.init( edges, originNodeReference, decodeDirectEdgeReference( reference ) );
+                relationship.init( relationships, originNodeReference, decodeDirectRelationshipReference( reference ) );
             }
         }
         else
@@ -82,15 +84,15 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
 
     private boolean nonDenseHack()
     {
-        return !hasPageReference() && edge.hasPageReference();
+        return !hasPageReference() && relationship.hasPageReference();
     }
 
-    static long encodeDirectEdgeReference( long reference )
+    static long encodeDirectRelationshipReference( long reference )
     {
         return (~reference) - 1;
     }
 
-    private static long decodeDirectEdgeReference( long reference )
+    private static long decodeDirectRelationshipReference( long reference )
     {
         return ~(reference + 1);
     }
@@ -104,7 +106,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     @Override
     protected void closeImpl()
     {
-        edge.close();
+        relationship.close();
         originNodeReference = Long.MIN_VALUE;
     }
 
@@ -125,7 +127,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.next();
+            return relationship.next();
         }
         long next;
         if ( originNodeReference < 0 )
@@ -144,7 +146,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
         {
             next = nextReference();
         }
-        if ( next == NO_EDGE )
+        if ( next == NO_RELATIONSHIP )
         {
             close();
             return false;
@@ -153,11 +155,11 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     }
 
     @Override
-    public int edgeLabel()
+    public int relationshipLabel()
     {
         if ( nonDenseHack() )
         {
-            return edge.label();
+            return relationship.label();
         }
         return unsignedShort( 2 );
     }
@@ -167,7 +169,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isOutgoing() ? (int) edge.sourcePrevEdgeReference() : 0;
+            return relationship.isOutgoing() ? (int) relationship.sourcePrevRelationshipReference() : 0;
         }
         return count( outgoingReference(), true );
     }
@@ -177,7 +179,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isIncoming() ? (int) edge.targetPrevEdgeReference() : 0;
+            return relationship.isIncoming() ? (int) relationship.targetPrevRelationshipReference() : 0;
         }
         return count( incomingReference(), false );
     }
@@ -187,25 +189,26 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isLoop() ? (int) edge.sourcePrevEdgeReference() : 0;
+            return relationship.isLoop() ? (int) relationship.sourcePrevRelationshipReference() : 0;
         }
         return count( loopsReference(), true );
     }
 
-    private int count( long edgeReference, boolean source )
+    private int count( long relationshipReference, boolean source )
     {
-        if ( NO_EDGE == edgeReference )
+        if ( NO_RELATIONSHIP == relationshipReference )
         {
             return 0;
         }
-        try ( EdgeTraversalCursor edge = this.edge )
+        try ( org.neo4j.internal.store.prototype.neole.RelationshipTraversalCursor relationship = this.relationship )
         {
-            store.edges( nodeReference(), edgeReference, edge );
-            if ( !edge.next() )
+            store.relationships( nodeReference(), relationshipReference, relationship );
+            if ( !relationship.next() )
             {
                 return 0;
             }
-            return source ? (int) edge.sourcePrevEdgeReference() : (int) edge.targetPrevEdgeReference();
+            return source ? (int) relationship.sourcePrevRelationshipReference()
+                          : (int) relationship.targetPrevRelationshipReference();
         }
     }
 
@@ -219,7 +222,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isOutgoing() ? edge.edgeReference() : NO_EDGE;
+            return relationship.isOutgoing() ? relationship.relationshipReference() : NO_RELATIONSHIP;
         }
         return combineReference( unsignedInt( 8 ), ((long) (unsignedByte( 0 ) & 0x70)) << 28 );
     }
@@ -229,7 +232,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isIncoming() ? edge.edgeReference() : NO_EDGE;
+            return relationship.isIncoming() ? relationship.relationshipReference() : NO_RELATIONSHIP;
         }
         return combineReference( unsignedInt( 12 ), ((long) (unsignedByte( 1 ) & 0x0E)) << 31 );
     }
@@ -239,7 +242,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.isLoop() ? edge.edgeReference() : NO_EDGE;
+            return relationship.isLoop() ? relationship.relationshipReference() : NO_RELATIONSHIP;
         }
         return combineReference( unsignedInt( 16 ), ((long) (unsignedByte( 1 ) & 0x70)) << 28 );
     }
@@ -253,26 +256,26 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.internal.kernel.ap
     {
         if ( nonDenseHack() )
         {
-            return edge.originNodeReference();
+            return relationship.originNodeReference();
         }
         return originNodeReference;
     }
 
     @Override
-    public void outgoing( org.neo4j.internal.kernel.api.EdgeTraversalCursor cursor )
+    public void outgoing( RelationshipTraversalCursor cursor )
     {
-        store.edges( originNodeReference(), outgoingReference(), cursor );
+        store.relationships( originNodeReference(), outgoingReference(), cursor );
     }
 
     @Override
-    public void incoming( org.neo4j.internal.kernel.api.EdgeTraversalCursor cursor )
+    public void incoming( RelationshipTraversalCursor cursor )
     {
-        store.edges( originNodeReference(), incomingReference(), cursor );
+        store.relationships( originNodeReference(), incomingReference(), cursor );
     }
 
     @Override
-    public void loops( org.neo4j.internal.kernel.api.EdgeTraversalCursor cursor )
+    public void loops( RelationshipTraversalCursor cursor )
     {
-        store.edges( originNodeReference(), loopsReference(), cursor );
+        store.relationships( originNodeReference(), loopsReference(), cursor );
     }
 }

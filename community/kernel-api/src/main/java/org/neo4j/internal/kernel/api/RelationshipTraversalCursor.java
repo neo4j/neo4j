@@ -20,9 +20,10 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for traversing the edges of a single node.
+ * Cursor for traversing the relationships of a single node.
  */
-public interface EdgeTraversalCursor extends EdgeDataAccessor, SuspendableCursor<EdgeTraversalCursor.Position>
+public interface RelationshipTraversalCursor
+        extends RelationshipDataAccessor, SuspendableCursor<RelationshipTraversalCursor.Position>
 {
     abstract class Position extends CursorPosition<Position>
     {
@@ -31,11 +32,10 @@ public interface EdgeTraversalCursor extends EdgeDataAccessor, SuspendableCursor
     /**
      * Get the other node, the one that this cursor was not initialized from.
      * <p>
-     * Edge cursors have context, and know which node they are traversing edges for, making it possible and convenient
-     * to access the other node.
+     * Relationship cursors have context, and know which node they are traversing relationships for, making it
+     * possible and convenient to access the other node.
      *
-     * @param cursor
-     *         the cursor to use for accessing the other node.
+     * @param cursor the cursor to use for accessing the other node.
      */
     void neighbour( NodeCursor cursor );
 

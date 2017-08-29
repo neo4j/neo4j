@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.store.prototype.neole;
 
-import org.neo4j.internal.kernel.api.EdgeManualIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeManualIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipManualIndexCursor;
 
 class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
 {
@@ -40,15 +40,15 @@ class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
     }
 
     @Override
-    public EdgeScanCursor allocateEdgeScanCursor()
+    public RelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new org.neo4j.internal.store.prototype.neole.EdgeScanCursor( store );
+        return new RelationshipScanCursor( store );
     }
 
     @Override
-    public EdgeTraversalCursor allocateEdgeTraversalCursor()
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return new EdgeTraversalCursor( store );
+        return new RelationshipTraversalCursor( store );
     }
 
     @Override
@@ -58,9 +58,9 @@ class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
     }
 
     @Override
-    public EdgeGroupCursor allocateEdgeGroupCursor()
+    public RelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return new EdgeGroupCursor( store, new EdgeTraversalCursor( store ) );
+        return new RelationshipGroupCursor( store, new RelationshipTraversalCursor( store ) );
     }
 
     @Override
@@ -82,7 +82,7 @@ class CursorFactory implements org.neo4j.internal.kernel.api.CursorFactory
     }
 
     @Override
-    public EdgeManualIndexCursor allocateEdgeManualIndexCursor()
+    public RelationshipManualIndexCursor allocateRelationshipManualIndexCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

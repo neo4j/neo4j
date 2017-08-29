@@ -28,9 +28,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.EdgeGroupCursor;
-import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +40,7 @@ import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
-public class DeepEdgeTraversalCursorTest
+public class DeepRelationshipTraversalCursorTest
 {
     private static long three_root;
     private static int expected_total, expected_unique;
@@ -107,9 +107,9 @@ public class DeepEdgeTraversalCursorTest
     {
         assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
         try ( NodeCursor node = graph.allocateNodeCursor();
-              EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
-              EdgeTraversalCursor edge1 = graph.allocateEdgeTraversalCursor();
-              EdgeTraversalCursor edge2 = graph.allocateEdgeTraversalCursor();
+              RelationshipGroupCursor group = graph.allocateRelationshipGroupCursor();
+              RelationshipTraversalCursor relationship1 = graph.allocateRelationshipTraversalCursor();
+              RelationshipTraversalCursor relationship2 = graph.allocateRelationshipTraversalCursor();
               PrimitiveLongSet leafs = Primitive.longSet() )
         {
             long total = 0;
@@ -117,28 +117,28 @@ public class DeepEdgeTraversalCursorTest
             // when
             graph.singleNode( three_root, node );
             assertTrue( "access root node", node.next() );
-            node.edges( group );
+            node.relationships( group );
             assertFalse( "single root", node.next() );
 
             assertTrue( "access group of root", group.next() );
-            group.incoming( edge1 );
+            group.incoming( relationship1 );
             assertFalse( "single group of root", group.next() );
 
-            while ( edge1.next() )
+            while ( relationship1.next() )
             {
-                edge1.neighbour( node );
+                relationship1.neighbour( node );
 
                 assertTrue( "child level 1", node.next() );
-                node.edges( group );
+                node.relationships( group );
                 assertFalse( "single node", node.next() );
 
                 assertTrue( "group of level 1 child", group.next() );
-                group.incoming( edge2 );
+                group.incoming( relationship2 );
                 assertFalse( "single group of level 1 child", group.next() );
 
-                while ( edge2.next() )
+                while ( relationship2.next() )
                 {
-                    leafs.add( edge2.neighbourNodeReference() );
+                    leafs.add( relationship2.neighbourNodeReference() );
                     total++;
                 }
             }

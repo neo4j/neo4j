@@ -45,52 +45,51 @@ public interface Read
     Scan<NodeCursor> allNodesScan();
 
     /**
-     * @param reference
-     *         a reference from {@link NodeCursor#nodeReference()}, {@link EdgeDataAccessor#sourceNodeReference()},
-     *         {@link EdgeDataAccessor#targetNodeReference()}, {@link NodeIndexCursor#nodeReference()},
-     *         {@link EdgeIndexCursor#sourceNodeReference()}, or {@link EdgeIndexCursor#targetNodeReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
+     * @param reference a reference from {@link NodeCursor#nodeReference()}, {@link
+     * RelationshipDataAccessor#sourceNodeReference()},
+     * {@link RelationshipDataAccessor#targetNodeReference()}, {@link NodeIndexCursor#nodeReference()},
+     * {@link RelationshipIndexCursor#sourceNodeReference()}, or {@link RelationshipIndexCursor#targetNodeReference()}.
+     * @param cursor the cursor to use for consuming the results.
      */
     void singleNode( long reference, NodeCursor cursor );
 
     /**
      * @param reference
-     *         a reference from {@link EdgeDataAccessor#edgeReference()}.
+     *         a reference from {@link RelationshipDataAccessor#relationshipReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void singleEdge( long reference, EdgeScanCursor cursor );
+    void singleRelationship( long reference, RelationshipScanCursor cursor );
 
-    void allEdgesScan( EdgeScanCursor cursor );
+    void allRelationshipsScan( RelationshipScanCursor cursor );
 
-    Scan<EdgeScanCursor> allEdgesScan();
+    Scan<RelationshipScanCursor> allRelationshipsScan();
 
-    void edgeLabelScan( int label, EdgeScanCursor cursor );
+    void relationshipLabelScan( int label, RelationshipScanCursor cursor );
 
-    Scan<EdgeScanCursor> edgeLabelScan( int label );
+    Scan<RelationshipScanCursor> relationshipLabelScan( int label );
 
     /**
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference from {@link NodeCursor#edgeGroupReference()}.
+     *         a reference from {@link NodeCursor#relationshipGroupReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void edgeGroups( long nodeReference, long reference, EdgeGroupCursor cursor );
+    void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor );
 
     /**
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference from {@link EdgeGroupCursor#outgoingReference()},
-     *         {@link EdgeGroupCursor#incomingReference()},
-     *         or {@link EdgeGroupCursor#loopsReference()}.
+     *         a reference from {@link RelationshipGroupCursor#outgoingReference()},
+     *         {@link RelationshipGroupCursor#incomingReference()},
+     *         or {@link RelationshipGroupCursor#loopsReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void edges( long nodeReference, long reference, EdgeTraversalCursor cursor );
+    void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor );
 
     /**
      * @param reference
@@ -102,19 +101,19 @@ public interface Read
 
     /**
      * @param reference
-     *         a reference from {@link EdgeDataAccessor#propertiesReference()}.
+     *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
-    void edgeProperties( long reference, PropertyCursor cursor );
+    void relationshipProperties( long reference, PropertyCursor cursor );
 
     // hints to the page cache about data we will be accessing in the future:
 
     void futureNodeReferenceRead( long reference );
 
-    void futureEdgeReferenceRead( long reference );
+    void futureRelationshipsReferenceRead( long reference );
 
     void futureNodePropertyReferenceRead( long reference );
 
-    void futureEdgePropertyReferenceRead( long reference );
+    void futureRelationshipPropertyReferenceRead( long reference );
 }

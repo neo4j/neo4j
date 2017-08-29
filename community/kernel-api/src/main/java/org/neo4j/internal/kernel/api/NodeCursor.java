@@ -30,17 +30,17 @@ public interface NodeCursor extends Cursor
 
     boolean hasProperties();
 
-    void edges( EdgeGroupCursor cursor );
+    void relationships( RelationshipGroupCursor cursor );
 
-    void outgoingEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges );
+    void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
 
-    void incomingEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges );
+    void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
 
-    void allEdges( EdgeGroupCursor groups, EdgeTraversalCursor edges );
+    void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
 
     void properties( PropertyCursor cursor );
 
-    long edgeGroupReference();
+    long relationshipGroupReference();
 
     long propertiesReference();
 }

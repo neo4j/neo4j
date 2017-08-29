@@ -20,8 +20,22 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Cursor for scanning edges, that is listing edges without grouping by source or target node.
+ * Cursor for scanning relationships of a schema index.
  */
-public interface EdgeScanCursor extends EdgeDataAccessor, Cursor
+public interface RelationshipIndexCursor extends Cursor
 {
+    void relationship( RelationshipScanCursor cursor );
+
+    void sourceNode( NodeCursor cursor );
+
+    void targetNode( NodeCursor cursor );
+
+    int relationshipLabel();
+
+    long sourceNodeReference();
+
+    long targetNodeReference();
+
+//  long relationshipReference(); // not sure relationships will have independent references, so exposing this might
+// be leakage.
 }

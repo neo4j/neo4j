@@ -26,9 +26,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.EdgeGroupCursor;
-import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -39,7 +39,7 @@ import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
-public class EdgeTraversalCursorTest
+public class RelationshipTraversalCursorTest
 {
     private static long bare, start, end;
     @ClassRule
@@ -103,12 +103,12 @@ public class EdgeTraversalCursorTest
     {
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
-              EdgeGroupCursor group = graph.allocateEdgeGroupCursor() )
+              RelationshipGroupCursor group = graph.allocateRelationshipGroupCursor() )
         {
             // when
             graph.singleNode( bare, node );
             assertTrue( "access node", node.next() );
-            node.edges( group );
+            node.relationships( group );
 
             // then
             assertFalse( "access group", group.next() );
@@ -116,42 +116,45 @@ public class EdgeTraversalCursorTest
     }
 
     @Test
-    public void shouldTraverseEdgesOfGivenType() throws Exception
+    public void shouldTraverseRelationshipsOfGivenType() throws Exception
     {
         assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
-              EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
-              EdgeTraversalCursor edge = graph.allocateEdgeTraversalCursor() )
+              RelationshipGroupCursor group = graph.allocateRelationshipGroupCursor();
+              RelationshipTraversalCursor relationship = graph.allocateRelationshipTraversalCursor() )
         {
             int empty = 0;
             // when
             graph.allNodesScan( node );
             while ( node.next() )
             {
-                node.edges( group );
+                node.relationships( group );
                 boolean none = true;
                 while ( group.next() )
                 {
                     none = false;
                     Sizes degree = new Sizes();
-                    group.outgoing( edge );
-                    while ( edge.next() )
+                    group.outgoing( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "edge should have same label as group", group.edgeLabel(), edge.label() );
+                        assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+                                relationship.label() );
                         degree.outgoing++;
                     }
-                    group.incoming( edge );
-                    while ( edge.next() )
+                    group.incoming( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "edge should have same label as group", group.edgeLabel(), edge.label() );
+                        assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+                                relationship.label() );
                         degree.incoming++;
                     }
-                    group.loops( edge );
-                    while ( edge.next() )
+                    group.loops( relationship );
+                    while ( relationship.next() )
                     {
-                        assertEquals( "edge should have same label as group", group.edgeLabel(), edge.label() );
+                        assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+                                relationship.label() );
                         degree.loop++;
                     }
 
@@ -175,64 +178,66 @@ public class EdgeTraversalCursorTest
     }
 
     @Test
-    public void shouldFollowSpecificEdge() throws Exception
+    public void shouldFollowSpecificRelationship() throws Exception
     {
         assumeThat( "x86_64", equalTo( System.getProperty( "os.arch" ) ) );
 
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
-              EdgeGroupCursor group = graph.allocateEdgeGroupCursor();
-              EdgeTraversalCursor edge = graph.allocateEdgeTraversalCursor() )
+              RelationshipGroupCursor group = graph.allocateRelationshipGroupCursor();
+              RelationshipTraversalCursor relationship = graph.allocateRelationshipTraversalCursor() )
         {
             // when - traversing from start to end
             graph.singleNode( start, node );
             assertTrue( "access start node", node.next() );
-            node.edges( group );
-            assertTrue( "access edge group", group.next() );
-            group.outgoing( edge );
-            assertTrue( "access outgoing edges", edge.next() );
+            node.relationships( group );
+            assertTrue( "access relationship group", group.next() );
+            group.outgoing( relationship );
+            assertTrue( "access outgoing relationships", relationship.next() );
 
             // then
-            assertEquals( "source node", start, edge.sourceNodeReference() );
-            assertEquals( "target node", end, edge.targetNodeReference() );
+            assertEquals( "source node", start, relationship.sourceNodeReference() );
+            assertEquals( "target node", end, relationship.targetNodeReference() );
 
-            assertEquals( "node of origin", start, edge.originNodeReference() );
-            assertEquals( "neighbouring node", end, edge.neighbourNodeReference() );
+            assertEquals( "node of origin", start, relationship.originNodeReference() );
+            assertEquals( "neighbouring node", end, relationship.neighbourNodeReference() );
 
-            assertEquals( "edge should have same label as group", group.edgeLabel(), edge.label() );
+            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+                    relationship.label() );
 
-            assertFalse( "only a single edge", edge.next() );
+            assertFalse( "only a single relationship", relationship.next() );
 
-            group.incoming( edge );
-            assertFalse( "no incoming edges", edge.next() );
-            group.loops( edge );
-            assertFalse( "no loop edges", edge.next() );
+            group.incoming( relationship );
+            assertFalse( "no incoming relationships", relationship.next() );
+            group.loops( relationship );
+            assertFalse( "no loop relationships", relationship.next() );
 
             assertFalse( "only a single group", group.next() );
 
             // when - traversing from end to start
             graph.singleNode( end, node );
             assertTrue( "access start node", node.next() );
-            node.edges( group );
-            assertTrue( "access edge group", group.next() );
-            group.incoming( edge );
-            assertTrue( "access incoming edges", edge.next() );
+            node.relationships( group );
+            assertTrue( "access relationship group", group.next() );
+            group.incoming( relationship );
+            assertTrue( "access incoming relationships", relationship.next() );
 
             // then
-            assertEquals( "source node", start, edge.sourceNodeReference() );
-            assertEquals( "target node", end, edge.targetNodeReference() );
+            assertEquals( "source node", start, relationship.sourceNodeReference() );
+            assertEquals( "target node", end, relationship.targetNodeReference() );
 
-            assertEquals( "node of origin", end, edge.originNodeReference() );
-            assertEquals( "neighbouring node", start, edge.neighbourNodeReference() );
+            assertEquals( "node of origin", end, relationship.originNodeReference() );
+            assertEquals( "neighbouring node", start, relationship.neighbourNodeReference() );
 
-            assertEquals( "edge should have same label as group", group.edgeLabel(), edge.label() );
+            assertEquals( "relationship should have same label as group", group.relationshipLabel(),
+                    relationship.label() );
 
-            assertFalse( "only a single edge", edge.next() );
+            assertFalse( "only a single relationship", relationship.next() );
 
-            group.outgoing( edge );
-            assertFalse( "no outgoing edges", edge.next() );
-            group.loops( edge );
-            assertFalse( "no loop edges", edge.next() );
+            group.outgoing( relationship );
+            assertFalse( "no outgoing relationships", relationship.next() );
+            group.loops( relationship );
+            assertFalse( "no loop relationships", relationship.next() );
 
             assertFalse( "only a single group", group.next() );
         }

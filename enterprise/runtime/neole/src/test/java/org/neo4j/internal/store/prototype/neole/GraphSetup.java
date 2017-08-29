@@ -30,10 +30,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.internal.kernel.api.EdgeGroupCursor;
-import org.neo4j.internal.kernel.api.EdgeManualIndexCursor;
-import org.neo4j.internal.kernel.api.EdgeScanCursor;
-import org.neo4j.internal.kernel.api.EdgeTraversalCursor;
 import org.neo4j.internal.kernel.api.IndexPredicate;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -42,6 +38,10 @@ import org.neo4j.internal.kernel.api.NodeManualIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipManualIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
 
 public abstract class GraphSetup extends TestResource implements Read, org.neo4j.internal.kernel.api.CursorFactory
@@ -155,45 +155,45 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public void singleEdge( long reference, EdgeScanCursor cursor )
+    public void singleRelationship( long reference, RelationshipScanCursor cursor )
     {
-        store.singleEdge( reference, cursor );
+        store.singleRelationship( reference, cursor );
     }
 
     @Override
-    public void allEdgesScan( EdgeScanCursor cursor )
+    public void allRelationshipsScan( RelationshipScanCursor cursor )
     {
-        store.allEdgesScan( cursor );
+        store.allRelationshipsScan( cursor );
     }
 
     @Override
-    public Scan<EdgeScanCursor> allEdgesScan()
+    public Scan<RelationshipScanCursor> allRelationshipsScan()
     {
-        return store.allEdgesScan();
+        return store.allRelationshipsScan();
     }
 
     @Override
-    public void edgeLabelScan( int label, EdgeScanCursor cursor )
+    public void relationshipLabelScan( int label, RelationshipScanCursor cursor )
     {
-        store.edgeLabelScan( label, cursor );
+        store.relationshipLabelScan( label, cursor );
     }
 
     @Override
-    public Scan<EdgeScanCursor> edgeLabelScan( int label )
+    public Scan<RelationshipScanCursor> relationshipLabelScan( int label )
     {
-        return store.edgeLabelScan( label );
+        return store.relationshipLabelScan( label );
     }
 
     @Override
-    public void edgeGroups( long nodeReference, long reference, EdgeGroupCursor cursor )
+    public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
-        store.edgeGroups( nodeReference, reference, cursor );
+        store.relationshipGroups( nodeReference, reference, cursor );
     }
 
     @Override
-    public void edges( long nodeReference, long reference, EdgeTraversalCursor cursor )
+    public void relationships( long nodeReference, long reference, RelationshipTraversalCursor cursor )
     {
-        store.edges( nodeReference, reference, cursor );
+        store.relationships( nodeReference, reference, cursor );
     }
 
     @Override
@@ -203,9 +203,9 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public void edgeProperties( long reference, PropertyCursor cursor )
+    public void relationshipProperties( long reference, PropertyCursor cursor )
     {
-        store.edgeProperties( reference, cursor );
+        store.relationshipProperties( reference, cursor );
     }
 
     @Override
@@ -215,9 +215,9 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public void futureEdgeReferenceRead( long reference )
+    public void futureRelationshipsReferenceRead( long reference )
     {
-        store.futureEdgeReferenceRead( reference );
+        store.futureRelationshipsReferenceRead( reference );
     }
 
     @Override
@@ -227,9 +227,9 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public void futureEdgePropertyReferenceRead( long reference )
+    public void futureRelationshipPropertyReferenceRead( long reference )
     {
-        store.futureEdgePropertyReferenceRead( reference );
+        store.futureRelationshipPropertyReferenceRead( reference );
     }
 
     @Override
@@ -239,15 +239,15 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public EdgeScanCursor allocateEdgeScanCursor()
+    public RelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return cursors.allocateEdgeScanCursor();
+        return cursors.allocateRelationshipScanCursor();
     }
 
     @Override
-    public EdgeTraversalCursor allocateEdgeTraversalCursor()
+    public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return cursors.allocateEdgeTraversalCursor();
+        return cursors.allocateRelationshipTraversalCursor();
     }
 
     @Override
@@ -257,9 +257,9 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public EdgeGroupCursor allocateEdgeGroupCursor()
+    public RelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return cursors.allocateEdgeGroupCursor();
+        return cursors.allocateRelationshipGroupCursor();
     }
 
     @Override
@@ -281,8 +281,8 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public EdgeManualIndexCursor allocateEdgeManualIndexCursor()
+    public RelationshipManualIndexCursor allocateRelationshipManualIndexCursor()
     {
-        return cursors.allocateEdgeManualIndexCursor();
+        return cursors.allocateRelationshipManualIndexCursor();
     }
 }
