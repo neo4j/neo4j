@@ -29,14 +29,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  test("fff") {
-    createNode("prop" -> 42)
-    createNode("prop" -> 42)
-    createNode("prop" -> 43)
-    val result = graph.execute("MATCH (n) RETURN n.prop, count(n.prop)")
-    println(result.resultAsString())
-    println(result.getExecutionPlanDescription)
-  }
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")
@@ -757,7 +749,7 @@ return p""")
     relate(node2, node4, "T", Map("roles" -> "NEO"))
 
     // When
-    val res = succeedWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
+    val res = succeedWith(Configs.Interpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
 
     // Then
     res.toSet should equal(Set(Map("n" -> node1)))
