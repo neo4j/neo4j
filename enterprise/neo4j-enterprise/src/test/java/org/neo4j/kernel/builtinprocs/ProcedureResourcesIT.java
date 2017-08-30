@@ -69,7 +69,7 @@ public class ProcedureResourcesIT
         // when
         createLegacyIndex();
         createIndex();
-        for(ProcedureSignature procedure : db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures())
+        for ( ProcedureSignature procedure : db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures() )
         {
             // then
             initialData();
@@ -159,8 +159,8 @@ public class ProcedureResourcesIT
     {
         private final String name;
         private final List<Object> params = new ArrayList<>();
-        private String setupQuery = null;
-        private String postQuery = null;
+        private String setupQuery;
+        private String postQuery;
 
         private ProcedureData( ProcedureSignature procedure )
         {
