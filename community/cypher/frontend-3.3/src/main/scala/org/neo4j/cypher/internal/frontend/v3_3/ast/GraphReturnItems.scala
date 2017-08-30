@@ -50,11 +50,11 @@ final case class NewContextGraphs(source: SingleGraphAs,
   override def declareGraphs: SemanticCheck = source.declareGraph chain newTarget.foldSemanticCheck(_.declareGraph)
 }
 
-final case class GraphReturnItems(star: Boolean, items: List[GraphReturnItem])
+final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
-  val graphs: List[SingleGraphAs] = items.flatMap(_.graphs)
+  val graphs: Seq[SingleGraphAs] = items.flatMap(_.graphs)
 
   val singleGraph: Option[SingleGraphAs] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
   val newSource: Option[SingleGraphAs] = singleGraph orElse items.flatMap(_.newSource).headOption

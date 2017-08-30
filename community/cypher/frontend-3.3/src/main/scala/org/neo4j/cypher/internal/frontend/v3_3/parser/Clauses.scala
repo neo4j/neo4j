@@ -16,8 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticChecking, ast}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -139,6 +138,7 @@ trait Clauses extends Parser
 
   def With: Rule1[ast.With] = rule("WITH")(
     group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _, _))
+      | group(keyword("WITH") ~~ GraphReturnItems) ~~>> (ast.With(_))
       | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _, _))
   )
 
@@ -148,6 +148,7 @@ trait Clauses extends Parser
 
   def Return: Rule1[ast.Return] = rule("RETURN")(
     group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _, _))
+      | group(keyword("RETURN") ~~ GraphReturnItems) ~~>> (ast.Return(_))
       | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _, _))
   )
 
@@ -193,7 +194,6 @@ trait Clauses extends Parser
 
   private def ReturnBody = {
     ReturnItems ~~
-      // TODO: Put last
       optional(GraphReturnItems) ~~
       optional(Order) ~~
       optional(Skip) ~~

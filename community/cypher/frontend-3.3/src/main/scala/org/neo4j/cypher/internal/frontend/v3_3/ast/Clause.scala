@@ -597,6 +597,14 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   }
 }
 
+object With {
+  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
+    With(distinct = false, EmptyReturnItems(fromRewriting = false)(pos), Some(graphReturnItems), None, None, None, None)(pos)
+
+  def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): With =
+    With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
+}
+
 case class With(
                  distinct: Boolean,
                  returnItems: ReturnItemsDef,
@@ -620,6 +628,14 @@ case class With(
     case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
+}
+
+object Return {
+  def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): Return =
+    Return(distinct = false, EmptyReturnItems(fromRewriting = false)(pos), Some(graphReturnItems), None, None, None)(pos)
+
+  def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): Return =
+    Return(distinct = false, returnItems, graphReturnItems, None, None, None)(pos)
 }
 
 case class Return(distinct: Boolean,

@@ -55,7 +55,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  private def graphReturnItems(clause: Clause, listedItems: List[GraphReturnItem], excludedNames: Set[String] = Set.empty)
+  private def graphReturnItems(clause: Clause, listedItems: Seq[GraphReturnItem], excludedNames: Set[String] = Set.empty)
   : Option[GraphReturnItems] = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")

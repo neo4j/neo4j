@@ -58,9 +58,9 @@ trait ParserTest[T, J] extends CypherFunSuite {
   def partiallyParsing(s: String)(implicit p: Rule1[T]): ResultCheck = convertResult(parseRule(p, s), s)
 
   def assertFails(s: String)(implicit p: Rule1[T]) {
-    parseRule(p, s).result match {
+    parseRule(p ~ EOI, s).result match {
       case None    =>
-      case Some(_) => fail(s"'$s' should not have been parsed correctly")
+      case Some(a) => fail(s"'$s' should not have been parsed correctly, parsed as $a")
     }
   }
 
