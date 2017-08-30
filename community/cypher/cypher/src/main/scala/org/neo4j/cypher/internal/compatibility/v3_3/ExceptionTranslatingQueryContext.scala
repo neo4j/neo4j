@@ -298,6 +298,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def isDeletedInThisTx(id: Long): Boolean =
       translateException(inner.isDeletedInThisTx(id))
+
+    override def getByIdIfExists(id: Long): Option[T] =
+      translateException(inner.getByIdIfExists(id))
   }
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {

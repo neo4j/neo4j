@@ -235,6 +235,8 @@ trait Operations[T <: PropertyContainer] {
   def releaseExclusiveLock(obj: Long): Unit
 
   def exists(id: Long): Boolean
+
+  def getByIdIfExists(id: Long): Option[T]
 }
 
 trait QueryTransactionalContext {
