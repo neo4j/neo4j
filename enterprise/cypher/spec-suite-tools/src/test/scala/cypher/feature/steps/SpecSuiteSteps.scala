@@ -69,8 +69,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   After() { _ =>
-    scenarioBuilder.build().run()
-    scenarioBuilder.db.shutdown()
+    val execution = scenarioBuilder.build()
+    try {
+      execution.validate()
+      execution.run()
+    } finally {
+      scenarioBuilder.db.shutdown()
+    }
   }
 
   Background(BACKGROUND) {

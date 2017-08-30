@@ -24,6 +24,7 @@ import java.util
 import cypher.cucumber.BlacklistPlugin.blacklisted
 import org.neo4j.graphdb.{QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
+import org.opencypher.tools.tck.InvalidFeatureFormatException
 
 import scala.util.Try
 
@@ -74,16 +75,22 @@ class ScenarioExecutionBuilder {
 }
 
 trait ScenarioExecution {
+  def validate(): Unit
   def run(): Unit
   def name(): String
 }
 
 case class SkippedScenario(name: String) extends ScenarioExecution {
   override def run(): Unit = () // skip
+  override def validate(): Unit = ()
 }
 
-case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabaseAPI, params: util.Map[String, Object],
-                            init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+case class NegativeScenario(name: String,
+                            blacklisted: Boolean,
+                            db: GraphDatabaseAPI,
+                            params: util.Map[String, Object],
+                            init: Seq[(GraphDatabaseAPI) => Unit],
+                            procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                             execution: (GraphDatabaseAPI, util.Map[String, Object]) => Result,
                             errorExpectation: (Try[Result], Transaction) => Unit
                            ) extends ScenarioExecution {
@@ -103,6 +110,13 @@ case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabas
         db.shutdown()
       }
     }
+  }
+
+  override def validate(): Unit = {
+    if (execution == null)
+      throw InvalidFeatureFormatException(s"No execution specified for scenario $name")
+    if (errorExpectation == null)
+      throw InvalidFeatureFormatException(s"No expectation specified for scenario $name")
   }
 }
 
@@ -137,32 +151,19 @@ case class RegularScenario(name: String,
           val tx = db.beginTx()
           try {
             val result = execute(db, params)
-            if (blacklisted) {
-              try {
-                expect(result)
-                println(s"Scenario '$name' was blacklisted, but succeeded")
-              } catch {
-                case t: Throwable =>
-                  seenBlackListedFail = true
-              }
-            } else {
-              try {
-                expect(result)
-                tx.success()
-              } catch {
-                case e: Error =>
-                  throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
-              }
-            }
+
+            expect(result)
+            if (!blacklisted)
+              tx.success()
 
             sideEffects(result.getQueryStatistics)
           } catch {
-            case t: Throwable if blacklisted =>
+            case e if !blacklisted =>
+              throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
+            case _ if blacklisted =>
               seenBlackListedFail = true
-              // expected
-          }
-          finally {
-              tx.close()
+          } finally {
+            tx.close()
           }
           if (name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the slotted runtime, this should go away
             return
@@ -174,6 +175,17 @@ case class RegularScenario(name: String,
     } finally {
       db.shutdown()
     }
+  }
+
+  override def validate() = {
+    if (executions.isEmpty)
+      throw InvalidFeatureFormatException(s"No execution specified for scenario $name")
+    if (expectations.isEmpty)
+      throw InvalidFeatureFormatException(s"No expectation specified for scenario $name")
+    if (sideEffects == null)
+      throw InvalidFeatureFormatException(s"No side effects expectation specified for scenario $name")
+    if (executions.size != expectations.size)
+      throw InvalidFeatureFormatException(s"Execution and expectation mismatch; must be same amount (scenario $name)")
   }
 }
 
