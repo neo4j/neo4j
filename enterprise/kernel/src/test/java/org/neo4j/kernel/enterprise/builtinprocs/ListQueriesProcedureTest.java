@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
@@ -29,11 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
-
-import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -83,7 +83,7 @@ public class ListQueriesProcedureTest
     }.startLazily();
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
-    private static final int THIRTY_SECONDS_TIMEOUT = 30;
+    private static final int SECONDS_TIMEOUT = 120;
 
     @Test
     public void shouldContainTheQueryItself() throws Exception
@@ -284,7 +284,7 @@ public class ListQueriesProcedureTest
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 60, SECONDS );
+            db.schema().awaitIndexesOnline( SECONDS_TIMEOUT, SECONDS );
             tx.success();
         }
     }
@@ -510,7 +510,7 @@ public class ListQueriesProcedureTest
         {
             db.execute( query ).close();
             return null;
-        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), THIRTY_SECONDS_TIMEOUT, SECONDS );
+        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
 
         return new Resource<T>( listQueriesLatch, resource );
     }
