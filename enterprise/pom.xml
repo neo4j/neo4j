@@ -46,7 +46,7 @@
     <module>deferred-locks</module>
     <module>ha</module>
     <module>procedure-compiler-enterprise-tests</module>
-    <module>bloom-index</module>
+    <module>fulltext-helper</module>
   </modules>
 
   <profiles>
