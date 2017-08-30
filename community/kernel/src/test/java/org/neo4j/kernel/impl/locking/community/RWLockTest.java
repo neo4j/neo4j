@@ -328,7 +328,7 @@ public class RWLockTest
 
         // Deadlock should occur
         Assert.assertTrue( "Deadlock was detected as expected.",
-                deadLockDetector.await( 1000, TimeUnit.MILLISECONDS ) );
+                deadLockDetector.await( TEST_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS ) );
 
         lockNode3.releaseWriteLock( client3Transaction );
         lockNode2.releaseWriteLock( client2Transaction );
