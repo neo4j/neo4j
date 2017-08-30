@@ -106,11 +106,15 @@ case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabas
   }
 }
 
-case class RegularScenario(name: String, blacklisted: Boolean,
-                           db: GraphDatabaseAPI, params: util.Map[String, Object],
-                           init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+case class RegularScenario(name: String,
+                           blacklisted: Boolean,
+                           db: GraphDatabaseAPI,
+                           params: util.Map[String, Object],
+                           init: Seq[(GraphDatabaseAPI) => Unit],
+                           procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                            executions: Seq[(GraphDatabaseAPI, util.Map[String, Object]) => Result],
-                           expectations: Seq[(Result) => Unit], sideEffects: (QueryStatistics) => Unit
+                           expectations: Seq[(Result) => Unit],
+                           sideEffects: (QueryStatistics) => Unit
                           ) extends ScenarioExecution {
   override def run(): Unit = {
     if (name.equals("Many CREATE clauses") && blacklisted) {
@@ -150,6 +154,8 @@ case class RegularScenario(name: String, blacklisted: Boolean,
                   throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
               }
             }
+
+            sideEffects(result.getQueryStatistics)
           } catch {
             case t: Throwable if blacklisted =>
               seenBlackListedFail = true
@@ -158,11 +164,13 @@ case class RegularScenario(name: String, blacklisted: Boolean,
           finally {
               tx.close()
           }
-          if(name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the slotted runtime, this should go away
+          if (name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the slotted runtime, this should go away
             return
       }
 
-      if (blacklisted && !seenBlackListedFail) throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+      if (blacklisted && !seenBlackListedFail)
+        throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+
     } finally {
       db.shutdown()
     }
@@ -170,4 +178,5 @@ case class RegularScenario(name: String, blacklisted: Boolean,
 }
 
 class ScenarioFailedException(message: String, cause: Throwable) extends Exception(message, cause)
+
 class BlacklistException(message: String) extends Exception(message)

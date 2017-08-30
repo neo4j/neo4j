@@ -129,7 +129,7 @@ object statisticsParser extends (DataTable => QueryStatisticsMatcher) {
       case (DELETED_LABELS, index) => matcher.setLabelsDeleted(Integer.valueOf(values.get(index)))
       case (ADDED_PROPERTIES, index) => matcher.setPropertiesCreated(Integer.valueOf(values.get(index)))
       case (DELETED_PROPERTIES, index) => matcher.setPropertiesDeleted(Integer.valueOf(values.get(index)))
-      case (sideEffect, _) => throw new InvalidFeatureFormatException(
+      case (sideEffect, _) => throw InvalidFeatureFormatException(
         s"Invalid side effect: $sideEffect. Valid ones are: ${ALL.mkString(",")}")
     }
 
