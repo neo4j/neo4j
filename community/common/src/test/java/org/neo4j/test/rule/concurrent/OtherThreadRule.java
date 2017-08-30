@@ -47,7 +47,7 @@ public class OtherThreadRule<STATE> implements TestRule
 
     public OtherThreadRule( String name )
     {
-        this( name, 10, SECONDS );
+        this( name, 60, SECONDS );
     }
 
     public OtherThreadRule( long timeout, TimeUnit unit )
