@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{Scope, SemanticFeature, SemanticState}
 
 class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -117,7 +117,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       ReturnedGraph(graphAt("foo", "url2"))(pos)
     ))(pos)
 
-    val result = items.declareGraphs(None, isReturn = false)(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.declareGraphs(Scope.empty, None, isReturn = false)(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Variable `foo` already declared")) should be(true)

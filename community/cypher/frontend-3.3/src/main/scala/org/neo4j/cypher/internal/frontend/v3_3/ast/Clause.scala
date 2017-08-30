@@ -536,37 +536,39 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     returnItems.semanticCheck chain
-    graphReturnItems.semanticCheck chain
-    ensureOneIsNonEmpty
+    graphReturnItems.semanticCheck
 
   def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
-    if (returnItems.checkUserEmpty && graphReturnItems.isEmpty)
-      error(s, FeatureError("At least one element must be specified for the projection", position))
+    if (s.currentScope.symbolNames.isEmpty)
+      error(s, FeatureError("At least one field or graph must be projected", position))
     else
       success(s)
   }
 
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
-    val specialReturnItems = createSpecialReturnItems(previousScope, s)
-    val specialStateForShuffle = specialReturnItems.declareVariables(previousScope)(s).state
-    val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
-    val shuffleErrors = shuffleResult.errors
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
+    val declareAllTheThings = (s: SemanticState) => {
+      val specialReturnItems = createSpecialReturnItems(previousScope, s)
+      val specialStateForShuffle = specialReturnItems.declareVariables(previousScope)(s).state
+      val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit) (specialStateForShuffle)
+      val shuffleErrors = shuffleResult.errors
 
-    // We still need to declare the return items, and register the use of variables in the ORDER BY clause. But we
-    // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
-    val orderByResult = (returnItems.declareVariables(previousScope) chain ignoreErrors(orderBy.semanticCheck))(s)
-    val fixedOrderByResult = specialReturnItems match {
-      case ReturnItems(star, items) if star =>
-        val shuffleScope = shuffleResult.state.currentScope.scope
-        val definedHere = items.map(_.name).toSet
-        orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
-      case _ =>
-        orderByResult
+      // We still need to declare the return items, and register the use of variables in the ORDER BY clause. But we
+      // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
+      val orderByResult = (returnItems.declareVariables(previousScope) chain ignoreErrors(orderBy.semanticCheck)) (s)
+      val fixedOrderByResult = specialReturnItems match {
+        case ReturnItems(star, items) if star =>
+          val shuffleScope = shuffleResult.state.currentScope.scope
+          val definedHere = items.map(_.name).toSet
+          orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
+        case _ =>
+          orderByResult
+      }
+      val tabularState = fixedOrderByResult.state
+      val contextGraphs = tabularState.currentScope.contextGraphs
+      val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, contextGraphs, isReturn))(tabularState)
+      graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
-    val tabularState = fixedOrderByResult.state
-    val contextGraphs = tabularState.currentScope.contextGraphs
-    val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(contextGraphs, isReturn))(tabularState)
-    graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
+    declareAllTheThings chain ensureOneIsNonEmpty
   }
 
   private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
@@ -601,7 +603,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
 object With {
   def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, EmptyReturnItems(fromRewriting = false)(pos), Some(graphReturnItems), None, None, None, None)(pos)
+    With(distinct = false, DiscardCardinality()(pos), Some(graphReturnItems), None, None, None, None)(pos)
 
   def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): With =
     With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
@@ -634,7 +636,7 @@ case class With(
 
 object Return {
   def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): Return =
-    Return(distinct = false, EmptyReturnItems(fromRewriting = false)(pos), Some(graphReturnItems), None, None, None)(pos)
+    Return(distinct = false, DiscardCardinality()(pos), Some(graphReturnItems), None, None, None)(pos)
 
   def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): Return =
     Return(distinct = false, returnItems, graphReturnItems, None, None, None)(pos)
@@ -670,5 +672,5 @@ case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) e
   val excludedNames: Set[String] = excluded.map(_.name).toSet
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
-    SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
+    SemanticCheckResult.success(s.importValuesFromScope(previousScope, excludedNames))
 }

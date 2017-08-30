@@ -92,9 +92,6 @@ case class expandStar(state: SemanticState) extends Rewriter {
     }
 
     val newItems = expandedItems ++ listedItems
-    if (newItems.isEmpty)
-      EmptyReturnItems(fromRewriting = true)(clausePos)
-    else
-      ReturnItems(includeExisting = false, newItems)(clausePos)
+    ReturnItems(includeExisting = false, newItems)(clausePos)
   }
 }

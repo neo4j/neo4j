@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, EmptyReturnItems}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticFeature, SemanticState, bottomUp, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState, inSequence}
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -61,25 +61,25 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("rewrites * in return graphs") {
     assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' return * graphs *",
-      "from graph foo at 'url' from graph bar at 'url2' return - graphs bar as bar, foo as foo"
+      "from graph foo at 'url' from graph bar at 'url2' return graphs *",
+      "from graph foo at 'url' from graph bar at 'url2' return graphs bar as bar, foo as foo"
     )
 
     assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' return - graphs *",
-      "from graph foo at 'url' from graph bar at 'url2' return - graphs bar as bar, foo as foo"
+      "from graph foo at 'url' from graph bar at 'url2' return graphs *",
+      "from graph foo at 'url' from graph bar at 'url2' return graphs bar as bar, foo as foo"
     )
   }
 
   test("rewrites * in with graphs") {
     assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' with * graphs * return 1",
-      "from graph foo at 'url' from graph bar at 'url2' with - graphs bar as bar, foo as foo return 1"
+      "from graph foo at 'url' from graph bar at 'url2' with graphs * return 1",
+      "from graph foo at 'url' from graph bar at 'url2' with graphs bar as bar, foo as foo return 1"
     )
 
     assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' with - graphs * return 1",
-      "from graph foo at 'url' from graph bar at 'url2' with - graphs bar as bar, foo as foo return 1"
+      "from graph foo at 'url' from graph bar at 'url2' with graphs * return 1",
+      "from graph foo at 'url' from graph bar at 'url2' with graphs bar as bar, foo as foo return 1"
     )
   }
 
@@ -134,8 +134,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
     val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
-    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
-    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
+    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
 
     val checkResult = original.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val rewriter = expandStar(checkResult.state)
@@ -143,8 +143,4 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = original.rewrite(rewriter)
     assert(result === expected)
   }
-
-  private val emptyReturnItemsAlwaysFromRewriting = bottomUp(Rewriter.lift {
-    case items@EmptyReturnItems(_) => items.copy(fromRewriting = true)(items.position)
-  })
 }

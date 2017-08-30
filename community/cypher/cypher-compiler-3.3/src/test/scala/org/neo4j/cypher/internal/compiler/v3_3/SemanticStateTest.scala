@@ -235,7 +235,7 @@ class SemanticStateTest extends CypherFunSuite {
         .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
         .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
 
-    val actual = s1.importScope(s2.scopeTree)
+    val actual = s1.importValuesFromScope(s2.scopeTree)
     val expected =
       SemanticState.clean
         .declareVariable(Variable("foo")(DummyPosition(1)), CTNode).right.get
@@ -259,7 +259,7 @@ class SemanticStateTest extends CypherFunSuite {
         .declareVariable(Variable("baz")(DummyPosition(4)), CTNode).right.get
         .declareVariable(Variable("frob")(DummyPosition(5)), CTNode).right.get
 
-    val actual = s1.importScope(s2.scopeTree, Set("foo", "frob"))
+    val actual = s1.importValuesFromScope(s2.scopeTree, Set("foo", "frob"))
     val expected =
       SemanticState.clean
         .declareVariable(Variable("foo")(DummyPosition(0)), CTNode).right.get

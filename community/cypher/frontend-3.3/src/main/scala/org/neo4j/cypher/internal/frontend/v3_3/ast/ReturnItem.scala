@@ -19,10 +19,6 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3._
 
-object ReturnItems {
-  def empty(pos: InputPosition): ReturnItemsDef = EmptyReturnItems(fromRewriting = false)(pos)
-}
-
 sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
   /**
     * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
@@ -30,31 +26,28 @@ sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckabl
     * This field is true if the dash (-) was used by a user.
     */
   def includeExisting: Boolean
-  def checkUserEmpty: Boolean
   def declareVariables(previousScope: Scope): SemanticCheck
   def containsAggregate: Boolean
   def withExisting(includeExisting: Boolean): ReturnItemsDef
   def items: Seq[ReturnItem]
 }
 
-final case class EmptyReturnItems(fromRewriting: Boolean)(val position: InputPosition) extends ReturnItemsDef {
+final case class DiscardCardinality()(val position: InputPosition) extends ReturnItemsDef {
   override def includeExisting: Boolean = false
   override def semanticCheck: SemanticCheck = _success
-  override val checkUserEmpty = !fromRewriting
-  override val items = Seq.empty
-  override def declareVariables(previousScope: Scope) = _success
+  override def items: Seq[ReturnItem] = Seq.empty
+  override def declareVariables(previousScope: Scope): (SemanticState) => SemanticCheckResult = _success
   override def containsAggregate = false
-  override def withExisting(includeExisting: Boolean) = this
+  override def withExisting(includeExisting: Boolean): DiscardCardinality = this
   private def _success(s: SemanticState) = success(s)
 }
 
 final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItemsDef {
-  override val checkUserEmpty = !includeExisting && items.isEmpty
 
   override def withExisting(includeExisting: Boolean): ReturnItemsDef =
     copy(includeExisting = includeExisting)(position)
 
-  override def semanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
+  override def semanticCheck: SemanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
 
   def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
@@ -62,11 +55,12 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
     case item => item.alias.collect { case ident if ident == item.expression => ident }
   }.flatten.toSet
 
-  def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
+  def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]): ReturnItems =
+    copy(items = f(items))(position)
 
-  override def declareVariables(previousScope: Scope) =
+  override def declareVariables(previousScope: Scope): SemanticCheck =
     when (includeExisting) {
-      s => success(s.importScope(previousScope))
+      s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)

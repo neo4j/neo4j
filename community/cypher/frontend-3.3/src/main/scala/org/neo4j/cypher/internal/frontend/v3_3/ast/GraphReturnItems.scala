@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
@@ -68,7 +69,7 @@ final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
       checkUniqueGraphReference
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
 
-  def declareGraphs(optContextGraphs: Option[ContextGraphs], isReturn: Boolean): SemanticCheck = {
+  def declareGraphs(previousScope: Scope, optContextGraphs: Option[ContextGraphs], isReturn: Boolean): SemanticCheck = {
     val updateContext = (s: SemanticState) => {
       val newSourceName = newSource.flatMap(_.name)
       val newTargetName = newTarget.flatMap(_.name)
@@ -84,7 +85,11 @@ final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
         }
       }
     }
-    (items.foldSemanticCheck(_.declareGraphs) chain updateContext).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
+    (
+      when (star) { s => success(s.importGraphsFromScope(previousScope)) } chain
+      items.foldSemanticCheck(_.declareGraphs) chain
+      updateContext
+    ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
   }
 
   private def checkNoMultipleSources: SemanticCheck =

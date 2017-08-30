@@ -116,8 +116,16 @@ final case class Scope(symbolTable: Map[String, Symbol],
     case ((k, symbol)) if f(symbol) => k
   }.toSet
 
-  def importScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
-    val otherSymbols = other.symbolTable -- exclude
+  def valueSymbolTable: Map[String, Symbol] = symbolTable.collect { case entry if !entry._2.graph => entry }
+  def graphSymbolTable: Map[String, Symbol] = symbolTable.collect { case entry if entry._2.graph => entry }
+
+  def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
+    val otherSymbols = other.valueSymbolTable -- exclude
+    copy(symbolTable = symbolTable ++ otherSymbols)
+  }
+
+  def importGraphsFromScope(other: Scope, exclude: Set[String] = Set.empty): Scope = {
+    val otherSymbols = other.graphSymbolTable -- exclude
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
@@ -234,7 +242,11 @@ object SemanticState {
     def sourceGraph: Option[Symbol] = contextGraphs.map(_.source).flatMap(graphSymbol)
     def targetGraph: Option[Symbol] = contextGraphs.map(_.target).flatMap(graphSymbol)
 
-    def importScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = location.replace(scope.importScope(other, exclude))
+    def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
+      location.replace(scope.importValuesFromScope(other, exclude))
+
+    def importGraphsFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
+      location.replace(scope.importGraphsFromScope(other, exclude))
 
     def mergeScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation = other.symbolTable.values.foldLeft(location) {
       case (loc, sym) if exclude(sym.name) => loc
@@ -278,8 +290,11 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def symbolTypes(name: String): TypeSpec = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
-  def importScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
-    copy(currentScope = currentScope.importScope(scope, exclude))
+  def importValuesFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
+    copy(currentScope = currentScope.importValuesFromScope(scope, exclude))
+
+  def importGraphsFromScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
+    copy(currentScope = currentScope.importGraphsFromScope(scope, exclude))
 
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
