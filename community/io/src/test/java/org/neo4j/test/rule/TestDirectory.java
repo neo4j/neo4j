@@ -65,36 +65,38 @@ public class TestDirectory implements TestRule
     private Class<?> owningTest;
     private boolean keepDirectoryAfterSuccessfulTest;
     private File testDirectory;
+    private final String directoryDifferentiator;
 
-    private TestDirectory( FileSystemAbstraction fileSystem )
-    {
-        this.fileSystem = fileSystem;
-    }
-
-    private TestDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest )
+    private TestDirectory( FileSystemAbstraction fileSystem, Class<?> owningTest, String directoryDifferentiator )
     {
         this.fileSystem = fileSystem;
         this.owningTest = owningTest;
+        this.directoryDifferentiator = directoryDifferentiator;
     }
 
     public static TestDirectory testDirectory()
     {
-        return new TestDirectory( new DefaultFileSystemAbstraction() );
+        return testDirectory( new DefaultFileSystemAbstraction() );
     }
 
     public static TestDirectory testDirectory( FileSystemAbstraction fs )
     {
-        return new TestDirectory( fs );
+        return testDirectory( null, fs );
     }
 
     public static TestDirectory testDirectory( Class<?> owningTest )
     {
-        return new TestDirectory( new DefaultFileSystemAbstraction(), owningTest );
+        return new TestDirectory( new DefaultFileSystemAbstraction(), owningTest, "" );
     }
 
     public static TestDirectory testDirectory( Class<?> owningTest, FileSystemAbstraction fs )
     {
-        return new TestDirectory( fs, owningTest );
+        return new TestDirectory( fs, owningTest, "" );
+    }
+
+    public static TestDirectory testDirectory( Class<?> owningTest, FileSystemAbstraction fs, String directoryDifferentiator )
+    {
+        return new TestDirectory( fs, owningTest, directoryDifferentiator );
     }
 
     @Override
@@ -248,7 +250,7 @@ public class TestDirectory implements TestRule
         return cleanDirectory( dir );
     }
 
-    private void evaluateClassBaseTestFolder( )
+    private void evaluateClassBaseTestFolder()
     {
         if ( owningTest == null )
         {
@@ -256,7 +258,7 @@ public class TestDirectory implements TestRule
         }
         try
         {
-            testClassBaseFolder = testDataDirectoryOf( fileSystem, owningTest, false );
+            testClassBaseFolder = testDataDirectoryOf( fileSystem, owningTest, directoryDifferentiator, false );
         }
         catch ( IOException e )
         {
@@ -264,11 +266,11 @@ public class TestDirectory implements TestRule
         }
     }
 
-    private static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, boolean clean )
+    private static File testDataDirectoryOf( FileSystemAbstraction fs, Class<?> owningTest, String directoryDifferentiator, boolean clean )
             throws IOException
     {
         File testData = new File( locateTarget( owningTest ), "test-data" );
-        File result = new File( testData, shorten( owningTest.getName() ) ).getAbsoluteFile();
+        File result = new File( testData, shorten( owningTest.getName() + directoryDifferentiator ) ).getAbsoluteFile();
         if ( clean )
         {
             clean( fs, result );

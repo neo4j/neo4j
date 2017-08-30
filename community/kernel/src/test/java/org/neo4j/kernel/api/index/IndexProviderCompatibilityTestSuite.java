@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 
@@ -53,7 +54,7 @@ public abstract class IndexProviderCompatibilityTestSuite
     public abstract static class Compatibility
     {
         @Rule
-        public PageCacheAndDependenciesRule pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new );
+        public final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
@@ -72,6 +73,9 @@ public abstract class IndexProviderCompatibilityTestSuite
 
         public Compatibility( IndexProviderCompatibilityTestSuite testSuite, IndexDescriptor descriptor )
         {
+            this.pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new,
+                    fs -> TestDirectory.testDirectory( null, fs, "-" + testSuite.getClass().getSimpleName().substring( 0, 3 ) ) );
+
             this.testSuite = testSuite;
             this.descriptor = descriptor;
         }
