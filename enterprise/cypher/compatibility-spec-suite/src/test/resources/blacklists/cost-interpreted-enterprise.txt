@@ -349,6 +349,7 @@ Failing when using a variable that is already bound in CREATE
 
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
+Combine MATCH, WITH and CREATE
 Create a relationship with the correct direction
 Nodes are not created when aliases are applied to variable names multiple times
 Only a single node is created when an alias is applied to a variable name multiple times

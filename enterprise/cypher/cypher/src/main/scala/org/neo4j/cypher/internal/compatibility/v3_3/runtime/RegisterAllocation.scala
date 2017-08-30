@@ -238,10 +238,6 @@ object RegisterAllocation {
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
-      case Eager(_) =>
-        val newPipeline = incomingPipeline.seedClone()
-        newPipeline
-
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 

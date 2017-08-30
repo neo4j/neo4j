@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 
-class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("creating a node gets reported as such") {
-    val output = updateWith(Configs.Interpreted - Configs.Cost2_3, "create (:A)").dumpToString()
+    val output = updateWithBothPlannersAndCompatibilityMode("create (:A)").dumpToString()
 
-    output should include("Nodes created: 1")
-    output should include("Labels added: 1")
+    output should include ("Nodes created: 1")
+    output should include ("Labels added: 1")
   }
 }

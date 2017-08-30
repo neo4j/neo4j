@@ -29,8 +29,8 @@ object PrimitiveExecutionContext {
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
 
-  override val longs = new Array[Long](pipeline.numberOfLongs)
-  override val refs = new Array[AnyValue](pipeline.numberOfReferences)
+  private val longs = new Array[Long](pipeline.numberOfLongs)
+  private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
   override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
@@ -68,13 +68,13 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
     value
   }
 
-  override def +=(kv: (String, AnyValue)): Nothing = fail()
+  override def +=(kv: (String, AnyValue)) = fail()
 
-  override def -=(key: String): Nothing = fail()
+  override def -=(key: String) = fail()
 
-  override def get(key: String): Nothing = fail()
+  override def get(key: String) = fail()
 
-  override def iterator: Nothing = fail()
+  override def iterator = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
