@@ -24,6 +24,7 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -45,17 +46,19 @@ public class PageCacheAndDependenciesRule implements TestRule
 
     public PageCacheAndDependenciesRule()
     {
-        this( () -> new EphemeralFileSystemRule() );
+        this( () -> new EphemeralFileSystemRule(), fs -> TestDirectory.testDirectory( fs ) );
     }
 
     /**
      * @param fsSupplier as {@link Supplier} to make it clear that it is this class that owns the created
      * {@link FileSystemRule} instance.
+     * @param directorySupplier {@link Supplier} of {@link TestDirectory}.
      */
-    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier )
+    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier,
+            Function<FileSystemAbstraction,TestDirectory> directorySupplier )
     {
         this.fs = fsSupplier.get();
-        this.directory = TestDirectory.testDirectory( fs );
+        this.directory = directorySupplier.apply( fs );
         this.chain = RuleChain.outerRule( fs ).around( directory ).around( pageCacheRule );
     }
 
