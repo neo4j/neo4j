@@ -45,17 +45,18 @@ public class PageCacheAndDependenciesRule implements TestRule
 
     public PageCacheAndDependenciesRule()
     {
-        this( () -> new EphemeralFileSystemRule() );
+        this( EphemeralFileSystemRule::new, null );
     }
 
     /**
      * @param fsSupplier as {@link Supplier} to make it clear that it is this class that owns the created
      * {@link FileSystemRule} instance.
+     * @param clazz class to make distinctions for test directories
      */
-    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier )
+    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier, Class<?> clazz )
     {
         this.fs = fsSupplier.get();
-        this.directory = TestDirectory.testDirectory( fs );
+        this.directory = TestDirectory.testDirectory( clazz, fs );
         this.chain = RuleChain.outerRule( fs ).around( directory ).around( pageCacheRule );
     }
 

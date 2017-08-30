@@ -53,7 +53,7 @@ public abstract class IndexProviderCompatibilityTestSuite
     public abstract static class Compatibility
     {
         @Rule
-        public PageCacheAndDependenciesRule pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new );
+        public final PageCacheAndDependenciesRule pageCacheAndDependenciesRule;
 
         protected File graphDbDir;
         protected FileSystemAbstraction fs;
@@ -74,6 +74,7 @@ public abstract class IndexProviderCompatibilityTestSuite
         {
             this.testSuite = testSuite;
             this.descriptor = descriptor;
+            pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
         }
 
         protected void withPopulator( IndexPopulator populator, ThrowingConsumer<IndexPopulator,Exception> runWithPopulator ) throws Exception
