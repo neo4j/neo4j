@@ -95,7 +95,6 @@ Find a shortest path of length 1 if requested to
 Find a shortest path among paths matched using a non-variable length pattern
 Find a combination of a shortest path and a pattern expression
 Filter with AND/OR
-LIMIT 0 should stop side effects
 type on null
 
 //OrderByAcceptance.feature - Unsupported orderability
@@ -118,7 +117,6 @@ Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
 
 Flat type support in list literal
-Negative parameter for LIMIT should not generate errors
 Nested type support in list literal
 Nested type support in map literal
 Nested type support with mixed list and map literals with projection
