@@ -46,7 +46,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
       }
     }
 
-    def shouldVerify(expected: PartialFunction[J, Unit]): Unit = {
+    def shouldVerify(expected: J => Unit): Unit = {
       actuals foreach expected
     }
 

@@ -31,17 +31,16 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
-  test("GRAPHS * keeps existing graphs in scope") {
+  test("GRAPHS * keeps existing graphs in scope (1)") {
     parsing(strip(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN * GRAPHS *
-     """)) shouldVerify {
-      case result: SemanticCheckResult =>
+     """)) shouldVerify { result: SemanticCheckResult =>
         result.errors shouldBe empty
         result.formattedContexts should equal(strip(
           """// Start
             |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
             |source >> target
             |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
             |--
@@ -63,17 +62,18 @@ class MultipleGraphClauseSemanticCheckingTest
             |  }
             |}"""))
     }
+  }
 
+  test("GRAPHS * keeps existing graphs in scope (2)") {
     parsing(strip(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN GRAPHS *
-      """)) shouldVerify {
-      case result: SemanticCheckResult =>
+      """)) shouldVerify { result: SemanticCheckResult =>
         result.errors shouldBe empty
         result.formattedContexts should equal(strip(
           """// Start
             |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
             |source >> target
             |// Return(false,DiscardCardinality(),Some(GraphReturnItems(true,List())),None,None,None,Set())
             |--
@@ -96,19 +96,58 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  test("WITH GRAPHS controls which graphs are in scope") {
+  test("WITH * passes on whatever graphs are in scope") {
     parsing(strip(
       """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
-        |RETURN GRAPH foo AT 'url', GRAPH bar AT 'url'
-      """)) shouldVerify {
-      case result: SemanticCheckResult =>
+        |WITH 1 AS a
+        |RETURN * GRAPHS *
+      """)) shouldVerify { result: SemanticCheckResult =>
         result.errors shouldBe empty
         result.formattedContexts should equal(strip(
           """// Start
             |--
-            |// With(false,EmptyReturnItems(false),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
             |source >> target
-            |// Return(false,EmptyReturnItems(false),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(foo)))), ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar))))))),None,None,None,Set())
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(true,List()),None,None,None,None)
+            |source >> target
+            |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
+            |--
+            |// End
+          """))
+        result.formattedScopes should equal(strip(
+          """{
+            |  {
+            |  }
+            |  { /* source >> target */
+            |    GRAPH source: 11
+            |    GRAPH target: 36
+            |  }
+            |  { /* source >> target */
+            |    a: 62
+            |    GRAPH source: 11
+            |    GRAPH target: 36
+            |  }
+            |  {
+            |    a: 62
+            |    GRAPH source: 11
+            |    GRAPH target: 36
+            |  }
+            |}"""))
+    }
+  }
+
+  test("WITH GRAPHS controls which graphs are in scope (1)") {
+    parsing(strip(
+      """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
+        |RETURN GRAPH foo AT 'url', GRAPH bar AT 'url'
+      """)) shouldVerify { result: SemanticCheckResult =>
+        result.errors shouldBe empty
+        result.formattedContexts should equal(strip(
+          """// Start
+            |--
+            |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
+            |source >> target
+            |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(foo)))), ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar))))))),None,None,None,Set())
             |--
             |// End
           """))
@@ -126,17 +165,18 @@ class MultipleGraphClauseSemanticCheckingTest
             |  }
             |}"""))
     }
+  }
 
+  test("WITH GRAPHS controls which graphs are in scope (2)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
-        |RETURN a""".stripMargin) shouldVerify {
-      case result: SemanticCheckResult =>
+        |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
         result.errors shouldBe empty
         result.formattedContexts should equal(strip(
           """
             |// Start
             |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
             |source >> target
             |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
             |--
@@ -156,21 +196,20 @@ class MultipleGraphClauseSemanticCheckingTest
             |  }
             |}"""))
     }
+  }
 
-
+  test("WITH GRAPHS controls which graphs are in scope (3)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source
-        |RETURN a""".stripMargin) shouldVerify {
-      case result: SemanticCheckResult =>
+        |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
         result.errors shouldBe empty
         result.formattedContexts should equal(strip(
-          """
-            |// Start
+          """// Start
             |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),Some(GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)))))))),None,None,None,None)
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
             |source >> target
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(source),Some(Variable(source))))))),None,None,None,None)
+            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(source),Some(Variable(source)))))),None,None,None,None)
             |source >> source
             |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
             |--
@@ -194,7 +233,9 @@ class MultipleGraphClauseSemanticCheckingTest
             |  }
             |}"""))
     }
+  }
 
+  test("WITH GRAPHS controls which graphs are in scope (4)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source

@@ -29,7 +29,7 @@ case object expandCallWhere extends Rewriter {
           val newResult = result.copy(where = None)(result.position)
           val newUnresolved = unresolved.copy(declaredResult = Some(newResult))(unresolved.position)
           val newItems = ReturnItems(includeExisting = true, Seq.empty)(where.position)
-          val newWith = With(distinct = false, newItems, None, None, None, None, optWhere)(where.position)
+          val newWith = With(distinct = false, newItems, PassAllGraphReturnItems(where.position), None, None, None, optWhere)(where.position)
           Seq(newUnresolved, newWith)
 
         case clause =>

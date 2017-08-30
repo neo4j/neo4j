@@ -51,6 +51,11 @@ final case class NewContextGraphs(source: SingleGraphAs,
   override def declareGraphs: SemanticCheck = source.declareGraph chain newTarget.foldSemanticCheck(_.declareGraph)
 }
 
+object PassAllGraphReturnItems {
+  def apply(position: InputPosition): GraphReturnItems =
+    GraphReturnItems(star = true, Seq.empty)(position)
+}
+
 final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
@@ -69,16 +74,16 @@ final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
       checkUniqueGraphReference
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
 
-  def declareGraphs(previousScope: Scope, optContextGraphs: Option[ContextGraphs], isReturn: Boolean): SemanticCheck = {
+  def declareGraphs(previousScope: Scope, isReturn: Boolean): SemanticCheck = {
     val updateContext = (s: SemanticState) => {
-      val newSourceName = newSource.flatMap(_.name)
-      val newTargetName = newTarget.flatMap(_.name)
       if (isReturn)
         s.removeContextGraphs()
       else {
+        val newSourceName = newSource.flatMap(_.name)
+        val newTargetName = newTarget.flatMap(_.name)
         val optNewContextGraphs =
-          optContextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
-          newSourceName.flatMap(source => newTargetName.map(target => ContextGraphs(source, target)))
+          previousScope.contextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
+          newSourceName.map(source => newTargetName.map(target => ContextGraphs(source, target)).getOrElse(ContextGraphs(source, source)))
         optNewContextGraphs match {
           case Some(newContextGraphs) => s.updateContextGraphs(newContextGraphs)
           case None => Left(SemanticError("No context graphs available", position))

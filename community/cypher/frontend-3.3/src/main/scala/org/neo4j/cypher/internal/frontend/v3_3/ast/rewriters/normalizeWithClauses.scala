@@ -92,9 +92,9 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
         val introducedVariables = introducedReturnItems.map(_.variable.copyId)
 
         Seq(
-          With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), graphReturnItems = gri,
+          With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), mandatoryGraphReturnItems = gri,
             orderBy = None, skip = None, limit = None, where = None)(clause.position),
-          With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), graphReturnItems = gri,
+          With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), mandatoryGraphReturnItems = gri,
             orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
           PragmaWithout(introducedVariables)(clause.position)
         )

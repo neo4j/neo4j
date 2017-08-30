@@ -565,7 +565,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       }
       val tabularState = fixedOrderByResult.state
       val contextGraphs = tabularState.currentScope.contextGraphs
-      val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, contextGraphs, isReturn))(tabularState)
+      val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
     declareAllTheThings chain ensureOneIsNonEmpty
@@ -603,22 +603,24 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
 object With {
   def apply(graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
-    With(distinct = false, DiscardCardinality()(pos), Some(graphReturnItems), None, None, None, None)(pos)
+    With(distinct = false, DiscardCardinality()(pos), graphReturnItems, None, None, None, None)(pos)
 
-  def apply(returnItems: ReturnItemsDef, graphReturnItems: Option[GraphReturnItems])(pos: InputPosition): With =
+  def apply(returnItems: ReturnItemsDef, graphReturnItems: GraphReturnItems)(pos: InputPosition): With =
     With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
 }
 
 case class With(
                  distinct: Boolean,
                  returnItems: ReturnItemsDef,
-                 graphReturnItems: Option[GraphReturnItems],
+                 mandatoryGraphReturnItems: GraphReturnItems,
                  orderBy: Option[OrderBy],
                  skip: Option[Skip],
                  limit: Option[Limit],
                  where: Option[Where])(val position: InputPosition) extends ProjectionClause {
 
   override def name = "WITH"
+
+  override def graphReturnItems = Some(mandatoryGraphReturnItems)
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain

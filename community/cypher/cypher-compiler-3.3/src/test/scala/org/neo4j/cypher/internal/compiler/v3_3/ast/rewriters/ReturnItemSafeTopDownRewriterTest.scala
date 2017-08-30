@@ -39,9 +39,8 @@ class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstruct
 
     def createWith(item: ReturnItem) = {
       val returnItems = ReturnItems(includeExisting = false, Seq(item))(pos)
-      With(distinct = false, returnItems, None, None, None, None, None)(pos)
+      With(distinct = false, returnItems, PassAllGraphReturnItems(pos), None, None, None, None)(pos)
     }
-
 
     val originalReturnItem = AliasedReturnItem(Equals(varFor("foo"), literalInt(42))(pos), varFor("foo"))(pos)
     val expectedReturnItem = AliasedReturnItem(Equals(varFor("bar"), literalInt(42))(pos), varFor("foo"))(pos)

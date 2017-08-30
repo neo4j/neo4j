@@ -53,7 +53,7 @@ case object isolateAggregation extends Rewriter {
             case e => AliasedReturnItem(e, Variable(AggregationNameGenerator.name(e.position))(e.position))(e.position)
           }
           val pos = clause.position
-          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), None, None, None, None, None)(pos)
+          val withClause = With(distinct = false, ReturnItems(includeExisting = false, withReturnItems.toIndexedSeq)(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
           val expressionRewriter = createRewriterFor(withReturnItems)
           val resultClause = clause.endoRewrite(expressionRewriter)

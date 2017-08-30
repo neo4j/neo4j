@@ -68,7 +68,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       With(distinct = false,
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val RETURN =
       Return(distinct = false,
@@ -98,7 +98,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos),
           AliasedReturnItem(a, a)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val RETURN=
       Return(distinct = false,
@@ -129,7 +129,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       With(distinct = false,
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(PathExpression(NodePathStep(a, NilPathStep))(pos), p)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val MATCH2 =
       Match(optional = false,
@@ -143,7 +143,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(p, p)(pos),
           AliasedReturnItem(PathExpression(NodePathStep(b, NilPathStep))(pos), q)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val RETURN=
       Return(distinct = false,
@@ -223,7 +223,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos), fresh30)(pos),
           AliasedReturnItem(SignedDecimalIntegerLiteral("42")(pos), fresh33)(pos)
-        ))(pos), None,
+        ))(pos), PassAllGraphReturnItems(pos),
         Some(OrderBy(List(AscSortItem(fresh33)(pos)))(pos)),
         None, None, None
       )(pos)
@@ -300,14 +300,14 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), l)(pos),
           AliasedReturnItem(CountStar()(pos), x)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val WITH2 =
       With(distinct = false,
         ReturnItems(includeExisting = false, Seq(
           AliasedReturnItem(l, l)(pos),
           AliasedReturnItem(x, x)(pos)
-        ))(pos), None, None, None, None, None)(pos)
+        ))(pos), PassAllGraphReturnItems(pos), None, None, None, None)(pos)
 
     val RETURN =
       Return(distinct = false,

@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -137,9 +138,9 @@ trait Clauses extends Parser
   }
 
   def With: Rule1[ast.With] = rule("WITH")(
-    group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _, _))
+    group(keyword("WITH DISTINCT") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _, _))
       | group(keyword("WITH") ~~ GraphReturnItems) ~~>> (ast.With(_))
-      | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _, _))
+      | group(keyword("WITH") ~~ WithBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _, _))
   )
 
   def Unwind: Rule1[ast.Unwind] = rule("UNWIND")(
@@ -156,7 +157,7 @@ trait Clauses extends Parser
     keyword("_PRAGMA") ~~ (
       group(
         keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(
-          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, None, _, _, _))
+          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, PassAllGraphReturnItems(InputPosition.NONE), None, _, _, _))
         | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
       )
   }
@@ -192,7 +193,18 @@ trait Clauses extends Parser
       | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
-  private def ReturnBody = {
+  private def WithBody: Rule5[ReturnItemsDef, GraphReturnItems, Option[OrderBy], Option[Skip], Option[Limit]] = {
+    ReturnItems ~~
+      FakeMandatoryGraphReturnItems ~~
+      optional(Order) ~~
+      optional(Skip) ~~
+      optional(Limit)
+  }
+
+  private def FakeMandatoryGraphReturnItems: Rule1[GraphReturnItems] =
+    optional(GraphReturnItems) ~~>> { (optItem) => (pos: InputPosition) => optItem.getOrElse(PassAllGraphReturnItems(pos)) }
+
+  private def ReturnBody: Rule5[ReturnItemsDef, Option[GraphReturnItems], Option[OrderBy], Option[Skip], Option[Limit]] = {
     ReturnItems ~~
       optional(GraphReturnItems) ~~
       optional(Order) ~~
