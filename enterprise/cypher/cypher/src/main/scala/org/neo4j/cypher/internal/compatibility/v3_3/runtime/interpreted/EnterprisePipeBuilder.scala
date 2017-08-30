@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => registerExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => registerExpressions, pipes => interpretedPipes}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes, Pipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
@@ -233,8 +233,26 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
            _: Skip =>
         fallback.build(plan, source)
 
+      case Sort(_, sortItems) =>
+        SortRegisterPipe(source, sortItems.map(translateSortDescription(pipeline, _)), pipeline)(id = id)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+    }
+  }
+
+  private def translateSortDescription(pipeline: PipelineInformation, s: logical.SortDescription): interpretedPipes.SortDescription = s match {
+    case logical.Ascending(IdName(name)) => {
+      pipeline.get(name) match {
+        case Some(slot) => interpretedPipes.Ascending(slot.offset)
+        case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
+      }
+    }
+    case logical.Descending(IdName(name)) => {
+      pipeline.get(name) match {
+        case Some(slot) => interpretedPipes.Descending(slot.offset)
+        case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
+      }
     }
   }
 

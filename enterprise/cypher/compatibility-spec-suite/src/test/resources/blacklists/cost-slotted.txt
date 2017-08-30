@@ -6,27 +6,14 @@ Get rows in the middle
 
 handling long chanins of operators
 Handle ORDER BY with LIMIT 1
-Handle projections with ORDER BY - GH#4937
 Keeping used expression 1
 Limiting amount of rows when there are fewer left than the LIMIT argument
 Matching and returning ordered results, with LIMIT
-ORDER BY DESC should order booleans in the expected order
-ORDER BY DESC should order floats in the expected order
-ORDER BY DESC should order ints in the expected order
-ORDER BY DESC should order strings in the expected order
-ORDER BY DESC should return results in descending order
 ORDER BY a DISTINCT column
 ORDER BY and LIMIT can be used
-ORDER BY should order booleans in the expected order
-ORDER BY should order floats in the expected order
-ORDER BY should order ints in the expected order
-ORDER BY should order strings in the expected order
-ORDER BY should return results in ascending order
 ORDER BY with LIMIT 0 should not generate errors
 ORDER BY with negative parameter for LIMIT should not generate errors
-Renaming columns before ORDER BY should return results in ascending order
 Returned columns do not change from using ORDER BY
-Returning all variables with ordering
 Simple counting of nodes
 Start the result from the second row by param
 Start the result from the second row
@@ -257,7 +244,6 @@ Failing when using a variable that is already bound in CREATE
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
 Combine MATCH, WITH and CREATE
-A bound node should be recognized after projection with WITH + MERGE node
 A bound node should be recognized after projection with WITH + MERGE pattern
 Delete nodes
 Detach delete node

@@ -162,7 +162,8 @@ object RegisterAllocation {
       case _: ProduceResult |
            _: Selection |
            _: Limit |
-           _: Skip
+           _: Skip |
+           _: Sort
       =>
         incomingPipeline
 
