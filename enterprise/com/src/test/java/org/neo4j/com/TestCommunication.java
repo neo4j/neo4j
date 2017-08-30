@@ -276,11 +276,11 @@ public class TestCommunication
         MadeUpClient client = builder.client();
         addToLifeAndStart( server, client );
 
-        int failAtSize = FRAME_LENGTH / 2;
+        int failAtSize = FRAME_LENGTH / 1024;
         ClientCrashingWriter writer = new ClientCrashingWriter( client, failAtSize );
         try
         {
-            client.fetchDataStream( writer, FRAME_LENGTH * 10 );
+            client.fetchDataStream( writer, FRAME_LENGTH * 100 );
             assertTrue( writer.getSizeRead() >= failAtSize );
             fail( "Should fail in the middle" );
         }
