@@ -135,4 +135,14 @@ class ProjectionClauseParserTest
     yields(ast.Return(distinct = false, ast.ReturnItems(includeExisting = true, Seq.empty)(pos), Some(graphs), Some(ast.OrderBy(Seq(ast.AscSortItem(literalInt(2))(pos)))(pos)), None, Some(ast.Limit(literalInt(1))(pos))))
   }
 
+  test("FROM GRAPH foo AT 'url'") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(star = true, Seq(ast.NewContextGraphs(graphAt("foo", "url"), Some(graphAt("foo", "url")))(pos)))(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
+  }
+
+  test("INTO GRAPH foo AT 'url'") {
+    val graphs: GraphReturnItems = ast.GraphReturnItems(star = true, Seq(ast.NewTargetGraph(graphAt("foo", "url"))(pos)))(pos)
+    yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
+  }
+
 }

@@ -68,56 +68,16 @@ sealed trait MultipleGraphClause extends Clause with SemanticChecking {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-sealed trait GraphSelectorClause extends MultipleGraphClause {
-
-  def graph: SingleGraphAs
-
-  override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    graph.semanticCheck chain
-    graph.declareGraph chain
-    (updateContextGraphs _).check chain
-    recordCurrentContextGraphsOnly
-
-  def updateContextGraphs(s: SemanticState): Either[SemanticError, SemanticState]
+object From {
+  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(star = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
+  }
 }
 
-final case class From(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
-  override def name = "FROM"
-
-  def updateContextGraphs(s: SemanticState): Either[SemanticError, SemanticState] =
-    graph.name.map(s.updateSourceGraph).getOrElse(Left(SemanticError("Graph in from must be named", position)))
-
-  //  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
-//    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-//      s.currentScope.contextGraphs match {
-//        case Some(context) =>
-//          s.updateContextGraphs(context.updated(graph.name))
-//        case None =>
-//          Left(SemanticError("No context graphs in scope", position))
-//      }
-//    }
-//    graph.declareGraph chain check
-//  }
-}
-
-final case class Into(graph: SingleGraphAs)(val position: InputPosition) extends GraphSelectorClause {
-  override def name = "INTO"
-
-  def updateContextGraphs(s: SemanticState): Either[SemanticError, SemanticState] =
-    graph.name.map(s.updateTargetGraph).getOrElse(Left(SemanticError("Graph in from must be named", position)))
-
-  //  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
-//    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-//      s.currentScope.contextGraphs match {
-//        case Some(context) =>
-//          s.updateContextGraphs(context.updated(Some(context.source), graph.name))
-//        case None =>
-//          Left(SemanticError("No context graphs in scope", position))
-//      }
-//    }
-//    graph.declareGraph chain check
-//  }
+object Into {
+  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(star = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
+  }
 }
 
 sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
@@ -564,7 +524,6 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
           orderByResult
       }
       val tabularState = fixedOrderByResult.state
-      val contextGraphs = tabularState.currentScope.contextGraphs
       val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
