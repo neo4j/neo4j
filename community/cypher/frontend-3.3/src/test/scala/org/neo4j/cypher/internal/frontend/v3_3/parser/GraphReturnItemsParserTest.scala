@@ -34,25 +34,25 @@ class GraphReturnItemsParserTest
   }
 
   test("GRAPH foo >>") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test(">> GRAPH bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPH foo >> GRAPH bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPH a, GRAPH foo >> GRAPH bar, GRAPH b") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("a"))(pos),
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
       ast.ReturnedGraph(graph("b"))(pos)
@@ -60,7 +60,7 @@ class GraphReturnItemsParserTest
   }
 
   test("GRAPH baz, GRAPH foo >>, GRAPH bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("baz"))(pos),
       ast.NewContextGraphs(graph("foo"))(pos),
       ast.ReturnedGraph(graph("bar"))(pos)
@@ -68,7 +68,7 @@ class GraphReturnItemsParserTest
   }
 
   test("GRAPH foo, >> GRAPH bar, GRAPH baz") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("foo"))(pos),
       ast.NewTargetGraph(graph("bar"))(pos),
       ast.ReturnedGraph(graph("baz"))(pos)
@@ -78,25 +78,25 @@ class GraphReturnItemsParserTest
   // graphs list
 
   test("GRAPHS foo >>") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test("GRAPHS >> bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPHS foo >> bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPHS a, foo >> bar, b") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("a"))(pos),
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
       ast.ReturnedGraph(graph("b"))(pos)
@@ -104,7 +104,7 @@ class GraphReturnItemsParserTest
   }
 
   test("GRAPHS baz, foo >>, bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("baz"))(pos),
       ast.NewContextGraphs(graph("foo"))(pos),
       ast.ReturnedGraph(graph("bar"))(pos)
@@ -112,7 +112,7 @@ class GraphReturnItemsParserTest
   }
 
   test("GRAPHS foo, >> bar, baz") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("foo"))(pos),
       ast.NewTargetGraph(graph("bar"))(pos),
       ast.ReturnedGraph(graph("baz"))(pos)
@@ -122,25 +122,25 @@ class GraphReturnItemsParserTest
   // graphs star list
 
   test("GRAPHS *, foo >>") {
-    yields(ast.GraphReturnItems(star = true, List(
+    yields(ast.GraphReturnItems(includeExisting = true, List(
       ast.NewContextGraphs(graph("foo"))(pos)
     )))
   }
 
   test("GRAPHS *, >> bar") {
-    yields(ast.GraphReturnItems(star = true, List(
+    yields(ast.GraphReturnItems(includeExisting = true, List(
       ast.NewTargetGraph(graph("bar"))(pos)
     )))
   }
 
   test("GRAPHS *, foo >> bar") {
-    yields(ast.GraphReturnItems(star = true, List(
+    yields(ast.GraphReturnItems(includeExisting = true, List(
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos)
     )))
   }
 
   test("GRAPHS *, a, foo >> bar, b") {
-    yields(ast.GraphReturnItems(star = true, List(
+    yields(ast.GraphReturnItems(includeExisting = true, List(
       ast.ReturnedGraph(graph("a"))(pos),
       ast.NewContextGraphs(graph("foo"), Some(graph("bar")))(pos),
       ast.ReturnedGraph(graph("b"))(pos)
@@ -150,14 +150,14 @@ class GraphReturnItemsParserTest
   // combo list
 
   test("GRAPHS baz, foo >> GRAPH AT 'url' AS bar") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("baz"))(pos),
       ast.NewContextGraphs(graph("foo"), Some(graphAt("bar", "url")))(pos)
     )))
   }
 
   test("GRAPHS foo, GRAPH AT 'url' AS moep >> bar, baz") {
-    yields(ast.GraphReturnItems(star = false, List(
+    yields(ast.GraphReturnItems(includeExisting = false, List(
       ast.ReturnedGraph(graph("foo"))(pos),
       ast.NewContextGraphs(graphAt("moep", "url"), Some(graph("bar")))(pos),
       ast.ReturnedGraph(graph("baz"))(pos)

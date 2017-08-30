@@ -37,6 +37,12 @@ trait SemanticChecking {
     else
       SemanticCheckResult.success(state)
 
+  protected def unless(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
+    if (condition)
+      SemanticCheckResult.success(state)
+    else
+      check(state)
+
   private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   protected def withScopedState(check: => SemanticCheck): SemanticCheck =

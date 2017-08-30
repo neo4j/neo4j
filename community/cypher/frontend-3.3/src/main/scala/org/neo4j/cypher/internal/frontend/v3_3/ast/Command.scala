@@ -41,7 +41,7 @@ trait PropertyConstraintCommand extends Command with SemanticChecking {
   def entityType: CypherType
 
   def semanticCheck =
-    variable.declare(entityType) chain
+    variable.declareVariable(entityType) chain
       property.semanticCheck(Expression.SemanticContext.Simple) chain
       when(!property.map.isInstanceOf[ast.Variable]) {
         SemanticError("Cannot index nested properties", property.position)
@@ -58,7 +58,7 @@ trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
   def restrictedToSingleProperty: Boolean
 
   def semanticCheck =
-    variable.declare(entityType) chain
+    variable.declareVariable(entityType) chain
       properties.foldSemanticCheck(_.semanticCheck(Expression.SemanticContext.Simple)) chain
       properties.foldSemanticCheck { property =>
         when(!property.map.isInstanceOf[ast.Variable]) {

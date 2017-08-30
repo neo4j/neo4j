@@ -114,21 +114,21 @@ trait Graphs
     keyword("GRAPHS") ~~ oneOrMore(
       GraphReturnItem,
       separator = CommaSep
-    ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(star = false, itemsList) }
+    ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(includeExisting = false, itemsList) }
 
   private def ShortGraphStarReturnItemList: Rule1[ast.GraphReturnItems] =
     keyword("GRAPHS") ~~ keyword("*") ~~ optional(
       CommaSep ~~ oneOrMore(
         GraphReturnItem,
         separator = CommaSep
-      ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(star = true, itemsList) }
-    ) ~~>> { foo: Option[ast.GraphReturnItems] => (pos) => foo.getOrElse(ast.GraphReturnItems(star = true, List.empty)(pos)) }
+      ) ~~>> { itemsList: List[ast.GraphReturnItem] => ast.GraphReturnItems(includeExisting = true, itemsList) }
+    ) ~~>> { foo: Option[ast.GraphReturnItems] => (pos) => foo.getOrElse(ast.GraphReturnItems(includeExisting = true, List.empty)(pos)) }
 
   private def GraphReturnItemList: Rule1[ast.GraphReturnItems] =
     oneOrMore(
       NewContextGraphs | NewTargetGraph | ReturnedGraph ,
       separator = CommaSep
-    ) ~~>> { graphReturnItems => ast.GraphReturnItems(star = false, graphReturnItems) }
+    ) ~~>> { graphReturnItems => ast.GraphReturnItems(includeExisting = false, graphReturnItems) }
 
    def GraphReturnItems: Rule1[ast.GraphReturnItems] =
      ShortGraphStarReturnItemList | ShortGraphReturnItemList | GraphReturnItemList

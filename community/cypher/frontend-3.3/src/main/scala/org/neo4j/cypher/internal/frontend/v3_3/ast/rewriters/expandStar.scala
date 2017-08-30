@@ -25,7 +25,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val rewriter = Rewriter.lift {
     case clause@With(_, values, graphs, _, _, _, _)
-      if values.includeExisting || graphs.star =>
+      if values.includeExisting || graphs.includeExisting =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
       val newGraphItems = graphs match {
         case GraphReturnItems(true, graphItems) => graphReturnItems(clause, graphItems)
@@ -41,7 +41,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
     case clause@Return(_, values, graphs, _, _, _, excludedNames)
-      if values.includeExisting || graphs.exists(_.star) =>
+      if values.includeExisting || graphs.exists(_.includeExisting) =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
       val newGraphItems = graphs match {
         case Some(GraphReturnItems(true, graphItems)) =>
@@ -77,7 +77,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
         )(clausePos)
       )(clausePos)
     }.toList ++ listedItems
-    GraphReturnItems(star = false, newGraphItems)(clausePos)
+    GraphReturnItems(includeExisting = false, newGraphItems)(clausePos)
   }
 
   private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty)

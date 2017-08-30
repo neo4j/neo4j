@@ -51,14 +51,14 @@ sealed trait LegacyIndexHint extends UsingHint {
 
 case class UsingIndexHint(variable: Variable, label: LabelName, properties: Seq[PropertyKeyName])(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
+  def semanticCheck = variable.ensureVariableDefined chain variable.expectType(CTNode.covariant)
 
   override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
+  def semanticCheck = variable.ensureVariableDefined chain variable.expectType(CTNode.covariant)
 
   override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
 }
@@ -72,7 +72,7 @@ object UsingJoinHint {
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
-    variables.map { variable => variable.ensureDefined chain variable.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
+    variables.map { variable => variable.ensureVariableDefined chain variable.expectType(CTNode.covariant) }.reduceLeft(_ chain _)
 
   override def toString: String = s"USING JOIN ON ${variables.map(_.name).toIndexedSeq.mkString(", ")}"
 }
@@ -85,7 +85,7 @@ sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
 }
 
 sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = variable.declare(CTNode)
+  def semanticCheck = variable.declareVariable(CTNode)
 }
 
 case class NodeByIdentifiedIndex(variable: Variable, index: String, key: String, value: Expression)(val position: InputPosition)
@@ -98,7 +98,7 @@ case class NodeByParameter(variable: Variable, parameter: Parameter)(val positio
 case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = variable.declare(CTRelationship)
+  def semanticCheck = variable.declareVariable(CTRelationship)
 }
 
 case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem

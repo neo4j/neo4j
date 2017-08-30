@@ -53,10 +53,10 @@ final case class NewContextGraphs(source: SingleGraphAs,
 
 object PassAllGraphReturnItems {
   def apply(position: InputPosition): GraphReturnItems =
-    GraphReturnItems(star = true, Seq.empty)(position)
+    GraphReturnItems(includeExisting = true, Seq.empty)(position)
 }
 
-final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
+final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
@@ -91,7 +91,7 @@ final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
       }
     }
     (
-      when (star) { s => success(s.importGraphsFromScope(previousScope)) } chain
+      when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
       items.foldSemanticCheck(_.declareGraphs) chain
       updateContext
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)

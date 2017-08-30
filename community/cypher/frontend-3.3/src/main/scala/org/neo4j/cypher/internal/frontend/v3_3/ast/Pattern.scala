@@ -100,7 +100,7 @@ sealed abstract class PatternPart extends ASTNode with ASTParticle {
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
-  def declareVariables(ctx: SemanticContext) = patternPart.declareVariables(ctx) chain variable.declare(CTPath)
+  def declareVariables(ctx: SemanticContext) = patternPart.declareVariables(ctx) chain variable.declareVariable(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
   def element: PatternElement = patternPart.element
@@ -116,7 +116,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
     case (n: NodePattern, SemanticContext.Match) =>
       element.declareVariables(ctx) // single node variable is allowed to be already bound in MATCH
     case (n: NodePattern, _)                     =>
-      n.variable.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareVariables(ctx)
+      n.variable.fold(SemanticCheckResult.success)(_.declareVariable(CTNode)) chain element.declareVariables(ctx)
     case _                                       =>
       element.declareVariables(ctx)
   }
@@ -262,10 +262,10 @@ case class NodePattern(variable: Option[Variable],
       variable =>
         ctx match {
           case SemanticContext.Expression =>
-            variable.ensureDefined() chain
+            variable.ensureVariableDefined() chain
               variable.expectType(CTNode.covariant)
           case _                          =>
-            variable.implicitDeclaration(CTNode)
+            variable.implicitVariable(CTNode)
         }
     }
 
@@ -301,9 +301,9 @@ case class RelationshipPattern(
         val possibleType = if (length.isEmpty) CTRelationship else CTList(CTRelationship)
 
         ctx match {
-          case SemanticContext.Match      => variable.implicitDeclaration(possibleType)
-          case SemanticContext.Expression => variable.ensureDefined() chain variable.expectType(possibleType.covariant)
-          case _                          => variable.declare(possibleType)
+          case SemanticContext.Match      => variable.implicitVariable(possibleType)
+          case SemanticContext.Expression => variable.ensureVariableDefined() chain variable.expectType(possibleType.covariant)
+          case _                          => variable.declareVariable(possibleType)
         }
     }
 

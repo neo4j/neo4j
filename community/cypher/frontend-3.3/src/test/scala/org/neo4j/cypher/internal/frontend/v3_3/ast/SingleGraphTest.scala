@@ -23,7 +23,7 @@ class SingleGraphTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Self alias does not produce a semantic error") {
 
-    val Right(state) = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs).declareGraphVariable(varFor("foo"))
+    val Right(state) = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs).declareGraph(varFor("foo"))
 
     val result = graphAs("foo", "foo").semanticCheck(state)
     val errors = result.errors.toSet

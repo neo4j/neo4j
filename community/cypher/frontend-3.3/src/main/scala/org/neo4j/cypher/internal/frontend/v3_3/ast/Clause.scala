@@ -58,7 +58,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
     else
       CTList(CTString)
 
-    variable.declare(typ)
+    variable.declareVariable(typ)
   }
 }
 
@@ -70,13 +70,13 @@ sealed trait MultipleGraphClause extends Clause with SemanticChecking {
 
 object From {
   def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(star = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
   }
 }
 
 object Into {
   def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(star = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
   }
 }
 
@@ -151,7 +151,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graphs.foldSemanticCheck(_.ensureDefined()) chain
+    graphs.foldSemanticCheck(_.ensureVariableDefined()) chain
     recordCurrentScope
 }
 
@@ -425,7 +425,7 @@ case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clau
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
-        variable.declare(possibleInnerTypes) chain updates.semanticCheck
+        variable.declareVariable(possibleInnerTypes) chain updates.semanticCheck
       }
 }
 
@@ -436,7 +436,7 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
     expression.semanticCheck(Expression.SemanticContext.Results) chain
       expression.expectType(CTList(CTAny).covariant) ifOkChain {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
-      variable.declare(possibleInnerTypes)
+      variable.declareVariable(possibleInnerTypes)
     }
 }
 
@@ -491,6 +491,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def skip: Option[Skip]
   def limit: Option[Limit]
 
+  final def isWith: Boolean = !isReturn
   def isReturn: Boolean = false
 
   override def semanticCheck: SemanticCheck =
@@ -499,7 +500,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     graphReturnItems.semanticCheck
 
   def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
-    if (s.currentScope.symbolNames.isEmpty)
+    if (s.currentScope.symbolNames.isEmpty && returnItems.items.isEmpty && graphReturnItems.forall(_.graphs.isEmpty))
       error(s, FeatureError("At least one field or graph must be projected", position))
     else
       success(s)
@@ -519,7 +520,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
         case ReturnItems(star, items) if star =>
           val shuffleScope = shuffleResult.state.currentScope.scope
           val definedHere = items.map(_.name).toSet
-          orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
+          orderByResult.copy(orderByResult.state.mergeSymbolPositionsFromScope(shuffleScope, definedHere))
         case _ =>
           orderByResult
       }
@@ -527,7 +528,9 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
-    declareAllTheThings chain ensureOneIsNonEmpty
+    val variableStar = returnItems.includeExisting && returnItems.items.isEmpty
+    val graphsStar = graphReturnItems.forall(i => i.includeExisting && i.graphs.isEmpty)
+    declareAllTheThings chain unless(isWith && variableStar && graphsStar) { ensureOneIsNonEmpty }
   }
 
   private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
@@ -568,14 +571,14 @@ object With {
     With(distinct = false, returnItems, graphReturnItems, None, None, None, None)(pos)
 }
 
-case class With(
-                 distinct: Boolean,
-                 returnItems: ReturnItemsDef,
-                 mandatoryGraphReturnItems: GraphReturnItems,
-                 orderBy: Option[OrderBy],
-                 skip: Option[Skip],
-                 limit: Option[Limit],
-                 where: Option[Where])(val position: InputPosition) extends ProjectionClause {
+case class With(distinct: Boolean,
+                returnItems: ReturnItemsDef,
+                mandatoryGraphReturnItems: GraphReturnItems,
+                orderBy: Option[OrderBy],
+                skip: Option[Skip],
+                limit: Option[Limit],
+                where: Option[Where]
+)(val position: InputPosition) extends ProjectionClause {
 
   override def name = "WITH"
 
@@ -591,7 +594,7 @@ case class With(
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
-    case _                     => Seq()
+    case _ => Seq()
   }
 }
 

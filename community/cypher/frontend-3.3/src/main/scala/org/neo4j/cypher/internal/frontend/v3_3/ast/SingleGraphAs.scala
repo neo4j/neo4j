@@ -45,7 +45,7 @@ final case class GraphAs(ref: Variable, as: Option[Variable])(val position: Inpu
 
   override def withNewName(newName: Variable): GraphAs = copy(as = Some(newName))(position)
   override def semanticCheck: SemanticCheck = ref.ensureGraphDefined()
-  override def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.implicitGraphDeclaration)
+  override def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.implicitGraph)
 }
 
 sealed trait NewGraphAs extends SingleGraphAs
