@@ -28,6 +28,7 @@ import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -76,6 +77,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
@@ -99,6 +101,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
+                "-c", configOption( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() ),
                 "-c", "dbms.connector.1.type=HTTP",
                 "-c", "dbms.connector.1.encryption=NONE",
                 "-c", "dbms.connector.1.enabled=true" );
@@ -119,6 +122,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
         properties.put( "dbms.connector.1.type", "HTTP" );
         properties.put( "dbms.connector.1.encryption", "NONE" );
         properties.put( "dbms.connector.1.enabled", "true" );
+        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
         store( properties, configFile );
 
         // When
@@ -145,6 +149,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
         properties.put( "dbms.connector.1.type", "HTTP" );
         properties.put( "dbms.connector.1.encryption", "NONE" );
         properties.put( "dbms.connector.1.enabled", "true" );
+        properties.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
         store( properties, configFile );
 
         // When

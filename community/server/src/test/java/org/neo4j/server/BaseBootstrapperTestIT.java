@@ -82,7 +82,8 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
                 "-c", "dbms.connector.http.type=HTTP",
                 "-c", "dbms.connector.http.enabled=true",
                 "-c", "dbms.connector.http.listen_address=localhost:0",
-                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0"
+                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
+                "-c", "dbms.backup.enabled=false"
         );
 
         // Then
