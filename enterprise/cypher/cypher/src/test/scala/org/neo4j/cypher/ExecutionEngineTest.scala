@@ -889,7 +889,7 @@ order by a.COL1""")
     createNode()
 
     // when
-    timeOutIn(2, TimeUnit.SECONDS) {
+    timeOutIn(20, TimeUnit.SECONDS) {
       executeWithAllPlannersAndCompatibilityMode(
         "MATCH (x)-->(a), (x)-->(b) " +
         "WHERE x.foo > 2 AND x.prop IN ['val'] " +
