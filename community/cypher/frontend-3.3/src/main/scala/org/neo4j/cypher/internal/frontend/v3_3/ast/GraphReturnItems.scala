@@ -68,16 +68,20 @@ final case class GraphReturnItems(star: Boolean, items: Seq[GraphReturnItem])
       checkUniqueGraphReference
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
 
-  def declareGraphs(optContextGraphs: Option[ContextGraphs]): SemanticCheck = {
+  def declareGraphs(optContextGraphs: Option[ContextGraphs], isReturn: Boolean): SemanticCheck = {
     val updateContext = (s: SemanticState) => {
       val newSourceName = newSource.flatMap(_.name)
       val newTargetName = newTarget.flatMap(_.name)
-      val optNewContextGraphs =
-        optContextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
-        newSourceName.flatMap(source => newTargetName.map(target => ContextGraphs(source, target)))
-      optNewContextGraphs match {
-        case Some(newContextGraphs) => s.updateContextGraphs(newContextGraphs)
-        case None => Left(SemanticError("No context graphs available", position))
+      if (isReturn)
+        s.removeContextGraphs()
+      else {
+        val optNewContextGraphs =
+          optContextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
+          newSourceName.flatMap(source => newTargetName.map(target => ContextGraphs(source, target)))
+        optNewContextGraphs match {
+          case Some(newContextGraphs) => s.updateContextGraphs(newContextGraphs)
+          case None => Left(SemanticError("No context graphs available", position))
+        }
       }
     }
     (items.foldSemanticCheck(_.declareGraphs) chain updateContext).ifFeatureEnabled(SemanticFeature.MultipleGraphs)

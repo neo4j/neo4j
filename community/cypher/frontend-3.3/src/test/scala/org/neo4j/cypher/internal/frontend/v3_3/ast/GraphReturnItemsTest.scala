@@ -117,7 +117,7 @@ class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppor
       ReturnedGraph(graphAt("foo", "url2"))(pos)
     ))(pos)
 
-    val result = items.declareGraphs(None)(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
+    val result = items.declareGraphs(None, isReturn = false)(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val errors = result.errors.toSet
 
     errors.exists(_.msg.contains("Variable `foo` already declared")) should be(true)

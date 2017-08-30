@@ -531,6 +531,8 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def skip: Option[Skip]
   def limit: Option[Limit]
 
+  def isReturn: Boolean = false
+
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     returnItems.semanticCheck chain
@@ -563,7 +565,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     }
     val tabularState = fixedOrderByResult.state
     val contextGraphs = tabularState.currentScope.contextGraphs
-    val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(contextGraphs))(tabularState)
+    val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(contextGraphs, isReturn))(tabularState)
     graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
   }
 
@@ -647,6 +649,8 @@ case class Return(distinct: Boolean,
                   excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause {
 
   override def name = "RETURN"
+
+  override def isReturn: Boolean = true
 
   override def returnColumns: List[String] = returnItems.items.map(_.name).toList
 

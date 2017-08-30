@@ -121,6 +121,9 @@ final case class Scope(symbolTable: Map[String, Symbol],
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
+  def removeContextGraphs(): Scope =
+    copy(contextGraphs = None)
+
   def updateContextGraphs(initialContextGraphs: ContextGraphs): Scope =
     copy(contextGraphs = Some(initialContextGraphs))
 
@@ -238,6 +241,9 @@ object SemanticState {
       case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
     }
 
+    def removeContextGraphs(): ScopeLocation =
+      location.replace(scope.removeContextGraphs())
+
     def updateContextGraphs(newContextGraphs: ContextGraphs): ScopeLocation =
       location.replace(scope.updateContextGraphs(newContextGraphs))
 
@@ -286,6 +292,11 @@ case class SemanticState(currentScope: ScopeLocation,
       Left(SemanticError("No target graph is available in scope", InputPosition.NONE))
     else
       Right(copy(currentScope = newScope))
+  }
+
+  def removeContextGraphs(): Either[SemanticError, SemanticState] = {
+    val newScope = currentScope.removeContextGraphs()
+    Right(copy(currentScope = newScope))
   }
 
   def updateSourceGraph(source: String): Either[SemanticError, SemanticState] =
