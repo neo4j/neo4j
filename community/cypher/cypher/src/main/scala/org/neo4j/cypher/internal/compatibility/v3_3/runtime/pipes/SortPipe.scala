@@ -59,10 +59,10 @@ sealed trait SortDescription {
   def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
 }
 
-case class Ascending(id: String) extends SortDescription with Comparer {
+case class Ascending(id: String) extends SortDescription {
   override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
-case class Descending(id: String) extends SortDescription with Comparer {
+case class Descending(id: String) extends SortDescription {
   override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
 }
