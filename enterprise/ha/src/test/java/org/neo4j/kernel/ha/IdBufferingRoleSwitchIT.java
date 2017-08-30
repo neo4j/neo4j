@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -44,6 +45,7 @@ public class IdBufferingRoleSwitchIT
              // Disable automatic sync so that the test can control this itself
             .withSharedSetting( HaSettings.pull_interval, "0" )
             .withSharedSetting( HaSettings.tx_push_factor, "0" )
+            .withSharedSetting( ClusterSettings.join_timeout, "60s" )
             .withConsistencyCheckAfterwards();
 
     @Rule

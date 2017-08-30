@@ -31,7 +31,7 @@ import org.neo4j.cluster.com.message.MessageType;
 public class MessageTimeoutStrategy
         implements TimeoutStrategy
 {
-    Map<MessageType, Long> timeouts = new HashMap<MessageType, Long>();
+    private Map<MessageType, Long> timeouts = new HashMap<>();
 
     private TimeoutStrategy delegate;
 
