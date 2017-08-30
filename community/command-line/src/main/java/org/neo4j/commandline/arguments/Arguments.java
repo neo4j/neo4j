@@ -19,7 +19,7 @@
  */
 package org.neo4j.commandline.arguments;
 
-import org.apache.commons.lang3.text.WordUtils;
+import org.apache.commons.text.WordUtils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -151,7 +151,8 @@ public class Arguments
         List<String> lines = Arrays.asList( text.split( "\r?\n" ) );
 
         return lines.stream()
-                .map( l -> WordUtils.wrap( l, lineLength ) )
+                .map( l ->
+                        l.length() > lineLength ? WordUtils.wrap( l, lineLength ) : l )
                 .collect( Collectors.joining( NEWLINE ) );
     }
 
