@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTNode, CTRelationship, CTList}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTList, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
@@ -79,6 +79,22 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(
       AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))()
+    )
+  }
+
+  test("single allnodes scan with limit") {
+    // given
+    val plan = plans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
+
+    // when
+    val pipe = build(plan)
+
+    // then
+    pipe should equal(
+      LimitPipe(
+        AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))(),
+        Literal(1)
+      )()
     )
   }
 
