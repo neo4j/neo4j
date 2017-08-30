@@ -20,8 +20,6 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,8 +55,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
 {
-    private static final int timeout = 40;
-    private static final TimeUnit timeoutUnits = TimeUnit.MILLISECONDS;
+    private static final int TIMEOUT = 40;
+    private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -72,7 +70,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":NonExistentLabel(prop)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -88,7 +86,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Label(nonExistentProperty)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -106,7 +104,7 @@ public class AwaitIndexProcedureTest
         when( operations.indexGetForSchema( anyObject() ) ).thenReturn( anyIndex );
         when( operations.indexGetState( any( IndexDescriptor.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+        procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
 
         verify( operations ).indexGetForSchema( descriptor );
     }
@@ -123,7 +121,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -144,7 +142,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -169,7 +167,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
@@ -182,7 +180,7 @@ public class AwaitIndexProcedureTest
 
         state.set( ONLINE );
         assertEventually( "Procedure did not return after index was online",
-                done::get, is( true ), 10, TimeUnit.SECONDS );
+                done::get, is( true ), TIMEOUT, TimeUnit.SECONDS );
     }
 
     @Test
@@ -199,7 +197,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", timeout, timeoutUnits );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
@@ -207,7 +205,7 @@ public class AwaitIndexProcedureTest
             }
         } ).start();
 
-        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), 10, TimeUnit.SECONDS );
+        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), TIMEOUT, TimeUnit.SECONDS );
         //noinspection ThrowableResultOfMethodCallIgnored
         assertThat( exception.get().status(), is( Status.Procedure.ProcedureTimedOut ) );
     }
