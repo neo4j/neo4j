@@ -387,9 +387,11 @@ class InternalTreeLogic<KEY,VALUE>
     private boolean cursorIsAtExpectedLocation( PageCursor cursor )
     {
         assert currentLevel >= 0 : "Uninitialized tree logic, currentLevel:" + currentLevel;
-        assert cursor.getCurrentPageId() == levels[currentLevel].treeNodeId : "Expected cursor to be at page:" +
-                    levels[currentLevel].treeNodeId + " at level:" + currentLevel + ", but was at page:" +
-                    cursor.getCurrentPageId();
+        long currentPageId = cursor.getCurrentPageId();
+        long expectedPageId = levels[currentLevel].treeNodeId;
+        assert currentPageId == expectedPageId : "Expected cursor to be at page:" +
+                expectedPageId + " at level:" + currentLevel + ", but was at page:" +
+                currentPageId;
         return true;
     }
 

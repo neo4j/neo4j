@@ -162,7 +162,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
-        verify( populator ).add( any( IndexEntryUpdate.class) );
+        verify( populator, times( 2 ) ).add( any( Collection.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -204,14 +204,14 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate update1 = IndexEntryUpdate.add( node1, descriptor, Values.of( value ) );
+        IndexEntryUpdate update1 = add( node1, descriptor, Values.of( value ) );
         IndexEntryUpdate update2 = add( node4, descriptor, Values.of( value ) );
 
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( any( IndexEntryUpdate.class ) );
+        verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -477,8 +477,7 @@ public class IndexPopulationJobTest
             }
         }
 
-        @Override
-        public void add( IndexEntryUpdate<?> update )
+        void add( IndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {
@@ -555,8 +554,7 @@ public class IndexPopulationJobTest
             }
         }
 
-        @Override
-        public void add( IndexEntryUpdate<?> update )
+        void add( IndexEntryUpdate<?> update )
         {
             if ( update.getEntityId() == 2 )
             {

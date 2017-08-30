@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
@@ -83,9 +86,11 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  */
 public class MultipleIndexPopulator implements IndexPopulator
 {
-
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
+    static final String BATCH_SIZE_NAME = "batch_size";
+
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
+    private final int BATCH_SIZE = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
@@ -94,7 +99,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     // Populators are added into this list. The same thread adding populators will later call #indexAllNodes.
     // Multiple concurrent threads might fail individual populations.
     // Failed populations are removed from this list while iterating over it.
-    private final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
+    final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
 
     private final IndexStoreView storeView;
     private final LogProvider logProvider;
@@ -158,12 +163,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
 
-    @Override
-    public void add( IndexEntryUpdate<?> update )
-    {
-        throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
-    }
-
     public StoreScan<IndexPopulationFailedKernelException> indexAllNodes()
     {
         int[] labelIds = labelIds();
@@ -172,7 +171,15 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
         storeScan.configure( populations );
-        return storeScan;
+        return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
+        {
+            @Override
+            public void run() throws IndexPopulationFailedKernelException
+            {
+                super.run();
+                flushAll();
+            }
+        };
     }
 
     /**
@@ -351,6 +358,21 @@ public class MultipleIndexPopulator implements IndexPopulator
         populateFromQueueIfAvailable( currentlyIndexedNodeId );
     }
 
+    protected void flushAll()
+    {
+        for ( IndexPopulation population : populations )
+        {
+            try
+            {
+                population.populator.add( population.takeCurrentBatch() );
+            }
+            catch ( Throwable failure )
+            {
+                fail( population, failure );
+            }
+        }
+    }
+
     private void populateFromQueueIfAvailable( long currentlyIndexedNodeId )
     {
         if ( !queue.isEmpty() )
@@ -464,6 +486,8 @@ public class MultipleIndexPopulator implements IndexPopulator
         final FailedIndexProxyFactory failedIndexProxyFactory;
         final String indexUserDescription;
 
+        List<IndexEntryUpdate<?>> batchedUpdates;
+
         IndexPopulation(
                 IndexPopulator populator,
                 long indexId,
@@ -481,6 +505,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
             this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
+            this.batchedUpdates = new ArrayList<>( BATCH_SIZE );
         }
 
         private void flipToFailed( Throwable t )
@@ -494,19 +519,17 @@ public class MultipleIndexPopulator implements IndexPopulator
                 throws IndexEntryConflictException, IOException
         {
             populator.includeSample( update );
-            add( update );
-        }
-
-        void add( IndexEntryUpdate update )
-                throws IOException, IndexEntryConflictException
-        {
-            populator.add( update );
+            if ( batch( update ) )
+            {
+                populator.add( takeCurrentBatch() );
+            }
         }
 
         private void flip() throws FlipFailedKernelException
         {
             flipper.flip( () ->
             {
+                populator.add( takeCurrentBatch() );
                 populateFromQueueIfAvailable( Long.MAX_VALUE );
                 IndexSample sample = populator.sampleResult();
                 storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
@@ -521,6 +544,23 @@ public class MultipleIndexPopulator implements IndexPopulator
         public LabelSchemaDescriptor schema()
         {
             return descriptor.schema();
+        }
+
+        public boolean batch( IndexEntryUpdate<?> update )
+        {
+            batchedUpdates.add( update );
+            return batchedUpdates.size() >= BATCH_SIZE;
+        }
+
+        Collection<IndexEntryUpdate<?>> takeCurrentBatch()
+        {
+            if ( batchedUpdates.isEmpty() )
+            {
+                return Collections.emptyList();
+            }
+            Collection<IndexEntryUpdate<?>> batch = batchedUpdates;
+            batchedUpdates = new ArrayList<>( BATCH_SIZE );
+            return batch;
         }
     }
 
@@ -550,6 +590,46 @@ public class MultipleIndexPopulator implements IndexPopulator
                     fail( indexUpdate.indexKey(), failure );
                 }
             }
+        }
+    }
+
+    protected class DelegatingStoreScan<E extends Exception> implements StoreScan<E>
+    {
+        private final StoreScan<E> delegate;
+
+        DelegatingStoreScan( StoreScan<E> delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void run() throws E
+        {
+            delegate.run();
+        }
+
+        @Override
+        public void stop()
+        {
+            delegate.stop();
+        }
+
+        @Override
+        public void acceptUpdate( MultipleIndexUpdater updater, IndexEntryUpdate update, long currentlyIndexedNodeId )
+        {
+            delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
+        }
+
+        @Override
+        public PopulationProgress getProgress()
+        {
+            return delegate.getProgress();
+        }
+
+        @Override
+        public void configure( Collection<IndexPopulation> populations )
+        {
+            delegate.configure( populations );
         }
     }
 }

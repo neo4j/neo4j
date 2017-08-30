@@ -44,14 +44,13 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensions;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -64,8 +63,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.RECOVERY_PREVENTING_COLLECTOR;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.loadSchemaIndexProviders;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.impl.factory.DatabaseInfo.COMMUNITY;
 
 public class ConsistencyCheckService
 {
@@ -204,7 +207,6 @@ public class ConsistencyCheckService
     {
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
-        OperationalMode operationalMode = OperationalMode.single;
 
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
@@ -225,11 +227,17 @@ public class ConsistencyCheckService
 
         // Bootstrap kernel extensions
         LifeSupport life = new LifeSupport();
+        KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
+                fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
+                RECOVERY_PREVENTING_COLLECTOR,
+                // May be enterprise edition, but in consistency checker we only care about the operational mode
+                COMMUNITY ) );
+
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             life.start();
-            SchemaIndexProvider indexes = life.add( new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
-                    storeDir, logProvider, config, operationalMode ) );
+
+            SchemaIndexProviderMap indexes = loadSchemaIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),

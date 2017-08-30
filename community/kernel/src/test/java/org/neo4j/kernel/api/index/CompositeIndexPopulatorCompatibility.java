@@ -68,21 +68,24 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-            populator.create();
-            populator.add( Arrays.asList(
-                    add( 1, descriptor.schema(), "v1", "v2" ),
-                    add( 2, descriptor.schema(), "v1", "v2" ) ) );
-            populator.close( true );
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            {
+                p.create();
+                p.add( Arrays.asList(
+                        add( 1, descriptor.schema(), "v1", "v2" ),
+                        add( 2, descriptor.schema(), "v1", "v2" ) ) );
+                p.close( true );
+            } );
 
             // then
-            IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
-            try ( IndexReader reader = accessor.newReader() )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
             {
-                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
-                assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
+                try ( IndexReader reader = accessor.newReader() )
+                {
+                    PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
+                    assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
+                }
             }
-            accessor.close();
         }
     }
 
@@ -105,28 +108,29 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-
-            populator.create();
-            populator.add( Arrays.asList(
-                    IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
-                    IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
-            try
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                NodePropertyAccessor propertyAccessor =
-                        new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
-                propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
-                populator.verifyDeferredConstraints( propertyAccessor );
+                p.create();
+                p.add( Arrays.asList(
+                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
+                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value2 ) ) );
+                try
+                {
+                    NodePropertyAccessor propertyAccessor =
+                            new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
+                    propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
+                    p.verifyDeferredConstraints( propertyAccessor );
 
-                fail( "expected exception" );
-            }
-            // then
-            catch ( IndexEntryConflictException conflict )
-            {
-                assertEquals( nodeId1, conflict.getExistingNodeId() );
-                assertEquals( ValueTuple.of( value1, value2 ), conflict.getPropertyValues() );
-                assertEquals( nodeId2, conflict.getAddedNodeId() );
-            }
+                    fail( "expected exception" );
+                }
+                // then
+                catch ( IndexEntryConflictException conflict )
+                {
+                    assertEquals( nodeId1, conflict.getExistingNodeId() );
+                    assertEquals( ValueTuple.of( value1, value2 ), conflict.getPropertyValues() );
+                    assertEquals( nodeId2, conflict.getAddedNodeId() );
+                }
+            } );
         }
 
         @Test
@@ -134,21 +138,22 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         {
             // given
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            {
+                p.create();
 
-            populator.create();
+                // when
+                p.add( Arrays.asList(
+                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
+                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value3 ) ) );
 
-            // when
-            populator.add( Arrays.asList(
-                    IndexEntryUpdate.add( nodeId1, descriptor.schema(), value1, value2 ),
-                    IndexEntryUpdate.add( nodeId2, descriptor.schema(), value1, value3 ) ) );
+                NodePropertyAccessor propertyAccessor =
+                        new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
+                propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value3 );
 
-            NodePropertyAccessor propertyAccessor =
-                    new NodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
-            propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value3 );
-
-            // then this should pass fine
-            populator.verifyDeferredConstraints( propertyAccessor );
+                // then this should pass fine
+                p.verifyDeferredConstraints( propertyAccessor );
+            } );
         }
     }
 }

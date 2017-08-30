@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -29,4 +30,6 @@ public interface SchemaIndexProviderMap extends Function<SchemaIndexProvider.Des
     SchemaIndexProvider apply( SchemaIndexProvider.Descriptor descriptor ) throws IndexProviderNotFoundException;
 
     SchemaIndexProvider getDefaultProvider();
+
+    void accept( Consumer<SchemaIndexProvider> visitor );
 }
