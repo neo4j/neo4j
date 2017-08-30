@@ -28,6 +28,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.rule.PageCacheRule.PageCacheConfig;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
@@ -41,19 +42,27 @@ public class PageCacheAndDependenciesRule implements TestRule
     private final RuleChain chain;
     private final FileSystemRule<? extends FileSystemAbstraction> fs;
     private final TestDirectory directory;
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final PageCacheRule pageCacheRule;
 
     public PageCacheAndDependenciesRule()
     {
-        this( () -> new EphemeralFileSystemRule() );
+        this( PageCacheRule.config() );
+    }
+
+    public PageCacheAndDependenciesRule( PageCacheConfig pageCacheConfig )
+    {
+        this( pageCacheConfig, () -> new EphemeralFileSystemRule() );
     }
 
     /**
+     * @param pageCacheConfig configuration for {@link PageCacheRule}.
      * @param fsSupplier as {@link Supplier} to make it clear that it is this class that owns the created
      * {@link FileSystemRule} instance.
      */
-    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier )
+    public PageCacheAndDependenciesRule( PageCacheConfig pageCacheConfig,
+            Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier )
     {
+        this.pageCacheRule = new PageCacheRule( pageCacheConfig );
         this.fs = fsSupplier.get();
         this.directory = TestDirectory.testDirectory( fs );
         this.chain = RuleChain.outerRule( fs ).around( directory ).around( pageCacheRule );

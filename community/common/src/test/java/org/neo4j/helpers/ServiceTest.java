@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -91,6 +93,21 @@ public class ServiceTest
         {
             Thread.currentThread().setContextClassLoader( contextClassLoader );
         }
+    }
+
+    @Test
+    public void shouldLoadMultipleServices() throws Exception
+    {
+        // GIVEN
+        Set<Class<?>> artMediums = new HashSet<>();
+
+        // WHEN
+        Service.load( ArtMediumService.class ).forEach( medium -> artMediums.add( medium.getClass() ) );
+
+        // THEN
+        assertEquals( 2, artMediums.size() );
+        assertTrue( artMediums.contains( PenService.class ) );
+        assertTrue( artMediums.contains( PencilService.class ) );
     }
 
     private static final class ServiceBlockClassLoader extends ClassLoader

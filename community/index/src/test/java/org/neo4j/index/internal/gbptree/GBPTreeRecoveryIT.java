@@ -46,13 +46,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
+
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeRecoveryIT
 {
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 1024;
     private final Action CHECKPOINT = new CheckpointAction();
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

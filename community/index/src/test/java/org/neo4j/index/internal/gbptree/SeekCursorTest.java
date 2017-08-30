@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
@@ -67,12 +68,13 @@ public class SeekCursorTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeSimple<>( PAGE_SIZE, layout );
+    private final Section<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
             new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     private final PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
-    private final int maxKeyCount = node.leafMaxKeyCount();
+    private final int maxKeyCount = mainContent.leafMaxKeyCount();
 
     private final MutableLong insertKey = layout.newKey();
     private final MutableLong insertValue = layout.newValue();
@@ -92,7 +94,7 @@ public class SeekCursorTest
     public void setUp() throws IOException
     {
         cursor.next( id.acquireNewId( stableGeneration, unstableGeneration ) );
-        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         updateRoot();
     }
 
@@ -469,9 +471,9 @@ public class SeekCursorTest
             insert( i );
         }
         MutableLong primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0 );
+        mainContent.keyAt( cursor, primKey, 0 );
         long expectedNext = primKey.longValue();
-        long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
+        long rightChild = GenerationSafePointerPair.pointer( mainContent.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
 
         // when
@@ -498,9 +500,9 @@ public class SeekCursorTest
             insert( i );
         }
         MutableLong primKey = layout.newKey();
-        node.keyAt( cursor, primKey, 0 );
+        mainContent.keyAt( cursor, primKey, 0 );
         long expectedNext = primKey.longValue();
-        long rightChild = GenerationSafePointerPair.pointer( node.childAt( cursor, 1, stableGeneration,
+        long rightChild = GenerationSafePointerPair.pointer( mainContent.childAt( cursor, 1, stableGeneration,
                 unstableGeneration ) );
 
         // when
@@ -1293,8 +1295,8 @@ public class SeekCursorTest
         long leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
+        int keyCount = mainContent.keyCount( readCursor );
+        mainContent.keyAt( readCursor, from, keyCount - 1 );
         long fromInclusive = from.longValue();
         long toExclusive = fromInclusive + 1;
 
@@ -1329,8 +1331,8 @@ public class SeekCursorTest
         long leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
+        int keyCount = mainContent.keyCount( readCursor );
+        mainContent.keyAt( readCursor, from, keyCount - 1 );
         long fromInclusive = from.longValue();
         long toExclusive = fromInclusive - 1;
 
@@ -1365,9 +1367,9 @@ public class SeekCursorTest
         long leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 2 );
-        node.keyAt( readCursor, to, keyCount - 1 );
+        int keyCount = mainContent.keyCount( readCursor );
+        mainContent.keyAt( readCursor, from, keyCount - 2 );
+        mainContent.keyAt( readCursor, to, keyCount - 1 );
         long fromInclusive = from.longValue();
         long toExclusive = to.longValue() + 1;
 
@@ -1402,9 +1404,9 @@ public class SeekCursorTest
         long leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
         readCursor.next( pointer( leftChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
-        node.keyAt( readCursor, from, keyCount - 1 );
-        node.keyAt( readCursor, to, keyCount - 2 );
+        int keyCount = mainContent.keyCount( readCursor );
+        mainContent.keyAt( readCursor, from, keyCount - 1 );
+        mainContent.keyAt( readCursor, to, keyCount - 2 );
         long fromInclusive = from.longValue();
         long toExclusive = to.longValue() - 1;
 
@@ -1437,7 +1439,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
-        node.keyAt( readCursor, from, 0 );
+        mainContent.keyAt( readCursor, from, 0 );
         long fromInclusive = from.longValue();
         long toExclusive = from.longValue() + 2;
 
@@ -1449,7 +1451,7 @@ public class SeekCursorTest
             assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
             readCursor.next( rootId );
-            assertTrue( TreeNode.isLeaf( readCursor ) );
+            assertTrue( node.isLeaf( readCursor ) );
         }
     }
 
@@ -1471,7 +1473,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( rightChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
+        int keyCount = mainContent.keyCount( readCursor );
         long fromInclusive = keyAt( readCursor, keyCount - 3 );
         long toExclusive = keyAt( readCursor, keyCount - 1 );
 
@@ -1483,7 +1485,7 @@ public class SeekCursorTest
             assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
             readCursor.next( rootId );
-            assertTrue( TreeNode.isLeaf( readCursor ) );
+            assertTrue( node.isLeaf( readCursor ) );
         }
     }
 
@@ -1505,7 +1507,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( rightChild ) );
-        int keyCount = TreeNode.keyCount( readCursor );
+        int keyCount = mainContent.keyCount( readCursor );
         long fromInclusive = keyAt( readCursor, keyCount - 1 );
         long toExclusive = keyAt( readCursor, keyCount - 3 );
 
@@ -1517,7 +1519,7 @@ public class SeekCursorTest
             assertThat( seekCursor.getCurrentPageId(), is( rightChild ) );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, leftChild );
             readCursor.next( rootId );
-            assertTrue( TreeNode.isLeaf( readCursor ) );
+            assertTrue( node.isLeaf( readCursor ) );
         }
     }
 
@@ -1539,7 +1541,7 @@ public class SeekCursorTest
 
         // from first key in left child
         readCursor.next( pointer( leftChild ) );
-        node.keyAt( readCursor, from, 0 );
+        mainContent.keyAt( readCursor, from, 0 );
         long fromInclusive = from.longValue() + 2;
         long toExclusive = from.longValue();
 
@@ -1551,7 +1553,7 @@ public class SeekCursorTest
             assertThat( seekCursor.getCurrentPageId(), is( leftChild ) );
             seekRangeWithUnderflowMidSeek( seeker, seekCursor, fromInclusive, toExclusive, rightChild );
             readCursor.next( rootId );
-            assertTrue( TreeNode.isLeaf( readCursor ) );
+            assertTrue( node.isLeaf( readCursor ) );
         }
     }
 
@@ -1605,7 +1607,7 @@ public class SeekCursorTest
             duplicate.next();
             long leftChild = childAt( duplicate, 0, stableGeneration, unstableGeneration );
             duplicate.next( leftChild );
-            corruptGSPP( duplicate, TreeNode.BYTE_POS_RIGHTSIBLING );
+            corruptGSPP( duplicate, node.rightSiblingOffset() );
 
             // even if we DO have a checkpoint
             checkpoint();
@@ -1681,7 +1683,7 @@ public class SeekCursorTest
             insert( i, i * 10, duplicate ); // Create successor of leaf
 
             // and corrupt successor pointer
-            corruptGSPP( duplicate, TreeNode.BYTE_POS_SUCCESSOR );
+            corruptGSPP( duplicate, node.successorOffset() );
 
             // then
             try
@@ -1715,7 +1717,7 @@ public class SeekCursorTest
         long oldStableGeneration = stableGeneration;
         long oldUnstableGeneration = unstableGeneration;
         checkpoint();
-        int keyCount = TreeNode.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
 
         // and update root with an insert in new generation
         while ( keyCount( rootId ) == keyCount )
@@ -1723,7 +1725,7 @@ public class SeekCursorTest
             insert( i, i * 10 );
             i++;
         }
-        TreeNode.goTo( cursor, "root", rootId );
+        node.goTo( cursor, "root", rootId );
         long rightChild = childAt( cursor, 2, stableGeneration, unstableGeneration );
 
         // when
@@ -1749,12 +1751,12 @@ public class SeekCursorTest
         long prevId = cursor.getCurrentPageId();
         try
         {
-            TreeNode.goTo( cursor, "supplied", nodeId );
-            return TreeNode.keyCount( cursor );
+            node.goTo( cursor, "supplied", nodeId );
+            return mainContent.keyCount( cursor );
         }
         finally
         {
-            TreeNode.goTo( cursor, "prev", prevId );
+            node.goTo( cursor, "prev", prevId );
         }
     }
 
@@ -1774,10 +1776,10 @@ public class SeekCursorTest
         long oldStableGeneration = stableGeneration;
         long oldUnstableGeneration = unstableGeneration;
         checkpoint();
-        int keyCount = TreeNode.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
 
         // and update root with an insert in new generation
-        while ( TreeNode.keyCount( cursor ) == keyCount )
+        while ( mainContent.keyCount( cursor ) == keyCount )
         {
             insert( i, i * 10 );
             i++;
@@ -1785,7 +1787,7 @@ public class SeekCursorTest
 
         // and corrupt successor pointer
         cursor.next( rootId );
-        corruptGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR );
+        corruptGSPP( cursor, node.successorOffset() );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -1888,7 +1890,7 @@ public class SeekCursorTest
     {
         // given
         long id = cursor.getCurrentPageId();
-        long generation = TreeNode.generation( cursor );
+        long generation = node.generation( cursor );
         MutableBoolean triggered = new MutableBoolean( false );
         Supplier<Root> rootCatchup = () ->
         {
@@ -1912,23 +1914,23 @@ public class SeekCursorTest
     public void shouldCatchupRootWhenNodeHasTooNewGenerationWhileTraversingDownTree() throws Exception
     {
         // given
-        long generation = TreeNode.generation( cursor );
+        long generation = node.generation( cursor );
         MutableBoolean triggered = new MutableBoolean( false );
 
         // a newer leaf
         long leftChild = cursor.getCurrentPageId();
-        TreeNode.initializeLeaf( cursor, stableGeneration + 1, unstableGeneration + 1 ); // A newer leaf
+        node.initializeLeaf( cursor, stableGeneration + 1, unstableGeneration + 1 ); // A newer leaf
         cursor.next();
 
         // a root
         long rootId = cursor.getCurrentPageId();
-        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+        node.initializeInternal( cursor, stableGeneration, unstableGeneration );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0 );
-        TreeNode.setKeyCount( cursor, 1 );
+        mainContent.insertKeyAt( cursor, insertKey, 0, 0 );
+        mainContent.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of child node)
-        node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
+        mainContent.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
 
         // a root catchup that records usage
         Supplier<Root> rootCatchup = () ->
@@ -1940,7 +1942,7 @@ public class SeekCursorTest
                 // and set child generation to match pointer
                 cursor.next( leftChild );
                 cursor.zapPage();
-                TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
 
                 cursor.next( rootId );
                 return new Root( rootId, generation );
@@ -1973,7 +1975,7 @@ public class SeekCursorTest
 
         // a newer right leaf
         long rightChild = cursor.getCurrentPageId();
-        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+        node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         cursor.next();
 
         Supplier<Root> rootCatchup = () ->
@@ -1983,7 +1985,7 @@ public class SeekCursorTest
                 // Use right child as new start over root to terminate test
                 cursor.next( rightChild );
                 triggered.setTrue();
-                return new Root( cursor.getCurrentPageId(), TreeNode.generation( cursor ) );
+                return new Root( cursor.getCurrentPageId(), node.generation( cursor ) );
             }
             catch ( IOException e )
             {
@@ -1993,19 +1995,19 @@ public class SeekCursorTest
 
         // a left leaf
         long leftChild = cursor.getCurrentPageId();
-        TreeNode.initializeLeaf( cursor, stableGeneration - 1, unstableGeneration - 1 );
+        node.initializeLeaf( cursor, stableGeneration - 1, unstableGeneration - 1 );
         // with an old pointer to right sibling
-        TreeNode.setRightSibling( cursor, rightChild, stableGeneration - 1, unstableGeneration - 1 );
+        node.setRightSibling( cursor, rightChild, stableGeneration - 1, unstableGeneration - 1 );
         cursor.next();
 
         // a root
-        TreeNode.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
+        node.initializeInternal( cursor, stableGeneration - 1, unstableGeneration - 1 );
         long keyInRoot = 10L;
         insertKey.setValue( keyInRoot );
-        node.insertKeyAt( cursor, insertKey, 0, 0 );
-        TreeNode.setKeyCount( cursor, 1 );
+        mainContent.insertKeyAt( cursor, insertKey, 0, 0 );
+        mainContent.setKeyCount( cursor, 1 );
         // with old pointer to child (simulating reuse of internal node)
-        node.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
+        mainContent.setChildAt( cursor, leftChild, 0, stableGeneration, unstableGeneration );
 
         // when
         from.setValue( 1L );
@@ -2031,7 +2033,7 @@ public class SeekCursorTest
         int keyCount = 10000;
 
         // WHEN
-        cursor.setOffset( TreeNode.BYTE_POS_KEYCOUNT );
+        cursor.setOffset( node.keyCountOffset() );
         cursor.putInt( keyCount ); // Bad key count
 
         // THEN
@@ -2058,11 +2060,11 @@ public class SeekCursorTest
             i++;
         }
         long rootId = cursor.getCurrentPageId();
-        long leftChild = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+        long leftChild = mainContent.childAt( cursor, 0, stableGeneration, unstableGeneration );
 
         // WHEN
         PageCursorUtil.goTo( cursor, "test", GenerationSafePointerPair.pointer( leftChild ) );
-        cursor.setOffset( TreeNode.BYTE_POS_KEYCOUNT );
+        cursor.setOffset( node.keyCountOffset() );
         cursor.putInt( keyCount ); // Bad key count
         PageCursorUtil.goTo( cursor, "test", rootId );
 
@@ -2079,6 +2081,8 @@ public class SeekCursorTest
             assertThat( e.getMessage(), containsString( "keyCount:" + keyCount ) );
         }
     }
+
+    // TODO: shouldMergeMainAndDeltaSectionsOnScan
 
     private void triggerUnderflowAndSeekRange( SeekCursor<MutableLong,MutableLong> seeker,
             TestPageCursor seekCursor, long fromInclusive, long toExclusive, long rightChild ) throws IOException
@@ -2119,7 +2123,7 @@ public class SeekCursorTest
         PageCursor readCursor = cursor.duplicate( nodeId );
         readCursor.next();
         int underflowBoundary = (maxKeyCount + 1) / 2;
-        int keyCount = TreeNode.keyCount( readCursor );
+        int keyCount = mainContent.keyCount( readCursor );
         long toRemove = keyAt( readCursor, 0 );
         while ( keyCount >= underflowBoundary )
         {
@@ -2140,11 +2144,11 @@ public class SeekCursorTest
         assertTrue( split.hasRightKeyInsert );
         long rootId = id.acquireNewId( stableGeneration, unstableGeneration );
         cursor.next( rootId );
-        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-        node.insertKeyAt( cursor, split.rightKey, 0, 0 );
-        TreeNode.setKeyCount( cursor, 1 );
-        node.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
-        node.setChildAt( cursor, split.rightChild, 1, stableGeneration, unstableGeneration );
+        node.initializeInternal( cursor, stableGeneration, unstableGeneration );
+        mainContent.insertKeyAt( cursor, split.rightKey, 0, 0 );
+        mainContent.setKeyCount( cursor, 1 );
+        mainContent.setChildAt( cursor, split.midChild, 0, stableGeneration, unstableGeneration );
+        mainContent.setChildAt( cursor, split.rightChild, 1, stableGeneration, unstableGeneration );
         split.hasRightKeyInsert = false;
         numberOfRootSplits++;
         updateRoot();
@@ -2226,11 +2230,11 @@ public class SeekCursorTest
         long left = pageCursor.getCurrentPageId();
         long right = left + 1;
 
-        TreeNode.setRightSibling( pageCursor, right, stableGeneration, unstableGeneration );
+        node.setRightSibling( pageCursor, right, stableGeneration, unstableGeneration );
 
         pageCursor.next( right );
-        TreeNode.initializeLeaf( pageCursor, stableGeneration, unstableGeneration );
-        TreeNode.setLeftSibling( pageCursor, left, stableGeneration, unstableGeneration );
+        node.initializeLeaf( pageCursor, stableGeneration, unstableGeneration );
+        node.setLeftSibling( pageCursor, left, stableGeneration, unstableGeneration );
         return left;
     }
 
@@ -2278,34 +2282,34 @@ public class SeekCursorTest
 
     private void append( long k )
     {
-        int keyCount = TreeNode.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
-        node.insertValueAt( cursor, insertValue, keyCount, keyCount );
-        TreeNode.setKeyCount( cursor, keyCount + 1 );
+        mainContent.insertKeyAt( cursor, insertKey, keyCount, keyCount );
+        mainContent.insertValueAt( cursor, insertValue, keyCount, keyCount );
+        mainContent.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void insertIn( int pos, long k )
     {
-        int keyCount = TreeNode.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
         if ( keyCount + 1 > maxKeyCount )
         {
             throw new IllegalStateException( "Can not insert another key in current node" );
         }
         insertKey.setValue( k );
         insertValue.setValue( valueForKey( k ) );
-        node.insertKeyAt( cursor, insertKey, pos, keyCount );
-        node.insertValueAt( cursor, insertValue, pos, keyCount );
-        TreeNode.setKeyCount( cursor, keyCount + 1 );
+        mainContent.insertKeyAt( cursor, insertKey, pos, keyCount );
+        mainContent.insertValueAt( cursor, insertValue, pos, keyCount );
+        mainContent.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void removeAtPos( int pos )
     {
-        int keyCount = TreeNode.keyCount( cursor );
-        node.removeKeyAt( cursor, pos, keyCount );
-        node.removeValueAt( cursor, pos, keyCount );
-        TreeNode.setKeyCount( cursor, keyCount - 1 );
+        int keyCount = mainContent.keyCount( cursor );
+        mainContent.removeKeyAt( cursor, pos, keyCount );
+        mainContent.removeValueAt( cursor, pos, keyCount );
+        mainContent.setKeyCount( cursor, keyCount - 1 );
     }
 
     private static class BreadcrumbPageCursor extends DelegatingPageCursor
@@ -2341,12 +2345,12 @@ public class SeekCursorTest
 
     private long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
     {
-        return pointer( node.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
+        return pointer( mainContent.childAt( cursor, pos, stableGeneration, unstableGeneration ) );
     }
 
     private long keyAt( PageCursor cursor, int pos )
     {
-        node.keyAt( cursor, readKey, pos );
+        mainContent.keyAt( cursor, readKey, pos );
         return readKey.longValue();
     }
 }

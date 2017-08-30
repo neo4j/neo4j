@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -54,12 +55,14 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.lang.Math.max;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
+
+import static java.lang.Integer.max;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -89,8 +92,7 @@ public class GBPTreeConcurrencyIT
 
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private GBPTree<MutableLong,MutableLong> index;
-    private final ExecutorService threadPool =
-            Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+    private ExecutorService threadPool;
 
     private GBPTree<MutableLong,MutableLong> createIndex()
             throws IOException
@@ -101,10 +103,16 @@ public class GBPTreeConcurrencyIT
     private GBPTree<MutableLong,MutableLong> createIndex( GBPTree.Monitor monitor )
             throws IOException
     {
-        int pageSize = 256;
+        int pageSize = 1024;
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
+    }
+
+    @Before
+    public void before()
+    {
+        threadPool = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
     }
 
     @After
@@ -174,10 +182,12 @@ public class GBPTreeConcurrencyIT
         testCoordinator.prepare( index );
 
         // WHEN starting the readers
-        RunnableReader readerTask = new RunnableReader( testCoordinator, readerReadySignal, readerStartSignal,
-                endSignal, failHalt, readerError );
+        List<RunnableReader> allReaders = new ArrayList<>();
         for ( int i = 0; i < readers; i++ )
         {
+            RunnableReader readerTask = new RunnableReader( testCoordinator, readerReadySignal, readerStartSignal,
+                    endSignal, failHalt, readerError );
+            allReaders.add( readerTask );
             threadPool.submit( readerTask );
         }
 
@@ -196,11 +206,12 @@ public class GBPTreeConcurrencyIT
             // none of the removed values at the point of making the seek call.
             endSignal.set( true );
             threadPool.shutdown();
-            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
+            boolean readersFinished = threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
             }
+            assertTrue( "One or more readers didn't finish a seek in the designated timeout", readersFinished );
         }
     }
 

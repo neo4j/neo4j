@@ -33,8 +33,8 @@ import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
  */
 class RightmostInChain
 {
-    private long currentRightmostNode = TreeNode.NO_NODE_FLAG;
-    private long currentRightmostRightSiblingPointer = TreeNode.NO_NODE_FLAG;
+    private long currentRightmostNode = NO_NODE_FLAG;
+    private long currentRightmostRightSiblingPointer = NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointerGeneration;
     private long currentRightmostNodeGeneration;
 
@@ -48,7 +48,7 @@ class RightmostInChain
         StringBuilder errorMessageBuilder = new StringBuilder();
         if ( newRightmostLeftSiblingPointer != currentRightmostNode )
         {
-            errorMessageBuilder.append( format( "Sibling pointer does align with tree structure%n" ) );
+            errorMessageBuilder.append( format( "Sibling pointer does not align with tree structure%n" ) );
         }
         if ( currentRightmostNodeGeneration > newRightmostLeftSiblingPointerGeneration && currentRightmostNode != NO_NODE_FLAG )
         {

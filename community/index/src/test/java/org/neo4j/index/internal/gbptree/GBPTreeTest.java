@@ -89,7 +89,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 @SuppressWarnings( "EmptyTryBlock" )
 public class GBPTreeTest
 {
-    private static final int DEFAULT_PAGE_SIZE = 256;
+    private static final int DEFAULT_PAGE_SIZE = 1024;
 
     private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
 
@@ -363,6 +363,7 @@ public class GBPTreeTest
         }
     }
 
+    // todo figure out what to do with this guy
     @Test
     public void shouldFailWhenTryingToOpenWithDifferentFormatVersion() throws Exception
     {
@@ -373,7 +374,7 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
         }
-        setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
+        setFormatVersion( pageCache, pageSize, -1 );
 
         try
         {
@@ -1473,6 +1474,8 @@ public class GBPTreeTest
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
+                TreeNode<MutableLong,MutableLong> node =
+                        TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat().instantiate( pageSize, new SimpleLongLayout() );
                 Pair<TreeState,TreeState> treeStates =
                         TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
                 TreeState newestState = TreeStatePair.selectNewestValidState( treeStates );
@@ -1480,8 +1483,8 @@ public class GBPTreeTest
                 long stableGeneration = newestState.stableGeneration();
                 long unstableGeneration = newestState.unstableGeneration();
 
-                TreeNode.goTo( cursor, "root", rootId );
-                TreeNode.setSuccessor( cursor, 42, stableGeneration + 1, unstableGeneration + 1 );
+                node.goTo( cursor, "root", rootId );
+                node.setSuccessor( cursor, 42, stableGeneration + 1, unstableGeneration + 1 );
             }
 
             // WHEN

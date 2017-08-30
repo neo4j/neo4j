@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -39,13 +40,21 @@ class TreePrinter<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final long stableGeneration;
     private final long unstableGeneration;
+    private final Section<KEY,VALUE> mainSection;
+    private final Section<KEY,VALUE> deltaSection;
+    private final KEY key;
+    private final VALUE value;
 
     TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
+        this.mainSection = node.main();
+        this.deltaSection = node.delta();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
+        this.key = layout.newKey();
+        this.value = layout.newValue();
     }
 
     /**
@@ -67,11 +76,11 @@ class TreePrinter<KEY,VALUE>
             long currentPage = cursor.getCurrentPageId();
             Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
                     cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-            TreeNode.goTo( cursor, "back to tree node from reading state", currentPage );
+            node.goTo( cursor, "back to tree node from reading state", currentPage );
             out.println( "StateA: " + statePair.getLeft() );
             out.println( "StateB: " + statePair.getRight() );
         }
-        assertOnTreeNode( cursor );
+        assertOnTreeNode( node, cursor );
 
         // Traverse the tree
         int level = 0;
@@ -85,7 +94,7 @@ class TreePrinter<KEY,VALUE>
             printLevel( cursor, out, printValues, printPosition );
 
             // Then go back to the left-most node on this level
-            TreeNode.goTo( cursor, "back", leftmostSibling );
+            node.goTo( cursor, "back", leftmostSibling );
         }
         // And continue down to next level if this level was an internal level
         while ( goToLeftmostChild( cursor ) );
@@ -98,9 +107,9 @@ class TreePrinter<KEY,VALUE>
         int keyCount;
         do
         {
-            isLeaf = TreeNode.isLeaf( cursor );
-            keyCount = TreeNode.keyCount( cursor );
-            if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
+            isLeaf = node.isLeaf( cursor );
+            keyCount = mainSection.keyCount( cursor );
+            if ( keyCount < 0 || (keyCount > mainSection.internalMaxKeyCount() && keyCount > mainSection.leafMaxKeyCount()) )
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
@@ -112,7 +121,7 @@ class TreePrinter<KEY,VALUE>
             long generation = -1;
             do
             {
-                generation = TreeNode.generation( cursor );
+                generation = node.generation( cursor );
 
             } while ( cursor.shouldRetry() );
             String treeNodeType = isLeaf ? "leaf" : "internal";
@@ -123,21 +132,44 @@ class TreePrinter<KEY,VALUE>
         {
             out.print( "{" + cursor.getCurrentPageId() + "} " );
         }
-        KEY key = layout.newKey();
-        VALUE value = layout.newValue();
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, mainSection );
+        out.print( " DELTA " );
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, deltaSection );
+        if ( !isLeaf )
+        {
+            long child;
+            do
+            {
+                child = pointer( mainSection.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
+            }
+            while ( cursor.shouldRetry() );
+
+            if ( printPosition )
+            {
+                out.print( "#" + keyCount + " " );
+            }
+            out.print( "/" + child + "\\" );
+        }
+        out.println();
+    }
+
+    private void printKeysAndValues( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
+            boolean isLeaf, Section<KEY,VALUE> section ) throws IOException
+    {
+        int keyCount = section.keyCount( cursor );
         for ( int i = 0; i < keyCount; i++ )
         {
             long child = -1;
             do
             {
-                node.keyAt( cursor, key, i );
+                section.keyAt( cursor, key, i );
                 if ( isLeaf )
                 {
-                    node.valueAt( cursor, value, i );
+                    section.valueAt( cursor, value, i );
                 }
                 else
                 {
-                    child = pointer( node.childAt( cursor, i, stableGeneration, unstableGeneration ) );
+                    child = pointer( section.childAt( cursor, i, stableGeneration, unstableGeneration ) );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -161,22 +193,6 @@ class TreePrinter<KEY,VALUE>
             }
             out.print( " " );
         }
-        if ( !isLeaf )
-        {
-            long child;
-            do
-            {
-                child = pointer( node.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
-            }
-            while ( cursor.shouldRetry() );
-
-            if ( printPosition )
-            {
-                out.print( "#" + keyCount + " " );
-            }
-            out.print( "/" + child + "\\" );
-        }
-        out.println();
     }
 
     private boolean goToLeftmostChild( PageCursor cursor ) throws IOException
@@ -185,17 +201,17 @@ class TreePrinter<KEY,VALUE>
         long leftmostSibling = -1;
         do
         {
-            isInternal = TreeNode.isInternal( cursor );
+            isInternal = node.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = mainSection.childAt( cursor, 0, stableGeneration, unstableGeneration );
             }
         }
         while ( cursor.shouldRetry() );
 
         if ( isInternal )
         {
-            TreeNode.goTo( cursor, "child", leftmostSibling );
+            node.goTo( cursor, "child", leftmostSibling );
         }
         return isInternal;
     }
@@ -211,13 +227,13 @@ class TreePrinter<KEY,VALUE>
 
             do
             {
-                rightSibling = TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+                rightSibling = node.rightSibling( cursor, stableGeneration, unstableGeneration );
             }
             while ( cursor.shouldRetry() );
 
             if ( TreeNode.isNode( rightSibling ) )
             {
-                TreeNode.goTo( cursor, "right sibling", rightSibling );
+                node.goTo( cursor, "right sibling", rightSibling );
             }
         }
         while ( TreeNode.isNode( rightSibling ) );

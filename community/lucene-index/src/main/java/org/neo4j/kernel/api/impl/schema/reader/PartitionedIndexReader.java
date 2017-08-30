@@ -79,7 +79,7 @@ public class PartitionedIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision()
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
         return false;
     }

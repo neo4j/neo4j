@@ -139,7 +139,7 @@ public class SimpleIndexReader implements IndexReader
     }
 
     @Override
-    public boolean hasFullNumberPrecision()
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
         return false;
     }

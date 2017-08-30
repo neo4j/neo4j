@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -49,6 +50,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.index.internal.gbptree.TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
@@ -64,7 +67,7 @@ public class FormatCompatibilityTest
 
     private static final int KEY_COUNT = 10_000;
 
-    private static final String CURRENT_FORMAT_ZIP = "current-format.zip";
+    private String currentFormatZip;
 
     private final TestDirectory directory = TestDirectory.testDirectory( getClass() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
@@ -72,6 +75,12 @@ public class FormatCompatibilityTest
 
     @Rule
     public final RuleChain chain = RuleChain.outerRule( fsRule ).around( directory ).around( pageCacheRule );
+
+    @Before
+    public void figureOutFormat()
+    {
+        currentFormatZip = "current-format-" + selectHighestPrioritizedTreeNodeFormat().formatIdentifier() + ".zip";
+    }
 
     @Test
     public void shouldDetectFormatChange() throws Throwable
@@ -88,7 +97,7 @@ public class FormatCompatibilityTest
             createAndZipTree( storeFile );
             tellDeveloperToCommitThisFormatVersion();
         }
-        assertTrue( CURRENT_FORMAT_ZIP + " seems to be missing from resources directory",
+        assertTrue( currentFormatZip + " seems to be missing from resources directory",
                 fsRule.get().fileExists( storeFile ) );
 
         // WHEN reading from the tree
@@ -139,9 +148,9 @@ public class FormatCompatibilityTest
                 "been properly incremented. A tree with this new format has been generated and should be committed. " +
                 "Please move:%n  %s%ninto %n  %s, %nreplacing the existing file there",
                 TREE_CLASS_NAME,
-                directory.file( CURRENT_FORMAT_ZIP ),
+                directory.file( currentFormatZip ),
                 "<index-module>" + pathify( ".src.test.resources." ) +
-                pathify( getClass().getPackage().getName() + "." ) + CURRENT_FORMAT_ZIP ) );
+                pathify( getClass().getPackage().getName() + "." ) + currentFormatZip ) );
     }
 
     private static String pathify( String name )
@@ -151,7 +160,7 @@ public class FormatCompatibilityTest
 
     private void unzipTo( File storeFile ) throws IOException
     {
-        URL resource = getClass().getResource( CURRENT_FORMAT_ZIP );
+        URL resource = getClass().getResource( currentFormatZip );
         if ( resource == null )
         {
             throw new FileNotFoundException();
@@ -200,7 +209,7 @@ public class FormatCompatibilityTest
 
     private File zip( File toZip ) throws IOException
     {
-        File targetFile = directory.file( CURRENT_FORMAT_ZIP );
+        File targetFile = directory.file( currentFormatZip );
         try ( ZipOutputStream out = new ZipOutputStream( new FileOutputStream( targetFile ) ) )
         {
             ZipEntry entry = new ZipEntry( toZip.getName() );

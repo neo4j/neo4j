@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,7 +44,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -117,25 +117,27 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor
  * The reason as to why {@link #close()} doesn't do a checkpoint is that checkpointing as a whole should
  * be managed externally, keeping multiple resources in sync w/ regards to checkpoints. This is especially important
  * since a it is impossible to recognize crashed pointers after a checkpoint.
+ * <p>
+ * TODO Complete this section about format version
+ * Format version of a GBPTree is made up from several moving parts each of which has its own format version.
+ * <ul>
+ * <li>{@link TreeNode} describe how individual tree nodes are stored on disk with header, keys, children and values.
+ * Version is described in respective {@link TreeNode} implementation.</li>
+ * <li>{@link Layout} describe how individual KEYs and VALUEs in a node are materialized. Version is described in respective
+ * {@link Layout} implementation.</li>
+ * </ul>
+ * Other parts that could effect format version if changed in the future are
+ * <ul>
+ * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
+ * <li>{@link IdSpace} i.e. which pages are fixed</li>
+ * <li>{@link TreeState} and {@link TreeStatePair}</li>
+ * </ul>
  *
  * @param <KEY> type of keys
  * @param <VALUE> type of values
  */
 public class GBPTree<KEY,VALUE> implements Closeable
 {
-    /**
-     * Version of the format that makes up the tree. This includes:
-     * <ul>
-     * <li>{@link TreeNode} format, header, keys, children, values</li>
-     * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
-     * <li>{@link IdSpace} i.e. which pages are fixed</li>
-     * <li>{@link TreeState} and {@link TreeStatePair}</li>
-     * </ul>
-     * If any of the above changes the on-page format then this version should be bumped, so that opening
-     * an index on wrong format version fails and user will need to rebuild.
-     */
-    static final int FORMAT_VERSION = 2;
-
     /**
      * For monitoring {@link GBPTree}.
      */
@@ -237,6 +239,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Instance of {@link TreeNode} which handles reading/writing physical bytes from pages representing tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
+    private final Section<KEY,VALUE> mainSection;
 
     /**
      * A free-list of released ids. Acquiring new ids involves first trying out the free-list and then,
@@ -344,7 +347,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * {@link Consumer} to hand out to others who want to decorate information about this tree
      * to exceptions thrown out from its surface.
      */
-    private final Consumer<Throwable> exceptionDecorator = t -> appendTreeInformation( t );
+    private final Consumer<Throwable> exceptionDecorator = this::appendTreeInformation;
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -393,16 +396,18 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
-            this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = new TreeNode<>( pageSize, layout );
+            this.pageSize = pagedFile.pageSize();
+            Meta meta = created ? selectFormatAndWriteMeta( layout, pagedFile ) : readMeta( layout, pagedFile );
+            this.bTreeNode = selectTreeNodeFormat( layout, meta );
+            this.mainSection = bTreeNode.main();
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
             // Create or load state
             if ( created )
             {
-                initializeAfterCreation( layout, headerWriter );
+                initializeAfterCreation( headerWriter );
             }
             else
             {
@@ -433,11 +438,22 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private void initializeAfterCreation( Layout<KEY,VALUE> layout, Consumer<PageCursor> headerWriter ) throws IOException
+    private TreeNode<KEY,VALUE> selectTreeNodeFormat( Layout<KEY,VALUE> layout, Meta meta )
     {
-        // Initialize meta
-        writeMeta( layout, pagedFile );
+        try
+        {
+            return TreeNodeSelector.selectTreeNodeFormat( meta.getFormatIdentifier(), meta.getFormatVersion() )
+                    .instantiate( pageSize, layout );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new MetadataMismatchException( "Could not find tree node format with identifier:%d and version:%d",
+                    meta.getFormatIdentifier(), meta.getFormatVersion() );
+        }
+    }
 
+    private void initializeAfterCreation( Consumer<PageCursor> headerWriter ) throws IOException
+    {
         // Initialize state
         try ( PageCursor cursor = pagedFile.io( 0 /*ignored*/, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
@@ -449,7 +465,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             long stableGeneration = stableGeneration( generation );
             long unstableGeneration = unstableGeneration( generation );
-            TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+            bTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
             checkOutOfBounds( cursor );
         }
 
@@ -481,8 +497,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         try
         {
-            int pageSize = readMeta( layout, pagedFile );
-            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, pageSize );
+            Meta meta = readMeta( layout, pagedFile );
+            verifyMeta( layout, meta );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, meta.getPageSize() );
             return pagedFile;
         }
         catch ( Throwable t )
@@ -662,7 +679,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return metaCursor;
     }
 
-    private static <KEY,VALUE> int readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
+    private static <KEY,VALUE> Meta readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
             throws IOException
     {
         // Read meta
@@ -693,36 +710,53 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     "File is expected to be corrupt, try to rebuild." );
         }
 
-        if ( formatVersion != FORMAT_VERSION )
+        return Meta.parseMeta( formatVersion, pageSize, layoutIdentifier, majorVersion, minorVersion );
+    }
+
+    private static <KEY, VALUE> void verifyMeta( Layout<KEY,VALUE> layout, Meta meta )
+    {
+        byte unusedVersionSlot3 = meta.getUnusedVersionSlot3();
+        if ( unusedVersionSlot3 != Meta.UNUSED_VERSION )
         {
-            throw new MetadataMismatchException(
-                    "Tried to open with a different format version than " +
-                    "what it was created with. Created with %d, opened with %d",
-                    formatVersion, FORMAT_VERSION );
+            throw new MetadataMismatchException( "Unexpected version " + unusedVersionSlot3 + " for unused version slot 3" );
         }
-        if ( !layout.compatibleWith( layoutIdentifier, majorVersion, minorVersion ) )
+        byte unusedVersionSlot4 = meta.getUnusedVersionSlot4();
+        if ( unusedVersionSlot4 != Meta.UNUSED_VERSION )
+        {
+            throw new MetadataMismatchException( "Unexpected version " + unusedVersionSlot4 + " for unused version slot 4" );
+        }
+
+        long layoutIdentifier = meta.getLayoutIdentifier();
+        int layoutMajorVersion = meta.getLayoutMajorVersion();
+        int layoutMinorVersion = meta.getLayoutMinorVersion();
+        if ( !layout.compatibleWith( layoutIdentifier, layoutMajorVersion, layoutMinorVersion ) )
         {
             throw new MetadataMismatchException(
                     "Tried to open using layout not compatible with " +
                     "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
                     "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
-                    layoutIdentifier, majorVersion, minorVersion, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
+                    layoutIdentifier, layoutMajorVersion, layoutMinorVersion,
+                    layout.identifier(), layout.majorVersion(), layout.minorVersion() );
         }
-        return pageSize;
     }
 
-    private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    private Meta selectFormatAndWriteMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
     {
+        TreeNodeFactory format = TreeNodeSelector.selectHighestPrioritizedTreeNodeFormat();
+        Meta meta = new Meta( format.formatIdentifier(), format.formatVersion(), pageSize, layout );
+
         try ( PageCursor metaCursor = openMetaPageCursor( pagedFile, PagedFile.PF_SHARED_WRITE_LOCK ) )
         {
-            metaCursor.putInt( FORMAT_VERSION );
-            metaCursor.putInt( pageSize );
-            metaCursor.putLong( layout.identifier() );
-            metaCursor.putInt( layout.majorVersion() );
-            metaCursor.putInt( layout.minorVersion() );
+            metaCursor.putInt( meta.allVersionsCombined() );
+            metaCursor.putInt( meta.getPageSize() );
+            metaCursor.putLong( meta.getLayoutIdentifier() );
+            metaCursor.putInt( meta.getLayoutMajorVersion() );
+            metaCursor.putInt( meta.getLayoutMinorVersion() );
             layout.writeMetaData( metaCursor );
             checkOutOfBounds( metaCursor );
         }
+
+        return meta;
     }
 
     private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize )
@@ -1120,7 +1154,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
-                assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
+                assert assertNoSuccessor( bTreeNode, cursor, stableGeneration, unstableGeneration );
                 treeLogic.initialize( cursor );
                 success = true;
             }
@@ -1161,16 +1195,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
             if ( structurePropagation.hasRightKeyInsert )
             {
                 // New root
-                long newRootId = freeList.acquireNewId( stableGeneration, unstableGeneration );
-                PageCursorUtil.goTo( cursor, "new root", newRootId );
-
-                TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
-                TreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
-                        stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, structurePropagation.rightChild, 1,
-                        stableGeneration, unstableGeneration );
+                long newRootId = treeLogic.initializeNewRootAfterSplit(
+                        cursor, structurePropagation, stableGeneration, unstableGeneration );
                 setRoot( newRootId );
             }
             else if ( structurePropagation.hasMidChildUpdate )

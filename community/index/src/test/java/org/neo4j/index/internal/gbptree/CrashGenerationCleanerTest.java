@@ -48,16 +48,16 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
 {
-    private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private RandomRule randomRule = new RandomRule();
+    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public RuleChain ruleChain = RuleChain
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
 
     private static final String FILE_NAME = "index";
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 1024;
 
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
@@ -67,8 +67,8 @@ public class CrashGenerationCleanerTest
     private final int unstableGeneration = 12;
     private final int crashGeneration = 11;
     private final int firstChildPos = 0;
-    private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
-    private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
+    private final int middleChildPos = corruptableTreeNode.main().internalMaxKeyCount() / 2;
+    private final int lastChildPos = corruptableTreeNode.main().internalMaxKeyCount();
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
@@ -334,7 +334,7 @@ public class CrashGenerationCleanerTest
                     void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                        corruptableTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                     }
                 },
         INTERNAL
@@ -343,15 +343,15 @@ public class CrashGenerationCleanerTest
                     void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                        int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
+                        corruptableTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                        int maxKeyCount = corruptableTreeNode.main().internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         for ( int i = 0; i <= maxKeyCount; i++ )
                         {
                             long child = base + i;
-                            corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
+                            corruptableTreeNode.main().setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
                         }
-                        TreeNode.setKeyCount( cursor, maxKeyCount );
+                        corruptableTreeNode.main().setKeyCount( cursor, maxKeyCount );
                     }
                 };
 
@@ -392,7 +392,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_LEFTSIBLING;
+                        return node.leftSiblingOffset();
                     }
                 },
         RIGHT_SIBLING
@@ -400,7 +400,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_RIGHTSIBLING;
+                        return node.rightSiblingOffset();
                     }
                 },
         SUCCESSOR
@@ -408,7 +408,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_SUCCESSOR;
+                        return node.successorOffset();
                     }
                 }
     }
@@ -431,7 +431,7 @@ public class CrashGenerationCleanerTest
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNode<MutableLong,MutableLong>
+    class CorruptableTreeNode extends TreeNodeSimple<MutableLong,MutableLong>
     {
         CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {
