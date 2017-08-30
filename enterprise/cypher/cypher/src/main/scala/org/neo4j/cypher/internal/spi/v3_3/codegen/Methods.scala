@@ -82,7 +82,7 @@ object Methods {
   val equals = method[Object, Boolean]("equals", typeRef[Object])
   val or = method[CompiledConversionUtils, java.lang.Boolean]("or", typeRef[Object], typeRef[Object])
   val not = method[CompiledConversionUtils, java.lang.Boolean]("not", typeRef[Object])
-  val loadParameter = method[CompiledConversionUtils, java.lang.Object]("loadParameter", typeRef[Object])
+  val loadParameter = method[CompiledConversionUtils, Object]("loadParameter", typeRef[AnyValue], typeRef[NodeManager])
   val relationshipTypeGetForName = method[ReadOperations, Int]("relationshipTypeGetForName", typeRef[String])
   val relationshipTypeGetName = method[ReadOperations, String]("relationshipTypeGetName", typeRef[Int])
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])

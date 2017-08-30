@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenName
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Contains common code generation constructs.
@@ -139,14 +140,14 @@ object Templates {
     param[Provider[InternalPlanDescription]]("description"),
     param[QueryExecutionTracer]("tracer"),
 
-    param[util.Map[String, Object]]("params")).
+    param[MapValue]("params")).
     invokeSuper().
     put(self(classHandle), typeRef[TaskCloser], "closer", load("closer", typeRef[TaskCloser])).
     put(self(classHandle), typeRef[QueryContext], "queryContext", load("queryContext", typeRef[QueryContext])).
     put(self(classHandle), typeRef[ExecutionMode], "executionMode", load("executionMode", typeRef[ExecutionMode])).
     put(self(classHandle), typeRef[Provider[InternalPlanDescription]], "description", load("description", typeRef[InternalPlanDescription])).
     put(self(classHandle), typeRef[QueryExecutionTracer], "tracer", load("tracer", typeRef[QueryExecutionTracer])).
-    put(self(classHandle), typeRef[util.Map[String, Object]], "params", load("params", typeRef[util.Map[String, Object]])).
+    put(self(classHandle), typeRef[MapValue], "params", load("params", typeRef[MapValue])).
     put(self(classHandle), typeRef[NodeManager], "nodeManager",
         cast(typeRef[NodeManager],
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).

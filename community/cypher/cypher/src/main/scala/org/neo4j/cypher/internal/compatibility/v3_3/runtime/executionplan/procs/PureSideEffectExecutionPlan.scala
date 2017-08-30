@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Execution plan for performing pure side-effects, i.e. returning no data to the user.
@@ -42,7 +42,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   extends ExecutionPlan {
 
     override def run(ctx: QueryContext, planType: ExecutionMode,
-                     params: Map[String, AnyValue]): InternalExecutionResult = {
+                     params: MapValue): InternalExecutionResult = {
       if (planType == ExplainMode) {
         //close all statements
         ctx.transactionalContext.close(success = true)

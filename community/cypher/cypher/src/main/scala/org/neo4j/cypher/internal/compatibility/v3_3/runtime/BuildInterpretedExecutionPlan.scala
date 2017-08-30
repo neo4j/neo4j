@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 object
 
@@ -62,7 +62,7 @@ BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlan
     val execPlan = new ExecutionPlan {
       private val fingerprint = context.createFingerprintReference(fp)
 
-      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult =
+      override def run(queryContext: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult =
         func(queryContext, planType, params)
 
       override def isPeriodicCommit: Boolean = periodicCommitInfo.isDefined
@@ -94,8 +94,8 @@ BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlan
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
                                        notificationLogger: InternalNotificationLogger,
                                         runtimeName: RuntimeName):
-  (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]) => {
+  (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: MapValue) => {
       val builder = resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode

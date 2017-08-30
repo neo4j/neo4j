@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.values.virtual.MapValue
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {
 
@@ -72,11 +73,11 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
 
         val builder = new RunnablePlan {
           def apply(queryContext: QueryContext, execMode: ExecutionMode,
-                    descriptionProvider: DescriptionProvider, params: Map[String, Any],
+                    descriptionProvider: DescriptionProvider, params: MapValue,
                     closer: TaskCloser): InternalExecutionResult = {
             val (provider, tracer) = descriptionProvider(description)
             val execution: GeneratedQueryExecution = query.query.execute(closer, queryContext, execMode,
-              provider, tracer.getOrElse(QueryExecutionTracer.NONE), asJavaHashMap(params))
+              provider, tracer.getOrElse(QueryExecutionTracer.NONE),params)
             new CompiledExecutionResult(closer, queryContext, execution, provider)
           }
         }

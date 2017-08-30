@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class LongArray extends IntegralArray
+public abstract class LongArray extends IntegralArray
 {
     abstract long[] value();
 

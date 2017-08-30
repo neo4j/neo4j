@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi.v3_3.codegen
 
 import java.lang.reflect.Modifier
-import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{constant, invoke, newArray, newInstance}
@@ -46,6 +45,7 @@ import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQu
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
+import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
@@ -118,7 +118,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         param[ExecutionMode]("executionMode"),
         param[Provider[InternalPlanDescription]]("description"),
         param[QueryExecutionTracer]("tracer"),
-        param[util.Map[String, Object]]("params"))) { execute =>
+        param[MapValue]("params"))) { execute =>
         execute.returns(
           invoke(
             newInstance(execution),
@@ -128,7 +128,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
               typeRef[ExecutionMode],
               typeRef[Provider[InternalPlanDescription]],
               typeRef[QueryExecutionTracer],
-              typeRef[util.Map[String, Object]]),
+              typeRef[MapValue]),
             execute.load("closer"),
             execute.load("queryContext"),
             execute.load("executionMode"),
@@ -200,7 +200,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       executionMode = clazz.field(typeRef[ExecutionMode], "executionMode"),
       description = clazz.field(typeRef[Provider[InternalPlanDescription]], "description"),
       tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
-      params = clazz.field(typeRef[util.Map[String, Object]], "params"),
+      params = clazz.field(typeRef[MapValue], "params"),
       closeable = clazz.field(typeRef[Completable], "closeable"),
       queryContext = clazz.field(typeRef[QueryContext], "queryContext"))
   }

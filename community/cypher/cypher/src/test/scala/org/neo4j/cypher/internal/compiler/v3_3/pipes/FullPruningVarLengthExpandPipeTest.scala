@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.SecurityContext
-import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, fromNodeProxy}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -46,7 +46,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState) shouldBe empty
       })
     }
@@ -60,7 +60,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         val toList: Seq[ExecutionContext] = pipeUnderTest.createResults(queryState).toList
         toList should beEquivalentTo(List(Map("from" -> n1, "to" -> n2)))
       })
@@ -75,7 +75,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 0, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(List(
           Map("from" -> n1, "to" -> n2),
           Map("from" -> n1, "to" -> n1)
@@ -100,7 +100,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, min, max, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
           nodes.slice(min, max + 1).map(fromNodeProxy).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
         )
@@ -122,7 +122,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 2, 2, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
             Map("from" -> n1, "to" -> n2)
@@ -156,7 +156,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 4, 4, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toSet should equal(
           Set(
             Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
@@ -192,7 +192,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 5, 5, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toSet should equal(
           Set(
             Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
@@ -218,7 +218,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, predicate, True())
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
             Map("from" -> n1, "to" -> n2)
@@ -244,7 +244,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, True(), predicate)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
           List(
             Map("from" -> n1, "to" -> n2)
@@ -278,7 +278,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n))).toSet)
       })
     }
@@ -297,7 +297,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toSet should equal(Set(
           Map("from" -> nodeValues(1), "to" -> nodeValues(2)),
           Map("from" -> nodeValues(1), "to" -> nodeValues(3)),
@@ -359,13 +359,13 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val comparison = DistinctPipe(pipe, Map("from" -> Variable("from"), "to" -> Variable("to")))()
 
     val distinctExpand = graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipeUnderTest.createResults(queryState).toList
       })
     }
 
     val distinctAfterVarLengthExpand = graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         comparison.createResults(queryState).toList
       })
     }

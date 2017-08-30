@@ -24,8 +24,10 @@ import org.mockito.stubbing.Answer
 import org.mockito.{Matchers, Mockito}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.graphdb.spatial.Point
+import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.{AnyValue, BaseToObjectValueWriter}
 
 import scala.collection.mutable
@@ -34,7 +36,7 @@ object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
   def emptyWith(query: QueryContext = null, resources: ExternalCSVResource = null,
-                params: Map[String, AnyValue] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
+                params: MapValue = EMPTY_MAP, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
       initialContext = initialContext, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)

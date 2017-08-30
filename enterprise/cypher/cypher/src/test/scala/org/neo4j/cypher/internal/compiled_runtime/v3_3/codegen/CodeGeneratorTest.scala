@@ -43,16 +43,18 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.graphdb._
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 import org.neo4j.time.Clocks
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
+import org.neo4j.values.{AnyValue, AnyValues}
 
+import scala.collection.JavaConverters._
 import scala.collection.{JavaConverters, mutable}
 
 class ByteCodeGeneratorTest extends CodeGeneratorTest {
@@ -209,7 +211,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
           "1" -> Parameter("  AUTOINT0", CTInteger)(pos)))(solved))
 
     //when
-    val compiled = compileAndExecute(plan, Map("  AUTOINT0" -> Long.box(1L)))
+    val compiled = compileAndExecute(plan, param("  AUTOINT0" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, "a", "b", "1")
@@ -503,7 +505,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project parameter") {
 
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> "BAR"))
+    val compiled = compileAndExecute(plan, param("FOO" -> "BAR"))
 
     //then
     val result = getResult(compiled, "a")
@@ -513,7 +515,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project null parameters") {
 
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> null))
+    val compiled = compileAndExecute(plan, param("FOO" -> null))
 
     //then
     val result = getResult(compiled, "a")
@@ -529,7 +531,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
                                                 "y" -> Parameter("FOO2", CTFloat)(pos),
                                                 "z" -> Parameter("FOO3", CTBoolean)(pos)))(solved))
 
-    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> aNode,
+    val compiled = compileAndExecute(plan, param("FOO_NODE" -> aNode,
                                                "FOO_REL" -> relMap(11L).relationship,
                                                "FOO1" -> 42L.asInstanceOf[AnyRef],
                                                "FOO2" -> 3.14d.asInstanceOf[AnyRef],
@@ -547,7 +549,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
                                                "r1" -> Parameter("FOO_REL",  CTRelationship)(pos)))(solved))
 
-    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> null,
+    val compiled = compileAndExecute(plan, param("FOO_NODE" -> null,
                                                "FOO_REL" -> null))
 
     //then
@@ -655,7 +657,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val rhs = Parameter("FOO", CTAny)(pos)
     val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> add))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Long.box(3L)))
 
     //then
     val result = getResult(compiled, "a")
@@ -667,7 +669,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val rhs = Parameter("BAR", CTAny)(pos)
     val add = Add(lhs, rhs)(pos)
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> add))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, "a")
@@ -677,7 +679,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project collection") {
     val collection = ListLiteral(Seq(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos)))(pos)
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> collection))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, "a")
@@ -687,7 +689,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("project map") {
     val map = MapExpression(Seq((PropertyKeyName("FOO")(pos), Parameter("BAR", CTAny)(pos))))(pos)
     val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> map))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, "a")
@@ -727,7 +729,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("number equality, one from parameter") {
     val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> equals))(solved))
-    val compiled = compileAndExecute(plan, Map("BAR" -> Double.box(9007199254740992D)))
+    val compiled = compileAndExecute(plan, param("BAR" -> Double.box(9007199254740992D)))
 
     val result = getResult(compiled, "result")
     result.toSet should equal(Set(Map("result" -> false)))
@@ -746,7 +748,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("or one from parameter") {
     val or = Or(False()(pos), Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> or))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Boolean.box(false)))
 
     //then
     val result = getResult(compiled, "result")
@@ -756,7 +758,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("or two from parameter, one null") {
     val or = Or(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> or))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(true), "BAR" -> null))
+    val compiled = compileAndExecute(plan, param("FOO" -> Boolean.box(true), "BAR" -> null))
 
     //then
     val result = getResult(compiled, "result")
@@ -766,7 +768,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("or two from parameter, both null") {
     val or = Or(Parameter("FOO", CTAny)(pos), Parameter("BAR", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> or))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> null, "BAR" -> null))
+    val compiled = compileAndExecute(plan, param("FOO" -> null, "BAR" -> null))
 
     //then
     val result = getResult(compiled, "result")
@@ -786,7 +788,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("not on a parameter") {
     val not = Not(Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> not))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> Boolean.box(false)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Boolean.box(false)))
 
     //then
     val result = getResult(compiled, "result")
@@ -796,7 +798,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("not on a null parameter") {
     val not = Not(Parameter("FOO", CTAny)(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> not))(solved))
-    val compiled = compileAndExecute(plan, Map("FOO" -> null))
+    val compiled = compileAndExecute(plan, param("FOO" -> null))
 
     //then
     val result = getResult(compiled, "result")
@@ -897,7 +899,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map(name -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
 
     //when
-    val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
+    val compiled = compileAndExecute(plan, param("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
 
     //then
     val result = getResult(compiled, name)
@@ -1195,7 +1197,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val plan = ProduceResult(List("x"), unwind)
 
     // when
-    val compiled = compileAndExecute(plan, params = Map("list" -> List(1, 2, 3)))
+    val compiled = compileAndExecute(plan, params = param("list" -> List(1, 2, 3).asJava))
 
     // then
     val result = getResult(compiled, "x")
@@ -1223,7 +1225,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val plan = ProduceResult(List("x"), unwind)
 
     // when
-    val compiled = compileAndExecute(plan, params = Map("list" -> null))
+    val compiled = compileAndExecute(plan, params = param("list" -> null))
 
     // then
     val result = getResult(compiled, "x")
@@ -1505,7 +1507,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val plan = ProduceResult(List("a"), limit)
 
     // when
-    val compiled = compileAndExecute(plan, Map("limit" -> Long.box(-1L)))
+    val compiled = compileAndExecute(plan, param("limit" -> Long.box(-1L)))
 
     // then
     val result = getResult(compiled, "a")
@@ -1526,18 +1528,21 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val plan = ProduceResult(List("x"), limit)
 
     // when
-    val compiled = compileAndExecute(plan, Map("limit" -> Long.box(-1L)))
+    val compiled = compileAndExecute(plan, param("limit" -> Long.box(-1L)))
 
     // then
     val result = getResult(compiled, "x")
     result.toList should equal(List.empty)
   }
 
+  import JavaConverters._
+  private def param(values: (String,AnyRef)*): MapValue = AnyValues.asMapValue(values.toMap.asJava)
+
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
 
-  private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
+  private def compileAndExecute(plan: LogicalPlan, params: MapValue = EMPTY_MAP, taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).executionResultBuilder(queryContext, NormalMode, tracer(NormalMode, queryContext), params, taskCloser)
   }
 
@@ -1717,6 +1722,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val node = mock[NodeProxy]
     when(node.getId).thenReturn(id)
     when(node.toString).thenReturn(name)
+    when(node.getLabels).thenReturn(Iterable.empty[Label].asJava)
+    when(node.getAllProperties).thenReturn(Map.empty[String, AnyRef].asJava)
     node
   }
 
@@ -1727,6 +1734,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     when(rel.getStartNode).thenReturn(relationshipData.from)
     when(rel.getEndNode).thenReturn(relationshipData.to)
     when(rel.toString).thenReturn(toStringValue)
+    when(rel.getType).thenReturn(org.neo4j.graphdb.RelationshipType.withName("R"))
+    when(rel.getAllProperties). thenReturn(Map.empty[String, AnyRef].asJava)
     rel
   }
 

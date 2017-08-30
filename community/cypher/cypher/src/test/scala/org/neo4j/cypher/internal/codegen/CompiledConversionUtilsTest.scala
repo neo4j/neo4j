@@ -23,9 +23,9 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
@@ -75,11 +75,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
 
   test("should be able to turn a primitive array into a collection") {
     CompiledConversionUtils.toCollection(Array(1337L, 42L)).asScala.toList should equal(List(1337L, 42))
-  }
-
-  test("should preserve primitiveness when loading parameter") {
-    CompiledConversionUtils.loadParameter(Array(1L, 2L, 13L)).getClass.getComponentType.isPrimitive shouldBe true
-    CompiledConversionUtils.loadParameter(Array(1L, 2L, "Hello")).getClass.getComponentType.isPrimitive shouldBe false
   }
 
   test("should be able to use a composite key in a hash map") {
@@ -196,18 +191,4 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   when(node.getId).thenReturn(11L)
   private val rel = mock[Relationship]
   when(rel.getId).thenReturn(13L)
-
-  val testLoadParameter = Seq(
-    (null, null),
-    (node, new NodeIdWrapperImpl(11L)),
-    (rel, new RelationshipIdWrapperImpl(13L)),
-    (Array(node, rel), Array(new NodeIdWrapperImpl(11L), new RelationshipIdWrapperImpl(13L)))
-  )
-
-  testLoadParameter.foreach {
-    case (v, expected) =>
-      test(s"loadParameter($v) == $expected)") {
-        CompiledConversionUtils.loadParameter(v) should equal(expected)
-      }
-  }
 }

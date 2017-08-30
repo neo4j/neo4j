@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
@@ -95,12 +95,12 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
                                      isPeriodicCommit: Boolean,
                                      plannerUsed: PlannerName,
                                      override val plannedIndexUsage: Seq[IndexUsage],
-                                     runFunction: (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult,
+                                     runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
                                      pipe: Pipe,
                                      config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
-                     params: Map[String, AnyValue]): InternalExecutionResult =
+                     params: MapValue): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint

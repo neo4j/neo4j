@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.Node
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, fromNodeProxy, fromRelationshipProxy}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
@@ -54,7 +54,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
 
     val pipe = ShortestPathPipe(source, path)()
     graph.withTx { tx =>
-      withQueryState(graph, tx, Map.empty, { queryState =>
+      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
         pipe.createResults(queryState).next()("p").asInstanceOf[PathValue]
       })
     }
