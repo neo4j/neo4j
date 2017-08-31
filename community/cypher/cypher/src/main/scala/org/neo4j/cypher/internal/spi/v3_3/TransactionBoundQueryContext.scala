@@ -416,10 +416,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def getByIdIfExists(id: Long): Option[Node] = {
       try {
-        Some(entityAccessor.newNodeProxyById(id))
+        if(transactionalContext.statement.readOperations().nodeExists(id))
+          Some(entityAccessor.newNodeProxyById(id))
       } catch {
-        case e: NotFoundException => None
+        case e: NotFoundException =>
       }
+      None
     }
   }
 
