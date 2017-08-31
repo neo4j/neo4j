@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext.bloom.integration;
+package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,9 +56,9 @@ public class BloomKernelExtension extends LifecycleAdapter
         FulltextHelperProvider provider = FulltextHelperProvider.instance( db );
         fulltextHelperFactory = new FulltextHelperFactory( fileSystemAbstraction, storeDir, config );
         LuceneFulltextHelper nodes = fulltextHelperFactory.createFulltextHelper( "bloomNodes", FulltextHelperFactory.FULLTEXT_HELPER_TYPE.NODES );
-        provider.register( nodes );
         LuceneFulltextHelper relationships =
                 fulltextHelperFactory.createFulltextHelper( "bloomRelationships", FulltextHelperFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS );
+        provider.register( nodes );
         provider.register( relationships );
 
         procedures.register( new BloomProcedure( "Nodes", nodes ) );

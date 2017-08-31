@@ -32,15 +32,16 @@ import java.util.Map;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
 
-class BloomDocumentStructure
+class FulltextHelperDocumentStructure
 {
     static final String ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
-    private BloomDocumentStructure()
+    private FulltextHelperDocumentStructure()
     {
     }
 
@@ -58,11 +59,6 @@ class BloomDocumentStructure
         return document.document;
     }
 
-    public static long getNodeId( Document from )
-    {
-        return Long.parseLong( from.get( ID_KEY ) );
-    }
-
     static Field encodeValueField( String propertyKey, Value value )
     {
         return BloomFieldEncoding.encodeField( propertyKey, value );
@@ -77,7 +73,7 @@ class BloomDocumentStructure
 
         private DocWithId()
         {
-            idField = new StringField( ID_KEY, "", YES );
+            idField = new StringField( ID_KEY, "", NO );
             idValueField = new NumericDocValuesField( ID_KEY, 0L );
             document = new Document();
             document.add( idField );

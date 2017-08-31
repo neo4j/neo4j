@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.impl.fulltext.bloom.integration;
+package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import org.junit.After;
 import org.junit.Before;

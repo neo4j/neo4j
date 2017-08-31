@@ -38,12 +38,12 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 
 public class FulltextHelperFactory
 {
-    private FileSystemAbstraction fileSystem;
+    private final FileSystemAbstraction fileSystem;
     private final String[] properties;
     private final WritableIndexPartitionFactory partitionFactory;
     private final Factory<IndexWriterConfig> population;
     private final File storeDir;
-    private Analyzer analyzer;
+    private final Analyzer analyzer;
 
     public LuceneFulltextHelper createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type )
     {
