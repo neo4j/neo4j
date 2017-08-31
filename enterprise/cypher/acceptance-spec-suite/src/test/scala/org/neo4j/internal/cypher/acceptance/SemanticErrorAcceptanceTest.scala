@@ -28,59 +28,22 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("FROM should generate error") {
     executeAndEnsureError(
-      "FROM NEW GRAPH foo RETURN 1",
-      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
-    )
-    executeAndEnsureError(
-      "FROM NEW GRAPH foo AT 'graph://url' RETURN 1",
-      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
-    )
-    executeAndEnsureError(
       "FROM GRAPH foo AT 'graph://url' RETURN 1",
-      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
+      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
     )
   }
 
   test("INTO should generate error") {
     executeAndEnsureError(
-      "MATCH ()--() INTO NEW GRAPH foo RETURN *",
-      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
-    )
-    executeAndEnsureError(
-      "MATCH ()--() INTO NEW GRAPH foo AT 'graph://url' RETURN *",
-      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
-    )
-    executeAndEnsureError(
-      "MATCH ()--() INTO GRAPH foo AT 'graph://url' RETURN *",
-      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
-    )
-  }
-
-  test("returning graphs should generate error") {
-    executeAndEnsureError(
-      "WITH $param AS foo MATCH (a) RETURN 1 GRAPHS foo",
-      "Projecting / returning graphs is not supported by Neo4j (line 1, column 46 (offset: 45))"
+      "INTO GRAPH foo AT 'graph://url' RETURN 1",
+      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
     )
   }
 
   test("projecting graphs should generate error") {
     executeAndEnsureError(
-      "WITH $param AS foo MATCH (a) WITH a.name GRAPHS foo RETURN a.name",
-      "Projecting / returning graphs is not supported by Neo4j (line 1, column 49 (offset: 48))"
-    )
-  }
-
-  test("empty return") {
-    executeAndEnsureError(
-      "WITH $param AS foo MATCH (a) RETURN -",
-      "At least one element must be specified for the projection (line 1, column 30 (offset: 29))"
-    )
-  }
-
-  test("empty with") {
-    executeAndEnsureError(
-      "WITH - MATCH (a) RETURN a.name",
-      "At least one element must be specified for the projection (line 1, column 1 (offset: 0))"
+      "WITH GRAPH AT 'url' AS foo MATCH (a) RETURN a.name",
+      "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs. (line 1, column 6 (offset: 5))"
     )
   }
 

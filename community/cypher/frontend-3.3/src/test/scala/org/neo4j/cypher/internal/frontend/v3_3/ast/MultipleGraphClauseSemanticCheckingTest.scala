@@ -377,6 +377,16 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("graph name conflict") {
+    parsing(
+      """WITH GRAPH AT 'url' AS foo >> GRAPH AT 'url' AS bar
+        |WITH GRAPHS >> foo AS foo, bar AS foo
+        |RETURN 1
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errorMessages should equal(Set("Multiple result graphs with the same name are not supported"))
+    }
+  }
+
   private def strip(text: String) =
     org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString(text.trim.stripMargin).fixNewLines
 

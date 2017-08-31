@@ -43,8 +43,8 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     expect(query) toNotSupportMultipleGraphs
   }
 
-  test("return all graphs") {
-    val query = "MATCH ()--() RETURN 1 GRAPHS *"
+  test("project a graph") {
+    val query = "WITH 1 AS a GRAPH foo RETURN 1"
 
     expect(query) toNotSupportMultipleGraphs
   }

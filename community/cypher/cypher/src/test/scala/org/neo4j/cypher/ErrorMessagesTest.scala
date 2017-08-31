@@ -35,7 +35,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33 (offset: 32))"
+      "Unexpected end of input: expected whitespace, DISTINCT, GRAPHS, SOURCE GRAPH [AS <name>], TARGET GRAPH [AS <name>], GRAPH AT <graph-url> [AS <name>], GRAPH OF <pattern> [AS <name>], GRAPH, GRAPH <graph-ref> [AS <name>], >>, '*' or an expression (line 1, column 33 (offset: 32))"
     )
   }
 

@@ -487,13 +487,6 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     returnItems.semanticCheck chain
     graphReturnItems.semanticCheck
 
-  def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
-    if (s.currentScope.symbolNames.isEmpty && returnItems.items.isEmpty && graphReturnItems.forall(_.graphs.isEmpty))
-      error(s, FeatureError("At least one field or graph must be projected", position))
-    else
-      success(s)
-  }
-
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = {
     val declareAllTheThings = (s: SemanticState) => {
       val specialReturnItems = createSpecialReturnItems(previousScope, s)
@@ -518,7 +511,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     }
     val variableStar = returnItems.isStarOnly
     val graphsStar = graphReturnItems.forall(_.isStarOnly)
-    declareAllTheThings chain unless(isWith && variableStar && graphsStar) { ensureOneIsNonEmpty }
+    declareAllTheThings
   }
 
   private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
