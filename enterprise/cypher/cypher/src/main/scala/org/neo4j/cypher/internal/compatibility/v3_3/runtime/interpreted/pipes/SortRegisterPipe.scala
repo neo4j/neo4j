@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import java.util.Comparator
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
@@ -29,8 +31,8 @@ case class SortRegisterPipe(source: Pipe, orderBy: Seq[SortDescription], pipelin
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     assert(orderBy.nonEmpty)
-    val orderings: Seq[java.util.Comparator[ExecutionContext]] = orderBy.map(new InnerOrdering(_)(state))
-    val comparator = orderings.reduceLeft((a, b) => a.thenComparing(b))
+    val orderings = orderBy.map(new InnerOrdering(_)(state))
+    val comparator = orderings.reduceLeft((a:Comparator[ExecutionContext], b) => a.thenComparing(b))
     val array = input.toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
