@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -286,6 +287,70 @@ public class BuiltInProcedures
         {
             throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
                     manualIndexName );
+        }
+    }
+
+    @Description( "Search relationship from manual index, starting at the node 'in'." )
+    @Procedure( name = "db.index.manual.in", mode = READ )
+    public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundStartNode(
+            @Name( "indexName" ) String indexName,
+            @Name( "in" ) Node in,
+            @Name( "query" ) Object query )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( indexName, query, in.getId(), -1 );
+            return toWeightedRelationshipResultStream( hits );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    indexName );
+        }
+    }
+
+    @Description( "Search relationship from manual index, ending at the node 'out'." )
+    @Procedure( name = "db.index.manual.out", mode = READ )
+    public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundEndNode(
+            @Name( "indexName" ) String indexName,
+            @Name( "out" ) Node out,
+            @Name( "query" ) Object query )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( indexName, query, -1, out.getId() );
+            return toWeightedRelationshipResultStream( hits );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    indexName );
+        }
+    }
+
+    @Description( "Search relationship from manual index, starting at the node 'in' and ending at 'out'." )
+    @Procedure( name = "db.index.manual.between", mode = READ )
+    public Stream<WeightedRelationshipResult> relationshipManualIndexSearchWithBoundNodes(
+            @Name( "indexName" ) String indexName,
+            @Name( "in" ) Node in,
+            @Name( "out" ) Node out,
+            @Name( "query" ) Object query )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( indexName, query, in.getId(), out.getId() );
+            return toWeightedRelationshipResultStream( hits );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    indexName );
         }
     }
 

@@ -190,6 +190,74 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 
+  test("relationship search with bound start node") {
+    val node = createNode("name" -> "Neo")
+    val otherNode = createNode("name" -> "Trinity")
+    val rel = relate(node, otherNode)
+    val otherRel = relate(node, otherNode)
+    val backwardsRel = relate(otherNode, node)
+
+    graph.inTx {
+      graph.index().forRelationships("relIndex").add(rel,"weight", 41)
+      graph.index().forRelationships("relIndex").add(otherRel,"length", 42)
+      graph.index().forRelationships("relIndex").add(backwardsRel,"weight", 43)
+    }
+
+    val result = execute(
+      "MATCH (n {name:'Neo'})" +
+      "CALL db.index.manual.in('relIndex', n, 'weight:*') YIELD relationship as r RETURN r").toList
+
+    result should equal(List(Map("r" -> rel)))
+  }
+
+  test("relationship search with bound end node") {
+    val node = createNode("name" -> "Neo")
+    val otherNode = createNode("name" -> "Trinity")
+    val rel = relate(node, otherNode)
+    val otherRel = relate(node, otherNode)
+    val backwardsRel = relate(otherNode, node)
+
+    graph.inTx {
+      graph.index().forRelationships("relIndex").add(rel,"weight", 41)
+      graph.index().forRelationships("relIndex").add(otherRel,"length", 42)
+      graph.index().forRelationships("relIndex").add(backwardsRel,"weight", 43)
+    }
+
+    val result = execute(
+      "MATCH (n {name:'Trinity'})" +
+      "CALL db.index.manual.out('relIndex', n, 'weight:*') YIELD relationship as r RETURN r").toList
+
+    result should equal(List(Map("r" -> rel)))
+  }
+
+  test("relationship search with bound start and end nodes") {
+    val node = createNode("name" -> "Neo")
+    val otherNode = createNode("name" -> "Trinity")
+    val thirdNode = createNode("name" -> "Spoon")
+    val rel1 = relate(node, otherNode)
+    val rel2 = relate(node, otherNode)
+    val rel3 = relate(otherNode, node)
+    val rel4 = relate(node, thirdNode)
+    val rel5 = relate(node, thirdNode)
+    val rel6 = relate(thirdNode, node)
+
+    graph.inTx {
+      graph.index().forRelationships("relIndex").add(rel1,"weight", 41)
+      graph.index().forRelationships("relIndex").add(rel2,"length", 42)
+      graph.index().forRelationships("relIndex").add(rel3,"weight", 43)
+      graph.index().forRelationships("relIndex").add(rel4,"weight", 41)
+      graph.index().forRelationships("relIndex").add(rel5,"length", 42)
+      graph.index().forRelationships("relIndex").add(rel6,"weight", 43)
+    }
+
+    val result = execute(
+      "MATCH (n1 {name:'Neo'})" +
+      "MATCH (n2 {name:'Spoon'})" +
+      "CALL db.index.manual.between('relIndex', n1, n2, 'weight:*') YIELD relationship as r RETURN r").toList
+
+    result should equal(List(Map("r" -> rel4)))
+  }
+
   test("Auto-index node from exact key value match using manual feature") {
     val node = createNode(Map("name" -> "Neo"))
 
@@ -226,21 +294,21 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
   test("Auto-index and return node using auto search") {
     val node = createNode(Map("name" -> "Neo"))
-    val node2 = createNode(Map("name" -> "Johan"))
-    val node3 = createNode(Map("name" -> "Nina"))
+    createNode(Map("name" -> "Johan"))
+    val otherNode = createNode(Map("name" -> "Nina"))
 
     val result = execute("CALL db.index.auto.nodes('name:N*') YIELD node as n RETURN n").toList
 
-    result should equal(List(Map("n" -> node), Map("n" -> node3)))
+    result should equal(List(Map("n" -> node), Map("n" -> otherNode)))
   }
 
   test("Auto-index and return relationship using auto search") {
     val a = createNode()
     val b = createNode()
-    var rel = relate(a, b, "weight" -> 42)
-    var rel2 = relate(a, b, "weight" -> 37)
-    var rel3 = relate(a, b, "weight" -> 3)
-    var rel4 = relate(a, b, "width" -> 3)
+    val rel = relate(a, b, "weight" -> 42)
+    val rel2 = relate(a, b, "weight" -> 37)
+    val rel3 = relate(a, b, "weight" -> 3)
+    val rel4 = relate(a, b, "width" -> 3)
 
     val result = execute(
       """CALL db.index.auto.relationships('weight:3*')
