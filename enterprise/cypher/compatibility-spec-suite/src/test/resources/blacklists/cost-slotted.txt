@@ -169,7 +169,6 @@ Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Do not fail when returning type of deleted relationships
 Fail when sorting on variable removed by DISTINCT
-Fail when ordering nodes
 Ordering with aggregation
 Return all variables
 Setting and returning the size of a list property
