@@ -212,8 +212,10 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("r" -> rel)))
   }
 
-  test("Auto-index node from exact key value match using auto seek") {
+  test("Auto-index and return node using auto seek") {
+    createNode(Map("wrongName" -> "Neo"))
     val node = createNode(Map("name" -> "Neo"))
+    createNode(Map("name" -> "wrongKey"))
 
     val result = execute(
       """CALL db.index.auto.seek.nodes('name', 'Neo')
@@ -222,10 +224,37 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("n" -> node)))
   }
 
+  test("Auto-index and return node using auto search") {
+    val node = createNode(Map("name" -> "Neo"))
+    val node2 = createNode(Map("name" -> "Johan"))
+    val node3 = createNode(Map("name" -> "Nina"))
+
+    val result = execute("CALL db.index.auto.nodes('name:N*') YIELD node as n RETURN n").toList
+
+    result should equal(List(Map("n" -> node), Map("n" -> node3)))
+  }
+
+  test("Auto-index and return relationship using auto search") {
+    val a = createNode()
+    val b = createNode()
+    var rel = relate(a, b, "weight" -> 42)
+    var rel2 = relate(a, b, "weight" -> 37)
+    var rel3 = relate(a, b, "weight" -> 3)
+    var rel4 = relate(a, b, "width" -> 3)
+
+    val result = execute(
+      """CALL db.index.auto.relationships('weight:3*')
+    |YIELD relationship AS r RETURN r""".stripMargin).toList
+
+    result should equal(List(Map("r" -> rel2), Map("r" -> rel3)))
+  }
+
   test("Auto-index relationship from exact key value match using auto feature") {
     val a = createNode()
     val b = createNode()
     val rel = relate(a, b, "weight" -> 12)
+    relate(a, b, "height" -> 12)
+    relate(a, b, "weight" -> 10)
 
     val result = execute(
       """CALL db.index.auto.seek.relationships('weight', 12)
