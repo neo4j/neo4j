@@ -25,8 +25,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;

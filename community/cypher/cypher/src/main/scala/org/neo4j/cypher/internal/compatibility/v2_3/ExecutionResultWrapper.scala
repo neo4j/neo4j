@@ -38,12 +38,12 @@ import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPo
 import org.neo4j.cypher.internal.frontend.{v2_3, v3_3}
 import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
+import org.neo4j.cypher.result.QueryResult
+import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.result.QueryResult
-import org.neo4j.values.result.QueryResult.Record
 
 import scala.collection.JavaConverters._
 

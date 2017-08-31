@@ -27,13 +27,13 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;

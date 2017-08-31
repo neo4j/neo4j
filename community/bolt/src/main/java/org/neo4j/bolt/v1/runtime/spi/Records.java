@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime.spi;
 
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 public class Records
 {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_3.executionplan;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription;
-import org.neo4j.values.result.QueryResult;
+import org.neo4j.cypher.result.QueryResult;
 
 public interface GeneratedQueryExecution
 {

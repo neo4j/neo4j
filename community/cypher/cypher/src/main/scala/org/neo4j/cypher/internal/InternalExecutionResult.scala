@@ -25,9 +25,9 @@ import java.{lang, util}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
-import org.neo4j.values.result.QueryResult
 
 import scala.collection.JavaConverters._
 

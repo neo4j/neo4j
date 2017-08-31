@@ -40,13 +40,13 @@ import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.concurrent.Runnables;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
-import org.neo4j.values.result.QueryResult;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;

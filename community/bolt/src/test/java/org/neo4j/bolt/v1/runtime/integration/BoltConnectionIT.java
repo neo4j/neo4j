@@ -38,9 +38,9 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.result.QueryResult.Record;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult.Record;
 import org.neo4j.values.storable.LongValue;
 
 import static java.util.Collections.emptyMap;

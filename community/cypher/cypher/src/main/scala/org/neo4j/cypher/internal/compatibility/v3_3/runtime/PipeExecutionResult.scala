@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Version
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.result.QueryResult
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
-import org.neo4j.values.result.QueryResult
-import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

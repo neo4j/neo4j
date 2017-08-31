@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.result.QueryResult
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
-import org.neo4j.values.result.QueryResult
-import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 import scala.collection.{Map, mutable}
 

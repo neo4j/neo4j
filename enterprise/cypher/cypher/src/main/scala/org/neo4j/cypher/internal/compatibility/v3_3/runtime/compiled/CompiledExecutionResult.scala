@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyExcepti
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Notification
-import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 /**
   * Main class for compiled execution results, implements everything in InternalExecutionResult

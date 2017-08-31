@@ -31,11 +31,11 @@ import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.StatementProcessor;
 import org.neo4j.cypher.internal.javacompat.ValueUtils;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 import org.neo4j.values.storable.TextValue;
 
 import static java.lang.String.format;

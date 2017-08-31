@@ -23,12 +23,13 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.mockito.{Matchers, Mockito}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.values.{AnyValue, BaseToObjectValueWriter}
 
 import scala.collection.mutable
 

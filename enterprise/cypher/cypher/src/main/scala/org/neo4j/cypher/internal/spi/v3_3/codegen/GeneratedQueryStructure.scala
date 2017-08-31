@@ -42,9 +42,9 @@ import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.values.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable

@@ -21,8 +21,8 @@ package org.neo4j.bolt.v1.runtime.spi;
 
 import java.util.Arrays;
 
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 public class ImmutableRecord implements QueryResult.Record
 {

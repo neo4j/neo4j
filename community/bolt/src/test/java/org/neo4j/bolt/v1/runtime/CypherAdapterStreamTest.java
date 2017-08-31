@@ -31,13 +31,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;

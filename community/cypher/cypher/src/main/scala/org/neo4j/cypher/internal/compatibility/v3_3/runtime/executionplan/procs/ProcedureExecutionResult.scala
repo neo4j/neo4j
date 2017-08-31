@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.javacompat.ValueUtils.{fromNodeProxy, fromRelationshipProxy, _}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{of => _, _}
 
