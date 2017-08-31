@@ -51,7 +51,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
           |YIELD node AS n RETURN n""".stripMargin)
   }
 
-  test("Node from query lucene index") {
+  test("should return node from manual index search") {
     val node = createNode()
     graph.inTx {
       graph.index().forNodes("index").add(node, "key", "value")
@@ -70,26 +70,34 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   test("legacy index + where") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
+    val thirdNode = createNode(Map("prop" -> 37))
+    val fourthNode = createNode(Map("prop" -> 21))
 
     graph.inTx {
       graph.index().forNodes("index").add(node, "key", "value")
       graph.index().forNodes("index").add(otherNode, "key", "value")
+      graph.index().forNodes("index").add(thirdNode, "key", "value")
+      graph.index().forNodes("index").add(fourthNode, "key", "value")
     }
 
     val result = execute(
-      """CALL db.index.manual.nodes("index", "key:value") YIELD node AS n WHERE n.prop = 42 RETURN n""").toList
+      """CALL db.index.manual.nodes("index", "key:value") YIELD node AS n WHERE n.prop = 21 RETURN n""").toList
 
-    result should equal(List(Map("n" -> node)))
+    result should equal(List(Map("n" -> otherNode), Map("n" -> fourthNode)))
   }
 
-  test("Relationship legacy index seek ") {
+  test("should seek relationship from manual index") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
+    val unwantedRelationship = relate(node, otherNode)
+    val ignoredRelationship = relate(node, otherNode)
 
     graph.inTx {
       val relationshipIndex = graph.index().forRelationships("relIndex")
       relationshipIndex.add(relationship, "key", "value")
+      relationshipIndex.add(unwantedRelationship, "key", "wrongValue")
+      relationshipIndex.add(ignoredRelationship, "wrongKey", "value")
     }
 
     val query = "CALL db.index.manual.seek.relationships('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
@@ -103,7 +111,32 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       execute("""CALL db.index.manual.seek.relationships('index', 'key', 'value') YIELD relationship AS r RETURN r""")
   }
 
-  test("Relationship legacy index search plus MATCH") {
+  test("should do manual relationship index search") {
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
+    val r1 = relate(node, otherNode)
+    val r2 = relate(node, otherNode)
+    val r3 = relate(node, otherNode)
+    val r4 = relate(node, otherNode)
+
+    graph.inTx {
+      val relationshipIndex = graph.index().forRelationships("relIndex")
+      relationshipIndex.add(r1, "wrongKey", "value")
+      relationshipIndex.add(r2, "key", "value")
+      relationshipIndex.add(r3, "key", "wrongValue")
+      relationshipIndex.add(r4, "key", "value")
+    }
+
+    val query = "CALL db.index.manual.relationships('relIndex','key:value') YIELD relationship AS r RETURN r"
+    val result = execute(query)
+
+    result.toList should equal(List(
+      Map("r" -> r2),
+      Map("r" -> r4)
+    ))
+  }
+
+  test("should MATCH undirected using result from manual index search") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
@@ -122,7 +155,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     ))
   }
 
-  test("Relationship legacy index search plus MATCH directed") {
+  test("should MATCH directed using result from manual index search") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
@@ -140,7 +173,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     ))
   }
 
-  test("should return correct results on combined node and relationship index starts") {
+  test("should return correct results on combined node and relationship index seek") {
     val node = createNode()
     val resultNode = createNode()
     val rel = relate(node, resultNode)
@@ -167,7 +200,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("n" -> node)))
   }
 
-  test("Auto-index relationship from exact key value match using manual feature") {
+  test("Auto-index relationship from exact key value match using manual seek") {
     val a = createNode()
     val b = createNode()
     val rel = relate(a, b, "weight" -> 12)
@@ -179,7 +212,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("r" -> rel)))
   }
 
-  test("Auto-index node from exact key value match using auto feature") {
+  test("Auto-index node from exact key value match using auto seek") {
     val node = createNode(Map("name" -> "Neo"))
 
     val result = execute(
@@ -249,7 +282,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
     // When adding a node to the index
     graph.inTx {
-      graph.index().forNodes("usernames").add(node, "name", "Neo");
+      graph.index().forNodes("usernames").add(node, "name", "Neo")
     }
 
     // Then the index should be possible to drop
@@ -266,7 +299,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
     // When adding the relationship to an index
     graph.inTx {
-      graph.index().forRelationships("relIndex").add(rel, "distance", 12);
+      graph.index().forRelationships("relIndex").add(rel, "distance", 12)
     }
 
     // Then the index should be possible to drop
@@ -324,7 +357,6 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val emptyResult = execute("CALL db.index.manual.seek.relationships('relIndex', 'distance', '12') YIELD relationship AS r ").toList
 
     emptyResult should equal(List.empty)
-
   }
 
   test("should be able to get or create a node index") {
@@ -360,7 +392,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   test("should be able to list manual and automatic indexes") {
     //Given the node and relationship indexes do not exist
     graph.inTx {
-      graph.index.nodeIndexNames().length should be(0)
+      graph.index().nodeIndexNames().length should be(0)
     }
 
     //When creating indexes both manually and automatically
@@ -373,8 +405,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
 
     //Then the indexes should all exist
     graph.inTx {
-      graph.index.nodeIndexNames().toSet should be(Set("manual1",  "usernames", "node_auto_index"))
-      graph.index.relationshipIndexNames().toSet should be(Set("manual2", "relIndex", "relationship_auto_index"))
+      graph.index().nodeIndexNames().toSet should be(Set("manual1",  "usernames", "node_auto_index"))
+      graph.index().relationshipIndexNames().toSet should be(Set("manual2", "relIndex", "relationship_auto_index"))
     }
 
     //And have the right types
