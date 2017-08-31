@@ -32,7 +32,7 @@ public class FulltextHelperProvider implements AutoCloseable
 {
     private static FulltextHelperProvider instance;
     private final GraphDatabaseService db;
-    private final FulltextHelplerTransactionEventUpdater fulltextHelplerTransactionEventUpdater;
+    private final FulltextHelperTransactionEventUpdater fulltextHelperTransactionEventUpdater;
     private boolean closed;
     private Set<String> nodeProperties;
     private Set<String> relationshipProperties;
@@ -43,8 +43,8 @@ public class FulltextHelperProvider implements AutoCloseable
     {
         this.db = db;
         closed = false;
-        fulltextHelplerTransactionEventUpdater = new FulltextHelplerTransactionEventUpdater( this );
-        db.registerTransactionEventHandler( fulltextHelplerTransactionEventUpdater );
+        fulltextHelperTransactionEventUpdater = new FulltextHelperTransactionEventUpdater( this );
+        db.registerTransactionEventHandler( fulltextHelperTransactionEventUpdater );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
         nodeIndices = new HashMap<>();
@@ -66,7 +66,7 @@ public class FulltextHelperProvider implements AutoCloseable
         if ( !closed )
         {
             closed = true;
-            db.unregisterTransactionEventHandler( fulltextHelplerTransactionEventUpdater );
+            db.unregisterTransactionEventHandler( fulltextHelperTransactionEventUpdater );
             nodeIndices.values().forEach( luceneFulltextHelper ->
             {
                 try

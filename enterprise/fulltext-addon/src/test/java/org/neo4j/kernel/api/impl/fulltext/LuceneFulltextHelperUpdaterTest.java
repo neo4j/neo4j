@@ -300,6 +300,71 @@ public class LuceneFulltextHelperUpdaterTest
     }
 
     @Test
+    public void shouldNotFindRemovedProperties() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
+        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        {
+            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+
+            long firstID;
+            long secondID;
+            long thirdID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                Node node3 = db.createNode( LABEL );
+                thirdID = node3.getId();
+
+                node.setProperty( "prop", "Hello. Hello again." );
+                node.setProperty( "prop", "zebra" );
+
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                node2.setProperty( "prop", "Hello. Hello again." );
+
+                node3.setProperty( "prop", "Hello. Hello again." );
+
+                tx.success();
+            }
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.getNodeById( firstID );
+                Node node2 = db.getNodeById( secondID );
+                Node node3 = db.getNodeById( thirdID );
+
+                node.setProperty( "prop", "tomtar" );
+                node.setProperty( "prop2", "tomtar" );
+
+                node2.setProperty( "prop", "tomtar" );
+                node2.setProperty( "prop2", "Hello" );
+
+                node3.removeProperty( "prop" );
+
+                tx.success();
+            }
+
+            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( secondID, hello.next() );
+                assertFalse( hello.hasNext() );
+                assertFalse( reader.query( "zebra" ).hasNext() );
+                assertFalse( reader.query( "zedonk" ).hasNext() );
+                assertFalse( reader.query( "cross" ).hasNext() );
+            }
+        }
+    }
+
+    @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();

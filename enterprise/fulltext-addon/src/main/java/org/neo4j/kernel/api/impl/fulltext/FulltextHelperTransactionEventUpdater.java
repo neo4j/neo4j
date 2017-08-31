@@ -22,8 +22,11 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.NotFoundException;
@@ -31,12 +34,12 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
-public class FulltextHelplerTransactionEventUpdater implements TransactionEventHandler<Object>
+public class FulltextHelperTransactionEventUpdater implements TransactionEventHandler<Object>
 {
 
     private FulltextHelperProvider fulltextHelperProvider;
 
-    public FulltextHelplerTransactionEventUpdater( FulltextHelperProvider fulltextHelperProvider )
+    public FulltextHelperTransactionEventUpdater( FulltextHelperProvider fulltextHelperProvider )
     {
         this.fulltextHelperProvider = fulltextHelperProvider;
     }
@@ -82,25 +85,52 @@ public class FulltextHelplerTransactionEventUpdater implements TransactionEventH
     public void afterCommit( TransactionData data, Object state )
     {
         //update node indices
-        Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
-        for ( WritableDatabaseBloomIndex nodeIndex : fulltextHelperProvider.nodeIndices() )
+        try
         {
-            updatePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
-            updatePropertyData( data.assignedNodeProperties(), nodeMap, nodeIndex );
-            deleteIndexData( data.deletedNodes(), nodeIndex );
+            for ( WritableDatabaseBloomIndex nodeIndex : fulltextHelperProvider.nodeIndices() )
+            {
+                Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
+                removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
+                updatePropertyData( nodeMap, nodeIndex );
+                refreshIndex( nodeIndex );
+            }
+            //update relationship indices
+            for ( WritableDatabaseBloomIndex relationshipIndex : fulltextHelperProvider.relationshipIndices() )
+            {
+                Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
+                removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
+                updatePropertyData( relationshipMap, relationshipIndex );
+                refreshIndex( relationshipIndex );
+            }
         }
-        //update relationship index
-        for ( WritableDatabaseBloomIndex relationshipIndex : fulltextHelperProvider.relationshipIndices() )
+        catch ( IOException e )
         {
-            Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
-            updatePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
-            updatePropertyData( data.assignedRelationshipProperties(), relationshipMap, relationshipIndex );
-            deleteIndexData( data.deletedRelationships(), relationshipIndex );
+            throw new RuntimeException( "Unable to update fulltext helper index", e );
         }
     }
 
-    private <E extends Entity> void updatePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
-            WritableDatabaseBloomIndex index )
+    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableDatabaseBloomIndex index ) throws IOException
+    {
+        for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
+        {
+            Set<String> indexedProperties = index.properites();
+            if ( !Collections.disjoint( indexedProperties, stateEntry.getValue().keySet() ) )
+            {
+                long entityId = stateEntry.getKey();
+                Map<String,Object> allProperties =
+                        stateEntry.getValue().entrySet().stream().filter( entry -> indexedProperties.contains( entry.getKey() ) ).collect(
+                                Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+                if ( !allProperties.isEmpty() )
+                {
+                    Document document = FulltextHelperDocumentStructure.documentRepresentingProperties( entityId, allProperties );
+                    index.getIndexWriter().updateDocument( FulltextHelperDocumentStructure.newTermForChangeOrRemove( entityId ), document );
+                }
+            }
+        }
+    }
+
+    private <E extends Entity> void removePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
+            WritableDatabaseBloomIndex index ) throws IOException
     {
         for ( PropertyEntry<E> propertyEntry : propertyEntries )
         {
@@ -108,53 +138,16 @@ public class FulltextHelplerTransactionEventUpdater implements TransactionEventH
             {
                 long entityId = propertyEntry.entity().getId();
                 Map<String,Object> allProperties = state.get( entityId );
-                if ( allProperties == null )
+                if ( allProperties == null || allProperties.isEmpty() )
                 {
-                    try
-                    {
-                        index.getIndexWriter().deleteDocuments( BloomDocumentStructure.newTermForChangeOrRemove( entityId ) );
-                    }
-                    catch ( IOException e )
-                    {
-                        e.printStackTrace();
-                    }
-                    continue;
-                }
-
-                Document document = BloomDocumentStructure.documentRepresentingProperties( entityId, allProperties );
-                try
-                {
-                    index.getIndexWriter().updateDocument( BloomDocumentStructure.newTermForChangeOrRemove( entityId ), document );
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
+                    index.getIndexWriter().deleteDocuments( FulltextHelperDocumentStructure.newTermForChangeOrRemove( entityId ) );
                 }
             }
-        }
-        try
-        {
-            index.maybeRefreshBlocking();
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
         }
     }
 
-    private <E extends Entity> void deleteIndexData( Iterable<E> entities, WritableDatabaseBloomIndex index )
+    private void refreshIndex( WritableDatabaseBloomIndex index )
     {
-        for ( E entity : entities )
-        {
-            try
-            {
-                index.getIndexWriter().deleteDocuments( BloomDocumentStructure.newTermForChangeOrRemove( entity.getId() ) );
-            }
-            catch ( IOException e )
-            {
-                e.printStackTrace();
-            }
-        }
         try
         {
             index.maybeRefreshBlocking();
