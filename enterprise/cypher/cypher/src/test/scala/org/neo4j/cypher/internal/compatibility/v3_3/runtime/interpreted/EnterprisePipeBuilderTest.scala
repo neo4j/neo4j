@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeFromRegister, NodeProperty, RelationshipProperty}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
@@ -512,7 +512,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(ProjectionRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
         pipeline)(),
-      Map(pipeline("x.propertyKey") -> NodeProperty(pipeline("x.propertyKey").offset, 0))
+      Map(pipeline("x") -> NodeFromRegister(pipeline("x").offset),
+          pipeline("x.propertyKey") -> NodeProperty(pipeline("x.propertyKey").offset, 0))
     )())
   }
 
