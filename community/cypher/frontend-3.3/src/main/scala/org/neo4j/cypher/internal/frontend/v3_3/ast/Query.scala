@@ -111,18 +111,25 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkClauses: SemanticCheck = s => {
-    val result = clauses.foldLeft(SemanticCheckResult.success(s.newChildScope))((lastResult, clause) => clause match {
-      case c: HorizonClause =>
-        val closingResult = c.semanticCheck(lastResult.state)
-        val nextState = closingResult.state.newSiblingScope
-        val continuationResult = c.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
-        SemanticCheckResult(continuationResult.state, lastResult.errors ++ closingResult.errors ++ continuationResult.errors)
-
-      case _ =>
-        val result = clause.semanticCheck(lastResult.state)
-        SemanticCheckResult(result.state, lastResult.errors ++ result.errors)
-    })
+    val result = clauses.zipWithIndex.foldLeft(SemanticCheckResult.success(s.newChildScope)) {
+      case (lastResult, (clause, idx)) => clause match {
+        case w: With if idx == 0 && lastResult.state.features(SemanticFeature.WithInitialQuerySignature) =>
+          checkHorizon(w, lastResult.state.recogniseInitialWith, lastResult.errors)
+        case c: HorizonClause =>
+          checkHorizon(c, lastResult.state.clearInitialWith, lastResult.errors)
+        case _ =>
+          val result = clause.semanticCheck(lastResult.state.clearInitialWith)
+          SemanticCheckResult(result.state, lastResult.errors ++ result.errors)
+      }
+    }
     SemanticCheckResult(result.state.popScope, result.errors)
+  }
+
+  private def checkHorizon(clause: HorizonClause, state: SemanticState, prevErrors: Seq[SemanticErrorDef]) = {
+    val closingResult = clause.semanticCheck(state)
+    val nextState = closingResult.state.newSiblingScope
+    val continuationResult = clause.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
+    SemanticCheckResult(continuationResult.state, prevErrors ++ closingResult.errors ++ continuationResult.errors)
   }
 }
 

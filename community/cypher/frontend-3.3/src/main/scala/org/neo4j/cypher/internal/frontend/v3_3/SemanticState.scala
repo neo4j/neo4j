@@ -281,8 +281,12 @@ case class SemanticState(currentScope: ScopeLocation,
                          recordedScopes: ASTAnnotationMap[ast.ASTNode, Scope],
                          recordedContextGraphs: ASTAnnotationMap[ast.ASTNode, ContextGraphs] = ASTAnnotationMap.empty,
                          notifications: Set[InternalNotification] = Set.empty,
-                         features: Set[SemanticFeature] = Set.empty
+                         features: Set[SemanticFeature] = Set.empty,
+                         initialWith: Boolean = false
                         ) {
+
+  def recogniseInitialWith: SemanticState = copy(initialWith = true)
+  def clearInitialWith: SemanticState = if (initialWith) copy(initialWith = false) else this
 
   def scopeTree: Scope = currentScope.rootScope
 
@@ -384,6 +388,8 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def ensureGraphDefined(variable: ast.Variable): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
+      case None if initialWith =>
+        Right(updateGraph(variable, Set(variable.position)))
       case None         =>
         Left(SemanticError(s"Variable `${variable.name}` not defined", variable.position))
       case Some(symbol) if symbol.graph =>

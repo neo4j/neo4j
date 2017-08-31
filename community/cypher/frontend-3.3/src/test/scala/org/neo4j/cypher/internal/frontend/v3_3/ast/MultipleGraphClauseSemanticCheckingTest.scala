@@ -387,6 +387,49 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("with is allowed to refer to missing graphs at the start of query") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts should equal(strip(
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |foo >> bar
+          |// Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set())
+          |--
+          |// End"""))
+      result.formattedScopes should equal(strip(
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  {
+          |    1: 31
+          |  }
+          |}"""))
+    }
+  }
+
+  test("with is not allowed to refer to missing graphs anywhere else") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |WITH GRAPHS zig >> zag
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(Set(
+        "Variable `zig` not defined",
+        "Variable `zag` not defined"
+      ))
+    }
+  }
+
   private def strip(text: String) =
     org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString(text.trim.stripMargin).fixNewLines
 
@@ -402,7 +445,7 @@ class MultipleGraphClauseSemanticCheckingTest
 
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
     val rewritten = PreparatoryRewriting.transform(TestState(astNode), TestContext).statement()
-    val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs)
+    val initialState = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
     rewritten.semanticCheck(initialState)
   }
 
