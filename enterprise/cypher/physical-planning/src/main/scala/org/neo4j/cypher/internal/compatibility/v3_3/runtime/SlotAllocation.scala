@@ -236,6 +236,10 @@ object SlotAllocation {
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
+      case Eager(_) =>
+        val newPipeline = incomingPipeline.seedClone()
+        newPipeline
+
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
