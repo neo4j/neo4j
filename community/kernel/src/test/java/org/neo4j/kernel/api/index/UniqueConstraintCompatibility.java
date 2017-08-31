@@ -24,10 +24,9 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -53,15 +52,11 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -132,6 +127,20 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
      *
      * There's a lot of work to be done here.
      */
+
+    @Before
+    public void setUp()
+    {
+        TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
+        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
+        db = dbFactory.newImpermanentDatabase( graphDbDir );
+    }
+
+    @After
+    public void tearDown()
+    {
+        db.shutdown();
+    }
 
     // -- Tests:
 
@@ -980,26 +989,6 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         {
             throw new AssertionError( "Interrupted", e );
         }
-    }
-
-    // -- Set Up: Environment parts
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
-
-    @Before
-    public void setUp()
-    {
-        File storeDir = testDirectory.graphDbDir();
-        TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
-        dbfactory.setKernelExtensions( asList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
-        db = dbfactory.newImpermanentDatabase( storeDir );
-    }
-
-    @After
-    public void tearDown()
-    {
-        db.shutdown();
     }
 
     private static class PredefinedSchemaIndexProviderFactory extends KernelExtensionFactory<PredefinedSchemaIndexProviderFactory.NoDeps>
