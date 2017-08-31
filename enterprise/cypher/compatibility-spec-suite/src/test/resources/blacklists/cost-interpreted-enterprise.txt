@@ -24,7 +24,6 @@ ORDER BY should order strings in the expected order
 ORDER BY should return results in ascending order
 ORDER BY with LIMIT 0 should not generate errors
 ORDER BY with negative parameter for LIMIT should not generate errors
-Projecting nodes and relationships
 Renaming columns before ORDER BY should return results in ascending order
 Returned columns do not change from using ORDER BY
 Returning all variables with ordering
@@ -32,12 +31,9 @@ Simple counting of nodes
 Start the result from the second row by param
 Start the result from the second row
 Support column renaming for aggregates as well
-Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
 Using aliased DISTINCT expression in ORDER BY
-Nodes are not created when aliases are applied to variable names
-Only a single node is created when an alias is applied to a variable name
 Support multiple divisions in aggregate function
 Sort on aggregate function and normal property
 Handle aggregation on functions
@@ -46,7 +42,6 @@ Aggregates with arithmetics
 Aggregates ordered by arithmetics
 Aggregation of named paths
 Aggregation with `min()`
-No overflow during summation
 Keeping used expression 2
 Keeping used expression 3
 Handling numerical ranges 1
@@ -104,7 +99,6 @@ Variable length relationship without bounds
 Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
-Excluding connected nodes
 Variable length relationship in OPTIONAL MATCH
 ORDER BY with LIMIT
 Handling direction of named paths
@@ -201,26 +195,7 @@ Reusing variable names
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
-LIMIT with an expression that does not depend on variables
 Using `rand()` in aggregations
-Handling triadic friend of a friend that is not a friend
-Handling triadic friend of a friend that is not a friend with different relationship type
-Handling triadic friend of a friend that is not a friend with superset of relationship type
-Handling triadic friend of a friend that is not a friend with implicit subset of relationship type
-Handling triadic friend of a friend that is not a friend with explicit subset of relationship type
-Handling triadic friend of a friend that is not a friend with same labels
-Handling triadic friend of a friend that is not a friend with different labels
-Handling triadic friend of a friend that is not a friend with implicit subset of labels
-Handling triadic friend of a friend that is not a friend with implicit superset of labels
-Handling triadic friend of a friend that is a friend
-Handling triadic friend of a friend that is a friend with different relationship type
-Handling triadic friend of a friend that is a friend with superset of relationship type
-Handling triadic friend of a friend that is a friend with implicit subset of relationship type
-Handling triadic friend of a friend that is a friend with explicit subset of relationship type
-Handling triadic friend of a friend that is a friend with same labels
-Handling triadic friend of a friend that is a friend with different labels
-Handling triadic friend of a friend that is a friend with implicit subset of labels
-Handling triadic friend of a friend that is a friend with implicit superset of labels
 `toBoolean()` on invalid types
 `toInteger()` handling mixed number types
 `toInteger()` handling Any type
@@ -282,8 +257,6 @@ Failing when using a variable that is already bound in CREATE
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
 Combine MATCH, WITH and CREATE
-Nodes are not created when aliases are applied to variable names multiple times
-Only a single node is created when an alias is applied to a variable name multiple times
 A bound node should be recognized after projection with WITH + MERGE node
 A bound node should be recognized after projection with WITH + MERGE pattern
 Delete nodes
