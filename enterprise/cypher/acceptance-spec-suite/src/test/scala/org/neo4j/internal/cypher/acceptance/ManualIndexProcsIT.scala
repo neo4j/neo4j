@@ -263,7 +263,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     result should equal(List(Map("r" -> rel)))
   }
 
-  test("Should be able to create a node manual index by using a procedure") {
+  test("Should create a node manual index using a procedure") {
     // Given a database with nodes with properties
     val node = createNode(Map("name" -> "Neo"))
 
@@ -287,7 +287,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     }
   }
 
-  test("Maunal relationships index should exist") {
+  test("Should create a relationship manual index using a procedure") {
     val a = createNode(Map("name" -> "Neo"))
     val b = createNode()
     val rel = relate(a, b, "distance" -> 12)
@@ -359,7 +359,6 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     val emptyResult = execute("CALL db.index.manual.seek.nodes('usernames', 'name', 'Neo') YIELD node AS n ").toList
 
     emptyResult should equal(List.empty)
-
   }
 
   test("Should able to add and remove a relationship from manual index") {
@@ -389,33 +388,59 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("should be able to get or create a node index") {
-    //Given the node index does not exist
+    //Given
     graph.inTx {
       graph.index().existsForNodes("usernames") should be(false)
     }
 
-    //When calling nodeManualIndex
-    graph.execute("CALL db.index.manual.forNodes('usernames')")
+    //When
+    val result = execute("CALL db.index.manual.forNodes('usernames') YIELD type, name").toList
+    result should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
 
-    //Then the index should exist
+    //Then
     graph.inTx {
       graph.index().existsForNodes("usernames") should be(true)
     }
   }
 
   test("should be able to get or create a relationship index") {
-    //Given the relationship index does not exist
+    //Given
     graph.inTx {
       graph.index().existsForRelationships("relIndex") should be(false)
     }
 
-    //When calling nodeManualIndex
-    graph.execute("CALL db.index.manual.forRelationships('relIndex')")
+    //When
+    val result = execute("CALL db.index.manual.forRelationships('relIndex') YIELD type, name").toList
+    result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
 
-    //Then the index should exist
+    //Then
     graph.inTx {
       graph.index().existsForRelationships("relIndex") should be(true)
     }
+  }
+
+  test("manual node index exists") {
+    val result = execute("CALL db.index.manual.exists.forNodes('nodeIndex') YIELD success").toList
+    result should equal(List(Map("success" -> false)))
+
+    graph.inTx {
+      graph.index().forNodes("nodeIndex")
+    }
+
+    val result2 = execute("CALL db.index.manual.exists.forNodes('nodeIndex') YIELD success").toList
+    result2 should equal(List(Map("success" -> true)))
+  }
+
+  test("manual relationship index exists") {
+    val result = execute("CALL db.index.manual.exists.forRelationships('relationshipIndex') YIELD success").toList
+    result should equal(List(Map("success" -> false)))
+
+    graph.inTx {
+      graph.index().forRelationships("relationshipIndex")
+    }
+
+    val result2 = execute("CALL db.index.manual.exists.forRelationships('relationshipIndex') YIELD success").toList
+    result2 should equal(List(Map("success" -> true)))
   }
 
   test("should be able to list manual and automatic indexes") {
