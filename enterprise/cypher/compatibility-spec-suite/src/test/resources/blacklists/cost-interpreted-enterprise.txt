@@ -18,8 +18,6 @@ handling long chanins of operators
 Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
 Keeping used expression 1
-LIMIT 0 should return an empty result
-Limit to two hits
 Limiting amount of rows when there are fewer left than the LIMIT argument
 Matching a self-loop
 Matching and returning ordered results, with LIMIT
@@ -320,7 +318,6 @@ Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
-Handle dependencies across WITH
 Handle dependencies across WITH with SKIP
 WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key

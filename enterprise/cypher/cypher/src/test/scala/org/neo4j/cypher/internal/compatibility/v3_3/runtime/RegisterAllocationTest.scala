@@ -48,6 +48,18 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
   }
 
+  test("limit should not introduce slots") {
+    // given
+    val plan = logicalPlans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(plan)
+
+    // then
+    allocations should have size 2
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
+  }
+
   test("single labelscan scan") {
     // given
     val plan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
