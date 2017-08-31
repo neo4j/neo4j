@@ -99,7 +99,7 @@ public class OffsetChannel implements StoreChannel
     @Override
     public long position() throws IOException
     {
-        return offset( delegate.position() );
+        return delegate.position() - offset;
     }
 
     @Override

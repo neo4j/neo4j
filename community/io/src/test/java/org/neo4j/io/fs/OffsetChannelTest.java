@@ -35,8 +35,8 @@ public class OffsetChannelTest
 
     private OffsetChannel channel = new OffsetChannel( actual, offset );
 
-    private ByteBuffer buf = mock( ByteBuffer.class );
-    private ByteBuffer[] buffers = mock( ByteBuffer[].class );
+    private ByteBuffer buf = ByteBuffer.allocate( 0 );
+    private ByteBuffer[] buffers = new ByteBuffer[0];
 
     @Test
     public void tryLock() throws Exception
@@ -102,7 +102,7 @@ public class OffsetChannelTest
     {
         long position = 500;
         when( actual.position() ).thenReturn( position );
-        assertEquals( position + offset, channel.position() );
+        assertEquals( position - offset, channel.position() );
         verify( actual ).position();
     }
 

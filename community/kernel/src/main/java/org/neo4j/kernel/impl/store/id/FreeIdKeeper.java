@@ -22,12 +22,14 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
 
 /**
@@ -36,9 +38,9 @@ import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
  * Such consistency guarantees, for example uniqueness of values, should be imposed from users of this class.
  * <p>
  * There is no guarantee as to the ordering of the values returned (i.e. FIFO, LIFO or any other temporal strategy),
- * primarily because the aggressiveReuse argument influences exactly that behaviour.
+ * primarily because the aggressiveMode argument influences exactly that behaviour.
  * <p>
- * The {@link #aggressiveReuse} parameter controls whether or not IDs which are freed during this lifecycle will
+ * The {@link #aggressiveMode} parameter controls whether or not IDs which are freed during this lifecycle will
  * be allowed to be reused during the same lifecycle. The alternative non-aggressive behaviour is that the IDs
  * will only be reused after a close/open cycle. This would generally correlate with a restart of the database.
  */
@@ -46,33 +48,50 @@ public class FreeIdKeeper implements Closeable
 {
     private static final int ID_ENTRY_SIZE = Long.BYTES;
 
-    private final List<Long> freeIds = new ArrayList<>();
-    private final List<Long> readFromDisk = new ArrayList<>();
+    private final Deque<Long> freeIds = new ArrayDeque<>();
+    private final Deque<Long> readFromDisk = new ArrayDeque<>();
     private final StoreChannel channel;
-    private final int threshold;
-    private final boolean aggressiveReuse;
+    private final int batchSize;
+    private final boolean aggressiveMode;
 
     private long freeIdCount;
 
-    private long readPosition; // the place from where we read. Always <= maxReadPosition
-    private long maxReadPosition;
+    /**
+     * Keeps the position where batches of IDs will be flushed out to.
+     * This can be viewed as being put on top of a stack.
+     */
+    private long stackPosition;
+
+    /**
+     * The position before we started this run.
+     * <p>
+     * Useful to keep track of the gap that will form in non-aggressive mode
+     * when IDs from old runs get reused and newly freed IDs are put on top
+     * of the stack. During a clean shutdown the gap will be compacted away.
+     * <p>
+     * During an aggressive run a gap is never formed since batches of free
+     * IDs are flushed on top of the stack (end of file) and also read in
+     * from the top of the stack.
+     */
+    private long initialPosition;
 
     /**
      * A keeper of freed IDs.
      *
      * @param channel a channel to the free ID file.
-     * @param threshold the threshold for when the in-memory buffer is flushed to the file.
-     * @param aggressiveReuse whether to reuse freed IDs during this lifecycle.
+     * @param batchSize the number of IDs which are read/written to disk in one go.
+     * @param aggressiveMode whether to reuse freed IDs during this lifecycle.
      * @throws IOException if an I/O error occurs.
      */
-    FreeIdKeeper( StoreChannel channel, int threshold, boolean aggressiveReuse ) throws IOException
+    FreeIdKeeper( StoreChannel channel, int batchSize, boolean aggressiveMode ) throws IOException
     {
         this.channel = channel;
-        this.threshold = threshold;
-        this.aggressiveReuse = aggressiveReuse;
+        this.batchSize = batchSize;
+        this.aggressiveMode = aggressiveMode;
 
-        this.maxReadPosition = channel.size();
-        this.freeIdCount = maxReadPosition / ID_ENTRY_SIZE;
+        this.initialPosition = channel.size();
+        this.stackPosition = initialPosition;
+        this.freeIdCount = stackPosition / ID_ENTRY_SIZE;
     }
 
     public void freeId( long id )
@@ -80,32 +99,44 @@ public class FreeIdKeeper implements Closeable
         freeIds.add( id );
         freeIdCount++;
 
-        if ( freeIds.size() >= threshold )
+        if ( freeIds.size() >= batchSize )
         {
-            long endPosition = flushFreeIds( ByteBuffer.allocate( threshold * ID_ENTRY_SIZE ) );
-            if ( aggressiveReuse )
+            long endPosition = flushFreeIds( ByteBuffer.allocate( batchSize * ID_ENTRY_SIZE ) );
+            if ( aggressiveMode )
             {
-                maxReadPosition = endPosition;
+                stackPosition = endPosition;
             }
+        }
+    }
+
+    private void truncate( long position )
+    {
+        try
+        {
+            channel.truncate( position );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to truncate", e );
         }
     }
 
     public long getId()
     {
         long result;
-        if ( freeIds.size() > 0 && aggressiveReuse )
+        if ( freeIds.size() > 0 && aggressiveMode )
         {
-            result = freeIds.remove( 0 );
+            result = freeIds.removeFirst();
             freeIdCount--;
         }
         else if ( readFromDisk.size() > 0 )
         {
-            result = readFromDisk.remove( 0 );
+            result = readFromDisk.removeFirst();
             freeIdCount--;
         }
         else if ( freeIdCount > 0 && readIdBatch() )
         {
-            result = readFromDisk.remove( 0 );
+            result = readFromDisk.removeFirst();
             freeIdCount--;
         }
         else
@@ -121,19 +152,7 @@ public class FreeIdKeeper implements Closeable
     }
 
     /*
-     * Returns true iff there are bytes between the current readPosition
-     * and maxReadPosition, i.e. there are more entries to read.
-     */
-    private boolean canReadMoreIdBatches()
-    {
-        assert (maxReadPosition - readPosition) % ID_ENTRY_SIZE == 0 : String.format(
-                "maxReadPosition %d, readPosition %d do not contain an integral number of entries", maxReadPosition, readPosition );
-        return readPosition < maxReadPosition;
-    }
-
-    /*
-     * After this method returns, if there were any entries found, they are placed in the readFromDisk list and the
-     * readPosition is updated accordingly.
+     * After this method returns, if there were any entries found, they are placed in the readFromDisk list.
      */
     private boolean readIdBatch()
     {
@@ -149,33 +168,46 @@ public class FreeIdKeeper implements Closeable
 
     private boolean readIdBatch0() throws IOException
     {
-        if ( !canReadMoreIdBatches() )
+        if ( stackPosition == 0 )
         {
             return false;
         }
-        boolean readAnyIds = false;
 
-        int howMuchToRead = (int) Math.min( threshold * ID_ENTRY_SIZE, maxReadPosition - readPosition );
-        assert howMuchToRead % ID_ENTRY_SIZE == 0 : "reads should happen in multiples of ID_ENTRY_SIZE, instead was " + howMuchToRead;
-        ByteBuffer readBuffer = ByteBuffer.allocate( howMuchToRead );
+        long startPosition = max( stackPosition - batchSize * ID_ENTRY_SIZE, 0 );
+        int bytesToRead = toIntExact( stackPosition - startPosition );
+        ByteBuffer readBuffer = ByteBuffer.allocate( bytesToRead );
 
-        channel.position( readPosition );
-        int bytesRead = channel.read( readBuffer );
-        readPosition += bytesRead;
-        assert channel.position() <= maxReadPosition;
+        channel.position( startPosition );
+        readAll( bytesToRead, readBuffer );
+        stackPosition = startPosition;
+
         readBuffer.flip();
-        assert (bytesRead % ID_ENTRY_SIZE) == 0;
-        int idsRead = bytesRead / ID_ENTRY_SIZE;
+        int idsRead = bytesToRead / ID_ENTRY_SIZE;
         for ( int i = 0; i < idsRead; i++ )
         {
             long id = readBuffer.getLong();
-            if ( id != NO_RESULT )
-            {
-                readFromDisk.add( id );
-                readAnyIds = true;
-            }
+            readFromDisk.add( id );
         }
-        return readAnyIds;
+        if ( aggressiveMode )
+        {
+            truncate( startPosition );
+        }
+        return true;
+    }
+
+    private void readAll( int bytesToRead, ByteBuffer readBuffer ) throws IOException
+    {
+        int totalRead = 0;
+        do
+        {
+            int bytesRead = channel.read( readBuffer );
+            if ( bytesRead <= 0 )
+            {
+                throw new IllegalStateException( "Unexpected value returned: " + bytesRead );
+            }
+            totalRead += bytesRead;
+        }
+        while ( totalRead < bytesToRead );
     }
 
     /**
@@ -199,7 +231,7 @@ public class FreeIdKeeper implements Closeable
         writeBuffer.clear();
         while ( !freeIds.isEmpty() )
         {
-            long id = freeIds.remove( 0 );
+            long id = freeIds.removeFirst();
             if ( id == NO_RESULT )
             {
                 continue;
@@ -227,39 +259,65 @@ public class FreeIdKeeper implements Closeable
     @Override
     public void close() throws IOException
     {
-        ByteBuffer writeBuffer = ByteBuffer.allocate( threshold * ID_ENTRY_SIZE );
+        ByteBuffer writeBuffer = ByteBuffer.allocate( batchSize * ID_ENTRY_SIZE );
         flushFreeIds( writeBuffer );
         freeIds.addAll( readFromDisk );
         flushFreeIds( writeBuffer );
-        compact( writeBuffer );
+        if ( !aggressiveMode )
+        {
+            compact( writeBuffer );
+        }
         channel.force( false );
     }
 
     /**
-     * Compacts away the already returned IDs. The remaining IDs
-     * are moved to the beginning of the file and the end is
-     * then truncated away.
+     * Compacts away the gap which will form in non-aggressive (regular) mode
+     * when batches are read in from disk.
+     * <p>
+     * The gap will contain already used IDs so it is important to remove it
+     * on a clean shutdown. The freed IDs will not be reused after an
+     * unclean shutdown, as guaranteed by the external user.
+     * <pre>
+     * Below diagram tries to explain the situation
+     *
+     *   S = old IDs which are still free (on the Stack)
+     *   G = the Gap which has formed, due to consuming old IDs
+     *   N = the New IDs which have been freed during this run (will be compacted to the left)
+     *
+     *     stackPosition
+     *          v
+     * [ S S S S G G G N N N N N N N N ]
+     *                ^
+     *          initialPosition
+     * </pre>
+     * After compaction the state will be:
+     * <pre>
+     * [ S S S S N N N N N N N N ]
+     * </pre>
+     * and the last part of the file is truncated.
      */
     private void compact( ByteBuffer writeBuffer ) throws IOException
     {
-        if ( readPosition == 0 )
+        assert stackPosition <= initialPosition; // the stack can only be consumed in regular mode
+        if ( initialPosition == stackPosition )
         {
             // there is no compaction to be done
             return;
         }
 
-        long writePosition = 0;
-        long position = readPosition;
+        long writePosition = stackPosition;
+        long readPosition = initialPosition; // readPosition to end of file contain new free IDs, to be compacted
         int nBytes;
         do
         {
             writeBuffer.clear();
-            channel.position( position );
+            channel.position( readPosition );
             nBytes = channel.read( writeBuffer );
-            position += nBytes;
 
             if ( nBytes > 0 )
             {
+                readPosition += nBytes;
+
                 writeBuffer.flip();
                 channel.position( writePosition );
                 channel.writeAll( writeBuffer );

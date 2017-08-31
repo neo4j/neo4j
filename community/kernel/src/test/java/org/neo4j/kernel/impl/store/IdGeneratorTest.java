@@ -244,14 +244,14 @@ public class IdGeneratorTest
             idGenerator.freeId( 9 );
             closeIdGenerator( idGenerator );
             idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 3, 1000, false, 0 );
-            assertEquals( 2L, idGenerator.nextId() );
-            assertEquals( 4L, idGenerator.nextId() );
-            assertEquals( 1L, idGenerator.nextId() );
-            assertEquals( 3L, idGenerator.nextId() );
-            assertEquals( 5L, idGenerator.nextId() );
             assertEquals( 6L, idGenerator.nextId() );
             assertEquals( 8L, idGenerator.nextId() );
             assertEquals( 9L, idGenerator.nextId() );
+            assertEquals( 1L, idGenerator.nextId() );
+            assertEquals( 3L, idGenerator.nextId() );
+            assertEquals( 5L, idGenerator.nextId() );
+            assertEquals( 2L, idGenerator.nextId() );
+            assertEquals( 4L, idGenerator.nextId() );
             assertEquals( 10L, idGenerator.nextId() );
             assertEquals( 11L, idGenerator.nextId() );
             closeIdGenerator( idGenerator );
@@ -299,21 +299,16 @@ public class IdGeneratorTest
             }
             closeIdGenerator( idGenerator );
             idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 2, 1000, false, 0 );
-            assertEquals( 0L, idGenerator.nextId() );
-            assertEquals( 1L, idGenerator.nextId() );
-            assertEquals( 2L, idGenerator.nextId() );
-            closeIdGenerator( idGenerator );
-            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 30, 1000, false, 0 );
-
-            // Since idGenerator.nextId() (which returns 2) will read ids 2 and
-            // 3, then
-            // 3 will be written at the end during the next close. And hence
-            // will be returned
-            // after 6.
-            assertEquals( 4L, idGenerator.nextId() );
             assertEquals( 5L, idGenerator.nextId() );
             assertEquals( 6L, idGenerator.nextId() );
             assertEquals( 3L, idGenerator.nextId() );
+            closeIdGenerator( idGenerator );
+            idGenerator = new IdGeneratorImpl( fs, idGeneratorFile(), 30, 1000, false, 0 );
+
+            assertEquals( 0L, idGenerator.nextId() );
+            assertEquals( 1L, idGenerator.nextId() );
+            assertEquals( 2L, idGenerator.nextId() );
+            assertEquals( 4L, idGenerator.nextId() );
             closeIdGenerator( idGenerator );
         }
         finally
