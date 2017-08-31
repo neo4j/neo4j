@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
@@ -29,36 +28,28 @@ case class SortRegisterPipe(source: Pipe, orderBy: Seq[SortDescription], pipelin
   extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    assert(orderBy.nonEmpty)
+    val orderings: Seq[java.util.Comparator[ExecutionContext]] = orderBy.map(new InnerOrdering(_)(state))
+    val comparator = orderings.reduceLeft((a, b) => a.thenComparing(b))
     val array = input.toArray
-    java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))
+    java.util.Arrays.sort(array, comparator)
     array.toIterator
   }
 }
 
 
-private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
-  assert(order.nonEmpty)
-  private var cmp = -1
-
+private class InnerOrdering(order: SortDescription)(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-    val iterator: Iterator[SortDescription] = order.iterator
-    //we know iterator contains at least one value
-    do nextCmp(iterator, a, b)
-    while (iterator.hasNext && cmp == 0)
-    cmp
-  }
-
-  private def nextCmp(it: Iterator[SortDescription], a: ExecutionContext, b: ExecutionContext) = {
-    val sort = it.next()
-    val column = sort.offset
+    val column = order.offset
     val aVal = a.getRefAt(column)
     val bVal = b.getRefAt(column)
-    cmp = sort.compareAny(aVal, bVal)
+    order.compareAny(aVal, bVal)
   }
 }
 
 sealed trait SortDescription {
   def offset: Int
+
   def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
 }
 
@@ -66,6 +57,6 @@ case class Ascending(offset: Int) extends SortDescription {
   override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
-case class Descending(offset: Int) extends SortDescription  {
+case class Descending(offset: Int) extends SortDescription {
   override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
 }
