@@ -48,6 +48,27 @@ class ProjectionClauseParserTest
     failsToParse
   }
 
+  test("WITH * GRAPH AT 'url' AS foo >>") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = true, Seq.empty)(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.NewContextGraphs(graphAt("foo", "url"))(pos)))(pos))
+    )
+  }
+
+  test("WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = false, Seq(ast.UnaliasedReturnItem(varFor("a"), "a")(pos)))(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graph("foo"))(pos), ast.NewTargetGraph(graphAt("bar", "url2"))(pos)))(pos)
+    ))
+  }
+
+  test("WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar") {
+    yields(ast.With(
+      ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),
+      ast.GraphReturnItems(includeExisting = false, Seq(ast.ReturnedGraph(graphAt("foo", "url"))(pos), ast.ReturnedGraph(graphAt("bar", "url2"))(pos)))(pos)
+    ))
+  }
+
   ignore("WITH GRAPHS") {
     failsToParse
   }

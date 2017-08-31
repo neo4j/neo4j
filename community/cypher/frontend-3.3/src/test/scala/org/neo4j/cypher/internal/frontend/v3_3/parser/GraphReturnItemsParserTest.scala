@@ -119,6 +119,19 @@ class GraphReturnItemsParserTest
     )))
   }
 
+  test("GRAPH AT 'url' AS foo >>") {
+    yields(ast.GraphReturnItems(includeExisting = false, List(
+      ast.NewContextGraphs(graphAt("foo", "url"), None)(pos)
+    )))
+  }
+
+  test("GRAPH foo, >> GRAPH AT 'url2' AS bar") {
+    yields(ast.GraphReturnItems(includeExisting = false, List(
+      ast.ReturnedGraph(graph("foo"))(pos),
+      ast.NewTargetGraph(graphAt("bar", "url2"))(pos)
+    )))
+  }
+
   // graphs star list
 
   test("GRAPHS *, foo >>") {

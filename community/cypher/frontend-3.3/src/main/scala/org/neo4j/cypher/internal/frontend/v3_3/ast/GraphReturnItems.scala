@@ -60,6 +60,8 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
+  def isStarOnly: Boolean = includeExisting && items.isEmpty
+
   val graphs: Seq[SingleGraphAs] = items.flatMap(_.graphs)
 
   val singleGraph: Option[SingleGraphAs] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
@@ -67,7 +69,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    requireMultigraphSupport("Projecting and returning graphs", position) chain(
+    unless(items.isEmpty) { requireMultigraphSupport("Projecting and returning graphs", position) } chain(
       graphs.semanticCheck chain
       checkNoMultipleSources chain
       checkNoMultipleTargets chain

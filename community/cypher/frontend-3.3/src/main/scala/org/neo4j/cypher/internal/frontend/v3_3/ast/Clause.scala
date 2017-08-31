@@ -68,18 +68,6 @@ sealed trait MultipleGraphClause extends Clause with SemanticChecking {
     requireMultigraphSupport(s"The `$name` clause", position)
 }
 
-object From {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
-  }
-}
-
-object Into {
-  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
-  }
-}
-
 sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
   def snapshot: Boolean
   def graph: Variable
@@ -528,8 +516,8 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       val graphResult = graphReturnItems.foldSemanticCheck(_.declareGraphs(previousScope, isReturn))(tabularState)
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
-    val variableStar = returnItems.includeExisting && returnItems.items.isEmpty
-    val graphsStar = graphReturnItems.forall(i => i.includeExisting && i.graphs.isEmpty)
+    val variableStar = returnItems.isStarOnly
+    val graphsStar = graphReturnItems.forall(_.isStarOnly)
     declareAllTheThings chain unless(isWith && variableStar && graphsStar) { ensureOneIsNonEmpty }
   }
 
@@ -560,6 +548,18 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
     if (!aggregationInProjection && aggregationInOrderBy)
       fail(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
+  }
+}
+
+object From {
+  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
+  }
+}
+
+object Into {
+  def apply(graph: SingleGraphAs)(position: InputPosition): With = {
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewTargetGraph(graph)(position)))(position))(position)
   }
 }
 

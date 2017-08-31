@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeGraphReturnItems, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState, inSequence}
 
@@ -59,27 +59,46 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       "match p=(a:Start)-->(b) return a, b, p")
   }
 
-  test("rewrites * in return graphs") {
-    assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' return graphs *",
-      "from graph foo at 'url' from graph bar at 'url2' return graphs bar as bar, foo as foo"
+  test("rewrites * in RETURN GRAPHS") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar RETURN * GRAPHS *",
+      "WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar RETURN a GRAPHS bar, foo"
     )
 
-    assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' return graphs *",
-      "from graph foo at 'url' from graph bar at 'url2' return graphs bar as bar, foo as foo"
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar RETURN GRAPHS *",
+      "WITH 1 AS a GRAPH AT 'url' AS foo, GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo"
     )
   }
 
-  test("rewrites * in with graphs") {
-    assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' with graphs * return 1",
-      "from graph foo at 'url' from graph bar at 'url2' with graphs bar as bar, foo as foo return 1"
+  test("rewrites * in WITH GRAPHS") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH foo, GRAPH bar WITH * GRAPHS * RETURN 1",
+      "WITH 1 AS a GRAPH foo, GRAPH bar WITH a GRAPHS bar, foo RETURN 1"
     )
 
-    assertRewrite(
-      "from graph foo at 'url' from graph bar at 'url2' with graphs * return 1",
-      "from graph foo at 'url' from graph bar at 'url2' with graphs bar as bar, foo as foo return 1"
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH foo, GRAPH bar WITH GRAPHS * RETURN 1",
+      "WITH 1 AS a GRAPH foo, GRAPH bar WITH GRAPHS bar, foo RETURN 1"
+    )
+  }
+
+  test("expands correctly when no graphs are in scope") {
+    // This invariant does not have a syntactical version, e.g. GRAPHS -
+    // So we need to check the AST
+
+    val prep = prepRewrite("WITH 1 AS a GRAPHS * RETURN 1 AS a")
+    prep should equal(
+      Query(None, SingleQuery(Seq(
+        With(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), GraphReturnItems(includeExisting = true, Seq.empty)(pos))(pos),
+        Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None)(pos)
+      ))(pos))(pos)
+    )
+    prep.rewrite(expandStar(prep.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs)).state)) should equal(
+      Query(None, SingleQuery(Seq(
+        With(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), GraphReturnItems(includeExisting = false, Seq.empty)(pos))(pos),
+        Return(ReturnItems(includeExisting = false, Seq(AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos), None)(pos)
+      ))(pos))(pos)
     )
   }
 
@@ -133,14 +152,34 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
-    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val original = prepRewrite(originalQuery)
+    val expected = prepRewrite(expectedQuery)
+
+    val checkResult = original.semanticCheck(SemanticState.clean)
+    val rewriter = expandStar(checkResult.state)
+
+    val result = original.rewrite(rewriter)
+    assert(result === expected)
+  }
+
+
+  private def assertMultipleGraphsRewrite(originalQuery: String, expectedQuery: String) {
+    val original = prepRewrite(originalQuery, multipleGraphs = true)
+    val expected = prepRewrite(expectedQuery, multipleGraphs = true)
 
     val checkResult = original.semanticCheck(SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs))
     val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)
     assert(result === expected)
+  }
+
+  private def prepRewrite(q: String, multipleGraphs: Boolean = false) = {
+    val mkException = new SyntaxExceptionCreator(q, Some(pos))
+    val rewriter = if (multipleGraphs)
+      inSequence(normalizeGraphReturnItems, normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
+    else
+      inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
+    parser.parse(q).endoRewrite(rewriter)
   }
 }

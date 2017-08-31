@@ -30,6 +30,8 @@ sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckabl
   def containsAggregate: Boolean
   def withExisting(includeExisting: Boolean): ReturnItemsDef
   def items: Seq[ReturnItem]
+
+  def isStarOnly: Boolean = includeExisting && items.isEmpty
 }
 
 final case class DiscardCardinality()(val position: InputPosition) extends ReturnItemsDef {

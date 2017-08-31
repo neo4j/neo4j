@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.GraphUrl
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{GraphUrl, SingleGraphAs}
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, ast}
+import org.parboiled.scala.Rule1
 
 import scala.language.implicitConversions
 
@@ -26,7 +27,7 @@ class GraphsParserTest
   with Graphs
   with Expressions {
 
-  implicit val parser = SingleGraph
+  implicit val parser: Rule1[SingleGraphAs] = SingleGraph
 
   test("SOURCE GRAPH") {
     yields(ast.SourceGraphAs(None))

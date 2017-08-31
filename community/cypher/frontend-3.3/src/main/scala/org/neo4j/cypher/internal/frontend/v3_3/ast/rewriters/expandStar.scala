@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticFeature, SemanticState, bottomUp}
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
@@ -28,23 +28,26 @@ case class expandStar(state: SemanticState) extends Rewriter {
       if values.includeExisting || graphs.includeExisting =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items) else values
       val newGraphItems = graphs match {
-        case GraphReturnItems(true, graphItems) => graphReturnItems(clause, graphItems)
+        case GraphReturnItems(true, graphItems) if state.features(SemanticFeature.MultipleGraphs) => graphReturnItems(clause, graphItems)
         case _ => graphs
       }
       clause.copy(returnItems = newReturnItems, mandatoryGraphReturnItems = newGraphItems)(clause.position)
 
     case clause: PragmaWithout =>
+      val items = if (state.features(SemanticFeature.MultipleGraphs))
+        graphReturnItems(clause, List.empty, clause.excludedNames)
+      else GraphReturnItems(includeExisting = true, Seq.empty)(clause.position)
       With(
         distinct = false,
         returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-        mandatoryGraphReturnItems = graphReturnItems(clause, List.empty, clause.excludedNames),
+        mandatoryGraphReturnItems = items,
         orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
     case clause@Return(_, values, graphs, _, _, _, excludedNames)
       if values.includeExisting || graphs.exists(_.includeExisting) =>
       val newReturnItems = if (values.includeExisting) returnItems(clause, values.items, excludedNames) else values
       val newGraphItems = graphs match {
-        case Some(GraphReturnItems(true, graphItems)) =>
+        case Some(GraphReturnItems(true, graphItems)) if state.features(SemanticFeature.MultipleGraphs) =>
           val newItems = graphReturnItems(clause, graphItems, excludedNames)
           if (newItems.graphs.isEmpty) None else Some(newItems)
         case _ =>
