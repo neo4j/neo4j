@@ -77,7 +77,6 @@ case class OptionalExpandIntoRegisterPipe(source: Pipe,
     val outputRow = PrimitiveExecutionContext(pipelineInformation)
     outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
     outputRow.setLongAt(relOffset, -1)
-    outputRow.setLongAt(toOffset, -1)
     outputRow
   }
 
