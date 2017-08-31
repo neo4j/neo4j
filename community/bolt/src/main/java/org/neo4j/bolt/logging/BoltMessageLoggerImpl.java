@@ -20,12 +20,16 @@
 
 package org.neo4j.bolt.logging;
 
-import io.netty.channel.Channel;
-import org.codehaus.jackson.map.ObjectMapper;
-
 import java.io.IOException;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
@@ -37,117 +41,163 @@ import static java.lang.String.format;
 class BoltMessageLoggerImpl implements BoltMessageLogger
 {
     private static final ObjectMapper jsonObjectMapper = new ObjectMapper();
-
     private final BoltMessageLog messageLog;
+
     private final String remoteAddress;
+    private Channel channel;
+
+    public static final String BOLT_X_CORRELATION_ID_HEADER = "Bolt-X-CorrelationId";
+    public static final AttributeKey<String> CORRELATION_ATTRIBUTE_KEY = AttributeKey.valueOf(
+            BOLT_X_CORRELATION_ID_HEADER );
 
     BoltMessageLoggerImpl( BoltMessageLog messageLog, Channel channel )
     {
         this.messageLog = messageLog;
+        this.channel = channel;
         this.remoteAddress = remoteAddress( channel );
     }
 
     @Override
     public void clientEvent( String eventName )
     {
-        messageLog.info( remoteAddress, format( "C: <%s>", eventName ) );
+        infoLogger().accept( format( "C: <%s>", eventName ) );
     }
 
     @Override
     public void clientEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        messageLog.info( remoteAddress, format( "C: <%s>", eventName ), detailsSupplier.get() );
+        infoLoggerWithArgs().accept( format( "C: <%s>", eventName ), detailsSupplier.get() );
     }
 
     @Override
-    public void clientError( String eventName, String message, Supplier<String> detailsSupplier )
+    public void clientError( String eventName, String errorMessage, Supplier<String> detailsSupplier )
     {
-        messageLog.error( remoteAddress, format( "C: <%s>", eventName ), message, detailsSupplier.get() );
+        errorLoggerWithArgs( errorMessage ).accept( format( "C: <%s>", eventName ), detailsSupplier.get() );
     }
 
     @Override
     public void serverEvent( String eventName )
     {
-        messageLog.info( remoteAddress, format( "S: <%s>", eventName ) );
+        infoLogger().accept( format( "S: <%s>", eventName ) );
     }
 
     @Override
     public void serverEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        messageLog.info( remoteAddress, format( "S: <%s>", eventName ), detailsSupplier.get() );
+        infoLoggerWithArgs().accept( format( "S: <%s>", eventName ), detailsSupplier.get() );
     }
 
     @Override
-    public void serverError( String eventName, String message )
+    public void serverError( String eventName, String errorMessage )
     {
-        messageLog.error( remoteAddress, format( "S: <%s>", eventName ), message );
+        errorLogger( errorMessage ).accept( format( "S: <%s>", eventName ) );
     }
 
     @Override
-    public void serverError( String eventName, Status status, String message )
+    public void serverError( String eventName, Status status, String errorMessage )
     {
-        messageLog.error( remoteAddress, format( "S: <%s>", eventName ), status.code().serialize(), message );
+        errorLoggerWithArgs( errorMessage ).accept( format( "S: <%s>", eventName ), status.code().serialize() );
     }
 
     @Override
     public void logInit( String userAgent, Map<String,Object> authToken )
     {
         // log only auth toke keys, not values that include password
-        messageLog.info( remoteAddress, "C: INIT", userAgent, json( authToken.keySet() ) );
+        infoLoggerWithArgs().accept( "C: INIT", format( "%s %s", userAgent, json( authToken.keySet() ) ) );
     }
 
     @Override
     public void logRun( String statement, Map<String,Object> parameters )
     {
-        messageLog.info( remoteAddress, "C: RUN", statement, json( parameters ) );
+        infoLoggerWithArgs().accept( "C: RUN", format( "%s %s", statement, json( parameters ) ) );
     }
 
     @Override
     public void logPullAll()
     {
-        messageLog.info( remoteAddress, "C: PULL_ALL" );
+        infoLogger().accept( "C: PULL_ALL" );
     }
 
     @Override
     public void logDiscardAll()
     {
-        messageLog.info( remoteAddress, "C: DISCARD_ALL" );
+        infoLogger().accept( "C: DISCARD_ALL" );
     }
 
     @Override
     public void logAckFailure()
     {
-        messageLog.info( remoteAddress, "C: ACK_FAILURE" );
+        infoLogger().accept( "C: ACK_FAILURE" );
     }
 
     @Override
     public void logReset()
     {
-        messageLog.info( remoteAddress, "C: RESET" );
+        infoLogger().accept( "C: RESET" );
     }
 
     @Override
     public void logSuccess( Object metadata )
     {
-        messageLog.info( remoteAddress, "S: SUCCESS", json( metadata ) );
+        infoLoggerWithArgs().accept( "S: SUCCESS", json( metadata ) );
     }
 
     @Override
-    public void logFailure( Status status, String message )
+    public void logFailure( Status status, String errorMessage )
     {
-        messageLog.info( remoteAddress, "S: FAILURE", status.code().serialize(), message );
+        infoLoggerWithArgs().accept( "S: FAILURE", format( "%s %s", status.code().serialize(), errorMessage ) );
     }
 
     @Override
     public void logIgnored()
     {
-        messageLog.info( remoteAddress, "S: IGNORED" );
+        infoLogger().accept( "S: IGNORED" );
     }
 
-    @Override
-    public void logRecord( Object arg1 )
+    private Consumer<String> infoLogger()
     {
-        messageLog.debug( remoteAddress, "S: RECORD", json( arg1 ) );
+        String correlationId;
+        if ( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
+        {
+            String boltXCorrelationIdValue = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
+            correlationId = format( BOLT_X_CORRELATION_ID_HEADER + ": %s", boltXCorrelationIdValue );
+            if ( StringUtils.isNotBlank( correlationId ) )
+            {
+                return formatMessageWithEventName ->
+                        messageLog.info( remoteAddress, formatMessageWithEventName, correlationId );
+            }
+        }
+        return formatMessageWithEventName -> messageLog.info( remoteAddress, formatMessageWithEventName );
+    }
+
+    private BiConsumer<String, String> infoLoggerWithArgs()
+    {
+        return ( formatMessageWithEventName, details ) ->
+                infoLogger().accept( format( "%s %s", formatMessageWithEventName, details ) );
+    }
+
+    private Consumer<String> errorLogger( String errorMessage )
+    {
+
+        String correlationId;
+        if ( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
+        {
+            String boltXCorrelationIdValue = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
+            correlationId = format( BOLT_X_CORRELATION_ID_HEADER + ": %s", boltXCorrelationIdValue );
+            if ( StringUtils.isNotBlank( correlationId ) )
+            {
+                return formatMessageWithEventName ->
+                        messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, correlationId );
+            }
+        }
+        return formatMessageWithEventName ->
+                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName );
+    }
+
+    private BiConsumer<String, String> errorLoggerWithArgs( String errorMessage )
+    {
+        return ( formatMessageWithEventName, details ) ->
+                errorLogger( errorMessage ).accept( format( "%s %s", formatMessageWithEventName, details ) );
     }
 
     private static String remoteAddress( Channel channel )

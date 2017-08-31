@@ -37,10 +37,10 @@ public interface BoltResponseMessageHandler<E extends Exception>
 
     void onIgnored() throws E;
 
-    void onFailure( Status status, String message ) throws E;
+    void onFailure( Status status, String errorMessage ) throws E;
 
-    default void onFatal( Status status, String message ) throws E
+    default void onFatal( Status status, String errorMessage ) throws E
     {
-        onFailure( status, message );
+        onFailure( status, errorMessage );
     }
 }

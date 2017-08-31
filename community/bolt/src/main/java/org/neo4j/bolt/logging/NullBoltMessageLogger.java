@@ -48,7 +48,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void clientError( String eventName, String message, Supplier<String> detailsSupplier )
+    public void clientError( String eventName, String errorMessage, Supplier<String> detailsSupplier )
     {
     }
 
@@ -63,12 +63,12 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void serverError( String eventName, String message )
+    public void serverError( String eventName, String errorMessage )
     {
     }
 
     @Override
-    public void serverError( String eventName, Status status, String message )
+    public void serverError( String eventName, Status status, String errorMessage )
     {
     }
 
@@ -108,7 +108,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logFailure( Status status, String message )
+    public void logFailure( Status status, String errorMessage )
     {
     }
 
@@ -117,8 +117,4 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     {
     }
 
-    @Override
-    public void logRecord( Object arg1 )
-    {
-    }
 }

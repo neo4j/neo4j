@@ -19,18 +19,19 @@
  */
 package org.neo4j.bolt;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.HostnamePort;
@@ -47,6 +48,8 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_log_filename;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;
@@ -138,6 +141,32 @@ public class BoltMessageLoggingIT
         assertBoltLogIsWritten( customBoltLogFile );
     }
 
+    @Test
+    public void shouldWriteErrorsToCustomFileWhenConfigured() throws IOException
+    {
+        String customBoltLogFileName = "/tmp/my_bolt.log";
+        File customBoltLogFile = new File( customBoltLogFileName );
+
+        db.setConfig( bolt_logging_enabled, TRUE );
+        db.setConfig( bolt_log_filename, customBoltLogFileName );
+        db.ensureStarted();
+        driver = newDriver();
+
+        assertTrue( fs.fileExists( customBoltLogFile ) );
+
+        String query = "RETURN 1 as 2";
+        try ( Session session = driver.session() )
+        {
+            session.run( query ).consume();
+            fail( "Should have failed" );
+        }
+        catch ( ClientException e )
+        {
+            String contents = readFile( customBoltLogFile );
+            assertThat( contents, containsString( "S: FAILURE" ) );
+        }
+    }
+
     private void assertBoltLogIsWritten( File boltLogFile ) throws IOException
     {
         assertTrue( fs.fileExists( boltLogFile ) );
@@ -150,7 +179,6 @@ public class BoltMessageLoggingIT
 
         String contents = readFile( boltLogFile );
         assertThat( contents, containsString( "C: RUN " + query + " {}" ) );
-        assertThat( contents, containsString( "S: RECORD [42]" ) );
     }
 
     private String readFile( File file ) throws IOException

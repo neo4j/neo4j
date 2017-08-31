@@ -30,15 +30,15 @@ public interface BoltMessageLogger
 
     void clientEvent( String eventName, Supplier<String> detailsSupplier );
 
-    void clientError( String eventName, String message, Supplier<String> detailsSupplier );
+    void clientError( String eventName, String errorMessage, Supplier<String> detailsSupplier );
 
     void serverEvent( String eventName );
 
     void serverEvent( String eventName, Supplier<String> detailsSupplier );
 
-    void serverError( String eventName, String message );
+    void serverError( String eventName, String errorMessage );
 
-    void serverError( String eventName, Status status, String message );
+    void serverError( String eventName, Status status, String errorMessage );
 
     void logInit( String userAgent, Map<String,Object> authToken );
 
@@ -54,9 +54,7 @@ public interface BoltMessageLogger
 
     void logSuccess( Object metadata );
 
-    void logFailure( Status status, String message );
+    void logFailure( Status status, String errorMessage );
 
     void logIgnored();
-
-    void logRecord( Object arg1 );
 }

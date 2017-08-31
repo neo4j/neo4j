@@ -19,9 +19,6 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.After;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.time.Clock;
 import java.util.LinkedList;
@@ -29,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.junit.After;
+import org.junit.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
@@ -53,9 +53,11 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
+
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -115,7 +117,7 @@ public class ResetFuzzTest
             }
 
             @Override
-            public void onFailure( Status status, String message ) throws IOException
+            public void onFailure( Status status, String errorMessage ) throws IOException
             {
             }
 

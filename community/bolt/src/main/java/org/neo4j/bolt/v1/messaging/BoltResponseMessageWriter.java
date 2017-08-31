@@ -62,7 +62,6 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     public void onRecord( QueryResult.Record item ) throws IOException
     {
         AnyValue[] fields = item.fields();
-        messageLogger.logRecord(fields);
         packer.packStructHeader( 1, RECORD.signature() );
         packer.packListHeader( fields.length );
         for ( AnyValue field : fields )
@@ -95,9 +94,9 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     }
 
     @Override
-    public void onFailure( Status status, String message ) throws IOException
+    public void onFailure( Status status, String errorMessage ) throws IOException
     {
-        messageLogger.logFailure( status, message );
+        messageLogger.logFailure( status, errorMessage );
         packer.packStructHeader( 1, FAILURE.signature() );
         packer.packMapHeader( 2 );
 
@@ -105,16 +104,16 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
         packer.pack( status.code().serialize() );
 
         packer.pack( "message" );
-        packer.pack( message );
+        packer.pack( errorMessage );
 
         onMessageComplete.onMessageComplete();
     }
 
     @Override
-    public void onFatal( Status status, String message ) throws IOException
+    public void onFatal( Status status, String errorMessage ) throws IOException
     {
-        messageLogger.serverError( "FATAL", status, message );
-        onFailure( status, message );
+        messageLogger.serverError( "FATAL", status, errorMessage );
+        onFailure( status, errorMessage );
         flush();
     }
 
