@@ -19,29 +19,34 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, RefSlot, Slot}
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
-case class ProjectionRegisterPipe(source: Pipe, introducedExpressions: Map[Int, Expression])
+case class ProjectionRegisterPipe(source: Pipe, introducedExpressions: Map[Slot, Expression])
                                  (val id: Id = new Id) extends PipeWithSource(source) {
 
   introducedExpressions.values.foreach(_.registerOwningPipe(this))
 
+  private val projectionFunctions = introducedExpressions map {
+    case (LongSlot(offset, _, _, _), expression) =>
+      // We just pass along Long slot expressions without evaluation
+      (ctx: ExecutionContext, state: QueryState) =>
+
+    case (RefSlot(offset, _, _, _), expression) =>
+      (ctx: ExecutionContext, state: QueryState) =>
+        val result = expression(ctx)(state)
+        ctx.setRefAt(offset, result)
+  }
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       ctx =>
-        introducedExpressions.foreach {
-          case (offset, expression) =>
-            val result = expression(ctx)(state)
-            ctx.setRefAt(offset, result)
-        }
-
+        projectionFunctions.foreach(_(ctx, state))
         ctx
     }
   }

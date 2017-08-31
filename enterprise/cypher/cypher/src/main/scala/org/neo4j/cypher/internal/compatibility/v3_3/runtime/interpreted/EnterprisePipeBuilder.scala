@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.NodeFromRegister
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
@@ -160,15 +159,12 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case Projection(_, expressions) =>
-        val expressionsWithOffsets = expressions map {
-          case (k, e: NodeFromRegister) =>
-            val offset = pipeline.getLongOffsetFor(k)
-            offset -> convertExpressions(e)
+        val expressionsWithSlots = expressions map {
           case (k, e) =>
-            val offset = pipeline.getReferenceOffsetFor(k)
-            offset -> convertExpressions(e)
+            val slot = pipeline.get(k).get
+            slot -> convertExpressions(e)
         }
-        ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
+        ProjectionRegisterPipe(source, expressionsWithSlots)(id)
 
       case CreateNode(_, idName, labels, props) =>
         CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply),

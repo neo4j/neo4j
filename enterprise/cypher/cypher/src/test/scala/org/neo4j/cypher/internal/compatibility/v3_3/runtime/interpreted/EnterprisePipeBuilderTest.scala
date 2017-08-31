@@ -512,7 +512,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(ProjectionRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
         pipeline)(),
-      Map(pipeline("x.propertyKey").offset -> NodeProperty(pipeline("x.propertyKey").offset, 0))
+      Map(pipeline("x.propertyKey") -> NodeProperty(pipeline("x.propertyKey").offset, 0))
     )())
   }
 
