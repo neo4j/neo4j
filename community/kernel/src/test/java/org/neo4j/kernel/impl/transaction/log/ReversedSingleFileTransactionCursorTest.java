@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
@@ -45,7 +46,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
@@ -136,7 +136,7 @@ public class ReversedSingleFileTransactionCursorTest
         // when
         try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
         {
-            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>() );
+            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
@@ -169,7 +169,8 @@ public class ReversedSingleFileTransactionCursorTest
     private ReversedSingleFileTransactionCursor txCursor() throws IOException
     {
         return new ReversedSingleFileTransactionCursor(
-                (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ), new VersionAwareLogEntryReader<>() );
+                (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ),
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
     }
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException

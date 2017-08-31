@@ -23,6 +23,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.cursor.IOCursor;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -46,13 +47,15 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final LogService logService;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
+        this.logService = logService;
     }
 
     @Override
@@ -62,9 +65,10 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
+            IOException
     {
-        return ReversedMultiFileTransactionCursor.fromLogFile( logFile, backToPosition );
+        return ReversedMultiFileTransactionCursor.fromLogFile( logFile, backToPosition, logService );
     }
 
     @Override

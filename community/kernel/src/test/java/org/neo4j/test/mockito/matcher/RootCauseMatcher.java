@@ -19,6 +19,7 @@
  */
 package org.neo4j.test.mockito.matcher;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -28,6 +29,11 @@ public class RootCauseMatcher<T extends Throwable> extends TypeSafeMatcher<T>
     private final Class<T> rootCause;
     private final String message;
     private Throwable cause;
+
+    public RootCauseMatcher( Class<T> rootCause )
+    {
+        this( rootCause, StringUtils.EMPTY );
+    }
 
     public RootCauseMatcher( Class<T> rootCause, String message )
     {

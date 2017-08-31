@@ -24,6 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -39,8 +40,8 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
     private final LifeSupport life = new LifeSupport();
     private final LogicalTransactionStore physicalStore;
 
-    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors )
-            throws IOException
+    public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, File fromPath, Monitors monitors,
+            LogService logService ) throws IOException
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( fromPath, fs );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
@@ -51,7 +52,8 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
                 new ReadOnlyLogVersionRepository( pageCache, fromPath ),
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
+        physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader,
+                logService );
     }
 
     @Override

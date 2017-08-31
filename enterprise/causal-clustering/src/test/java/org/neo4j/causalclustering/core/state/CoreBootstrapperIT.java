@@ -38,6 +38,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
@@ -107,7 +108,7 @@ public class CoreBootstrapperIT
 
         LastCommittedIndexFinder lastCommittedIndexFinder = new LastCommittedIndexFinder(
                 new ReadOnlyTransactionIdStore( pageCache, classicNeo4jStore ),
-                        new ReadOnlyTransactionStore( pageCache, fileSystem, classicNeo4jStore, new Monitors() ),
+                        new ReadOnlyTransactionStore( pageCache, fileSystem, classicNeo4jStore, new Monitors(), NullLogService.getInstance() ),
                         NullLogProvider.getInstance() );
 
         long lastCommittedIndex = lastCommittedIndexFinder.getLastCommittedIndex();

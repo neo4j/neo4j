@@ -51,14 +51,14 @@ public class LogEntryVersionTest
     @Test
     public void shouldWarnAboutOldLogVersion() throws Exception
     {
-        expect.expect( IllegalArgumentException.class );
+        expect.expect( UnsupportedLogVersionException.class );
         LogEntryVersion.byVersion( (byte)-4 );
     }
 
     @Test
     public void shouldWarnAboutNewerLogVersion() throws Exception
     {
-        expect.expect( IllegalArgumentException.class );
+        expect.expect( UnsupportedLogVersionException.class );
         LogEntryVersion.byVersion( (byte)-42 ); // unused for now
     }
 

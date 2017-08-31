@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -43,13 +44,15 @@ public class UpgradableDatabase
     private final StoreVersionCheck storeVersionCheck;
     private final RecordFormats format;
     private final LogTailScanner tailScanner;
+    private final LogService logService;
 
     public UpgradableDatabase( StoreVersionCheck storeVersionCheck, RecordFormats format,
-            LogTailScanner tailScanner )
+            LogTailScanner tailScanner, LogService logService )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.format = format;
         this.tailScanner = tailScanner;
+        this.logService = logService;
     }
 
     /**

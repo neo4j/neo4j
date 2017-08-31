@@ -36,6 +36,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -45,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -60,6 +63,9 @@ public class LogTailScannerTest
     private final File directory = new File( "/somewhere" );
     private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
     private LogTailScanner tailScanner;
+
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private final LogService logService = new SimpleLogService( logProvider );
     private PhysicalLogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
@@ -82,7 +88,7 @@ public class LogTailScannerTest
     {
         fsRule.get().mkdirs( directory );
         logFiles = new PhysicalLogFiles( directory, fsRule.get() );
-        tailScanner = new LogTailScanner( logFiles, fsRule.get(), reader );
+        tailScanner = new LogTailScanner( logFiles, fsRule.get(), reader, logService );
     }
 
     @Test
@@ -229,13 +235,13 @@ public class LogTailScannerTest
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
         LogTailScanner tailScanner =
-                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader );
+                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader, logService );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
         LogTailInformation
                 logTailInformation = tailScanner.latestCheckPoint( endLogVersion, endLogVersion, startEntry,
-                endLogVersion, checkPoint, latestLogEntryVersion );
+                endLogVersion, checkPoint, latestLogEntryVersion, false );
 
         assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
     }
@@ -540,20 +546,20 @@ public class LogTailScannerTest
         private final long txId;
 
         FirstTxIdConfigurableTailScanner( long txId, PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
-                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
         {
-            super( logFiles, fileSystem, logEntryReader );
+            super( logFiles, fileSystem, logEntryReader, logService );
             this.txId = txId;
         }
 
         @Override
         public LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
                 LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint,
-                LogEntryVersion latestLogEntryVersion )
+                LogEntryVersion latestLogEntryVersion, boolean commitsAfterCheckPoint )
                 throws IOException
         {
             return super.latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
-                    latestCheckPoint, latestLogEntryVersion );
+                    latestCheckPoint, latestLogEntryVersion, commitsAfterCheckPoint );
         }
 
         @Override

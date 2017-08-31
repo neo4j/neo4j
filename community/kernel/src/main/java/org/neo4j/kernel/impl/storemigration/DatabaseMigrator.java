@@ -82,7 +82,7 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner, logService );
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 

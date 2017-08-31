@@ -374,7 +374,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
     @Override
     public File currentLogFile()
     {
-        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
+        return logFiles.getHighestLogFile();
     }
 
     @Override

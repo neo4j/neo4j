@@ -161,12 +161,12 @@ public enum LogEntryVersion
         byte positiveCurrentVersion = (byte) -CURRENT.byteCode();
         if ( positiveVersion > positiveCurrentVersion )
         {
-            throw new IllegalArgumentException( String.format(
+            throw new UnsupportedLogVersionException( String.format(
                     "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
                             "indicates that the log files originates from a newer version of neo4j.",
                     positiveVersion, positiveCurrentVersion ) );
         }
-        throw new IllegalArgumentException( String.format(
+        throw new UnsupportedLogVersionException( String.format(
                 "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
                         "indicates that the log files originates from an older version of neo4j, which we don't support " +
                         "migrations from.",

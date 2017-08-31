@@ -32,6 +32,9 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,6 +53,8 @@ public class RecoveryRequiredCheckerTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule ).around( testDirectory );
 
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private final LogService logService = new SimpleLogService( logProvider );
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
 
@@ -65,7 +70,7 @@ public class RecoveryRequiredCheckerTest
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystem, pageCache );
+        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystem, pageCache, logService );
 
         assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
     }
@@ -77,7 +82,7 @@ public class RecoveryRequiredCheckerTest
         {
 
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache, logService );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
         }
@@ -90,7 +95,7 @@ public class RecoveryRequiredCheckerTest
         {
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache, logService );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
 

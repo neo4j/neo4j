@@ -27,6 +27,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
@@ -184,7 +185,7 @@ public class MigrationTestUtils
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, logEntryReader );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, logEntryReader, NullLogService.getInstance() );
         LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
         if ( logTailInformation.commitsAfterLastCheckPoint )

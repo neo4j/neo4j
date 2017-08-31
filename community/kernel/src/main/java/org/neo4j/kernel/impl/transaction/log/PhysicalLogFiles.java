@@ -78,6 +78,11 @@ public class PhysicalLogFiles
         return new File( logBaseName.getPath() + DEFAULT_VERSION_SUFFIX + version );
     }
 
+    public File getHighestLogFile()
+    {
+        return getLogFileForVersion( getHighestLogVersion() );
+    }
+
     public boolean versionExists( long version )
     {
         return fileSystem.fileExists( getLogFileForVersion( version ) );

@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -29,8 +31,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
+import org.neo4j.logging.Log;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
@@ -47,16 +52,18 @@ public class LogTailScanner
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private LogTailInformation logTailInformation;
+    private final Log log;
 
     public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
     {
         this.logFiles = logFiles;
         this.fileSystem = fileSystem;
         this.logEntryReader = logEntryReader;
+        this.log = logService.getInternalLog( LogTailScanner.class );
     }
 
-    private LogTailInformation update() throws IOException
+    private LogTailInformation findLogTail() throws IOException
     {
         final long fromVersionBackwards = logFiles.getHighestLogVersion();
         long version = fromVersionBackwards;
@@ -65,6 +72,7 @@ public class LogTailScanner
         LogEntryStart oldestStartEntry = null;
         long oldestVersionFound = -1;
         LogEntryVersion latestLogEntryVersion = null;
+        boolean commitsAfterCheckPoint = false;
 
         while ( version >= INITIAL_LOG_VERSION )
         {
@@ -78,8 +86,7 @@ public class LogTailScanner
             oldestVersionFound = version;
 
             CheckPoint latestCheckPoint = null;
-            ReadableLogChannel recoveredDataChannel =
-                    new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+            ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
             boolean firstStartEntry = true;
 
             try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
@@ -120,11 +127,31 @@ public class LogTailScanner
                     }
                 }
             }
+            catch ( Throwable t )
+            {
+                if ( Exceptions.contains( t, UnsupportedLogVersionException.class ) )
+                {
+                    if ( FeatureToggles.flag( LogTailScanner.class, "force", false ) )
+                    {
+                        log.warn( "Unsupported log version was found in transactional logs, but log processing was " +
+                                        "forced.", t );
+                    }
+                    else
+                    {
+                        throw new RuntimeException( format( "Unsupported transaction log version found. " +
+                                "To force transactional processing anyway and trip non recognised transactions please " +
+                                "use %s. By using this flag you can lose part of your transactions log. This operation is irretrievable." +
+                                " ", FeatureToggles.toggle( LogTailScanner.class, "force", true ) ), t );
+                    }
+                }
+                log.warn( format( "Fail to read transaction log version %d.", version ), t );
+                commitsAfterCheckPoint = true;
+            }
 
             if ( latestCheckPoint != null )
             {
                 return latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
-                        latestCheckPoint, latestLogEntryVersion );
+                        latestCheckPoint, latestLogEntryVersion, commitsAfterCheckPoint );
             }
 
             version--;
@@ -136,8 +163,8 @@ public class LogTailScanner
             }
         }
 
-        boolean commitsAfterCheckPoint = oldestStartEntry != null;
-        long firstTxAfterPosition = commitsAfterCheckPoint
+        commitsAfterCheckPoint |= oldestStartEntry != null;
+        long firstTxAfterPosition = (commitsAfterCheckPoint && oldestStartEntry != null)
                 ? extractFirstTxIdAfterPosition( oldestStartEntry.getStartPosition(), fromVersionBackwards )
                 : LogTailInformation.NO_TRANSACTION_ID;
 
@@ -147,28 +174,46 @@ public class LogTailScanner
 
     protected LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
             LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint,
-            LogEntryVersion latestLogEntryVersion ) throws IOException
+            LogEntryVersion latestLogEntryVersion, boolean commitsAfterCheckPoint ) throws IOException
     {
         // Is the latest start entry in this log file version later than what the latest check point targets?
         LogPosition target = latestCheckPoint.getLogPosition();
-        boolean startEntryAfterCheckPoint = latestStartEntry != null &&
-                latestStartEntry.getStartPosition().compareTo( target ) >= 0;
+        boolean startEntryAfterCheckPoint = ((latestStartEntry != null) &&
+                (latestStartEntry.getStartPosition().compareTo( target ) >= 0)) ||
+                commitsAfterCheckPoint;
         if ( !startEntryAfterCheckPoint )
         {
             if ( target.getLogVersion() < version )
             {
                 // This check point entry targets a previous log file.
                 // Go there and see if there's a transaction. Reader is capped to that log version.
-                startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, version ) !=
-                        LogTailInformation.NO_TRANSACTION_ID;
+                try
+                {
+                    startEntryAfterCheckPoint =
+                            extractFirstTxIdAfterPosition( target, version ) != LogTailInformation.NO_TRANSACTION_ID;
+                }
+                catch ( LogReadingException lre )
+                {
+                    startEntryAfterCheckPoint = true;
+                }
             }
         }
 
         // Extract first transaction id after check point target position.
         // Reader may continue into log files after the initial version.
-        long firstTxIdAfterCheckPoint = startEntryAfterCheckPoint
-                ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
-                : LogTailInformation.NO_TRANSACTION_ID;
+        long firstTxIdAfterCheckPoint = LogTailInformation.NO_TRANSACTION_ID;
+        if ( startEntryAfterCheckPoint )
+        {
+            try
+            {
+                firstTxIdAfterCheckPoint = extractFirstTxIdAfterPosition( target, fromVersionBackwards );
+            }
+            catch ( LogReadingException lre )
+            {
+                //
+            }
+        }
+
         return new LogTailInformation( latestCheckPoint, startEntryAfterCheckPoint,
                 firstTxIdAfterCheckPoint, oldestVersionFound, fromVersionBackwards, latestLogEntryVersion );
     }
@@ -196,7 +241,7 @@ public class LogTailScanner
                 try
                 {
                     storeChannel.position( currentPosition.getByteOffset() );
-                    try ( ReadAheadLogChannel logChannel = new ReadAheadLogChannel( storeChannel, NO_MORE_CHANNELS );
+                    try ( ReadAheadLogChannel logChannel = new ReadAheadLogChannel( storeChannel );
                           LogEntryCursor cursor = new LogEntryCursor( logEntryReader, logChannel ) )
                     {
                         while ( cursor.next() )
@@ -207,6 +252,12 @@ public class LogTailScanner
                                 return ((LogEntryCommit) entry).getTxId();
                             }
                         }
+                    }
+                    catch ( Throwable t )
+                    {
+                        log.warn( format( "Fail to read transaction log version %d.", currentPosition.getLogVersion() ), t );
+                        throw new LogReadingException(
+                                new LogPosition( currentPosition.getLogVersion(), storeChannel.position() ) );
                     }
                 }
                 finally
@@ -237,7 +288,7 @@ public class LogTailScanner
         {
             try
             {
-                logTailInformation = update();
+                logTailInformation = findLogTail();
             }
             catch ( IOException e )
             {
@@ -268,6 +319,21 @@ public class LogTailScanner
             this.oldestLogVersionFound = oldestLogVersionFound;
             this.currentLogVersion = currentLogVersion;
             this.latestLogEntryVersion = latestLogEntryVersion;
+        }
+    }
+
+    private class LogReadingException extends RuntimeException
+    {
+        private LogPosition logPosition;
+
+        LogReadingException( LogPosition logPosition )
+        {
+            this.logPosition = logPosition;
+        }
+
+        public LogPosition getLogPosition()
+        {
+            return logPosition;
         }
     }
 }

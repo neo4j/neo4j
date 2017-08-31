@@ -49,6 +49,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
@@ -105,13 +106,15 @@ public class StoreMigrationIT
         File dir = TestDirectory.testDirectory( StoreMigrationIT.class ).prepareDirectoryForTest( "migration" );
         StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, fs );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(),
+                NullLogService.getInstance() );
         List<Object[]> data = new ArrayList<>();
         ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
         RecordFormatSelector.allFormats().forEach( f -> addIfNotThere( f, recordFormatses ) );
         for ( RecordFormats toFormat : recordFormatses )
         {
-            UpgradableDatabase upgradableDatabase = new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner );
+            UpgradableDatabase upgradableDatabase =
+                    new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner, NullLogService.getInstance() );
             for ( RecordFormats fromFormat : recordFormatses )
             {
                 File db = new File( dir, baseDirName( toFormat, fromFormat ) );

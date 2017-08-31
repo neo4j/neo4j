@@ -19,6 +19,14 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.Mockito;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -27,14 +35,6 @@ import java.net.ConnectException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.Mockito;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -60,6 +60,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -1032,7 +1033,7 @@ public class BackupProtocolServiceIT
         LifeSupport life = new LifeSupport();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         LogicalTransactionStore transactionStore =
-                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors ) );
+                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors, NullLogService.getInstance() ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       transactionStore.getTransactions( txId ) )

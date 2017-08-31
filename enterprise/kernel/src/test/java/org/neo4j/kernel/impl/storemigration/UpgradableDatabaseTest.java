@@ -36,6 +36,7 @@ import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -98,7 +99,8 @@ public class UpgradableDatabaseTest
             workingDirectory = testDirectory.graphDbDir();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
+            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
+                    NullLogService.getInstance() );
         }
 
         boolean storeFilesUpgradeable( File storeDirectory, UpgradableDatabase upgradableDatabase )
@@ -118,8 +120,7 @@ public class UpgradableDatabaseTest
         public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade()
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner );
+            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
@@ -132,9 +133,7 @@ public class UpgradableDatabaseTest
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner );
-
+            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
             // when
             boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
 
@@ -150,14 +149,20 @@ public class UpgradableDatabaseTest
 
             // given
             removeCheckPointFromTxLog( fileSystem, workingDirectory );
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner );
+            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
             final boolean result = storeFilesUpgradeable( workingDirectory, upgradableDatabase );
 
             // then
             assertFalse( result );
+        }
+
+        private UpgradableDatabase getUpgradableDatabase()
+        {
+            return new UpgradableDatabase(
+                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner,
+                    NullLogService.getInstance() );
         }
     }
 
@@ -199,15 +204,15 @@ public class UpgradableDatabaseTest
             MetaDataStore.setRecord( pageCacheRule.getPageCache( fileSystem ), metadataStore, STORE_VERSION,
                     MetaDataStore.versionStringToLong( version ) );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
+            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
+                    NullLogService.getInstance() );
         }
 
         @Test
         public void shouldDetectOldVersionAsDifferentFromCurrent() throws Exception
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner );
+            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
 
             // when
             boolean currentVersion = upgradableDatabase.hasCurrentVersion( workingDirectory );
@@ -220,8 +225,7 @@ public class UpgradableDatabaseTest
         public void shouldCommunicateWhatCausesInabilityToUpgrade()
         {
             // given
-            final UpgradableDatabase upgradableDatabase = new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner );
+            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
             try
             {
                 // when
@@ -242,6 +246,12 @@ public class UpgradableDatabaseTest
                 assertEquals( String.format( StoreUpgrader.UnexpectedUpgradingStoreFormatException.MESSAGE,
                         GraphDatabaseSettings.record_format.name() ), e.getMessage() );
             }
+        }
+
+        private UpgradableDatabase getUpgradableDatabase()
+        {
+            return new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
+                    getRecordFormat(), tailScanner, NullLogService.getInstance() );
         }
     }
 

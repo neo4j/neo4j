@@ -58,8 +58,7 @@ public interface LogicalTransactionStore
      * or if the transaction has been committed, but information about it is no longer available for some reason.
      * @throws IOException if there was an I/O related error looking for the start transaction.
      */
-    TransactionCursor getTransactions( LogPosition position )
-            throws IOException;
+    TransactionCursor getTransactions( LogPosition position ) throws IOException;
 
     /**
      * Acquires a {@link TransactionCursor cursor} which will provide {@link CommittedTransactionRepresentation}

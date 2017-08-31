@@ -427,7 +427,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Check the tail of transaction logs and validate version
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME, fs );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader, logService );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
@@ -650,7 +650,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, logService );
 
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
@@ -688,18 +688,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore )
     {
-        Recovery.SPI spi =
-                new DefaultRecoverySPI( storageEngine, logFiles, fileSystemAbstraction, tailScanner, transactionIdStore,
-                        logicalTransactionStore, positionMonitor );
-        Recovery recovery = new Recovery( spi, recoveryMonitor );
-        monitors.addMonitorListener( new Recovery.Monitor()
-        {
-            @Override
-            public void recoveryCompleted( int numberOfRecoveredTransactions )
-            {
-                startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
-            }
-        } );
+        Recovery.SPI spi = new DefaultRecoverySPI( storageEngine, logFiles, fileSystemAbstraction, tailScanner,
+                transactionIdStore, logicalTransactionStore, positionMonitor );
+        Recovery recovery = new Recovery( spi, recoveryMonitor, startupStatistics, logService );
         life.add( recovery );
     }
 

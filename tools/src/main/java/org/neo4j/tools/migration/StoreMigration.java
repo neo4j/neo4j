@@ -132,7 +132,7 @@ public class StoreMigration
                     deps, ignore() ) );
 
             final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), logService );
 
             // Add the kernel store migrator
             life.start();

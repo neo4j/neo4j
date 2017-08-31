@@ -27,6 +27,12 @@ public class SimpleLogService extends AbstractLogService
     private final LogProvider userLogProvider;
     private final LogProvider internalLogProvider;
 
+    public SimpleLogService( LogProvider commonLogProvider )
+    {
+        this.userLogProvider = commonLogProvider;
+        this.internalLogProvider = commonLogProvider;
+    }
+
     public SimpleLogService( LogProvider userLogProvider, LogProvider internalLogProvider )
     {
         this.userLogProvider = new DuplicatingLogProvider( userLogProvider, internalLogProvider );

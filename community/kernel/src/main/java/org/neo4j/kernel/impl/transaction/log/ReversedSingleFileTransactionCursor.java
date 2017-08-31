@@ -24,8 +24,12 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.logging.Log;
+
+import static java.lang.String.format;
 
 /**
  * Returns transactions in reverse order in a log file. It tries to keep peak memory consumption to a minimum
@@ -62,6 +66,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     private final TransactionCursor transactionCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of ReadAheadLogChannel
     private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>( 20 );
+    private final Log log;
     private CommittedTransactionRepresentation currentChunkTransaction;
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
@@ -69,13 +74,15 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     private int chunkStartOffsetIndex;
     private long totalSize;
 
-    ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel, LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+    ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel,
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
             throws IOException
     {
         this.channel = channel;
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
         this.transactionCursor = new PhysicalTransactionCursor<>( channel, logEntryReader );
+        this.log = logService.getInternalLog( ReversedSingleFileTransactionCursor.class );
         this.offsets = sketchOutTransactionStartOffsets();
     }
 
@@ -89,14 +96,21 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
 
         long logVersion = channel.getVersion();
         long startOffset = channel.position();
-        while ( transactionCursor.next() )
+        try
         {
-            if ( offsetCursor == offsets.length )
-            {   // Grow
-                offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
+            while ( transactionCursor.next() )
+            {
+                if ( offsetCursor == offsets.length )
+                {   // Grow
+                    offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
+                }
+                offsets[offsetCursor++] = startOffset;
+                startOffset = channel.position();
             }
-            offsets[offsetCursor++] = startOffset;
-            startOffset = channel.position();
+        }
+        catch ( Throwable t )
+        {
+            log.warn( buildReadErrorMessage( offsets, offsetCursor, logVersion ), t );
         }
 
         if ( channel.getVersion() != logVersion )
@@ -125,6 +139,14 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
             return true;
         }
         return false;
+    }
+
+    private String buildReadErrorMessage( long[] offsets, int offsetCursor, long logVersion )
+    {
+        return offsetCursor > 0 ?
+               format( "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",
+                       logVersion, offsets[offsetCursor - 1] ) :
+               format( "Fail to read first transaction of log version %d.", logVersion);
     }
 
     private void readNextChunk() throws IOException

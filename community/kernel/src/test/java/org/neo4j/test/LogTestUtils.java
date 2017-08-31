@@ -26,11 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
@@ -38,12 +35,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -79,15 +72,6 @@ public class LogTestUtils
         }
     }
 
-    public static final LogHook<Pair<Byte, List<byte[]>>> NO_FILTER = new LogHookAdapter<Pair<Byte,List<byte[]>>>()
-    {
-        @Override
-        public boolean test( Pair<Byte, List<byte[]>> item )
-        {
-            return true;
-        }
-    };
-
     public static class CountingLogHook<RECORD> extends LogHookAdapter<RECORD>
     {
         private int count;
@@ -102,65 +86,6 @@ public class LogTestUtils
         public int getCount()
         {
             return count;
-        }
-    }
-
-    public static void assertLogContains( FileSystemAbstraction fileSystem, String logPath,
-            LogEntry... expectedEntries ) throws IOException
-    {
-        try ( LogEntryCursor cursor = openLog( fileSystem, new File( logPath ) ) )
-        {
-            int entryNo = 0;
-            while ( cursor.next() )
-            {
-                assertTrue( "The log contained more entries than we expected!", entryNo < expectedEntries.length );
-
-                LogEntry expectedEntry = expectedEntries[entryNo];
-                assertEquals( "Unexpected entry at entry number " + entryNo, cursor.get(), expectedEntry );
-                entryNo++;
-            }
-
-            if ( entryNo < expectedEntries.length )
-            {
-                fail( "Log ended prematurely. Expected to find '" + expectedEntries[entryNo].toString() +
-                      "' as log entry number " + entryNo + ", instead there were no more log entries." );
-            }
-        }
-    }
-
-    /**
-     * Opens a {@link LogEntryCursor} over one log file
-     */
-    public static LogEntryCursor openLog( FileSystemAbstraction fs, File log )
-    {
-        StoreChannel channel = null;
-        try
-        {
-            channel = fs.open( log, "r" );
-            ByteBuffer buffer = ByteBuffer.allocate( LogHeader.LOG_HEADER_SIZE );
-            LogHeader header = LogHeaderReader.readLogHeader( buffer, channel, true, log );
-
-            PhysicalLogVersionedStoreChannel logVersionedChannel = new PhysicalLogVersionedStoreChannel( channel,
-                    header.logVersion, header.logFormatVersion );
-            ReadableLogChannel logChannel = new ReadAheadLogChannel( logVersionedChannel,
-                    LogVersionBridge.NO_MORE_CHANNELS, ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
-
-            return new LogEntryCursor( new VersionAwareLogEntryReader<>(), logChannel );
-        }
-        catch ( Throwable t )
-        {
-            if ( channel != null )
-            {
-                try
-                {
-                    channel.close();
-                }
-                catch ( IOException e )
-                {
-                    t.addSuppressed( e );
-                }
-            }
-            throw new RuntimeException( t );
         }
     }
 
@@ -196,12 +121,9 @@ public class LogTestUtils
                 StoreChannel out = fileSystem.open( tempFile, "rw" ) )
         {
             LogHeader logHeader = transferLogicalLogHeader( in, out, ByteBuffer.allocate( LOG_HEADER_SIZE ) );
-            PhysicalLogVersionedStoreChannel outChannel =
-                    new PhysicalLogVersionedStoreChannel( out, logHeader.logVersion, logHeader.logFormatVersion );
-
             PhysicalLogVersionedStoreChannel inChannel =
                     new PhysicalLogVersionedStoreChannel( in, logHeader.logVersion, logHeader.logFormatVersion );
-            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel, LogVersionBridge.NO_MORE_CHANNELS );
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( inChannel );
             LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
 
             LogEntry entry;
@@ -226,81 +148,4 @@ public class LogTestUtils
         return header;
     }
 
-    public static NonCleanLogCopy copyLogicalLog( FileSystemAbstraction fileSystem,
-            File logBaseFileName ) throws IOException
-    {
-        char active = '1';
-        File activeLog = new File( logBaseFileName.getPath() + ".active" );
-        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
-        File activeLogBackup;
-        try ( StoreChannel af = fileSystem.open( activeLog, "r" ) )
-        {
-            af.read( buffer );
-            buffer.flip();
-            activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
-            try ( StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" ) )
-            {
-                activeCopy.write( buffer );
-            }
-        }
-        buffer.flip();
-        active = buffer.asCharBuffer().get();
-        buffer.clear();
-        File currentLog = new File( logBaseFileName.getPath() + "." + active );
-        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
-        try ( StoreChannel source = fileSystem.open( currentLog, "r" );
-              StoreChannel dest = fileSystem.open( currentLogBackup, "rw" ) )
-        {
-            int read = -1;
-            do
-            {
-                read = source.read( buffer );
-                buffer.flip();
-                dest.write( buffer );
-                buffer.clear();
-            }
-            while ( read == 1024 );
-        }
-        return new NonCleanLogCopy(
-                new FileBackup( activeLog, activeLogBackup, fileSystem ),
-                new FileBackup( currentLog, currentLogBackup, fileSystem ) );
-    }
-
-    private static class FileBackup
-    {
-        private final File file;
-        private final File backup;
-        private final FileSystemAbstraction fileSystem;
-
-        FileBackup( File file, File backup, FileSystemAbstraction fileSystem )
-        {
-            this.file = file;
-            this.backup = backup;
-            this.fileSystem = fileSystem;
-        }
-
-        public void restore() throws IOException
-        {
-            fileSystem.deleteFile( file );
-            fileSystem.renameFile( backup, file );
-        }
-    }
-
-    public static class NonCleanLogCopy
-    {
-        private final FileBackup[] backups;
-
-        NonCleanLogCopy( FileBackup... backups )
-        {
-            this.backups = backups;
-        }
-
-        public void reinstate() throws IOException
-        {
-            for ( FileBackup backup : backups )
-            {
-                backup.restore();
-            }
-        }
-    }
 }

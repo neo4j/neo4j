@@ -57,7 +57,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
@@ -259,7 +258,7 @@ public class CheckPointerIntegrationTest
                     break;
                 }
 
-                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS );
+                ReadableClosablePositionAwareChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
 
                 try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
                 {

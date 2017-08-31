@@ -31,6 +31,9 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
+import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -44,6 +47,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
@@ -114,8 +118,8 @@ public class PhysicalLogicalTransactionStoreTest
         fileSystemRule.get().create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
-        final LogicalTransactionStore store =
-                new PhysicalLogicalTransactionStore( emptyLogFile, positionCache, new VersionAwareLogEntryReader<>() );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( emptyLogFile, positionCache,
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
         verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, store );
     }
@@ -188,10 +192,11 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore::getLastCommittedTransactionId,
                 mock( LogVersionRepository.class ), monitor, logHeaderCache ) );
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, positionCache,
-                new VersionAwareLogEntryReader<>() );
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
         life.add( new Recovery( new Recovery.SPI()
         {
@@ -226,12 +231,11 @@ public class PhysicalLogicalTransactionStoreTest
                 return txStore.getTransactionsInReverseOrder( position );
             }
 
-            @Override
-            public void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
+            public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
                     LogPosition positionAfterLastRecoveredTransaction ) throws Exception
             {
             }
-        }, mock( Recovery.Monitor.class ) ) );
+        }, mock( Recovery.Monitor.class ), new StartupStatisticsProvider(), new SimpleLogService( logProvider ) ) );
 
         // WHEN
         try
@@ -283,8 +287,8 @@ public class PhysicalLogicalTransactionStoreTest
         logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
                 txIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
-        final LogicalTransactionStore store =
-                new PhysicalLogicalTransactionStore( logFile, positionCache, new VersionAwareLogEntryReader<>() );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache,
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
 
         // WHEN
         life.start();
@@ -308,8 +312,8 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, cache, new VersionAwareLogEntryReader<>() );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
 
         try
         {
@@ -343,8 +347,8 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore =
-                new PhysicalLogicalTransactionStore( logFile, cache, new VersionAwareLogEntryReader<>() );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
+                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
 
         try
         {

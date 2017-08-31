@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
@@ -119,7 +120,7 @@ public class TransactionLogCatchUpWriterTest
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader );
+        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader, NullLogService.getInstance() );
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
         assertNotNull( tailInformation.lastCheckPoint );

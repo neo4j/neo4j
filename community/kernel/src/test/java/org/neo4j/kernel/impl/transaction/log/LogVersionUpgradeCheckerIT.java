@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -136,7 +137,8 @@ public class LogVersionUpgradeCheckerIT
                 PhysicalLogFile.NO_MONITOR,
                 new LogHeaderCache( 10 ) );
 
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(),
+                NullLogService.getInstance() );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 
         try ( Lifespan lifespan = new Lifespan( logFile ) )

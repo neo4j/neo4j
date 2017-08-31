@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -108,6 +109,8 @@ public class StoreUpgraderTest
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
+    private AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private SimpleLogService logService = new SimpleLogService( logProvider );
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
     public StoreUpgraderTest( String version )
@@ -334,10 +337,9 @@ public class StoreUpgraderTest
     private UpgradableDatabase getUpgradableDatabase( PageCache pageCache )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dbDirectory, fileSystem );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
-        return new UpgradableDatabase(
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats(), tailScanner );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(), logService );
+        return new UpgradableDatabase( new StoreVersionCheck( pageCache ),
+                getRecordFormats(), tailScanner, logService );
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )

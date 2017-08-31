@@ -99,7 +99,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
-    public void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
+    public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
             LogPosition positionAfterLastRecoveredTransaction ) throws Exception
     {
         if ( lastRecoveredTransaction != null )

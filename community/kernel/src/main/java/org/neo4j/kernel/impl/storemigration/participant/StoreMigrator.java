@@ -331,7 +331,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         {
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
-        long offset = fileSystem.getFileSize( logFiles.getLogFileForVersion( logVersion ) );
+        long offset = fileSystem.getFileSize( logFiles.getHighestLogFile() );
         return new LogPosition( logVersion, offset );
 
     }

@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
@@ -43,30 +43,27 @@ public class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
+    private final LogService logService;
 
-    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache )
+    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, LogService logService )
     {
         this.fs = fs;
         this.pageCache = pageCache;
+        this.logService = logService;
     }
 
     public boolean isRecoveryRequiredAt( File dataDir ) throws IOException
     {
-        File neoStore = new File( dataDir, MetaDataStore.DEFAULT_NAME );
-        boolean noStoreFound = !NeoStores.isStorePresent( pageCache, dataDir );
-
         // We need config to determine where the logical log files are
-        if ( noStoreFound )
+        if ( !NeoStores.isStorePresent( pageCache, dataDir ) )
         {
             // No database in the specified directory.
             return false;
         }
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
-
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader, logService );
         return new PositionToRecoverFrom( tailScanner, NO_MONITOR ).get() != LogPosition.UNSPECIFIED;
     }
 }
