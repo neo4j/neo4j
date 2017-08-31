@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.mockIndexPro
 
 public class ContractCheckingIndexProxyTest
 {
-    private static final long TEST_TIMEOUT = 10_000;
+    private static final long TEST_TIMEOUT = 20_000;
 
     @Test( expected = /* THEN */ IllegalStateException.class )
     public void shouldNotCreateIndexTwice() throws IOException
@@ -182,7 +182,7 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( () -> outer.start() );
+        runInSeparateThread( outer::start );
 
         try
         {
@@ -211,7 +211,7 @@ public class ContractCheckingIndexProxyTest
         final IndexProxy outer = newContractCheckingIndexProxy( inner );
 
         // WHEN
-        runInSeparateThread( () -> outer.start() );
+        runInSeparateThread( outer::start );
 
         try
         {
@@ -263,7 +263,7 @@ public class ContractCheckingIndexProxyTest
             }
         } );
 
-        ThreadTestUtils.awaitThreadState( actionThread, 5_000, Thread.State.TIMED_WAITING );
+        ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();
         updaterThread.join();
         actionThread.join();
@@ -298,7 +298,7 @@ public class ContractCheckingIndexProxyTest
         outer.start();
         Thread thread = runInSeparateThread( outer::force );
 
-        ThreadTestUtils.awaitThreadState( actionThread, 5_000, Thread.State.TIMED_WAITING );
+        ThreadTestUtils.awaitThreadState( actionThread, TEST_TIMEOUT, Thread.State.TIMED_WAITING );
         latch.countDown();
 
         thread.join();
