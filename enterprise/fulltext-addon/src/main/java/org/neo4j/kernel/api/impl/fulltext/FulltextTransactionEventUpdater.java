@@ -34,20 +34,20 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
-public class FulltextHelperTransactionEventUpdater implements TransactionEventHandler<Object>
+public class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
 
-    private FulltextHelperProvider fulltextHelperProvider;
+    private FulltextProvider fulltextProvider;
 
-    public FulltextHelperTransactionEventUpdater( FulltextHelperProvider fulltextHelperProvider )
+    public FulltextTransactionEventUpdater( FulltextProvider fulltextProvider )
     {
-        this.fulltextHelperProvider = fulltextHelperProvider;
+        this.fulltextProvider = fulltextProvider;
     }
 
     @Override
     public Object beforeCommit( TransactionData data ) throws Exception
     {
-        String[] nodeProperties = fulltextHelperProvider.getNodeProperties();
+        String[] nodeProperties = fulltextProvider.getNodeProperties();
         Map<Long,Map<String,Object>> nodeMap = new HashMap<Long,Map<String,Object>>();
         data.removedNodeProperties().forEach( propertyEntry ->
         {
@@ -63,7 +63,7 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
         data.assignedNodeProperties().forEach(
                 propertyEntry -> nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( nodeProperties ) ) );
 
-        String[] relationshipProperties = fulltextHelperProvider.getRelationshipProperties();
+        String[] relationshipProperties = fulltextProvider.getRelationshipProperties();
         Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
         data.removedRelationshipProperties().forEach( propertyEntry ->
         {
@@ -87,7 +87,7 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
         //update node indices
         try
         {
-            for ( WritableDatabaseBloomIndex nodeIndex : fulltextHelperProvider.nodeIndices() )
+            for ( WritableDatabaseFulltext nodeIndex : fulltextProvider.nodeIndices() )
             {
                 Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
                 removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
@@ -95,7 +95,7 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
                 refreshIndex( nodeIndex );
             }
             //update relationship indices
-            for ( WritableDatabaseBloomIndex relationshipIndex : fulltextHelperProvider.relationshipIndices() )
+            for ( WritableDatabaseFulltext relationshipIndex : fulltextProvider.relationshipIndices() )
             {
                 Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
                 removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
@@ -109,7 +109,7 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
         }
     }
 
-    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableDatabaseBloomIndex index ) throws IOException
+    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableDatabaseFulltext index ) throws IOException
     {
         for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
         {
@@ -122,15 +122,15 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
                                 Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
                 if ( !allProperties.isEmpty() )
                 {
-                    Document document = FulltextHelperDocumentStructure.documentRepresentingProperties( entityId, allProperties );
-                    index.getIndexWriter().updateDocument( FulltextHelperDocumentStructure.newTermForChangeOrRemove( entityId ), document );
+                    Document document = LuceneFulltextDocumentStructure.documentRepresentingProperties( entityId, allProperties );
+                    index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( entityId ), document );
                 }
             }
         }
     }
 
     private <E extends Entity> void removePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
-            WritableDatabaseBloomIndex index ) throws IOException
+            WritableDatabaseFulltext index ) throws IOException
     {
         for ( PropertyEntry<E> propertyEntry : propertyEntries )
         {
@@ -140,13 +140,13 @@ public class FulltextHelperTransactionEventUpdater implements TransactionEventHa
                 Map<String,Object> allProperties = state.get( entityId );
                 if ( allProperties == null || allProperties.isEmpty() )
                 {
-                    index.getIndexWriter().deleteDocuments( FulltextHelperDocumentStructure.newTermForChangeOrRemove( entityId ) );
+                    index.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( entityId ) );
                 }
             }
         }
     }
 
-    private void refreshIndex( WritableDatabaseBloomIndex index )
+    private void refreshIndex( WritableDatabaseFulltext index )
     {
         try
         {

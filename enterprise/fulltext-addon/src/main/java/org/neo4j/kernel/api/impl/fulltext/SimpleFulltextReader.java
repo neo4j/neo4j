@@ -40,15 +40,15 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
- * @see PartitionedBloomIndexReader
+ * @see PartitionedFulltextReader
  */
-class SimpleBloomIndexReader implements BloomIndexReader
+class SimpleFulltextReader implements FulltextReader
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;
     private String[] properties;
 
-    SimpleBloomIndexReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
+    SimpleFulltextReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;

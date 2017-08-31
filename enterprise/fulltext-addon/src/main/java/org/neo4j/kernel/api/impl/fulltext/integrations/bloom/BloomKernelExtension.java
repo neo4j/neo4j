@@ -25,8 +25,8 @@ import java.io.IOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.impl.fulltext.FulltextHelperFactory;
-import org.neo4j.kernel.api.impl.fulltext.FulltextHelperProvider;
+import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.LuceneFulltextHelper;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -39,7 +39,7 @@ public class BloomKernelExtension extends LifecycleAdapter
     private final FileSystemAbstraction fileSystemAbstraction;
     private final GraphDatabaseService db;
     private final Procedures procedures;
-    private FulltextHelperFactory fulltextHelperFactory;
+    private FulltextFactory fulltextFactory;
 
     public BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures )
     {
@@ -53,11 +53,11 @@ public class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void init() throws IOException, ProcedureException
     {
-        FulltextHelperProvider provider = FulltextHelperProvider.instance( db );
-        fulltextHelperFactory = new FulltextHelperFactory( fileSystemAbstraction, storeDir, config );
-        LuceneFulltextHelper nodes = fulltextHelperFactory.createFulltextHelper( "bloomNodes", FulltextHelperFactory.FULLTEXT_HELPER_TYPE.NODES );
+        FulltextProvider provider = FulltextProvider.instance( db );
+        fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, config );
+        LuceneFulltextHelper nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES );
         LuceneFulltextHelper relationships =
-                fulltextHelperFactory.createFulltextHelper( "bloomRelationships", FulltextHelperFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS );
+                fulltextFactory.createFulltextHelper( "bloomRelationships", FulltextFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS );
         provider.register( nodes );
         provider.register( relationships );
 
@@ -68,6 +68,6 @@ public class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void shutdown() throws Exception
     {
-        FulltextHelperProvider.instance( db ).close();
+        FulltextProvider.instance( db ).close();
     }
 }

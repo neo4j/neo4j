@@ -40,7 +40,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextHelperFactory.FULLTEXT_HELPER_TYPE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextFactory.FULLTEXT_HELPER_TYPE;
 
 public class LuceneFulltextHelperUpdaterTest
 {
@@ -60,10 +60,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -80,7 +80,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertEquals( firstID, reader.query( "hello" ).next() );
@@ -97,10 +97,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
 
             long firstID;
@@ -117,7 +117,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator one = reader.query( "1" );
                 assertEquals( firstID, one.next() );
@@ -135,10 +135,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -154,7 +154,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator sant = reader.query( "true" );
                 assertEquals( firstID, sant.next() );
@@ -172,10 +172,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -191,7 +191,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator strings = reader.query( "live" );
                 assertEquals( firstID, strings.next() );
@@ -209,10 +209,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -238,7 +238,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -260,10 +260,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -288,7 +288,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -305,10 +305,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -351,7 +351,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -370,10 +370,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -390,7 +390,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -407,10 +407,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -432,7 +432,7 @@ public class LuceneFulltextHelperUpdaterTest
             }
 
             PrimitiveLongIterator iterator;
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 iterator = reader.query( "tomtar", "karl" );
@@ -449,10 +449,10 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "first, last" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "first, last" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
             long secondID;
@@ -480,7 +480,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
@@ -498,11 +498,11 @@ public class LuceneFulltextHelperUpdaterTest
         GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
         Config config = db.getDependencyResolver().resolveDependency( Config.class );
         config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextHelperFactory fulltextHelperFactory = new FulltextHelperFactory( fileSystemRule, testDirectory.graphDbDir(), config );
-        try ( FulltextHelperProvider provider = FulltextHelperProvider.instance( db ) )
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
-            provider.register( fulltextHelperFactory.createFulltextHelper( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) );
 
             long firstNodeID;
             long secondNodeID;
@@ -527,7 +527,7 @@ public class LuceneFulltextHelperUpdaterTest
                 tx.success();
             }
 
-            try ( BloomIndexReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -539,7 +539,7 @@ public class LuceneFulltextHelperUpdaterTest
                 PrimitiveLongIterator different = reader.query( "different" );
                 assertFalse( different.hasNext() );
             }
-            try ( BloomIndexReader reader = provider.getReader( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) )
+            try ( FulltextReader reader = provider.getReader( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );

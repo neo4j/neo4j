@@ -28,34 +28,34 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
-public class FulltextHelperProvider implements AutoCloseable
+public class FulltextProvider implements AutoCloseable
 {
-    private static FulltextHelperProvider instance;
+    private static FulltextProvider instance;
     private final GraphDatabaseService db;
-    private final FulltextHelperTransactionEventUpdater fulltextHelperTransactionEventUpdater;
+    private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
     private boolean closed;
     private Set<String> nodeProperties;
     private Set<String> relationshipProperties;
     private Map<String,LuceneFulltextHelper> nodeIndices;
     private Map<String,LuceneFulltextHelper> relationshipIndices;
 
-    private FulltextHelperProvider( GraphDatabaseService db )
+    private FulltextProvider( GraphDatabaseService db )
     {
         this.db = db;
         closed = false;
-        fulltextHelperTransactionEventUpdater = new FulltextHelperTransactionEventUpdater( this );
-        db.registerTransactionEventHandler( fulltextHelperTransactionEventUpdater );
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this );
+        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
         nodeIndices = new HashMap<>();
         relationshipIndices = new HashMap<>();
     }
 
-    public static synchronized FulltextHelperProvider instance( GraphDatabaseService db )
+    public static synchronized FulltextProvider instance( GraphDatabaseService db )
     {
         if ( instance == null || instance.closed )
         {
-            instance = new FulltextHelperProvider( db );
+            instance = new FulltextProvider( db );
         }
         return instance;
     }
@@ -66,7 +66,7 @@ public class FulltextHelperProvider implements AutoCloseable
         if ( !closed )
         {
             closed = true;
-            db.unregisterTransactionEventHandler( fulltextHelperTransactionEventUpdater );
+            db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
             nodeIndices.values().forEach( luceneFulltextHelper ->
             {
                 try
@@ -95,7 +95,7 @@ public class FulltextHelperProvider implements AutoCloseable
     public synchronized void register( LuceneFulltextHelper fulltextHelper ) throws IOException
     {
         fulltextHelper.open();
-        if ( fulltextHelper.getType() == FulltextHelperFactory.FULLTEXT_HELPER_TYPE.NODES )
+        if ( fulltextHelper.getType() == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )
         {
             nodeIndices.put( fulltextHelper.getIdentifier(), fulltextHelper );
             nodeProperties.addAll( fulltextHelper.getProperties() );
@@ -117,19 +117,19 @@ public class FulltextHelperProvider implements AutoCloseable
         return relationshipProperties.toArray( new String[0] );
     }
 
-    public Set<WritableDatabaseBloomIndex> nodeIndices()
+    public Set<WritableDatabaseFulltext> nodeIndices()
     {
-        return nodeIndices.values().stream().map( WritableDatabaseBloomIndex::new ).collect( Collectors.toSet() );
+        return nodeIndices.values().stream().map( WritableDatabaseFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public Set<WritableDatabaseBloomIndex> relationshipIndices()
+    public Set<WritableDatabaseFulltext> relationshipIndices()
     {
-        return relationshipIndices.values().stream().map( WritableDatabaseBloomIndex::new ).collect( Collectors.toSet() );
+        return relationshipIndices.values().stream().map( WritableDatabaseFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public BloomIndexReader getReader( String identifier, FulltextHelperFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
+    public FulltextReader getReader( String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
     {
-        if ( type == FulltextHelperFactory.FULLTEXT_HELPER_TYPE.NODES )
+        if ( type == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )
         {
             return nodeIndices.get( identifier ).getIndexReader();
         }

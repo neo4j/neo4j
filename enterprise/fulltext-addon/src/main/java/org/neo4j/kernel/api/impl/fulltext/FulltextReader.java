@@ -19,18 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
-import org.neo4j.values.storable.Value;
-
-class BloomFieldEncoding
+public interface FulltextReader extends AutoCloseable
 {
-    public static Field encodeField( String name, Value value )
-    {
-        String stringValue = value.prettyPrint();
-
-        TextField field = new TextField( name, stringValue, Field.Store.NO );
-        return field;
-    }
+    PrimitiveLongIterator query( String... query );
 }

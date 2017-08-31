@@ -20,9 +20,6 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -39,6 +36,7 @@ import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
 import static java.util.Collections.singletonMap;
 
@@ -50,12 +48,12 @@ public class LuceneFulltextHelper extends AbstractLuceneIndex
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
     private final Analyzer analyzer;
     private final String identifier;
-    private final FulltextHelperFactory.FULLTEXT_HELPER_TYPE type;
+    private final FulltextFactory.FULLTEXT_HELPER_TYPE type;
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
-    private Set<String> properties;
+    private final Set<String> properties;
 
     LuceneFulltextHelper( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer,
-            String identifier, FulltextHelperFactory.FULLTEXT_HELPER_TYPE type )
+            String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( Arrays.asList( properties ) ) );
@@ -93,89 +91,20 @@ public class LuceneFulltextHelper extends AbstractLuceneIndex
         return result;
     }
 
-    public PartitionedInsightBloomWriter getIndexWriter( WritableDatabaseBloomIndex writableIndex ) throws IOException
+    public PartitionedIndexWriter getIndexWriter( WritableDatabaseFulltext writableIndex ) throws IOException
     {
         ensureOpen();
-        return new PartitionedInsightBloomWriter( writableIndex );
+        return new PartitionedIndexWriter( writableIndex );
     }
 
-    public BloomIndexReader getIndexReader() throws IOException
+    public FulltextReader getIndexReader() throws IOException
     {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    public void drop() throws IOException
-    {
-        taskCoordinator.cancel();
-        try
-        {
-            taskCoordinator.awaitCompletion();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new IOException( "Interrupted while waiting for concurrent tasks to complete.", e );
-        }
-        super.drop();
-    }
-
-    /**
-     * Check if this index is marked as online.
-     *
-     * @return <code>true</code> if index is online, <code>false</code> otherwise
-     * @throws IOException
-     */
-    public boolean isOnline() throws IOException
-    {
-        ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
-        Directory directory = partition.getDirectory();
-        try ( DirectoryReader reader = DirectoryReader.open( directory ) )
-        {
-            Map<String,String> userData = reader.getIndexCommit().getUserData();
-            return ONLINE.equals( userData.get( KEY_STATUS ) );
-        }
-    }
-
-    /**
-     * Marks index as online by including "status" -> "online" map into commit metadata of the first partition.
-     *
-     * @throws IOException
-     */
-    public void markAsOnline() throws IOException
-    {
-        ensureOpen();
-        AbstractIndexPartition partition = getFirstPartition( getPartitions() );
-        IndexWriter indexWriter = partition.getIndexWriter();
-        indexWriter.setCommitData( ONLINE_COMMIT_USER_DATA );
-        flush( false );
-    }
-
-    /**
-     * Writes the given failure message to the failure storage.
-     *
-     * @param failure the failure message.
-     * @throws IOException
-     */
-    public void markAsFailed( String failure ) throws IOException
-    {
-        indexStorage.storeIndexFailure( failure );
-    }
-
-    private SimpleBloomIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        return new SimpleBloomIndexReader( singlePartition.acquireSearcher(), properties.toArray( new String[0] ), analyzer );
-    }
-
-    private PartitionedBloomIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
-    {
-        List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedBloomIndexReader( searchers, properties.toArray( new String[0] ), analyzer );
-    }
-
-    public FulltextHelperFactory.FULLTEXT_HELPER_TYPE getType()
+    public FulltextFactory.FULLTEXT_HELPER_TYPE getType()
     {
         return type;
     }
@@ -188,5 +117,17 @@ public class LuceneFulltextHelper extends AbstractLuceneIndex
     public String getIdentifier()
     {
         return identifier;
+    }
+
+    private SimpleFulltextReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
+    {
+        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
+        return new SimpleFulltextReader( singlePartition.acquireSearcher(), properties.toArray( new String[0] ), analyzer );
+    }
+
+    private PartitionedFulltextReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
+    {
+        List<PartitionSearcher> searchers = acquireSearchers( partitions );
+        return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 }

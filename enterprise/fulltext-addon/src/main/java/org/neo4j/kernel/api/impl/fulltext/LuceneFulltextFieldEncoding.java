@@ -19,24 +19,18 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-public class FulltextHelperDescriptor
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.TextField;
+
+import org.neo4j.values.storable.Value;
+
+class LuceneFulltextFieldEncoding
 {
-    private final String identifier;
-    private final FulltextHelperFactory.FULLTEXT_HELPER_TYPE type;
-
-    public FulltextHelperDescriptor( String identifier, FulltextHelperFactory.FULLTEXT_HELPER_TYPE type )
+    public static Field encodeField( String name, Value value )
     {
-        this.identifier = identifier;
-        this.type = type;
-    }
+        String stringValue = value.prettyPrint();
 
-    public String getIdentifier()
-    {
-        return identifier;
-    }
-
-    public FulltextHelperFactory.FULLTEXT_HELPER_TYPE getType()
-    {
-        return type;
+        TextField field = new TextField( name, stringValue, Field.Store.NO );
+        return field;
     }
 }

@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,22 +34,22 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
 /**
  * Index reader that is able to read/sample multiple partitions of a partitioned Lucene index.
- * Internally uses multiple {@link SimpleBloomIndexReader}s for individual partitions.
+ * Internally uses multiple {@link SimpleFulltextReader}s for individual partitions.
  *
- * @see SimpleBloomIndexReader
+ * @see SimpleFulltextReader
  */
-class PartitionedBloomIndexReader implements BloomIndexReader
+class PartitionedFulltextReader implements FulltextReader
 {
 
-    private final List<BloomIndexReader> indexReaders;
+    private final List<FulltextReader> indexReaders;
 
-    PartitionedBloomIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
+    PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleBloomIndexReader( partitionSearcher, properties, analyzer ) )
+        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) )
                 .collect( Collectors.toList() ) );
     }
 
-    private PartitionedBloomIndexReader( List<BloomIndexReader> readers )
+    private PartitionedFulltextReader( List<FulltextReader> readers )
     {
         this.indexReaders = readers;
     }
@@ -60,7 +59,7 @@ class PartitionedBloomIndexReader implements BloomIndexReader
         return partitionedOperation( reader -> innerQuery( reader, query ) );
     }
 
-    private PrimitiveLongIterator innerQuery( BloomIndexReader reader, String... query )
+    private PrimitiveLongIterator innerQuery( FulltextReader reader, String... query )
     {
 
         return reader.query( query );
@@ -80,7 +79,7 @@ class PartitionedBloomIndexReader implements BloomIndexReader
     }
 
     private PrimitiveLongIterator partitionedOperation(
-            Function<BloomIndexReader,PrimitiveLongIterator> readerFunction )
+            Function<FulltextReader,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections
                 .concat( indexReaders.parallelStream().map( readerFunction::apply ).collect( Collectors.toList() ) );

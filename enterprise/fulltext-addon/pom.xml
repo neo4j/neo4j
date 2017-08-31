@@ -10,15 +10,15 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <artifactId>neo4j-fulltext-helper</artifactId>
+  <artifactId>neo4j-fulltext-addon</artifactId>
   <version>3.3.0-SNAPSHOT</version>
 
-  <name>Neo4j - Bloom index</name>
+  <name>Neo4j - Fulltext add-on</name>
   <description>Fulltext helper addon for neo4j</description>
   <packaging>jar</packaging>
 
   <scm>
-    <url>https://github.com/neo4j/neo4j/tree/3.3/enterprise/fulltext-helper</url>
+    <url>https://github.com/neo4j/neo4j/tree/3.3/enterprise/fulltext-addon</url>
   </scm>
 
   <licenses>

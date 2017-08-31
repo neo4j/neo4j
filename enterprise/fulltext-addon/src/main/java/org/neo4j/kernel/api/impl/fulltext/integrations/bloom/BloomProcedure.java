@@ -25,7 +25,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.impl.fulltext.BloomIndexReader;
+import org.neo4j.kernel.api.impl.fulltext.FulltextReader;
 import org.neo4j.kernel.api.impl.fulltext.LuceneFulltextHelper;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -55,7 +55,7 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         String[] query = Arrays.stream( input ).map( Object::toString ).toArray( String[]::new );
-        try ( BloomIndexReader indexReader = luceneFulltextHelper.getIndexReader() )
+        try ( FulltextReader indexReader = luceneFulltextHelper.getIndexReader() )
         {
             PrimitiveLongIterator primitiveLongIterator = indexReader.query( query );
             return new RawIterator<Object[],ProcedureException>()

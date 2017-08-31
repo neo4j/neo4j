@@ -25,48 +25,21 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
+import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-class WritableDatabaseBloomIndex extends WritableAbstractDatabaseIndex<LuceneFulltextHelper>
+class WritableDatabaseFulltext extends WritableAbstractDatabaseIndex<LuceneFulltextHelper>
 {
     private LuceneFulltextHelper luceneFulltextHelper;
 
-    WritableDatabaseBloomIndex( LuceneFulltextHelper luceneFulltextHelper )
+    WritableDatabaseFulltext( LuceneFulltextHelper luceneFulltextHelper )
     {
         super( luceneFulltextHelper );
         this.luceneFulltextHelper = luceneFulltextHelper;
     }
 
-    public PartitionedInsightBloomWriter getIndexWriter() throws IOException
+    public PartitionedIndexWriter getIndexWriter() throws IOException
     {
         return luceneFulltextHelper.getIndexWriter( this );
-    }
-
-    public BloomIndexReader getIndexReader() throws IOException
-    {
-        return luceneIndex.getIndexReader();
-    }
-
-    public boolean isOnline() throws IOException
-    {
-        return luceneIndex.isOnline();
-    }
-
-    public void markAsOnline() throws IOException
-    {
-        commitCloseLock.lock();
-        try
-        {
-            luceneIndex.markAsOnline();
-        }
-        finally
-        {
-            commitCloseLock.unlock();
-        }
-    }
-
-    public void markAsFailed( String failure ) throws IOException
-    {
-        luceneIndex.markAsFailed( failure );
     }
 
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )

@@ -36,7 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
-public class FulltextHelperFactory
+public class FulltextFactory
 {
     private final FileSystemAbstraction fileSystem;
     private final String[] properties;
@@ -59,7 +59,7 @@ public class FulltextHelperFactory
         RELATIONSHIPS
     }
 
-    public FulltextHelperFactory( FileSystemAbstraction fileSystem, File storeDir, Config config ) throws IOException
+    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Config config ) throws IOException
     {
         this.fileSystem = fileSystem;
         this.properties = config.get( GraphDatabaseSettings.bloom_indexed_properties ).toArray( new String[0] );
