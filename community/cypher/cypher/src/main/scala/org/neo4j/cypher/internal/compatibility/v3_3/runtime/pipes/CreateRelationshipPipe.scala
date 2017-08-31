@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression])
@@ -46,7 +47,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
     relationship.getType // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.getId)
-    context += key -> AnyValues.asEdgeValue(relationship)
+    context += key -> ValueUtils.fromRelationshipProxy(relationship)
   }
 
   private def getNode(row: ExecutionContext, name: String): NodeValue =

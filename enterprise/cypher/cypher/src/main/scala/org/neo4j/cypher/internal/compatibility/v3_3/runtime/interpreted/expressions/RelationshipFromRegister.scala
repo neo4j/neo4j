@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.virtual.{EdgeValue, VirtualValues}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipFromRegister(offset: Int) extends Expression with RegisterExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): EdgeValue =
-    VirtualValues.fromRelationshipProxy(state.query.relationshipOps.getById(ctx.getLongAt(offset)))
+    ValueUtils.fromRelationshipProxy(state.query.relationshipOps.getById(ctx.getLongAt(offset)))
 
 }

@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -88,7 +89,7 @@ trait CachingExpandInto {
   private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
                           relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(VirtualValues.fromRelationshipProxy)
+    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(ValueUtils.fromRelationshipProxy)
     new PrefetchingIterator[EdgeValue] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[EdgeValue](2)

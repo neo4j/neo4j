@@ -22,31 +22,32 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.byteArray
 import org.neo4j.values.virtual.VirtualValues.fromArray
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 
 object ValueConversion {
   def getValueConverter(cType: CypherType): Any => AnyValue = cType match {
-    case symbols.CTNode => n => AnyValues.asNodeValue(n.asInstanceOf[Node])
-    case symbols.CTRelationship => r => AnyValues.asEdgeValue(r.asInstanceOf[Relationship])
+    case symbols.CTNode => n => ValueUtils.fromNodeProxy(n.asInstanceOf[Node])
+    case symbols.CTRelationship => r => ValueUtils.fromRelationshipProxy(r.asInstanceOf[Relationship])
     case symbols.CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
     case symbols.CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
     case symbols.CTInteger => l => Values.longValue(l.asInstanceOf[Long])
     case symbols.CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
     case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
-    case symbols.CTPath => p => AnyValues.asPathValue(p.asInstanceOf[Path])
-    case symbols.CTMap => m => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
-    case symbols.ListType(_)  => l => AnyValues.asListValue(l.asInstanceOf[java.util.Collection[_]])
-    case symbols.CTAny => o => AnyValues.of(o)
-    case symbols.CTPoint => o => AnyValues.asPointValue(o.asInstanceOf[Point])
-    case symbols.CTGeometry => o => AnyValues.asPointValue(o.asInstanceOf[Geometry])
+    case symbols.CTPath => p => ValueUtils.asPathValue(p.asInstanceOf[Path])
+    case symbols.CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+    case symbols.ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+    case symbols.CTAny => o => ValueUtils.of(o)
+    case symbols.CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
+    case symbols.CTGeometry => o => ValueUtils.asPointValue(o.asInstanceOf[Geometry])
   }
 
   def asValues(params: Map[String, Any]): MapValue = VirtualValues.map(Eagerly.immutableMapValues(params, asValue).asJava)
@@ -58,15 +59,15 @@ object ValueConversion {
     case f: Float => Values.doubleValue(f)
     case n: Number => Values.longValue(n.longValue())
     case b: Boolean => Values.booleanValue(b)
-    case n: Node => VirtualValues.fromNodeProxy(n)
-    case r: Relationship => VirtualValues.fromRelationshipProxy(r)
-    case p: Path => AnyValues.asPathValue(p)
-    case p: Point => AnyValues.asPointValue(p)
-    case p: Geometry => AnyValues.asPointValue(p)
+    case n: Node => ValueUtils.fromNodeProxy(n)
+    case r: Relationship => ValueUtils.fromRelationshipProxy(r)
+    case p: Path => ValueUtils.asPathValue(p)
+    case p: Point => ValueUtils.asPointValue(p)
+    case p: Geometry => ValueUtils.asPointValue(p)
     case m: Map[_, _] => VirtualValues.map(Eagerly.immutableMapValues(m.asInstanceOf[Map[String, Any]], asValue).asJava)
-    case m: java.util.Map[_, _] => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+    case m: java.util.Map[_, _] => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
     case a: TraversableOnce[_] => VirtualValues.list(a.map(asValue).toArray:_*)
-    case c: java.util.Collection[_] => AnyValues.asListValue(c)
+    case c: java.util.Collection[_] => ValueUtils.asListValue(c)
     case a: Array[_] =>
       a.getClass.getComponentType.getName match {
       case "byte" => fromArray(byteArray(a.asInstanceOf[Array[Byte]]))

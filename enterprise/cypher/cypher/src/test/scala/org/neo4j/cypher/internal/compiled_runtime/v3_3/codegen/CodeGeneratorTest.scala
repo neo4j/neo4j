@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -49,10 +50,10 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 import org.neo4j.time.Clocks
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.{JavaConverters, mutable}
@@ -1536,7 +1537,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   import JavaConverters._
-  private def param(values: (String,AnyRef)*): MapValue = AnyValues.asMapValue(values.toMap.asJava)
+  private def param(values: (String,AnyRef)*): MapValue = ValueUtils.asMapValue(values.toMap.asJava)
 
   private def compile(plan: LogicalPlan) = {
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)

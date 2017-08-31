@@ -32,18 +32,18 @@ import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, _}
-import org.neo4j.cypher.internal.frontend.v2_3
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition}
-import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.frontend.{v2_3, v3_3}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.result.QueryResult
 import org.neo4j.values.result.QueryResult.Record
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 
@@ -206,7 +206,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit =
     inner.accept(new ResultVisitor[E] {
       override def visit(row: Result.ResultRow): Boolean = visitor.visit(new Record {
-        override def fields(): Array[AnyValue] = fieldNames().map(k => AnyValues.of(row.get(k)))
+        override def fields(): Array[AnyValue] = fieldNames().map(k => ValueUtils.of(row.get(k)))
       })
     })
 }

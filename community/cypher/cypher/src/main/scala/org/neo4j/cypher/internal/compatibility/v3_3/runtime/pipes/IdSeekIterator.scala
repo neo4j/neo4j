@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.Operations
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
 
 abstract class IdSeekIterator[T <: PropertyContainer]
   extends Iterator[ExecutionContext] with NumericHelper {
@@ -68,7 +69,7 @@ final class NodeIdSeekIterator(ident: String,
   def next(): ExecutionContext =
     baseContext.newWith1(ident, asAnyValue(nextEntity()))
 
-  override protected def asAnyValue(entity: Node): AnyValue = AnyValues.asNodeValue(entity)
+  override protected def asAnyValue(entity: Node): AnyValue = ValueUtils.fromNodeProxy(entity)
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
@@ -83,11 +84,11 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.newWith3(ident, AnyValues.asEdgeValue(rel), fromNode, AnyValues.asNodeValue(rel.getStartNode), toNode,
-                         AnyValues.asNodeValue(rel.getEndNode))
+    baseContext.newWith3(ident, ValueUtils.fromRelationshipProxy(rel), fromNode, ValueUtils.fromNodeProxy(rel.getStartNode), toNode,
+                         ValueUtils.fromNodeProxy(rel.getEndNode))
   }
 
-  override protected def asAnyValue(entity: Relationship): AnyValue = AnyValues.asEdgeValue(entity)
+  override protected def asAnyValue(entity: Relationship): AnyValue = ValueUtils.fromRelationshipProxy(entity)
 }
 
 final class UndirectedRelationshipIdSeekIterator(ident: String,
@@ -108,16 +109,16 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastEnd),
-                           toNode, AnyValues.asNodeValue(lastStart))
+      baseContext.newWith3(ident, ValueUtils.fromRelationshipProxy(lastEntity), fromNode, ValueUtils.fromNodeProxy(lastEnd),
+                           toNode, ValueUtils.fromNodeProxy(lastStart))
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.getStartNode
       lastEnd = lastEntity.getEndNode
-      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastStart), toNode,
-                           AnyValues.asNodeValue(lastEnd))
+      baseContext.newWith3(ident, ValueUtils.fromRelationshipProxy(lastEntity), fromNode, ValueUtils.fromNodeProxy(lastStart), toNode,
+                           ValueUtils.fromNodeProxy(lastEnd))
     }
   }
-  override protected def asAnyValue(entity: Relationship): AnyValue = AnyValues.asEdgeValue(entity)
+  override protected def asAnyValue(entity: Relationship): AnyValue = ValueUtils.fromRelationshipProxy(entity)
 }

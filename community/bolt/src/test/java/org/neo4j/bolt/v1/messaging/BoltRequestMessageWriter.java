@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.values.AnyValues;
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.ACK_FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.DISCARD_ALL;
@@ -57,7 +57,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     {
         packer.packStructHeader( 1, INIT.signature() );
         packer.pack( clientName );
-        packer.packRawMap( AnyValues.asMapValue( credentials ) );
+        packer.packRawMap( ValueUtils.asMapValue( credentials ) );
         onMessageComplete.onMessageComplete();
     }
 
@@ -81,7 +81,7 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     {
         packer.packStructHeader( 2, RUN.signature() );
         packer.pack( statement );
-        packer.packRawMap( AnyValues.asMapValue( params ) );
+        packer.packRawMap( ValueUtils.asMapValue( params ) );
         onMessageComplete.onMessageComplete();
     }
 

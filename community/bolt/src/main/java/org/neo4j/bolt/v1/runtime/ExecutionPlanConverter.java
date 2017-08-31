@@ -24,9 +24,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -46,8 +46,8 @@ class ExecutionPlanConverter
     {
         Map<String,AnyValue> out = new HashMap<>();
         out.put( "operatorType", stringValue( plan.getName() ) );
-        out.put( "args", AnyValues.asMapValue( plan.getArguments() ) );
-        out.put( "identifiers", AnyValues.asListValue( plan.getIdentifiers() ) );
+        out.put( "args", ValueUtils.asMapValue( plan.getArguments() ) );
+        out.put( "identifiers", ValueUtils.asListValue( plan.getIdentifiers() ) );
         out.put( "children", children( plan ) );
         if ( plan.hasProfilerStatistics() )
         {

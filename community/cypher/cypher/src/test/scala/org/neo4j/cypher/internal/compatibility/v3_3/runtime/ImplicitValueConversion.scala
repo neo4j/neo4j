@@ -20,20 +20,21 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values._
+import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues._
-import org.neo4j.values.storable.Values._
 import org.neo4j.values.virtual._
 
 import scala.collection.JavaConverters._
 
 object ImplicitValueConversion {
 
-  implicit def toListValue(s: Seq[_]): ListValue = list(s.map(AnyValues.of): _*)
+  implicit def toListValue(s: Seq[_]): ListValue = list(s.map(ValueUtils.of): _*)
 
-  implicit def toListValue(list: java.util.List[_]): ListValue = AnyValues.asListValue(list)
+  implicit def toListValue(list: java.util.List[_]): ListValue = ValueUtils.asListValue(list)
 
   implicit def toStringValue(s: String): TextValue = stringValue(s)
 
@@ -68,22 +69,22 @@ object ImplicitValueConversion {
   implicit def toFloatValue(s: Float): FloatValue = floatValue(s)
 
   implicit def toMapValue(m: Map[String, _]): MapValue =
-    AnyValues.asMapValue(m.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
+    ValueUtils.asMapValue(m.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
 
 
   implicit def toMapValue(m: java.util.Map[String, Any]): MapValue =
-    AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+    ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
 
-  implicit def toNodeValue(n: Node): NodeValue = AnyValues.asNodeValue(n)
+  implicit def toNodeValue(n: Node): NodeValue = ValueUtils.fromNodeProxy(n)
 
-  implicit def toEdgeValue(r: Relationship): EdgeValue = AnyValues.asEdgeValue(r)
+  implicit def toEdgeValue(r: Relationship): EdgeValue = ValueUtils.fromRelationshipProxy(r)
 
-  implicit def toPathValue(p: Path): PathValue = AnyValues.asPathValue(p)
+  implicit def toPathValue(p: Path): PathValue = ValueUtils.asPathValue(p)
 
-  implicit def toPathValue(p: PathImpl): PathValue = AnyValues.asPathValue(p)
+  implicit def toPathValue(p: PathImpl): PathValue = ValueUtils.asPathValue(p)
 
   implicit def toListValue(t: TraversableOnce[_]): ListValue =
-    AnyValues.asListValue(t.toIterable.asJava)
+    ValueUtils.asListValue(t.toIterable.asJava)
 
-  implicit def toValueTuple(t: (String, Any)): (String, AnyValue) = (t._1, AnyValues.of(t._2))
+  implicit def toValueTuple(t: (String, Any)): (String, AnyValue) = (t._1, ValueUtils.of(t._2))
 }

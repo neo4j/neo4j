@@ -31,16 +31,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Comple
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ResultRecord
+import org.neo4j.cypher.internal.javacompat.{ResultRecord, ValueUtils}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterators
+import org.neo4j.values.AnyValue
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
@@ -179,7 +179,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
           val fields = new Array[AnyValue](row.size())
           var i = 0
           row.asScala.foreach { case (k, v) =>
-            fields(i) = AnyValues.of(v)
+            fields(i) = ValueUtils.of(v)
             i += 1
           }
           visitor.visit(new ResultRecord(fields))

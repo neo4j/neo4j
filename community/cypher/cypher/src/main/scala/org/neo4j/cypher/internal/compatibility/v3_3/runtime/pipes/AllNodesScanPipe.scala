@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 
 case class AllNodesScanPipe(ident: String)(val id: Id = new Id) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
-    state.query.nodeOps.all.map(n => baseContext.newWith1(ident, AnyValues.asNodeValue(n)))
+    state.query.nodeOps.all.map(n => baseContext.newWith1(ident, ValueUtils.fromNodeProxy(n)))
   }
 
 }

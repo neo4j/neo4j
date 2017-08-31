@@ -19,12 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
@@ -108,114 +104,6 @@ public abstract class EdgeValue extends VirtualEdgeValue
         public MapValue properties()
         {
             return properties;
-        }
-    }
-
-    public static class RelationshipProxyWrappingEdgeValue extends EdgeValue
-    {
-        private final Relationship relationship;
-        private volatile TextValue type;
-        private volatile MapValue properties;
-        private volatile NodeValue startNode;
-        private volatile NodeValue endNode;
-
-        RelationshipProxyWrappingEdgeValue( Relationship relationship )
-        {
-            super( relationship.getId() );
-            this.relationship = relationship;
-        }
-
-        public Relationship relationshipProxy()
-        {
-            return relationship;
-        }
-
-        @Override
-        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
-        {
-            MapValue p;
-            try
-            {
-                p = properties();
-            }
-            catch ( NotFoundException e )
-            {
-                p = VirtualValues.EMPTY_MAP;
-
-            }
-            writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p);
-        }
-
-        @Override
-        public NodeValue startNode()
-        {
-            NodeValue start = startNode;
-            if ( start == null )
-            {
-                synchronized ( this )
-                {
-                    start = startNode;
-                    if ( start == null )
-                    {
-                        start = startNode = VirtualValues.fromNodeProxy( relationship.getStartNode() );
-                    }
-                }
-            }
-            return start;
-        }
-
-        @Override
-        public NodeValue endNode()
-        {
-            NodeValue end = endNode;
-            if ( end == null )
-            {
-                synchronized ( this )
-                {
-                    end = endNode;
-                    if ( end == null )
-                    {
-                        end = endNode = VirtualValues.fromNodeProxy( relationship.getEndNode() );
-                    }
-                }
-            }
-            return end;
-        }
-
-        @Override
-        public TextValue type()
-        {
-            TextValue t = type;
-            if ( t == null )
-            {
-                synchronized ( this )
-                {
-                    t = type;
-                    if ( t == null )
-                    {
-                        t = type = Values.stringValue( relationship.getType().name() );
-                    }
-                }
-            }
-            return t;
-        }
-
-        @Override
-        public MapValue properties()
-        {
-            MapValue m = properties;
-            if ( m == null )
-            {
-                synchronized ( this )
-                {
-                    m = properties;
-                    if ( m == null )
-                    {
-                        m = properties = AnyValues.asMapValue( relationship.getAllProperties() );
-                    }
-                }
-            }
-            return m;
         }
     }
 }

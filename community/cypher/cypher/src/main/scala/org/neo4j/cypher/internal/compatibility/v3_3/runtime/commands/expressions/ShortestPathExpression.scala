@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Relationship
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, VirtualValues}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -67,13 +68,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
                             shortestPathPredicate, nodePredicates)
       if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
         Values.NO_VALUE
-      else result.map(AnyValues.asPathValue).getOrElse(Values.NO_VALUE)
+      else result.map(ValueUtils.asPathValue).getOrElse(Values.NO_VALUE)
     }
     else {
       val result = state.query
         .allShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
                          shortestPathPredicate, nodePredicates)
-        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(AnyValues.asPathValue).toArray
+        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(ValueUtils.asPathValue).toArray
       VirtualValues.list(result:_*)
     }
   }
@@ -83,8 +84,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     new KernelPredicate[Path] {
       override def test(path: Path): Boolean = maybePredicate.forall {
         predicate =>
-          incomingCtx += shortestPathPattern.pathName -> AnyValues.asPathValue(path)
-          incomingCtx += shortestPathPattern.relIterator.get -> AnyValues.asListOfEdges(path.relationships())
+          incomingCtx += shortestPathPattern.pathName -> ValueUtils.asPathValue(path)
+          incomingCtx += shortestPathPattern.relIterator.get -> ValueUtils.asListOfEdges(path.relationships())
           predicate.isTrue(incomingCtx)
       } && (!withFallBack || RelationshipSupport.areRelationshipsUnique(path.relationships.asScala.toList))
     }
@@ -121,14 +122,14 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   private def cypherPositivePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)
                                                 (implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      predicate.isTrue(incomingCtx += (name -> AnyValues.asNodeOrEdgeValue(t)))
+      predicate.isTrue(incomingCtx += (name -> ValueUtils.asNodeOrEdgeValue(t)))
     }
   }
 
   private def cypherNegativePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)
                                                 (implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      !predicate.isTrue(incomingCtx += (name -> AnyValues.asNodeOrEdgeValue(t)))
+      !predicate.isTrue(incomingCtx += (name -> ValueUtils.asNodeOrEdgeValue(t)))
     }
   }
 

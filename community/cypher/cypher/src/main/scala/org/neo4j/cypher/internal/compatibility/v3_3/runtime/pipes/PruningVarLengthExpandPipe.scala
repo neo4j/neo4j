@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
@@ -297,7 +297,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       * List all relationships of a node, given the predicates of this pipe.
       */
     def expand(row: ExecutionContext, node: NodeValue) = {
-      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(AnyValues.asEdgeValue)
+      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
       relationships.filter(r => {
         filteringStep.filterRelationship(row, state)(r) &&
           filteringStep.filterNode(row, state)(r.otherNode(node))

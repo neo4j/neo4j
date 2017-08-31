@@ -23,9 +23,9 @@ import org.junit.Rule;
 
 import java.util.Map;
 
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.values.AnyValues;
 
 public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
@@ -50,6 +50,6 @@ public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTest
     @Override
     protected Object valueOf( Object obj )
     {
-        return AnyValues.of( obj );
+        return ValueUtils.of( obj );
     }
 }

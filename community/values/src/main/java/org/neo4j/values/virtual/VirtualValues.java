@@ -25,8 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextArray;
@@ -195,19 +193,9 @@ public final class VirtualValues
         return new NodeValue.DirectNodeValue( id, labels, properties );
     }
 
-    public static NodeValue fromNodeProxy( Node node )
-    {
-        return new NodeValue.NodeProxyWrappingNodeValue( node );
-    }
-
     public static EdgeValue edgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
             MapValue properties )
     {
         return new EdgeValue.DirectEdgeValue( id, startNode, endNode, type, properties );
-    }
-
-    public static EdgeValue fromRelationshipProxy( Relationship relationship )
-    {
-        return new EdgeValue.RelationshipProxyWrappingEdgeValue( relationship );
     }
 }

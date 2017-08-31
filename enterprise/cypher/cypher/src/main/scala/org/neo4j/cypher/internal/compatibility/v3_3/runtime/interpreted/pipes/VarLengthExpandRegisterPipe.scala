@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.values.AnyValues
 
 import scala.collection.mutable
 
@@ -122,7 +122,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
               val resultRow = PrimitiveExecutionContext(pipeline)
               resultRow.copyFrom(inputRowWithFromNode, longsToCopy, pipeline .initialNumberOfReferences)
               resultRow.setLongAt(toOffset, toNode)
-              resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
+              resultRow.setRefAt(relOffset, ValueUtils.asListOfEdges(rels.toArray))
               resultRow
           }
         }
