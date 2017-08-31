@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty, RelationshipProperty}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeFromRegister, NodeProperty, RelationshipProperty}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
@@ -487,9 +487,13 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     val pipelineInfo = PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
     val nodeByLabelScan = NodesByLabelScanRegisterPipe("x", LazyLabel("label"), pipelineInfo)()
+    val grouping = Map(
+      "x" -> Variable("x"),
+      "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey))
+    )
     pipe should equal(EagerAggregationPipe(
       OptionalRegisteredPipe(nodeByLabelScan, Seq(0), pipelineInfo)(),
-      keyExpressions = Set("x", "x.propertyKey"),
+      keyExpressions = grouping,
       aggregations = Map("count" -> commands.expressions.CountStar())
     )())
   }
@@ -508,7 +512,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(ProjectionRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
         pipeline)(),
-      Map(pipeline("x.propertyKey").offset -> NodeProperty(pipeline("x.propertyKey").offset, 0))
+      Map(pipeline("x") -> NodeFromRegister(pipeline("x").offset),
+          pipeline("x.propertyKey") -> NodeProperty(pipeline("x.propertyKey").offset, 0))
     )())
   }
 

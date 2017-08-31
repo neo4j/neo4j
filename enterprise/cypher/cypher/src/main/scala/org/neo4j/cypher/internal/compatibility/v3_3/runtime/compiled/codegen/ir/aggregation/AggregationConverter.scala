@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.aggregation
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.ExpressionConverter._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_3.ast
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 */
 object AggregationConverter {
 
-  def aggregateExpressionConverter(opName: String, groupingVariables: Iterable[Variable], name: String, e: ast.Expression) (implicit context: CodeGenContext): AggregateExpression = {
+  def aggregateExpressionConverter(opName: String, groupingVariables: Iterable[(String,CodeGenExpression)], name: String, e: ast.Expression) (implicit context: CodeGenContext): AggregateExpression = {
     val variable = Variable(context.namer.newVarName(), CodeGenType.primitiveInt)
     context.addVariable(name, variable)
     context.addProjectedVariable(name, variable)

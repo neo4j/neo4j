@@ -37,7 +37,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should introduce aggregation when needed") {
     val projection = AggregatingQueryProjection(
-      groupingKeys = Map.empty,
+      groupingExpressions = Map.empty,
       aggregationExpressions = aggregatingMap
     )
 
@@ -55,7 +55,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should introduce variables when needed") {
     //match (n) return n.y, sum(n.x)
     val projectionPlan = AggregatingQueryProjection(
-      groupingKeys = groupingMap,
+      groupingExpressions = groupingMap,
       aggregationExpressions = aggregatingMap2
     )
 
@@ -67,8 +67,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     aggregation(startPlan, projectionPlan)(context) should equal(
       Aggregation(
-        projection(startPlan, groupingMap + ("n" -> varFor("n"))),
-        groupingMap, aggregatingMap2)(solved)
+       startPlan, groupingMap, aggregatingMap2)(solved)
     )
   }
 
@@ -77,7 +76,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val groupingMap = Map("x.prop" -> Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos))
     val groupingKeyMap = Map("x.prop" -> Variable("x.prop")(pos))
     val projection = AggregatingQueryProjection(
-      groupingKeys = groupingKeyMap,
+      groupingExpressions = groupingKeyMap,
       aggregationExpressions = aggregatingMap
     )
 

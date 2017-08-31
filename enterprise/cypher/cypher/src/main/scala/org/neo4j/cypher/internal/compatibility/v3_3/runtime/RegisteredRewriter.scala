@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection, VarExpand}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown, ast => frontendAst}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown, ast => frontendAst}
 
 import scala.collection.mutable
 
@@ -36,6 +36,11 @@ This class takes a logical plan and pipeline information, and rewrites it so it 
 using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
  */
 class RegisteredRewriter(tokenContext: TokenContext) {
+
+  private def rewriteUsingIncoming(oldPlan: LogicalPlan): Boolean = oldPlan match {
+    case _: Aggregation | _: Distinct => true
+    case _ => false
+  }
 
   def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
@@ -60,12 +65,11 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         newPlan
 
-      case oldPlan:VarExpand =>
+      case oldPlan: VarExpand =>
         /*
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming pipeline info for predicate rewriting
          */
-
         val incomingPipeline = pipelineInformation(oldPlan.left)
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
 
@@ -87,6 +91,20 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         rewrites += (oldPlan -> newPlan)
 
+        newPlan
+
+      case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
+        val incomingPipeline = pipelineInformation(oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way")))
+        val rewriter = rewriteCreator(incomingPipeline, oldPlan)
+        val newPlan = oldPlan.endoRewrite(rewriter)
+
+        /*
+        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        outgoing pipeline info here
+         */
+        val outgoingPipeline = pipelineInformation(oldPlan)
+        newPipelineInfo += (newPlan -> outgoingPipeline)
+        rewrites += (oldPlan -> newPlan)
         newPlan
 
       case oldPlan: LogicalPlan =>
@@ -198,6 +216,9 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
       case _: ScopeExpression | _: NestedPlanExpression =>
         throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")
+
+      case _: PatternExpression =>
+        throw new CantCompileQueryException(s"Pattern expressions not yet supported in the slotted runtime")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

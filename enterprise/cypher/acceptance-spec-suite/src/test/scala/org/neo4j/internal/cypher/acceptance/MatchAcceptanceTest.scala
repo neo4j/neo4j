@@ -37,7 +37,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     createNode()
 
-    val result = succeedWith(Configs.AllExceptSlotted, "MATCH (n) RETURN count(n.name)")
+    val result = succeedWith(Configs.All, "MATCH (n) RETURN count(n.name)")
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
@@ -749,7 +749,7 @@ return p""")
     relate(node2, node4, "T", Map("roles" -> "NEO"))
 
     // When
-    val res = succeedWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
+    val res = succeedWith(Configs.Interpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
 
     // Then
     res.toSet should equal(Set(Map("n" -> node1)))

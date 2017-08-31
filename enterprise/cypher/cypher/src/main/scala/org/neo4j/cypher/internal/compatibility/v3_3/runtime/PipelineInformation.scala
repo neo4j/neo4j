@@ -141,8 +141,8 @@ class PipelineInformation(private var slots: Map[String, Slot],
   def get(key: String): Option[Slot] = slots.get(key)
 
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
-    case LongSlot(_, nullable, typ, key) => newLong(key, nullable, typ)
-    case RefSlot(_, nullable, typ, key) => newReference(key, nullable, typ)
+    case LongSlot(_, nullable, typ, _) => newLong(key, nullable, typ)
+    case RefSlot(_, nullable, typ, _) => newReference(key, nullable, typ)
   }
 
   def seedClone(): PipelineInformation = {

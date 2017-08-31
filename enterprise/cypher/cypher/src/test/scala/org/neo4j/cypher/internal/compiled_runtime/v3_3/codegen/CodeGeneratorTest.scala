@@ -1058,9 +1058,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val count: FunctionName = FunctionName("count")(pos)
     val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
-    val projection = plans.Projection(scan, Map("a.prop" -> property))(solved)
 
-    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
 
     val plan = ProduceResult(List("a.prop", "count(a.prop)"), aggregation)
 
@@ -1081,9 +1080,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val count: FunctionName = FunctionName("count")(pos)
     val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
-    val projection = plans.Projection(scan, Map("a.prop" -> property))(solved)
-
-    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
 
     val plan = ProduceResult(List("a.prop", "count(a.prop)"), aggregation)
 
@@ -1105,9 +1102,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val node = ast.Variable("a")(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
-    val projection = plans.Projection(scan, Map("a.prop" -> property, "a" -> node))(solved)
 
-    val aggregation = Aggregation(projection, Map("a.prop" -> property), Map("count(a)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a)" -> invocation))(solved)
 
     val plan = ProduceResult(List("a.prop", "count(a)"), aggregation)
 

@@ -55,7 +55,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     implicit val (_, logicalPlan, _) = setup.getLogicalPlanFor("MATCH (a:A) RETURN a AS a UNION MATCH (a:B) RETURN a AS a")
 
     logicalPlan should equal(
-      Aggregation(
+      Distinct(
         left = Union(
           Projection(
             NodeByLabelScan("  a@7", lblName("A"), Set.empty)(solved),
@@ -66,8 +66,7 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
             Map("a" -> Variable("  a@39") _)
           )(solved)
         )(solved),
-        groupingExpressions = Map("a" -> varFor("a")),
-        aggregationExpression = Map.empty
+        groupingExpressions = Map("a" -> varFor("a"))
       )(solved)
     )
   }

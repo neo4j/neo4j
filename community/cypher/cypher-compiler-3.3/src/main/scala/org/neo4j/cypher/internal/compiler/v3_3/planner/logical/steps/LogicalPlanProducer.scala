@@ -45,10 +45,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
+                      reportedGrouping: Map[String, Expression],
                       reportedAggregation: Map[String, Expression])
                      (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = left.solved.updateTailOrSelf(_.withHorizon(
-      AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = reportedAggregation)
+      AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
     Aggregation(left, grouping, aggregation)(solved)
   }
@@ -482,12 +483,19 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
      */
   }
 
-  def planDistinct(left: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
+  def planDistinctStar(left: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val returnAll = QueryProjection.forIds(left.availableSymbols) map {
       case AliasedReturnItem(e, Variable(key)) => key -> e // This smells awful.
     }
 
-    Aggregation(left, returnAll.toMap, Map.empty)(left.solved)
+    Distinct(left, returnAll.toMap)(left.solved)
+  }
+
+  def planDistinct(left: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression])
+                  (implicit context: LogicalPlanningContext): LogicalPlan = {
+
+    val solved: PlannerQuery = left.solved.updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
+    Distinct(left, expressions)(solved)
   }
 
   def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression])

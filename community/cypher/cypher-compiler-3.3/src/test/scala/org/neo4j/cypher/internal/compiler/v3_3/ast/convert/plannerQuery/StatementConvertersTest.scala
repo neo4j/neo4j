@@ -762,9 +762,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("match (n) return distinct n") {
     val query = buildPlannerQuery("match (n) return distinct n")
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("n" -> varFor("n")),
-      aggregationExpressions = Map.empty
+    query.horizon should equal(DistinctQueryProjection(
+      groupingKeys = Map("n" -> varFor("n"))
     ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
@@ -772,9 +771,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("match (n) with distinct n.prop as x return x") {
     val query = buildPlannerQuery("match (n) with distinct n.prop as x return x")
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("x" -> nProp),
-      aggregationExpressions = Map.empty
+    query.horizon should equal(DistinctQueryProjection(
+      groupingKeys = Map("x" -> nProp)
     ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
@@ -782,9 +780,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("match (n) with distinct * return n") {
     val query = buildPlannerQuery("match (n) with distinct * return n")
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("n" -> varFor("n")),
-      aggregationExpressions = Map.empty
+    query.horizon should equal(DistinctQueryProjection(
+      groupingKeys = Map("n" -> varFor("n"))
     ))
 
     query.queryGraph.patternNodes should equal(Set(IdName("n")))
@@ -793,9 +790,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("WITH DISTINCT 1 as b RETURN b") {
     val query = buildPlannerQuery("WITH DISTINCT 1 as b RETURN b")
 
-    query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("b" -> SignedDecimalIntegerLiteral("1") _),
-      aggregationExpressions = Map.empty
+    query.horizon should equal(DistinctQueryProjection(
+      groupingKeys = Map("b" -> SignedDecimalIntegerLiteral("1") _)
     ))
 
     query.tail should not be empty
@@ -950,7 +946,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.horizon should equal(
       AggregatingQueryProjection(
-        groupingKeys = Map.empty,
+        groupingExpressions = Map.empty,
         aggregationExpressions = Map("rows" -> functionInvocation),
         shuffle = QueryShuffle.empty
       )

@@ -21,26 +21,19 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_3.AggregatingQueryProjection
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {
 
-    val groupingExpressions: Map[String, Expression] = aggregation.groupingKeys
+    val (step1, groupingExpressions) = PatternExpressionSolver()(plan, aggregation.groupingExpressions)
+    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(step1, aggregation.aggregationExpressions)
 
-    val variablesToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
-      case (_, exp) => exp.dependencies
-    }.toList.distinct.map {
-      case id => id.name -> id
-    }.toMap
-
-    //  TODO: we need to project here since the pipe does not do that,
-    //  when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep)
-
-    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(projectedPlan, aggregation.aggregationExpressions)
-
-    context.logicalPlanProducer.planAggregation(rewrittenPlan, groupingExpressions, aggregations, aggregation.aggregationExpressions)
+    context.logicalPlanProducer.planAggregation(
+      rewrittenPlan,
+      groupingExpressions,
+      aggregations,
+      aggregation.groupingExpressions,
+      aggregation.aggregationExpressions)
   }
 }

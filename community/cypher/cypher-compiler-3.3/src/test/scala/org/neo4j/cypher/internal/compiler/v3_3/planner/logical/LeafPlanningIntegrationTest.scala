@@ -580,7 +580,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
     val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union: Union = Union(seek2, seek1)(solved)
-    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
     plan._2 should equal(distinct)
   }
@@ -678,7 +678,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
     val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union: Union = Union(seek2, seek1)(solved)
-    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
     plan should equal(distinct)
   }
@@ -689,7 +689,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n) WHERE n:X OR n:Y RETURN n")._2
 
     x should beLike {
-      case Aggregation(
+      case Distinct(
         Union(
           NodeByLabelScan(
             IdName("n"),
@@ -697,7 +697,6 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           NodeByLabelScan(
             IdName("n"),
             LabelName("Y"), _)),
-      _,
       _)
       => ()
     }
@@ -717,7 +716,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan(IdName("n"), labelToken, prop1, Set.empty)(solved))(solved)
     val seek2 = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
     val union = Union(seek1, seek2)(solved)
-    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val distinct = Distinct(union, Map("n" -> varFor("n")))(solved)
 
     plan should equal(distinct)
   }
