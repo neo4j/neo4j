@@ -37,15 +37,15 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 public class BloomProcedure extends CallableProcedure.BasicProcedure
 {
     private static final String PROCEDURE_NAME = "bloomFulltext";
-
-    private static final String[] PROCEDURE_NAMESPACE = {"dbms", "fulltext"};
+    private static final String[] PROCEDURE_NAMESPACE = {"db", "fulltext"};
+    public static final String OUTPUT_NAME = "entityid";
     private final LuceneFulltext luceneFulltext;
     private String type;
 
     BloomProcedure( String type, LuceneFulltext luceneFulltext )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME + type ) ).in( "terms",
-                Neo4jTypes.NTList( Neo4jTypes.NTString ) ).out( "entityid", Neo4jTypes.NTInteger ).description(
+                Neo4jTypes.NTList( Neo4jTypes.NTString ) ).out( OUTPUT_NAME, Neo4jTypes.NTInteger ).description(
                 String.format( "Queries the bloom index for %s.", type ) ).build() );
         this.luceneFulltext = luceneFulltext;
         this.type = type;

@@ -27,30 +27,27 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
 public class FulltextFactory
 {
     private final FileSystemAbstraction fileSystem;
-    private final String[] properties;
     private final WritableIndexPartitionFactory partitionFactory;
     private final Factory<IndexWriterConfig> population;
     private final File storeDir;
     private final Analyzer analyzer;
 
-    public LuceneFulltext createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type )
+    public LuceneFulltext createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type, String[] properties )
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
                 directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltextHelper" ).toFile() );
-        return new LuceneFulltext( storageBuilder.build(), partitionFactory, this.properties, analyzer, identifier, type );
+        return new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type );
     }
 
     public enum FULLTEXT_HELPER_TYPE
@@ -59,19 +56,10 @@ public class FulltextFactory
         RELATIONSHIPS
     }
 
-    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Config config ) throws IOException
+    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Analyzer analyzer ) throws IOException
     {
+        this.analyzer = analyzer;
         this.fileSystem = fileSystem;
-        this.properties = config.get( GraphDatabaseSettings.bloom_indexed_properties ).toArray( new String[0] );
-        try
-        {
-            Class configuredAnalayzer = Class.forName( config.get( GraphDatabaseSettings.bloom_analyzer ) );
-            analyzer = (Analyzer) configuredAnalayzer.newInstance();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Could not create the configured analyzer", e );
-        }
         population = () -> IndexWriterConfigs.population( analyzer );
         partitionFactory = new WritableIndexPartitionFactory( population );
         this.storeDir = storeDir;

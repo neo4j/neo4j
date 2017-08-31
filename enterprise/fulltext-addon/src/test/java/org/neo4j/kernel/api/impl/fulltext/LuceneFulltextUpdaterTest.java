@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,8 +30,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -44,6 +43,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextFactory.FULLTEXT_HELPER
 
 public class LuceneFulltextUpdaterTest
 {
+    public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
     @ClassRule
     public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @ClassRule
@@ -57,13 +57,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -94,13 +92,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithNumber() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
 
             long firstID;
@@ -132,13 +128,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithBoolean() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -169,13 +163,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithArrays() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -206,13 +198,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -257,13 +247,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -302,13 +290,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
 
             long firstID;
             long secondID;
@@ -367,13 +353,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -403,13 +387,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
 
             long firstID;
             long secondID;
@@ -445,13 +427,11 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "first, last" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "first, last" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"first", "last"} ) );
 
             long firstID;
             long secondID;
@@ -494,14 +474,12 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), config );
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
-            provider.register( fulltextFactory.createFulltextHelper( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"} ) );
 
             long firstNodeID;
             long secondNodeID;

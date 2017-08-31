@@ -32,10 +32,9 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -43,11 +42,13 @@ import static org.junit.Assert.assertFalse;
 
 public class BloomIT
 {
-    public static final String NODES = "CALL dbms.fulltext.bloomFulltextNodes([\"%s\"])";
-    public static final String RELS = "CALL dbms.fulltext.bloomFulltextRelationships([\"%s\"])";
+    public static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
+    public static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
     public static final String ENTITYID = "entityid";
     @Rule
     public final FileSystemRule fs = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private TestGraphDatabaseFactory factory;
     private GraphDatabaseService db;
@@ -58,7 +59,8 @@ public class BloomIT
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
-        db = factory.newImpermanentDatabase( Collections.singletonMap( GraphDatabaseSettings.bloom_indexed_properties, "prop, relprop" ) );
+        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(),
+                Collections.singletonMap( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" ) );
     }
 
     @Test

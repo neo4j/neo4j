@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import org.apache.lucene.analysis.Analyzer;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -53,11 +55,23 @@ public class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void init() throws IOException, ProcedureException
     {
+        String[] properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties ).toArray( new String[0] );
+        Analyzer analyzer;
+        try
+        {
+            Class configuredAnalayzer = Class.forName( config.get( LoadableBloomFulltextConfig.bloom_analyzer ) );
+            analyzer = (Analyzer) configuredAnalayzer.newInstance();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create the configured analyzer", e );
+        }
+
         FulltextProvider provider = FulltextProvider.instance( db );
-        fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, config );
-        LuceneFulltext nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES );
+        fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
+        LuceneFulltext nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES, properties );
         LuceneFulltext relationships =
-                fulltextFactory.createFulltextHelper( "bloomRelationships", FulltextFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS );
+                fulltextFactory.createFulltextHelper( "bloomRelationships", FulltextFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, properties );
         provider.register( nodes );
         provider.register( relationships );
 
