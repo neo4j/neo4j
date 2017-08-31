@@ -60,7 +60,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 } )
 public class PropertyExistenceConstraintVerificationIT
 {
-    private static final int WAIT_TIMEOUT_SECONDS = 20;
+    private static final int WAIT_TIMEOUT_SECONDS = 200;
 
     public static class NodePropertyExistenceExistenceConstrainVerificationIT
             extends AbstractPropertyExistenceConstraintVerificationIT
