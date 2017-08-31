@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
 import static java.util.Collections.singletonMap;
 
-public class LuceneFulltextHelper extends AbstractLuceneIndex
+public class LuceneFulltext extends AbstractLuceneIndex
 {
 
     private static final String KEY_STATUS = "status";
@@ -52,7 +52,7 @@ public class LuceneFulltextHelper extends AbstractLuceneIndex
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
     private final Set<String> properties;
 
-    LuceneFulltextHelper( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer,
+    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer,
             String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type )
     {
         super( indexStorage, partitionFactory );
@@ -74,7 +74,7 @@ public class LuceneFulltextHelper extends AbstractLuceneIndex
             return false;
         }
 
-        LuceneFulltextHelper that = (LuceneFulltextHelper) o;
+        LuceneFulltext that = (LuceneFulltext) o;
 
         if ( !identifier.equals( that.identifier ) )
         {

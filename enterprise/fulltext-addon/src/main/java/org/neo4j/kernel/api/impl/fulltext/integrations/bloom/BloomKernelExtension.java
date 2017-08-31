@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
-import org.neo4j.kernel.api.impl.fulltext.LuceneFulltextHelper;
+import org.neo4j.kernel.api.impl.fulltext.LuceneFulltext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -55,8 +55,8 @@ public class BloomKernelExtension extends LifecycleAdapter
     {
         FulltextProvider provider = FulltextProvider.instance( db );
         fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, config );
-        LuceneFulltextHelper nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES );
-        LuceneFulltextHelper relationships =
+        LuceneFulltext nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES );
+        LuceneFulltext relationships =
                 fulltextFactory.createFulltextHelper( "bloomRelationships", FulltextFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS );
         provider.register( nodes );
         provider.register( relationships );

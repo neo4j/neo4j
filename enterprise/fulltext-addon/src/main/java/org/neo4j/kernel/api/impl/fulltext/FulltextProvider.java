@@ -36,8 +36,8 @@ public class FulltextProvider implements AutoCloseable
     private boolean closed;
     private Set<String> nodeProperties;
     private Set<String> relationshipProperties;
-    private Map<String,LuceneFulltextHelper> nodeIndices;
-    private Map<String,LuceneFulltextHelper> relationshipIndices;
+    private Map<String,LuceneFulltext> nodeIndices;
+    private Map<String,LuceneFulltext> relationshipIndices;
 
     private FulltextProvider( GraphDatabaseService db )
     {
@@ -92,7 +92,7 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    public synchronized void register( LuceneFulltextHelper fulltextHelper ) throws IOException
+    public synchronized void register( LuceneFulltext fulltextHelper ) throws IOException
     {
         fulltextHelper.open();
         if ( fulltextHelper.getType() == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )

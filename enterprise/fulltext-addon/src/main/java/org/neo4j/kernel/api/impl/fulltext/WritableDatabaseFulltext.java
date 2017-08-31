@@ -27,19 +27,19 @@ import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-class WritableDatabaseFulltext extends WritableAbstractDatabaseIndex<LuceneFulltextHelper>
+class WritableDatabaseFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
-    private LuceneFulltextHelper luceneFulltextHelper;
+    private final LuceneFulltext luceneFulltext;
 
-    WritableDatabaseFulltext( LuceneFulltextHelper luceneFulltextHelper )
+    WritableDatabaseFulltext( LuceneFulltext luceneFulltext )
     {
-        super( luceneFulltextHelper );
-        this.luceneFulltextHelper = luceneFulltextHelper;
+        super( luceneFulltext );
+        this.luceneFulltext = luceneFulltext;
     }
 
     public PartitionedIndexWriter getIndexWriter() throws IOException
     {
-        return luceneFulltextHelper.getIndexWriter( this );
+        return luceneFulltext.getIndexWriter( this );
     }
 
     public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )

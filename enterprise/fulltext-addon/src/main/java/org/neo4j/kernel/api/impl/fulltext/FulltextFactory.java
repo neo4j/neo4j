@@ -45,12 +45,12 @@ public class FulltextFactory
     private final File storeDir;
     private final Analyzer analyzer;
 
-    public LuceneFulltextHelper createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type )
+    public LuceneFulltext createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type )
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
                 directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltextHelper" ).toFile() );
-        return new LuceneFulltextHelper( storageBuilder.build(), partitionFactory, this.properties, analyzer, identifier, type );
+        return new LuceneFulltext( storageBuilder.build(), partitionFactory, this.properties, analyzer, identifier, type );
     }
 
     public enum FULLTEXT_HELPER_TYPE

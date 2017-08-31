@@ -26,7 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.impl.fulltext.FulltextReader;
-import org.neo4j.kernel.api.impl.fulltext.LuceneFulltextHelper;
+import org.neo4j.kernel.api.impl.fulltext.LuceneFulltext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -39,15 +39,15 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     private static final String PROCEDURE_NAME = "bloomFulltext";
 
     private static final String[] PROCEDURE_NAMESPACE = {"dbms", "fulltext"};
-    private final LuceneFulltextHelper luceneFulltextHelper;
+    private final LuceneFulltext luceneFulltext;
     private String type;
 
-    BloomProcedure( String type, LuceneFulltextHelper luceneFulltextHelper )
+    BloomProcedure( String type, LuceneFulltext luceneFulltext )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME + type ) ).in( "terms",
                 Neo4jTypes.NTList( Neo4jTypes.NTString ) ).out( "entityid", Neo4jTypes.NTInteger ).description(
                 String.format( "Queries the bloom index for %s.", type ) ).build() );
-        this.luceneFulltextHelper = luceneFulltextHelper;
+        this.luceneFulltext = luceneFulltext;
         this.type = type;
     }
 
@@ -55,7 +55,7 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         String[] query = Arrays.stream( input ).map( Object::toString ).toArray( String[]::new );
-        try ( FulltextReader indexReader = luceneFulltextHelper.getIndexReader() )
+        try ( FulltextReader indexReader = luceneFulltext.getIndexReader() )
         {
             PrimitiveLongIterator primitiveLongIterator = indexReader.query( query );
             return new RawIterator<Object[],ProcedureException>()

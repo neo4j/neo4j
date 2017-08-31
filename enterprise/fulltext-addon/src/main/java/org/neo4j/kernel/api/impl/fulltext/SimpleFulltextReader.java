@@ -46,7 +46,7 @@ class SimpleFulltextReader implements FulltextReader
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;
-    private String[] properties;
+    private final String[] properties;
 
     SimpleFulltextReader( PartitionSearcher partitionSearcher, String[] properties, Analyzer analyzer )
     {

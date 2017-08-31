@@ -42,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextFactory.FULLTEXT_HELPER_TYPE;
 
-public class LuceneFulltextHelperUpdaterTest
+public class LuceneFulltextUpdaterTest
 {
     @ClassRule
     public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -70,10 +70,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
                 node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
                         "between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -108,10 +108,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", 1 );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", 1 );
                 node2.setProperty( "prop", 234 );
 
                 tx.success();
@@ -119,12 +119,12 @@ public class LuceneFulltextHelperUpdaterTest
 
             try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
-                PrimitiveLongIterator one = reader.query( "1" );
-                assertEquals( firstID, one.next() );
-                assertFalse( one.hasNext() );
-                PrimitiveLongIterator twohundredthirtyfour = reader.query( "234" );
-                assertEquals( secondID, twohundredthirtyfour.next() );
-                assertFalse( twohundredthirtyfour.hasNext() );
+                PrimitiveLongIterator node1prop = reader.query( "1" );
+                assertEquals( firstID, node1prop.next() );
+                assertFalse( node1prop.hasNext() );
+                PrimitiveLongIterator node2prop = reader.query( "234" );
+                assertEquals( secondID, node2prop.next() );
+                assertFalse( node2prop.hasNext() );
             }
         }
     }
@@ -145,10 +145,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", true );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", true );
                 node2.setProperty( "prop", false );
 
                 tx.success();
@@ -182,10 +182,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
                 node2.setProperty( "prop", new int[]{1, 27, 48} );
 
                 tx.success();
@@ -219,10 +219,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
                 node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
                         "between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -270,10 +270,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
                 Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
                 node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
                         "between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -316,10 +316,10 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
                 Node node2 = db.createNode( LABEL );
-                secondID = node2.getId();
                 Node node3 = db.createNode( LABEL );
+                firstID = node.getId();
+                secondID = node2.getId();
                 thirdID = node3.getId();
 
                 node.setProperty( "prop", "Hello. Hello again." );
@@ -376,14 +376,13 @@ public class LuceneFulltextHelperUpdaterTest
             provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) );
 
             long firstID;
-            long secondID;
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
+                Node node2 = db.createNode( LABEL );
                 firstID = node.getId();
                 node.setProperty( "prop", "Hello. Hello again." );
                 node.setProperty( "prop2", "zebra" );
-                Node node2 = db.createNode( LABEL );
                 node2.setProperty( "prop2", "zebra" );
                 node2.setProperty( "prop3", "hello" );
 
@@ -418,14 +417,14 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
                 Node node2 = db.createNode( LABEL );
+                Node node3 = db.createNode( LABEL );
+                firstID = node.getId();
                 secondID = node2.getId();
+                thirdID = node3.getId();
+                node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
                 node2.setProperty( "prop", "Olof och Hans tomtar med karl som tomtar ofta" );
                 node2.setProperty( "prop2", "karl tomtar" );
-                Node node3 = db.createNode( LABEL );
-                thirdID = node3.getId();
                 node3.setProperty( "prop", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
                 tx.success();
@@ -461,19 +460,19 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
+                Node node2 = db.createNode( LABEL );
+                Node node3 = db.createNode( LABEL );
+                Node node4 = db.createNode( LABEL );
                 firstID = node.getId();
+                secondID = node2.getId();
+                thirdID = node3.getId();
+                fourthID = node4.getId();
                 node.setProperty( "first", "Full" );
                 node.setProperty( "last", "Hanks" );
-                Node node2 = db.createNode( LABEL );
-                secondID = node2.getId();
                 node2.setProperty( "first", "Tom" );
                 node2.setProperty( "last", "Hunk" );
-                Node node3 = db.createNode( LABEL );
-                thirdID = node3.getId();
                 node3.setProperty( "first", "Tom" );
                 node3.setProperty( "last", "Hanks" );
-                Node node4 = db.createNode( LABEL );
-                fourthID = node4.getId();
                 node4.setProperty( "first", "Tom Hanks" );
                 node4.setProperty( "last", "Tom Hanks" );
 
@@ -511,17 +510,17 @@ public class LuceneFulltextHelperUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
-                firstNodeID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
                 Node node2 = db.createNode( LABEL );
+                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
+                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
+                firstNodeID = node.getId();
                 secondNodeID = node2.getId();
+                firstRelID = rel1.getId();
+                secondRelID = rel2.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
                 node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
                         "between a zebra and any other equine: essentially, a zebra hybrid." );
-                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-                firstRelID = rel1.getId();
                 rel1.setProperty( "prop", "Hello. Hello again." );
-                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-                secondRelID = rel2.getId();
                 rel2.setProperty( "prop", "And now, something completely different" );
 
                 tx.success();
