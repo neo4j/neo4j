@@ -49,9 +49,8 @@ abstract class IdSeekIterator[T <: PropertyContainer]
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
       val id = asLongEntityId(entityIds.next())
-      if (operations.exists(id.longValue()))
-        return operations.getById(id.longValue())
-
+      val maybeEntity = operations.getByIdIfExists(id.longValue())
+      if(maybeEntity.isDefined) return maybeEntity.get
     }
     null.asInstanceOf[T]
   }

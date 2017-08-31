@@ -36,8 +36,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
     val relOps= mock[Operations[Relationship]]
-    when(relOps.exists(17)).thenReturn(true)
-    when(relOps.getById(17)).thenReturn(rel)
+    when(relOps.getByIdIfExists(17)).thenReturn(Some(rel))
 
     val to = "to"
     val from = "from"
@@ -64,10 +63,8 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val to = "to"
     val from = "from"
 
-    when(relationshipOps.getById(42)).thenReturn(r1)
-    when(relationshipOps.exists(42)).thenReturn(true)
-    when(relationshipOps.getById(21)).thenReturn(r2)
-    when(relationshipOps.exists(21)).thenReturn(true)
+    when(relationshipOps.getByIdIfExists(42)).thenReturn(Some(r1))
+    when(relationshipOps.getByIdIfExists(21)).thenReturn(Some(r2))
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )

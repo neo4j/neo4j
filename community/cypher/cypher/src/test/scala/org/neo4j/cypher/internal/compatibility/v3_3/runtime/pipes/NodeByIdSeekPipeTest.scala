@@ -35,8 +35,7 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val id = 17
     val node = nodeProxy(17)
     val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[Node]]
-    when(nodeOps.getById(17)).thenReturn(node)
-    when(nodeOps.exists(17)).thenReturn(true)
+    when(nodeOps.getByIdIfExists(17)).thenReturn(Some(node))
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
@@ -55,12 +54,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val node3 = nodeProxy(11)
     val nodeOps = mock[Operations[Node]]
 
-    when(nodeOps.getById(42)).thenReturn(node1)
-    when(nodeOps.exists(42)).thenReturn(true)
-    when(nodeOps.getById(21)).thenReturn(node2)
-    when(nodeOps.exists(21)).thenReturn(true)
-    when(nodeOps.getById(11)).thenReturn(node3)
-    when(nodeOps.exists(11)).thenReturn(true)
+    when(nodeOps.getByIdIfExists(42)).thenReturn(Some(node1))
+    when(nodeOps.getByIdIfExists(21)).thenReturn(Some(node2))
+    when(nodeOps.getByIdIfExists(11)).thenReturn(Some(node3))
 
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]

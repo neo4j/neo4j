@@ -413,6 +413,12 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def exists(id: Long): Boolean =
       transactionalContext.statement.readOperations().nodeExists(id)
+
+    override def getByIdIfExists(id: Long): Option[Node] =
+      if (transactionalContext.statement.readOperations().nodeExists(id))
+        Some(entityAccessor.newNodeProxyById(id))
+      else
+        None
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -469,6 +475,18 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
 
+    override def getByIdIfExists(id: Long): Option[RelationshipProxy] = try {
+      var relationship: RelationshipProxy = null
+      transactionalContext.statement.readOperations().relationshipVisit(id, new RelationshipVisitor[Exception] {
+        override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
+          relationship = entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
+        }
+      })
+      Option(relationship)
+    } catch {
+      case e: exceptions.EntityNotFoundException => None
+    }
+
     override def all: Iterator[Relationship] = {
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipsGetAll())(getById)
     }
@@ -496,8 +514,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
         true
       } catch {
-        case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
-          false
+        case e: exceptions.EntityNotFoundException => false
       }
     }
   }
