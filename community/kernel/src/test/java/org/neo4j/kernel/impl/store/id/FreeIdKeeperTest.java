@@ -25,13 +25,16 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -124,7 +127,7 @@ public class FreeIdKeeperTest
         keeper.freeId( 10 );
 
         // then
-        verify( channel ).write( any( ByteBuffer.class ) );
+        verify( channel ).writeAll( any( ByteBuffer.class ) );
     }
 
     @Test
@@ -147,7 +150,7 @@ public class FreeIdKeeperTest
         // they should be returned in order
         for ( int i = 0; i < threshold; i++ )
         {
-            assertEquals( i, keeper.getId()) ;
+            assertEquals( i, keeper.getId() );
         }
     }
 
@@ -203,16 +206,15 @@ public class FreeIdKeeperTest
 
         // then
         // the first returned should be the newly freed ones
-        for ( int i = threshold; i < threshold + extraIds ; i++ )
+        for ( int i = threshold; i < threshold + extraIds; i++ )
         {
-            assertEquals( i, keeper.getId() ) ;
+            assertEquals( i, keeper.getId() );
         }
         // and then there should be the persisted ones
-        for ( int i = 0; i < threshold ; i++ )
+        for ( int i = 0; i < threshold; i++ )
         {
-            assertEquals( i, keeper.getId() ) ;
+            assertEquals( i, keeper.getId() );
         }
-
     }
 
     @Test
@@ -222,7 +224,7 @@ public class FreeIdKeeperTest
         StoreChannel channel = getStoreChannel();
 
         int threshold = 10;
-        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true, 0 );
+        FreeIdKeeper keeper = new FreeIdKeeper( channel, threshold, true );
 
         // when
         // we store enough ids to cause overflow to file
@@ -365,8 +367,7 @@ public class FreeIdKeeperTest
     }
 
     @Test
-    public void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse()
-            throws Exception
+    public void shouldReturnNoResultIfIdsAreRestoredAndExhaustedAndThereAreFreeIdsFromThisRunWithAggressiveFalse() throws Exception
     {
         // given
         StoreChannel channel = getStoreChannel();
@@ -404,6 +405,49 @@ public class FreeIdKeeperTest
         assertEquals( NO_RESULT, keeper.getId() );
     }
 
+    @Test
+    public void shouldNotReturnReusedIdsAfterRestart() throws Exception
+    {
+        // given
+        StoreChannel channel = getStoreChannel();
+        int threshold = 10;
+        FreeIdKeeper keeper = getFreeIdKeeperAggressive( channel, threshold );
+
+        // free 4 batches
+        for ( long i = 0; i < threshold * 4; i++ )
+        {
+            keeper.freeId( i );
+        }
+
+        // reuse 2 batches
+        List<Long> reusedIds = new ArrayList<>();
+        for ( int i = 0; i < threshold * 2; i++ )
+        {
+            long id = keeper.getId();
+            reusedIds.add( id );
+        }
+
+        // when
+        keeper.close();
+        channel.close();
+
+        channel = fs.get().open( new File( "id.file" ), "rw" );
+        keeper = getFreeIdKeeper( channel, threshold );
+
+        List<Long> remainingIds = new ArrayList<>();
+        for ( int i = 0; i < threshold; i++ )
+        {
+            long id = keeper.getId();
+            remainingIds.add( id );
+        }
+
+        // then
+        for ( Long remainingId : remainingIds )
+        {
+            assertFalse( reusedIds.contains( remainingId ) );
+        }
+    }
+
     private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int threshold ) throws IOException
     {
         return getFreeIdKeeper( channel, threshold, false );
@@ -416,7 +460,7 @@ public class FreeIdKeeperTest
 
     private FreeIdKeeper getFreeIdKeeper( StoreChannel channel, int threshold, boolean aggresiveReuse ) throws IOException
     {
-        return new FreeIdKeeper( channel, threshold, aggresiveReuse, 0 );
+        return new FreeIdKeeper( channel, threshold, aggresiveReuse );
     }
 
     private StoreChannel getStoreChannel() throws IOException
