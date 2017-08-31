@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.values.AnyValue
+import org.neo4j.values.{AnyValue, AnyValues}
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
@@ -32,7 +32,7 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   private val longs = new Array[Long](pipeline.numberOfLongs)
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
-  override def toString(): String = s"pipeLine: $pipeline, longs: $longs, refs: $refs"
+  override def toString(): String = s"pipeLine: $pipeline, longs[${longs.length}]: $longs, refs[${refs.length}]: $refs"
 
   override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
@@ -76,7 +76,10 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def get(key: String) = fail()
 
-  override def iterator = fail()
+  override def iterator =
+    // This method implementation is for debug usage only (the debugger will invoke it when stepping).
+    // Please do not use in production code.
+    (longs.map(i => ("LongSlot", AnyValues.of(i))) ++ refs.map(i => ("RefSlot", AnyValues.of(i)))).iterator
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
