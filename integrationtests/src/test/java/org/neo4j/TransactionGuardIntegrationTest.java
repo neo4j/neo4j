@@ -19,6 +19,7 @@
  */
 package org.neo4j;
 
+import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -29,10 +30,10 @@ import java.io.Serializable;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
-import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -42,32 +43,32 @@ import org.neo4j.driver.v1.Session;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.kernel.guard.GuardTimeoutException;
-import org.neo4j.kernel.guard.TimeoutGuard;
-import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
-import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -108,29 +109,38 @@ public class TransactionGuardIntegrationTest
     private static final String BOLT_CONNECTOR_KEY = "bolt";
 
     private static final FakeClock fakeClock = Clocks.fakeClock();
-    private TickingGuard tickingGuard = new TickingGuard( fakeClock, NullLog.getInstance(), 1, TimeUnit.SECONDS );
     private static GraphDatabaseAPI databaseWithTimeout;
-    private static GraphDatabaseAPI databaseWithTimeoutAndGuard;
     private static GraphDatabaseAPI databaseWithoutTimeout;
     private static EnterpriseNeoServer neoServer;
-    private static int boltPortCustomGuard;
     private static int boltPortDatabaseWithTimeout;
     private static final String DEFAULT_TIMEOUT = "2s";
+    private static final KernelTransactionTimeoutMonitorSupplier monitorSupplier = new
+            KernelTransactionTimeoutMonitorSupplier();
+    private static final IdInjectionFunctionAction getIdInjectionFunction = new IdInjectionFunctionAction( monitorSupplier );
+
+    @After
+    public void tearDown()
+    {
+        monitorSupplier.clear();
+    }
 
     @Test
     public void terminateLongRunningTransaction()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         try ( Transaction transaction = database.beginTx() )
         {
             fakeClock.forward( 3, TimeUnit.SECONDS );
             transaction.success();
+            timeoutMonitor.run();
             database.createNode();
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException e )
+        catch ( TransactionTerminatedException e )
         {
-            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
             assertEquals( e.status(), Status.Transaction.TransactionTimedOut );
         }
 
@@ -140,14 +150,17 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningTransactionWithPeriodicCommit() throws Exception
     {
-        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
+        monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
         try
         {
             URL url = prepareTestImportFile( 8 );
             database.execute( "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException ignored )
+        catch ( TransactionTerminatedException ignored )
         {
         }
         assertDatabaseDoesNotHaveNodes( database );
@@ -157,9 +170,12 @@ public class TransactionGuardIntegrationTest
     public void terminateTransactionWithCustomTimeoutWithoutConfiguredDefault()
     {
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
             fakeClock.forward( 26, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             database.createNode();
             transaction.failure();
         }
@@ -167,12 +183,13 @@ public class TransactionGuardIntegrationTest
         try ( Transaction transaction = database.beginTx( 27, TimeUnit.SECONDS ) )
         {
             fakeClock.forward( 28, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             database.createNode();
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException e )
+        catch ( TransactionTerminatedException e )
         {
-            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -182,16 +199,21 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningQueryTransaction()
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
+        monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
+
         try ( Transaction transaction = database.beginTx() )
         {
             fakeClock.forward( 3, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             transaction.success();
             database.execute( "create (n)" );
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException e )
+        catch ( TransactionTerminatedException e )
         {
-            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -201,9 +223,12 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningQueryWithCustomTimeoutWithoutConfiguredDefault()
     {
         GraphDatabaseAPI database = startDatabaseWithoutTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         try ( Transaction transaction = database.beginTx( 5, TimeUnit.SECONDS ) )
         {
             fakeClock.forward( 4, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             database.execute( "create (n)" );
             transaction.failure();
         }
@@ -211,13 +236,14 @@ public class TransactionGuardIntegrationTest
         try ( Transaction transaction = database.beginTx( 6, TimeUnit.SECONDS ) )
         {
             fakeClock.forward( 7, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             transaction.success();
             database.execute( "create (n)" );
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException e )
+        catch ( TransactionTerminatedException e )
         {
-            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -227,6 +253,8 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningShellQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
         try
         {
@@ -234,13 +262,15 @@ public class TransactionGuardIntegrationTest
             CollectingOutput commandOutput = new CollectingOutput();
             execute( shellServer, commandOutput, client.getId(), "begin Transaction" );
             fakeClock.forward( 3, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             execute( shellServer, commandOutput, client.getId(), "create (n);" );
             execute( shellServer, commandOutput, client.getId(), "commit" );
             fail( "Transaction should be already terminated." );
         }
         catch ( ShellException e )
         {
-            assertThat( e.getMessage(), containsString( "Transaction timeout." ) );
+            assertThat( e.getMessage(), containsString( "The transaction has not completed within " +
+                    "the specified timeout." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -249,7 +279,10 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningShellPeriodicCommitQuery() throws Exception
     {
-        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
+        monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
         GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
         try
         {
@@ -262,7 +295,7 @@ public class TransactionGuardIntegrationTest
         }
         catch ( ShellException e )
         {
-            assertThat( e.getMessage(), containsString( "Transaction timeout." ) );
+            assertThat( e.getMessage(), containsString( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -272,10 +305,13 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningRestTransactionalEndpointQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri( neoServer ) ).location();
 
         fakeClock.forward( 3, TimeUnit.SECONDS );
+        timeoutMonitor.run();
 
         HTTP.Response response =
                 HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
@@ -293,6 +329,8 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningRestTransactionalEndpointWithCustomTimeoutQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
         HTTP.Response beginResponse = HTTP
@@ -309,6 +347,7 @@ public class TransactionGuardIntegrationTest
         assertEquals( "Response should be successful.", 200, response.status() );
 
         fakeClock.forward( 11, TimeUnit.SECONDS );
+        timeoutMonitor.run();
 
         response =
                 HTTP.POST( transactionEndPoint, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );
@@ -326,6 +365,8 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningDriverQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
@@ -337,6 +378,7 @@ public class TransactionGuardIntegrationTest
             transaction.run( "create (n)" ).consume();
             transaction.success();
             fakeClock.forward( 3, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             try
             {
                 transaction.run( "create (n)" ).consume();
@@ -353,12 +395,15 @@ public class TransactionGuardIntegrationTest
     @Test
     public void terminateLongRunningDriverPeriodicCommitQuery() throws Exception
     {
-        GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
+        monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
         EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
-        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortCustomGuard, driverConfig );
+        try ( Driver driver = GraphDatabase.driver( "bolt://localhost:" + boltPortDatabaseWithTimeout, driverConfig );
                 Session session = driver.session() )
         {
             URL url = prepareTestImportFile( 8 );
@@ -376,16 +421,19 @@ public class TransactionGuardIntegrationTest
     public void changeTimeoutAtRuntime() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
+        KernelTransactionTimeoutMonitor timeoutMonitor =
+                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
         try ( Transaction transaction = database.beginTx() )
         {
             fakeClock.forward( 3, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             transaction.success();
             database.execute( "create (n)" );
             fail( "Transaction should be already terminated." );
         }
-        catch ( GuardTimeoutException e )
+        catch ( TransactionTerminatedException e )
         {
-            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+            assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -400,6 +448,7 @@ public class TransactionGuardIntegrationTest
         try ( Transaction transaction = database.beginTx() )
         {
             fakeClock.forward( 3, TimeUnit.SECONDS );
+            timeoutMonitor.run();
             transaction.success();
             database.execute( "create (n)" );
         }
@@ -424,18 +473,6 @@ public class TransactionGuardIntegrationTest
             }
             transaction.success();
         }
-    }
-
-    private GraphDatabaseAPI startDatabaseWithTimeoutCustomGuard()
-    {
-        if ( databaseWithTimeoutAndGuard == null )
-        {
-            Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt();
-            databaseWithTimeoutAndGuard =
-                    startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
-            boltPortCustomGuard = getBoltConnectorPort( databaseWithTimeoutAndGuard );
-        }
-        return databaseWithTimeoutAndGuard;
     }
 
     private GraphDatabaseAPI startDatabaseWithTimeout()
@@ -556,20 +593,6 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private GraphDatabaseAPI startCustomGuardedDatabase( File storeDir, Map<Setting<?>,
-            String> configMap )
-    {
-        CustomClockEnterpriseFacadeFactory guardedEnterpriseFacadeFactory = new CustomClockGuardedEnterpriseFacadeFactory();
-        GraphDatabaseBuilder databaseBuilder =
-                new CustomGuardTestTestGraphDatabaseFactory( guardedEnterpriseFacadeFactory )
-                        .newImpermanentDatabaseBuilder( storeDir );
-        configMap.forEach( databaseBuilder::setConfig );
-
-        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
-        cleanupRule.add( database );
-        return database;
-    }
-
     private GraphDatabaseAPI startCustomDatabase( File storeDir, Map<Setting<?>,String> configMap )
     {
         CustomClockEnterpriseFacadeFactory customClockEnterpriseFacadeFactory = new CustomClockEnterpriseFacadeFactory();
@@ -583,13 +606,54 @@ public class TransactionGuardIntegrationTest
         return database;
     }
 
+    private static class KernelTransactionTimeoutMonitorSupplier implements Supplier<KernelTransactionTimeoutMonitor>
+    {
+        private volatile KernelTransactionTimeoutMonitor transactionTimeoutMonitor;
+
+        void setTransactionTimeoutMonitor( KernelTransactionTimeoutMonitor transactionTimeoutMonitor )
+        {
+            this.transactionTimeoutMonitor = transactionTimeoutMonitor;
+        }
+
+        @Override
+        public KernelTransactionTimeoutMonitor get()
+        {
+            return transactionTimeoutMonitor;
+        }
+
+        public void clear()
+        {
+            setTransactionTimeoutMonitor( null );
+        }
+    }
+
+    private static class IdInjectionFunctionAction
+    {
+        private final Supplier<KernelTransactionTimeoutMonitor> monitorSupplier;
+
+        IdInjectionFunctionAction( Supplier<KernelTransactionTimeoutMonitor> monitorSupplier )
+        {
+            this.monitorSupplier = monitorSupplier;
+        }
+
+        void tickAndCheck()
+        {
+            KernelTransactionTimeoutMonitor timeoutMonitor = monitorSupplier.get();
+            if ( timeoutMonitor != null )
+            {
+                fakeClock.forward( 1, TimeUnit.SECONDS );
+                timeoutMonitor.run();
+            }
+        }
+    }
+
     private class GuardingServerBuilder extends EnterpriseServerBuilder
     {
         private GraphDatabaseFacade graphDatabaseFacade;
         final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY =
                 ( config, dependencies ) -> graphDatabaseFacade;
 
-        protected GuardingServerBuilder( GraphDatabaseFacade graphDatabaseAPI )
+        GuardingServerBuilder( GraphDatabaseFacade graphDatabaseAPI )
         {
             super( NullLogProvider.getInstance() );
             this.graphDatabaseFacade = graphDatabaseAPI;
@@ -644,14 +708,36 @@ public class TransactionGuardIntegrationTest
         }
     }
 
+    private class TransactionGuardTerminationEditionModule extends EnterpriseEditionModule
+    {
+        TransactionGuardTerminationEditionModule( PlatformModule platformModule )
+        {
+            super( platformModule );
+        }
+
+        @Override
+        protected IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fs,
+                IdTypeConfigurationProvider idTypeConfigurationProvider )
+        {
+            IdGeneratorFactory generatorFactory = super.createIdGeneratorFactory( fs, idTypeConfigurationProvider );
+            return new TerminationIdGeneratorFactory( generatorFactory );
+        }
+    }
+
     private class CustomClockEnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
     {
 
         CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new );
+            super( DatabaseInfo.ENTERPRISE, new Function<PlatformModule,EditionModule>()
+            {
+                @Override
+                public EditionModule apply( PlatformModule platformModule )
+                {
+                    return new TransactionGuardTerminationEditionModule( platformModule );
+                }
+            } );
         }
-
         @Override
         protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
                 GraphDatabaseFacade graphDatabaseFacade )
@@ -665,77 +751,111 @@ public class TransactionGuardIntegrationTest
                 }
             };
         }
-
-        @Override
-        protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
-                Supplier<QueryExecutionEngine> queryEngine )
-        {
-            return new CustomClockDataSourceModule( platformModule, editionModule, queryEngine );
-        }
     }
 
-    private class CustomClockDataSourceModule extends DataSourceModule
+    private class TerminationIdGeneratorFactory implements IdGeneratorFactory
     {
+        private IdGeneratorFactory delegate;
 
-        CustomClockDataSourceModule( PlatformModule platformModule, EditionModule editionModule,
-                Supplier<QueryExecutionEngine> queryEngine )
+        TerminationIdGeneratorFactory( IdGeneratorFactory delegate )
         {
-            super( platformModule, editionModule, queryEngine );
-        }
-
-    }
-
-    private class CustomClockGuardedEnterpriseFacadeFactory extends CustomClockEnterpriseFacadeFactory
-    {
-
-        CustomClockGuardedEnterpriseFacadeFactory()
-        {
-            super();
+            this.delegate = delegate;
         }
 
         @Override
-        protected DataSourceModule createDataSource( PlatformModule platformModule, EditionModule editionModule,
-                Supplier<QueryExecutionEngine> queryEngine )
+        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
         {
-            return new GuardedCustomClockDataSourceModule( platformModule, editionModule, queryEngine );
-        }
-    }
-
-    private class GuardedCustomClockDataSourceModule extends CustomClockDataSourceModule
-    {
-
-        GuardedCustomClockDataSourceModule( PlatformModule platformModule, EditionModule editionModule,
-                Supplier<QueryExecutionEngine> queryEngine )
-        {
-            super( platformModule, editionModule, queryEngine );
+            return delegate.open( filename, idType, highId, maxId );
         }
 
         @Override
-        protected TimeoutGuard createGuard( Clock clock, LogService logging )
+        public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
         {
-            return tickingGuard;
-        }
-    }
-
-    private class TickingGuard extends TimeoutGuard
-    {
-        private final FakeClock clock;
-        private final long delta;
-        private final TimeUnit unit;
-
-        TickingGuard( Clock clock, Log log, long delta, TimeUnit unit )
-        {
-            super( clock, log );
-            this.clock = (FakeClock) clock;
-            this.delta = delta;
-            this.unit = unit;
+            return new TerminationIdGenerator( delegate.open( filename, grabSize, idType, highId, maxId ) );
         }
 
         @Override
-        public void check( KernelStatement statement )
+        public void create( File filename, long highId, boolean throwIfFileExists )
         {
-            super.check( statement );
-            clock.forward( delta, unit );
+            delegate.create( filename, highId, throwIfFileExists );
+        }
+
+        @Override
+        public IdGenerator get( IdType idType )
+        {
+            return delegate.get( idType );
+        }
+    }
+
+    private class TerminationIdGenerator implements IdGenerator
+    {
+
+        private IdGenerator delegate;
+
+        TerminationIdGenerator( IdGenerator delegate )
+        {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size )
+        {
+            return delegate.nextIdBatch( size );
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            delegate.setHighId( id );
+        }
+
+        @Override
+        public long getHighId()
+        {
+            return delegate.getHighId();
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return delegate.getHighestPossibleIdInUse();
+        }
+
+        @Override
+        public void freeId( long id )
+        {
+            delegate.freeId( id );
+        }
+
+        @Override
+        public void close()
+        {
+            delegate.close();
+        }
+
+        @Override
+        public long getNumberOfIdsInUse()
+        {
+            return delegate.getNumberOfIdsInUse();
+        }
+
+        @Override
+        public long getDefragCount()
+        {
+            return delegate.getDefragCount();
+        }
+
+        @Override
+        public void delete()
+        {
+            delegate.delete();
+        }
+
+        @Override
+        public long nextId()
+        {
+            getIdInjectionFunction.tickAndCheck();
+            return delegate.nextId();
         }
     }
 }

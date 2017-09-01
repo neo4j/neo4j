@@ -89,7 +89,7 @@ public class LockingStatementOperationsTest
     private final KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private final TxState txState = new TxState();
     private final KernelStatement state = new KernelStatement( transaction, new SimpleTxStateHolder( txState ),
-            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE );
+            mock( StorageStatement.class ), new Procedures(), new CanWrite(), LockTracer.NONE, null );
     private final SchemaStateOperations schemaStateOps;
 
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -106,7 +106,7 @@ public class LockingStatementOperationsTest
         lockingOps = new LockingStatementOperations(
                 entityReadOps, entityWriteOps, schemaReadOps, schemaWriteOps, schemaStateOps
         );
-        state.initialize( new SimpleStatementLocks( locks ), null, PageCursorTracer.NULL );
+        state.initialize( new SimpleStatementLocks( locks ), PageCursorTracer.NULL );
         state.acquire();
     }
 

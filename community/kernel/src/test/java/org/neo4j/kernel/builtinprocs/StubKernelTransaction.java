@@ -80,6 +80,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public boolean isTerminated()
+    {
+        return false;
+    }
+
+    @Override
     public void markForTermination( Status reason )
     {
         throw new UnsupportedOperationException( "not implemented" );

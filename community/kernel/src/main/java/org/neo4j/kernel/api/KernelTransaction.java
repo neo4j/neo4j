@@ -154,6 +154,11 @@ public interface KernelTransaction extends AutoCloseable
     Optional<Status> getReasonIfTerminated();
 
     /**
+     * @return true if transaction was terminated, otherwise false
+     */
+    boolean isTerminated();
+
+    /**
      * Marks this transaction for termination, such that it cannot commit successfully and will try to be
      * terminated by having other methods throw a specific termination exception, as to sooner reach the assumed
      * point where {@link #close()} will be invoked.

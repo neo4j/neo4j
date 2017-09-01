@@ -408,6 +408,12 @@ public class ConstraintIndexCreatorTest
             }
 
             @Override
+            public boolean isTerminated()
+            {
+                return false;
+            }
+
+            @Override
             public void markForTermination( Status reason )
             {
             }

@@ -532,17 +532,17 @@ public class KernelTransactionsTest
         Tracers tracers = new Tracers( "null", NullLog.getInstance(), new Monitors(), mock( JobScheduler.class ) );
         StatementLocksFactory statementLocksFactory = new SimpleStatementLocksFactory( locks );
 
-        StatementOperationContainer statementOperationsContianer = new StatementOperationContainer( null, null );
+        StatementOperationParts statementOperations = mock( StatementOperationParts.class );
         KernelTransactions transactions;
         if ( testKernelTransactions )
         {
             transactions = createTestTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperationsContianer, clock, availabilityGuard );
+                    statementLocksFactory, statementOperations, clock, availabilityGuard );
         }
         else
         {
             transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperationsContianer, clock, availabilityGuard );
+                    statementLocksFactory, statementOperations, clock, availabilityGuard );
         }
         transactions.start();
         return transactions;
@@ -550,11 +550,11 @@ public class KernelTransactionsTest
 
     private static KernelTransactions createTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
-            StatementLocksFactory statementLocksFactory, StatementOperationContainer statementOperationsContianer,
+            StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             Clock clock, AvailabilityGuard availabilityGuard )
     {
         return new KernelTransactions( statementLocksFactory,
-                null, statementOperationsContianer, null, DEFAULT,
+                null, statementOperations, null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard,
                 tracers, storageEngine, new Procedures(), transactionIdStore, clock, new CanWrite() );
@@ -562,10 +562,10 @@ public class KernelTransactionsTest
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
             TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
-            StatementLocksFactory statementLocksFactory, StatementOperationContainer statementOperationsContianer,
+            StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             Clock clock, AvailabilityGuard availabilityGuard )
     {
-        return new TestKernelTransactions( statementLocksFactory, null, statementOperationsContianer,
+        return new TestKernelTransactions( statementLocksFactory, null, statementOperations,
                 null, DEFAULT,
                 commitProcess, null, null, new TransactionHooks(), mock( TransactionMonitor.class ),
                 availabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
@@ -612,7 +612,7 @@ public class KernelTransactionsTest
     private static class TestKernelTransactions extends KernelTransactions
     {
         TestKernelTransactions( StatementLocksFactory statementLocksFactory,
-                ConstraintIndexCreator constraintIndexCreator, StatementOperationContainer statementOperationsContianer,
+                ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
                 LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
@@ -620,7 +620,7 @@ public class KernelTransactionsTest
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
                 AccessCapability accessCapability )
         {
-            super( statementLocksFactory, constraintIndexCreator, statementOperationsContianer, schemaWriteGuard,
+            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard,
                     txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
                     transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
                     clock,

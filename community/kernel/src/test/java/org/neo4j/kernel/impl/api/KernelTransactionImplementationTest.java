@@ -109,26 +109,6 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     }
 
     @Test
-    public void useGuardedPartsWhenTransactionHaveTimeout() throws Exception
-    {
-        try ( KernelTransaction transaction = newTransaction( 10L ) )
-        {
-            transaction.success();
-        }
-        verify( operationContainer ).guardedParts();
-    }
-
-    @Test
-    public void useNonGuardedPartsWhenTransactionHaveTimeout() throws Exception
-    {
-        try ( KernelTransaction transaction = newTransaction( securityContext() ) )
-        {
-            transaction.success();
-        }
-        verify( operationContainer ).nonGuarderParts();
-    }
-
-    @Test
     public void shouldCommitSuccessfulTransaction() throws Exception
     {
         // GIVEN

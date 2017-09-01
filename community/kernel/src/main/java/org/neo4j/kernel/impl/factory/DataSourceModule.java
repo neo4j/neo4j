@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.guard.TimeoutGuard;
+import org.neo4j.kernel.guard.TerminationGuard;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
@@ -84,7 +84,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
-import org.neo4j.procedure.TerminationGuard;
 
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
@@ -339,14 +338,14 @@ public class DataSourceModule
 
     private Guard createGuard( Dependencies deps, Clock clock, LogService logging )
     {
-        TimeoutGuard guard = createGuard( clock, logging );
+        TerminationGuard guard = createGuard();
         deps.satisfyDependency( guard );
         return guard;
     }
 
-    protected TimeoutGuard createGuard( Clock clock, LogService logging )
+    protected TerminationGuard createGuard()
     {
-        return new TimeoutGuard( clock, logging.getInternalLog( TimeoutGuard.class ) );
+        return new TerminationGuard();
     }
 
     private Procedures setupProcedures( PlatformModule platform, EditionModule editionModule )
@@ -373,7 +372,7 @@ public class DataSourceModule
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
-        procedures.registerComponent( TerminationGuard.class, new TerminationGuardProvider( guard ), true );
+        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider( guard ), true );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following

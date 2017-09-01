@@ -126,15 +126,11 @@ public class OperationsFacade
     private StatementOperationParts operations;
 
     OperationsFacade( KernelTransaction tx, KernelStatement statement,
-                      Procedures procedures )
+                      Procedures procedures, StatementOperationParts operationParts )
     {
         this.tx = tx;
         this.statement = statement;
         this.procedures = procedures;
-    }
-
-    public void initialize( StatementOperationParts operationParts )
-    {
         this.operations = operationParts;
     }
 
