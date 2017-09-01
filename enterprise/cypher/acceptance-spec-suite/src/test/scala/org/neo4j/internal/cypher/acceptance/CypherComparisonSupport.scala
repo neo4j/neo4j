@@ -409,7 +409,7 @@ object CypherComparisonSupport {
 
     object CompiledBytecode extends Runtime("COMPILED", "runtime=compiled")
 
-    object Slotted extends Runtime("ENTERPRISE-INTERPRETED", "runtime=enterprise-interpreted")
+    object Slotted extends Runtime("SLOTTED", "runtime=slotted")
 
     object Interpreted extends Runtime("INTERPRETED", "runtime=interpreted")
 
