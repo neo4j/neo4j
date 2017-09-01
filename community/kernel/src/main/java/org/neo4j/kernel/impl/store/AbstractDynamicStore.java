@@ -183,10 +183,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
     @Override
     public DynamicRecord nextRecord()
     {
-        DynamicRecord record = new DynamicRecord( nextId() );
-        record.setCreated();
-        record.setInUse( true );
-        return record;
+        return StandardDynamicRecordAllocator.allocateRecord( nextId() );
     }
 
     public void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte[] src )

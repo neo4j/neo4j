@@ -57,6 +57,16 @@ public class IdRange
                 Arrays.toString( defragIds ) + "]";
     }
 
+    public int totalSize()
+    {
+        return defragIds.length + rangeLength;
+    }
+
+    public IdRangeIterator iterator()
+    {
+        return new IdRangeIterator( this );
+    }
+
     @Override
     public boolean equals( Object o )
     {

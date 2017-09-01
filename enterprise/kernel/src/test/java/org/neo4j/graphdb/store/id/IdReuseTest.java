@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -47,7 +48,17 @@ public class IdReuseTest
 {
     @Rule
     public DatabaseRule dbRule = new EnterpriseDatabaseRule()
-            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
+            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP )
+            // Set tx id batching to 1 since there are sequential id testing which gets bitten by this inner working:
+            // - TxA begins and creates node Na w/ label L. Doing so will create inner transaction TxB which creates L
+            // - TxB completes and will be set as the tx for this thread in the pool (puddle)
+            // - TxA continues and creates nodes Na and similar Nb, then relationship Ra. Doing so allocates id ranges for NODE/RELATIONSHIP
+            // - TxA completes and returns TxA back to pool, but TxB is already in that puddle so goes back to delegate pool
+            // - Next transaction who wants to create a relationship or node in this thread gets TxB
+            // - TXB has not allocated NODE/RELATIONSHIP id batch, so does so, which is after TxA id batches.
+            // - The id of next node/relationship created by TxB will not be immediately following the one created in TxA.
+            // = This is fine but perhaps unexpected and tests asserting on ids being sequential will fail.
+            .withSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception

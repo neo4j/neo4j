@@ -43,6 +43,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
@@ -100,7 +101,9 @@ public class DatabaseActionsTest
     @BeforeClass
     public static void createDb() throws IOException
     {
-        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .newGraphDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( new LeaseManager( Clocks.fakeClock() ), database.getGraph() );
@@ -578,7 +581,7 @@ public class DatabaseActionsTest
     public void shouldRemoveRelationProperties() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "foo", "bar" );
         map.put( "baz", 22 );
         graphdbHelper.setRelationshipProperties( relId, map );
@@ -593,7 +596,7 @@ public class DatabaseActionsTest
     public void shouldRemoveRelationshipProperty() throws Exception
     {
         long relId = graphdbHelper.createRelationship( "PAIR-PROGRAMS_WITH" );
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put( "foo", "bar" );
         map.put( "baz", 22 );
         graphdbHelper.setRelationshipProperties( relId, map );
@@ -1115,7 +1118,7 @@ public class DatabaseActionsTest
     {
         // GIVEN
         long node = actions.createNode( null ).getId();
-        Collection<String> labels = new ArrayList<String>();
+        Collection<String> labels = new ArrayList<>();
         String labelName = "Wonk";
         labels.add( labelName );
 
