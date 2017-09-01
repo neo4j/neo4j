@@ -27,9 +27,4 @@ case class SingleRow()(val solved: PlannerQuery with CardinalityEstimation)
   val argumentIds: Set[IdName] = Set.empty
 
   def availableSymbols = argumentIds
-
-  override def dup(children: Seq[AnyRef]) = {
-    assert(children.isEmpty)
-    SingleRow()(solved).asInstanceOf[this.type]
-  }
 }

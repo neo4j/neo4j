@@ -36,7 +36,7 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan
   extends Product
   with Strictness
-  with Rewritable {
+  with RewritableWithMemory {
 
   self =>
 
@@ -44,6 +44,21 @@ abstract class LogicalPlan
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
+
+  def assignedId: Int = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
+  def assignIds(): Unit = recurseAssignIds(0)
+
+  private var _id: Option[Int] = None
+  protected def assignId(id: Option[Int]): Unit = _id = id
+
+  protected def recurseAssignIds(sofar: Int): Int = {
+    val sofarPrim = lhs.map(_.recurseAssignIds(sofar)).getOrElse(sofar)
+    val sofarBis = rhs.map(_.recurseAssignIds(sofarPrim)).getOrElse(sofarPrim)
+    _id = Some(sofarBis)
+    sofarBis + 1
+  }
+
+  override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
