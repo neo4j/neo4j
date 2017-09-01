@@ -186,7 +186,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "unsupported.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", "ENTERPRISE-INTERPRETED" ,  DEFAULT ), DEFAULT );
+            options( "INTERPRETED", "COMPILED", "SLOTTED" ,  DEFAULT ), DEFAULT );
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal

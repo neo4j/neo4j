@@ -97,7 +97,7 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
   test("prepending item to a list should behave correctly in all runtimes") {
     val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN 'a:' + x.a AS r"
 
-    val result = succeedWith(Configs.All - Configs.SlottedInterpreted, query)
+    val result = succeedWith(Configs.AllExceptSlotted, query)
 
     result.toList.head("r") should equal(List("a:", 1, 2, 3))
   }
@@ -105,7 +105,7 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
   test("appending item to a list should behave correctly in all runtimes") {
     val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN x.a + 'a:' AS r"
 
-    val result = succeedWith(Configs.All - Configs.SlottedInterpreted, query)
+    val result = succeedWith(Configs.AllExceptSlotted, query)
 
     result.toList.head("r") should equal(List(1, 2, 3, "a:"))
   }

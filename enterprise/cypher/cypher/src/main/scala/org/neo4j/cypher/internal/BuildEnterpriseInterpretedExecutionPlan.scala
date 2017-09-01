@@ -71,7 +71,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
-                                                                        EnterpriseInterpretedRuntimeName)
+                                                                        SlottedRuntimeName)
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
@@ -106,7 +106,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint
       .isStale(lastTxId, statistics)
 
-    override def runtimeUsed: RuntimeName = EnterpriseInterpretedRuntimeName
+    override def runtimeUsed: RuntimeName = SlottedRuntimeName
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
