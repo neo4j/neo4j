@@ -25,9 +25,9 @@ import java.util.Map;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 /**
  * This class is responsible for routing incoming request messages to a worker

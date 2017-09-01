@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
@@ -31,8 +32,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.values.{AnyValue, AnyValues}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.values.AnyValue
+
 import scala.collection.Map
 
 class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder with QueryStateTestSupport {
@@ -442,7 +444,7 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   private var matchingContext: MatchingContext = null
 
   private def getMatches(params: (String, Any)*) = withQueryState { queryState =>
-    val ctx = ExecutionContext().newWith(params.map(p => (p._1, AnyValues.of(p._2))))
+    val ctx = ExecutionContext().newWith(params.map(p => (p._1, ValueUtils.of(p._2))))
     matchingContext.getMatches(ctx, queryState).toList
   }
 

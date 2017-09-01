@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipI
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
@@ -48,9 +49,9 @@ import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactor
 import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
 
 import scala.collection.mutable
 
@@ -254,15 +255,15 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression = codeGenType match {
     case CodeGenType.primitiveNode =>
-      invoke(method[VirtualValues, NodeValue]("fromNodeProxy", typeRef[Node]),
+      invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]),
              invoke(nodeManager, newNodeProxyById, expression))
     case CypherCodeGenType(CTNode, _) =>
-      invoke(method[VirtualValues, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
+      invoke(method[ValueUtils, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
     case CodeGenType.primitiveRel =>
-      invoke(method[VirtualValues, EdgeValue]("fromRelationshipProxy", typeRef[Node]),
+      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Node]),
              invoke(nodeManager, newRelationshipProxyById, expression))
     case CypherCodeGenType(CTRelationship, _) =>
-      invoke(method[VirtualValues, EdgeValue]("fromRelationshipProxy", typeRef[Relationship]),
+      invoke(method[ValueUtils, EdgeValue]("fromRelationshipProxy", typeRef[Relationship]),
              cast(typeRef[Relationship], expression))
     case CodeGenType.primitiveInt =>
       invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)
@@ -282,7 +283,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     case CypherCodeGenType(symbols.CTString, _) =>
       invoke(method[Values, TextValue]("stringValue", typeRef[String]), cast(typeRef[String], expression))
     case _ =>
-      invoke(method[AnyValues, AnyValue]("of", typeRef[Object]), expression)
+      invoke(method[ValueUtils, AnyValue]("of", typeRef[Object]), expression)
 
   }
 

@@ -20,7 +20,7 @@
 package org.neo4j.bolt.v1.messaging.message;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageHandler;
-import org.neo4j.values.result.QueryResult;
+import org.neo4j.cypher.result.QueryResult;
 
 public class RecordMessage implements ResponseMessage
 {

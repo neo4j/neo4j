@@ -26,9 +26,9 @@ import java.util.Collections
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
-import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 case class ExplainExecutionResult(fieldNames: Array[String],
                                   executionPlanDescription: InternalPlanDescription,

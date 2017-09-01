@@ -33,9 +33,9 @@ import java.util.Map;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
@@ -96,7 +96,7 @@ public class Neo4jPackTest
         // Then
         assertThat( unpacked, instanceOf( ListValue.class ) );
         ListValue unpackedList = (ListValue) unpacked;
-        assertThat( unpackedList, equalTo( AnyValues.asListValue( expected ) ) );
+        assertThat( unpackedList, equalTo( ValueUtils.asListValue( expected ) ) );
     }
 
     @SuppressWarnings( "unchecked" )

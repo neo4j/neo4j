@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.cypher.internal.javacompat;
 
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;

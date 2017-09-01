@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 
 import scala.util.Random
 
@@ -188,7 +188,7 @@ class TopPipeTest extends CypherFunSuite {
     result should equal(list(10,null))
   }
 
-  private def list(a: Any*) = a.map(AnyValues.of).toList
+  private def list(a: Any*) = a.map(ValueUtils.of).toList
 
   private def createFakePipeWith(count: Int): FakePipe = {
 

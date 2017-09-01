@@ -21,7 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
-import org.neo4j.values.AnyValues;
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 
 public class BoltUserManagementProceduresInteractionIT extends AuthProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
@@ -43,6 +43,6 @@ public class BoltUserManagementProceduresInteractionIT extends AuthProceduresInt
     @Override
     protected Object valueOf( Object obj )
     {
-        return AnyValues.of( obj );
+        return ValueUtils.of( obj );
     }
 }

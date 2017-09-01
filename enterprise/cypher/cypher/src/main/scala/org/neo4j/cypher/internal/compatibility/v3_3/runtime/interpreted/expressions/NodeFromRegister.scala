@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.javacompat.ValueUtils.fromNodeProxy
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 case class NodeFromRegister(offset: Int) extends Expression with RegisterExpression {
 

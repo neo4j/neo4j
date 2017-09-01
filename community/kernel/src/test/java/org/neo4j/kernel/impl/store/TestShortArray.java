@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -97,6 +97,6 @@ public class TestShortArray
         PropertyBlock target = new PropertyBlock();
         boolean encoded = ShortArray.encode( 0, value, target, payloadSize );
         assertTrue( encoded );
-        assertEquals( AnyValues.of( value ), ShortArray.decode( target ) );
+        assertEquals( Values.of( value ), ShortArray.decode( target ) );
     }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 public class ResultRecord implements QueryResult.Record
 {

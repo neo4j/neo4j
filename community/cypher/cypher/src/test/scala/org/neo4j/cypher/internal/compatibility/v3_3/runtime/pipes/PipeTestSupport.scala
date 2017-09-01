@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.values.AnyValues
 import org.scalatest.mock.MockitoSugar
 
 trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
@@ -44,7 +44,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     override def id: Id = new Id
   }
 
-  def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, AnyValues.of(v._2))): _*)
+  def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, ValueUtils.of(v._2))): _*)
 
   def setUpRelMockingInQueryContext(rels: Relationship*) {
     val relsByStartNode = rels.groupBy(_.getStartNode)

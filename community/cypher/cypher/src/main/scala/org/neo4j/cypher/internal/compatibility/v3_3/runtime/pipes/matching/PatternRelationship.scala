@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Qu
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.graphdb.{Node, Path, Relationship}
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.graphdb.Path
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.JavaConverters._
@@ -50,7 +50,7 @@ class PatternRelationship(key: String,
     val result: Iterator[GraphRelationship] =
       state.query.
         getRelationshipsForIds(realNode.id(), getDirection(node), types.types(state.query))
-        .map(AnyValues.asEdgeValue)
+        .map(ValueUtils.fromRelationshipProxy)
         .filter(r => canUseThis(r, state, f)).
         map(new SingleGraphRelationship(_))
 
@@ -147,11 +147,11 @@ class VariableLengthPatternRelationship(pathName: String,
       matchedPaths
     } else {
       matchedPaths.filter {
-        path => path.relationships().iterator().asScala.forall(r => canUseThis(AnyValues.asEdgeValue(r), state, f))
+        path => path.relationships().iterator().asScala.forall(r => canUseThis(ValueUtils.fromRelationshipProxy(r), state, f))
       }
     }
 
-    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(AnyValues.asPathValue(p)))
+    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(ValueUtils.asPathValue(p)))
   }
 }
 

@@ -28,16 +28,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.cypher.internal.javacompat.ValueUtils.{fromNodeProxy, fromRelationshipProxy, _}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.values.AnyValues._
-import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{of => _, _}
-import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.values.{AnyValue, AnyValues}
 
 /**
   * Execution result of a Procedure
@@ -110,7 +110,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
           case CTGeometry => transform(res(pos), (g: Geometry) => asPointValue(g))
           case CTMap => transform(res(pos), asMapValue)
           case ListType(_) => transform(res(pos), asListValue)
-          case CTAny => transform(res(pos), AnyValues.of)
+          case CTAny => transform(res(pos), ValueUtils.of)
         }
         i += 1
       }

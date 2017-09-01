@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
@@ -35,7 +35,7 @@ case class NodeIndexScanPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
     val resultNodes = state.query.indexScan(descriptor)
-    resultNodes.map(node => baseContext.newWith1(ident, AnyValues.asNodeValue(node)))
+    resultNodes.map(node => baseContext.newWith1(ident, ValueUtils.fromNodeProxy(node)))
   }
 
 }

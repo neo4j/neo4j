@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.values.AnyValues
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
@@ -63,7 +63,8 @@ case class VarLengthExpandPipe(source: Pipe,
       def next(): (NodeValue, Seq[EdgeValue]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(AnyValues.asEdgeValue)
+          val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir,
+                                                                                      types.types(state.query)).map(ValueUtils.fromRelationshipProxy)
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
             val otherNode = rel.otherNode(node)

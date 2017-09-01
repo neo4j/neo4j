@@ -41,6 +41,7 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
-import org.neo4j.values.result.QueryResult;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;

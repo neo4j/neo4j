@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.javacompat.ValueUtils.asPathValue
 import org.neo4j.graphdb.{Node, Relationship, RelationshipType}
-import org.neo4j.values.AnyValues.asPathValue
 import org.neo4j.values.storable.Values.NO_VALUE
 
 class PathValueBuilderTest extends CypherFunSuite {

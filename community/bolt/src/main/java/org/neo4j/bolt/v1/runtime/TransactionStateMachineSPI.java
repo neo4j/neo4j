@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.internal.javacompat.ExecutionResult;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -47,7 +48,6 @@ import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.values.result.QueryResult;
 
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 

@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.result.QueryResult;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;

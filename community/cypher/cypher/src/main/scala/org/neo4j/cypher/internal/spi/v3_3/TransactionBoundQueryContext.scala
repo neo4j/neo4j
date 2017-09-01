@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.javacompat.ValueToObjectSerializer
+import org.neo4j.cypher.internal.javacompat.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue, ValueToObjectSerializer}
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -62,8 +62,6 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.EdgeValue
-import org.neo4j.values.virtual.EdgeValue.RelationshipProxyWrappingEdgeValue
-import org.neo4j.values.virtual.NodeValue.NodeProxyWrappingNodeValue
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._

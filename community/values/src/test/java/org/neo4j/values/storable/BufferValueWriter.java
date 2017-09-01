@@ -21,11 +21,10 @@ package org.neo4j.values.storable;
 
 import org.hamcrest.Matchers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -157,7 +156,7 @@ public class BufferValueWriter implements ValueWriter<RuntimeException>
     @Override
     public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
     {
-        buffer.add( UTF8.decode( bytes, offset, length ) );
+        buffer.add( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
     }
 
     @Override

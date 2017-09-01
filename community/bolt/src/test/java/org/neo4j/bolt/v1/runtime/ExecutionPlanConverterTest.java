@@ -26,10 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -48,8 +48,8 @@ public class ExecutionPlanConverterTest
                 new TestExecutionPlanDescription( "description", getProfilerStatistics(), getIdentifiers(),
                         getArguments() ) );
         assertEquals( convertedMap.get( "operatorType" ), stringValue( "description" ) );
-        assertEquals( convertedMap.get( "args" ), AnyValues.asMapValue( getArguments() ) );
-        assertEquals( convertedMap.get( "identifiers" ), AnyValues.asListValue( getIdentifiers() ));
+        assertEquals( convertedMap.get( "args" ), ValueUtils.asMapValue( getArguments() ) );
+        assertEquals( convertedMap.get( "identifiers" ), ValueUtils.asListValue( getIdentifiers() ));
         assertEquals( convertedMap.get( "children" ), VirtualValues.EMPTY_LIST );
         assertEquals( convertedMap.get( "rows" ), longValue( 1L ));
         assertEquals( convertedMap.get( "dbHits" ), longValue( 2L ) );

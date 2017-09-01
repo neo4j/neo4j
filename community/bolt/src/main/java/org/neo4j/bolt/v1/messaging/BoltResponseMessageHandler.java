@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.values.result.QueryResult;
 import org.neo4j.values.virtual.MapValue;
 
 /**

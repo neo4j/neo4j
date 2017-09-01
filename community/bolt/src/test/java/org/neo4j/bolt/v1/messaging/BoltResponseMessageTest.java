@@ -33,10 +33,10 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
+import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -258,7 +258,7 @@ public class BoltResponseMessageTest
 
     private void assertSerializesNeoValue( Object val ) throws IOException
     {
-        assertSerializes( new RecordMessage( record( AnyValues.of( val ) ) ) );
+        assertSerializes( new RecordMessage( record( ValueUtils.of( val ) ) ) );
     }
 
 }

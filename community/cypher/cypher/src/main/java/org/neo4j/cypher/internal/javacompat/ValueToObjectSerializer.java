@@ -25,7 +25,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.values.BaseToObjectValueWriter;
 
 public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeException>
 {

@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.doubleValue
-import org.neo4j.values.{AnyValue, AnyValues}
 
 trait PercentileTest {
   implicit val state = QueryStateHelper.empty
@@ -34,7 +35,7 @@ trait PercentileTest {
   def getPercentile(percentile: Double, values: List[Any]): AnyValue = {
     val func = createAggregator(Variable("x"), Literal(percentile))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> AnyValues.of(value)))(QueryStateHelper.empty)
+      func(ExecutionContext.from("x" -> ValueUtils.of(value)))(QueryStateHelper.empty)
     })
     func.result
   }
