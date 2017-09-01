@@ -22,13 +22,13 @@ package org.neo4j.bolt.logging;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
-import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import org.neo4j.kernel.api.exceptions.Status;
@@ -46,7 +46,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     private final String remoteAddress;
     private Channel channel;
 
-    public static final String BOLT_X_CORRELATION_ID_HEADER = "Bolt-X-CorrelationId";
+    private static final String BOLT_X_CORRELATION_ID_HEADER = "Bolt-X-CorrelationId";
     public static final AttributeKey<String> CORRELATION_ATTRIBUTE_KEY = AttributeKey.valueOf(
             BOLT_X_CORRELATION_ID_HEADER );
 
@@ -156,18 +156,19 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
     private Consumer<String> infoLogger()
     {
-        String correlationId;
-        if ( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
+        if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
         {
-            String boltXCorrelationIdValue = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
-            correlationId = format( BOLT_X_CORRELATION_ID_HEADER + ": %s", boltXCorrelationIdValue );
-            if ( StringUtils.isNotBlank( correlationId ) )
-            {
-                return formatMessageWithEventName ->
-                        messageLog.info( remoteAddress, formatMessageWithEventName, correlationId );
-            }
+            channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
         }
-        return formatMessageWithEventName -> messageLog.info( remoteAddress, formatMessageWithEventName );
+
+        String boltXCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
+        return formatMessageWithEventName ->
+                messageLog.info( remoteAddress, formatMessageWithEventName, boltXCorrelationId );
+    }
+
+    private String randomCorrelationIdGenerator()
+    {
+        return UUID.randomUUID().toString();
     }
 
     private BiConsumer<String, String> infoLoggerWithArgs()
@@ -178,20 +179,14 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
     private Consumer<String> errorLogger( String errorMessage )
     {
-
-        String correlationId;
-        if ( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
+        if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
         {
-            String boltXCorrelationIdValue = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
-            correlationId = format( BOLT_X_CORRELATION_ID_HEADER + ": %s", boltXCorrelationIdValue );
-            if ( StringUtils.isNotBlank( correlationId ) )
-            {
-                return formatMessageWithEventName ->
-                        messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, correlationId );
-            }
+            channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
         }
+
+        String boltXCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
         return formatMessageWithEventName ->
-                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName );
+                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, boltXCorrelationId );
     }
 
     private BiConsumer<String, String> errorLoggerWithArgs( String errorMessage )

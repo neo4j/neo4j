@@ -79,6 +79,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
+        //TODO: Use supplier
         messageLogger.logSuccess( metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );
