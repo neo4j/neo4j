@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.TestName
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
 import org.parboiled.scala._
@@ -23,11 +24,13 @@ import org.parboiled.scala._
 trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
   final override def convert(ast: AST): AST = ast
 
-  final def yields(expr: (InputPosition) => AST)(implicit parser: Rule1[AST]) = parsing(testName) shouldGive expr
+  final def yields(expr: (InputPosition) => AST)(implicit parser: Rule1[AST]): Unit = parsing(testName) shouldGive expr
+
+  final def failsToParse(implicit parser: Rule1[AST]): Unit = assertFails(testName)
 
   private type Expression = (InputPosition) => ast.Expression
 
-  final def id(id: String) = ast.Variable(id)(_)
+  final def id(id: String): (InputPosition) => Variable = ast.Variable(id)(_)
 
   final def lt(lhs: Expression, rhs: Expression): Expression = { pos => ast.LessThan(lhs(pos), rhs(pos))(pos) }
 

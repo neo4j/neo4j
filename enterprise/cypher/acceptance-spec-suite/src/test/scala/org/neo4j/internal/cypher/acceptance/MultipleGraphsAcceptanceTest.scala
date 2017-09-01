@@ -19,46 +19,44 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+
+import scala.language.postfixOps
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("from graph") {
-    val query = "FROM GRAPH test AT 'graph://url' MATCH (a)-->() RETURN a"
+    val query = "FROM GRAPH AT 'graph://url' AS test MATCH (a)-->() RETURN a"
 
-    expect(query) doesNotSupport "FROM"
+    expect(query) toNotSupportMultipleGraphs
   }
 
   test("into graph") {
-    val query = "MATCH (a)--() INTO GRAPH test AT 'graph://url' CREATE (a)-->(b:B) RETURN b"
+    val query = "MATCH (a)--() INTO GRAPH AT 'graph://url' AS test CREATE (a)-->(b:B) RETURN b"
 
-    expect(query) doesNotSupport "INTO"
+    expect(query) toNotSupportMultipleGraphs
   }
 
   test("return named graph") {
-    val query = "MATCH ()--() RETURN GRAPH 'test'"
+    val query = "WITH $param AS foo MATCH ()--() RETURN 1 GRAPHS foo"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) toNotSupportMultipleGraphs
   }
 
-  test("return anonymous graph") {
-    val query = "MATCH ()--() RETURN GRAPH"
+  test("project a graph") {
+    val query = "WITH 1 AS a GRAPH foo RETURN 1"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) toNotSupportMultipleGraphs
   }
 
   private final case class expect(query: String) {
     import scala.util.{Failure, Success, Try}
 
-    def doesNotSupport(clause: String) = {
+    def toNotSupportMultipleGraphs: Unit = {
       Try(executeWithCostPlannerAndInterpretedRuntimeOnly(query)) match {
-        case _: Success[_] => fail(s"Expected $clause to be unsupported")
+        case _: Success[_] => fail(s"Expected $query to be unsupported")
         case Failure(exception) =>
-          exception.getMessage should include(s"$clause is not supported")
+          exception.getMessage should include(s"Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs.")
       }
     }
   }

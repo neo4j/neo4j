@@ -36,5 +36,4 @@ object CompilationPhases {
       rewriteEqualityToInPredicate andThen
       CNFNormalizer andThen
       LateAstRewriting
-
 }

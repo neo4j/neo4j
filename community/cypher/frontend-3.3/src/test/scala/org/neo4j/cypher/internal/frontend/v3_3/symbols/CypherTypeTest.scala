@@ -26,6 +26,12 @@ class CypherTypeTest extends CypherFunSuite {
     CTList(CTString).parents should equal(Seq(CTList(CTAny), CTAny))
   }
 
+  test("foo") {
+    val covariant = CTGraphRef.covariant
+    val s = covariant.toString
+    covariant should not be empty
+  }
+
   test("should be assignable from sub-type") {
     CTNumber.isAssignableFrom(CTInteger) should equal(true)
     CTAny.isAssignableFrom(CTString) should equal(true)

@@ -30,13 +30,13 @@ class ContainsNoMatchingNodesTest extends CypherFunSuite with AstConstructionTes
   })
 
   test("Happy when not finding ReturnItems(includeExisting = true, ...)") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = false, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None, None)_
 
     condition(ast) should equal(Seq())
   }
 
   test("Fails when finding ReturnItems(includeExisting = true, ...)") {
-    val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(includeExisting = true, Seq(UnaliasedReturnItem(Variable("foo")_, "foo")_))_, None, None, None, None)_
 
     condition(ast) should equal(Seq("Expected none but found ReturnItems(includeExisting = true, ...) at position line 1, column 0 (offset: 0)"))
   }

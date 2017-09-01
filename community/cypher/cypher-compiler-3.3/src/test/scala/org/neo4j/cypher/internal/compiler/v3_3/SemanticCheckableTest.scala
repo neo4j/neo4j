@@ -194,7 +194,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
   }
 
   test("shouldScopeState") {
-    val func1: SemanticCheck = Variable("name")(DummyPosition(0)).declare(CTNode)
+    val func1: SemanticCheck = Variable("name")(DummyPosition(0)).declareVariable(CTNode)
 
     val error = SemanticError("an error", DummyPosition(0))
     val func2: SemanticCheck = s => {

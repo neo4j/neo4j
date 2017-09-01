@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition}
 
+import scala.language.implicitConversions
+
 trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)
 
@@ -62,4 +64,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
 
   def TRUE: Expression = True()(pos)
+
+  def url(addr: String): GraphUrl =
+    GraphUrl(Right(StringLiteral(addr)(pos)))(pos)
+
+  def graph(name: String): BoundGraphAs =
+    GraphAs(varFor(name), None)(pos)
+
+  def graphAs(name: String, alias: String): BoundGraphAs =
+    GraphAs(varFor(name), Some(varFor(alias)))(pos)
+
+  def graphAt(name: String, address: String): SingleGraphAs =
+    GraphAtAs(url(address), Some(varFor(name)))(pos)
 }

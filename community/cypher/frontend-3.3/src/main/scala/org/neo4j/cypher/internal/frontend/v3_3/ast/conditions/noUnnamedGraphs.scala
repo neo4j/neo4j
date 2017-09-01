@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3
+package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
-sealed trait SemanticErrorDef {
-  def msg: String
-  def position: InputPosition
-  def references: Seq[InputPosition]
-}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SingleGraphAs
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
+case object noUnnamedGraphs extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val graphs = collectNodesOfType[SingleGraphAs].apply(that)
+    val unnamed = graphs.filter(_.as.isEmpty)
+    unnamed.map { graphDef => s"GraphDef at ${graphDef.position} is unnamed" }
+  }
 
-sealed trait UnsupportedOpenCypher extends SemanticErrorDef
-
-final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references = Seq.empty
+  override def name: String = productPrefix
 }

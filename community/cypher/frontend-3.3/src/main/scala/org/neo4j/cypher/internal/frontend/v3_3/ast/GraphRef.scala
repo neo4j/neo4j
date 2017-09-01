@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3
+package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-sealed trait SemanticErrorDef {
-  def msg: String
-  def position: InputPosition
-  def references: Seq[InputPosition]
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
+
+final case class GraphRef(name: Variable)(val position: InputPosition)
+  extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+
+  override def semanticCheck: SemanticCheck =
+    name.semanticCheck(Expression.SemanticContext.Simple)
 }
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
 
-sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 
-final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references = Seq.empty
-}

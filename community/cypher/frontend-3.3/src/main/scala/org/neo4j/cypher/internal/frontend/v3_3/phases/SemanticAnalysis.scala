@@ -19,12 +19,12 @@ package org.neo4j.cypher.internal.frontend.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_3.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticChecker, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticChecker, SemanticFeature, SemanticState}
 
-case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
+case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*) extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement())
+    val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), features: _*)
     if (warn) state.notifications.foreach(context.notificationLogger.log)
 
     context.errorHandler(errors)
@@ -32,7 +32,7 @@ case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState,
     from.withSemanticState(state)
   }
 
-  override def phase = SEMANTIC_CHECK
+  override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
   override def description = "do variable binding, typing, type checking and other semantic checks"
 

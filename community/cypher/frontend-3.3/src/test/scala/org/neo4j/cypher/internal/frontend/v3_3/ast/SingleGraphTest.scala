@@ -14,18 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3
+package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-sealed trait SemanticErrorDef {
-  def msg: String
-  def position: InputPosition
-  def references: Seq[InputPosition]
-}
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
+class SingleGraphTest extends CypherFunSuite with AstConstructionTestSupport {
 
-sealed trait UnsupportedOpenCypher extends SemanticErrorDef
+  test("Self alias does not produce a semantic error") {
 
-final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references = Seq.empty
+    val Right(state) = SemanticState.clean.withFeatures(SemanticFeature.MultipleGraphs).declareGraph(varFor("foo"))
+
+    val result = graphAs("foo", "foo").semanticCheck(state)
+    val errors = result.errors.toSet
+
+    errors.isEmpty should be(true)
+  }
 }

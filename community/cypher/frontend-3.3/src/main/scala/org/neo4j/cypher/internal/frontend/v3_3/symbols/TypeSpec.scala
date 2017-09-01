@@ -40,7 +40,8 @@ object TypeSpec {
     CTRelationship,
     CTPoint,
     CTGeometry,
-    CTString
+    CTString,
+    CTGraphRef
   )
 
   private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))

@@ -16,16 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3
 
-sealed trait SemanticErrorDef {
-  def msg: String
-  def position: InputPosition
-  def references: Seq[InputPosition]
-}
+sealed trait SemanticFeature
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
-
-sealed trait UnsupportedOpenCypher extends SemanticErrorDef
-
-final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
-  override def references = Seq.empty
+object SemanticFeature {
+  case object MultipleGraphs extends SemanticFeature
+  case object WithInitialQuerySignature extends SemanticFeature
 }

@@ -16,12 +16,40 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3._
 
-case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
-  def semanticCheck =
-    items.semanticCheck chain
-    ensureProjectedToUniqueIds
+sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+  /**
+    * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
+    * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
+    * This field is true if the dash (-) was used by a user.
+    */
+  def includeExisting: Boolean
+  def declareVariables(previousScope: Scope): SemanticCheck
+  def containsAggregate: Boolean
+  def withExisting(includeExisting: Boolean): ReturnItemsDef
+  def items: Seq[ReturnItem]
+
+  def isStarOnly: Boolean = includeExisting && items.isEmpty
+}
+
+final case class DiscardCardinality()(val position: InputPosition) extends ReturnItemsDef {
+  override def includeExisting: Boolean = false
+  override def semanticCheck: SemanticCheck = _success
+  override def items: Seq[ReturnItem] = Seq.empty
+  override def declareVariables(previousScope: Scope): (SemanticState) => SemanticCheckResult = _success
+  override def containsAggregate = false
+  override def withExisting(includeExisting: Boolean): DiscardCardinality = this
+  private def _success(s: SemanticState) = success(s)
+}
+
+final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItemsDef {
+
+  override def withExisting(includeExisting: Boolean): ReturnItemsDef =
+    copy(includeExisting = includeExisting)(position)
+
+  override def semanticCheck: SemanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
 
   def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
@@ -29,21 +57,22 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     case item => item.alias.collect { case ident if ident == item.expression => ident }
   }.flatten.toSet
 
-  def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
+  def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]): ReturnItems =
+    copy(items = f(items))(position)
 
-  def declareVariables(previousScope: Scope) =
+  override def declareVariables(previousScope: Scope): SemanticCheck =
     when (includeExisting) {
-      s => SemanticCheckResult.success(s.importScope(previousScope))
+      s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        variable.declare(item.expression.types, positions)
-      case Some(variable) => variable.declare(item.expression.types)
+        variable.declareVariable(item.expression.types, positions)
+      case Some(variable) => variable.declareVariable(item.expression.types)
       case None           => (state) => SemanticCheckResult(state, Seq.empty)
     })
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
-    items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
+    items.groupBy(_.name).foldLeft(success) {
        case (acc, (k, items)) if items.size > 1 =>
         acc chain SemanticError("Multiple result columns with the same name are not supported", items.head.position)
        case (acc, _) =>
@@ -51,7 +80,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     }
   }
 
-  def containsAggregate = items.exists(_.expression.containsAggregate)
+  override def containsAggregate = items.exists(_.expression.containsAggregate)
 }
 
 sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
@@ -80,5 +109,5 @@ case class AliasedReturnItem(expression: Expression, variable: Variable)(val pos
   val alias = Some(variable)
   val name = variable.name
 
-  def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult = SemanticCheckResult.success(state)
+  def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult = success(state)
 }

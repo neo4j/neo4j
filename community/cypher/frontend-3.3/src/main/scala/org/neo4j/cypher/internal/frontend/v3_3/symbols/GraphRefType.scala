@@ -24,4 +24,4 @@ object GraphRefType {
   }
 }
 
-sealed abstract class GraphRefType extends CypherType
+sealed trait GraphRefType extends CypherType

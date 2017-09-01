@@ -25,11 +25,23 @@ object SemanticCheckResult {
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
 
 trait SemanticChecking {
+
+  protected def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck = {
+    val error: SemanticCheck = FeatureError(s"$msg is not available in this implementation of Cypher due to lack of support for multiple graphs.", position)
+    error.unlessFeatureEnabled(SemanticFeature.MultipleGraphs)
+  }
+
   protected def when(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
     if (condition)
       check(state)
     else
       SemanticCheckResult.success(state)
+
+  protected def unless(condition: Boolean)(check: => SemanticCheck): SemanticCheck = state =>
+    if (condition)
+      SemanticCheckResult.success(state)
+    else
+      check(state)
 
   private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
@@ -37,12 +49,10 @@ trait SemanticChecking {
     pushStateScope chain check chain popStateScope
 }
 
-
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
     option.fold(SemanticCheckResult.success)(check)
 }
-
 
 class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck = state => traversable.foldLeft(SemanticCheckResult.success(state)) {

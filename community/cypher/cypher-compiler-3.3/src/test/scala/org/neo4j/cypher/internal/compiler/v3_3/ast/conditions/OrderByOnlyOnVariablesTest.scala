@@ -31,13 +31,13 @@ class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTest
   test("unhappy when when order by sort on non-variable expressions") {
     val expr: Expression = UnsignedDecimalIntegerLiteral("42")_
     val orderByPos = DummyPosition(42)
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, Some(OrderBy(Seq(AscSortItem(expr)_))(orderByPos)), None, None)_
 
     condition(ast) should equal(Seq(s"OrderBy at $orderByPos is ordering on an expression ($expr) instead of a variable"))
   }
 
   test("happy when order by sort on variable") {
-    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))_), None, None)_
+    val ast: ASTNode = Return(false, ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, Some(OrderBy(Seq(AscSortItem(varFor("n"))_))(pos)), None, None)_
 
     condition(ast) shouldBe empty
   }

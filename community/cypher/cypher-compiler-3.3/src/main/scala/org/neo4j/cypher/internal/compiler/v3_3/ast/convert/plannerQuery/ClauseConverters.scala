@@ -89,15 +89,15 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ri, optOrderBy, skip, limit, _) if !ri.includeExisting =>
+    case Return(distinct, ReturnItems(star, items), _, optOrderBy, skip, limit, _) if !star =>
 
       val shuffle = asQueryShuffle(optOrderBy).
         withSkip(skip).
         withLimit(limit)
 
-      val projection = asQueryProjection(distinct, ri.items).
+      val projection = asQueryProjection(distinct, items).
         withShuffle(shuffle)
-      val returns = ri.items.collect {
+      val returns = items.collect {
         case AliasedReturnItem(_, variable) => IdName.fromVariable(variable)
       }
       acc.
@@ -199,11 +199,14 @@ object ClauseConverters {
     acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced)): _*))
   }
 
-  private def asReturnItems(current: QueryGraph, clause: ReturnItems): Seq[ReturnItem] =
-    if (clause.includeExisting)
-      QueryProjection.forIds(current.allCoveredIds) ++ clause.items
-    else
-      clause.items
+  private def asReturnItems(current: QueryGraph, returnItems: ReturnItemsDef): Seq[ReturnItem] = returnItems match {
+    case ReturnItems(star, items) if star =>
+      QueryProjection.forIds(current.allCoveredIds) ++ items
+    case ReturnItems(_, items) =>
+      items
+    case _ =>
+      Seq.empty
+  }
 
   private def addMatchToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Match): PlannerQueryBuilder = {
     val patternContent = clause.pattern.destructed
@@ -364,7 +367,7 @@ object ClauseConverters {
 
     Handles: ... WITH * [WHERE <predicate>] ...
      */
-    case With(false, ri, None, None, None, where)
+    case With(false, ri, _, None, None, None, where)
       if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
@@ -380,7 +383,7 @@ object ClauseConverters {
 
     Handles all other WITH clauses
      */
-    case With(distinct, projection, orderBy, skip, limit, where) =>
+    case With(distinct, projection, _, orderBy, skip, limit, where) =>
       val selections = asSelections(where)
       val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 

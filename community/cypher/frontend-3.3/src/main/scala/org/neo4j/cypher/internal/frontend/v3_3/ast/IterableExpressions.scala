@@ -58,7 +58,7 @@ trait FilteringExpression extends Expression {
 
   private def checkInnerPredicate: SemanticCheck = innerPredicate match {
     case Some(e) => withScopedState {
-      variable.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
+      variable.declareVariable(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
     }
     case None    => SemanticCheckResult.success
   }
@@ -104,7 +104,7 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
   private def checkInnerExpression: SemanticCheck =
     scope.extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
-        variable.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
+        variable.declareVariable(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
       } chain {
         val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
@@ -137,7 +137,7 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
   private def checkInnerExpression: SemanticCheck = extractExpression match {
     case Some(e) =>
       withScopedState {
-        variable.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
+        variable.declareVariable(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
       } chain {
         val outerTypes: TypeGenerator = e.types(_).wrapInList
         this.specifyType(outerTypes)
@@ -170,7 +170,7 @@ case class PatternComprehension(namedPath: Option[Variable], pattern: Relationsh
     recordCurrentScope chain
     withScopedState {
       pattern.semanticCheck(Pattern.SemanticContext.Match) chain
-      namedPath.map(_.declare(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
+      namedPath.map(_.declareVariable(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
       predicate.semanticCheck(SemanticContext.Simple) chain
       projection.semanticCheck(SemanticContext.Simple)
     } chain {
@@ -254,8 +254,8 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expressi
         (list.types(s) constrain CTList(CTAny)).unwrapLists
       val accType: TypeGenerator = init.types
 
-      variable.declare(indexType) chain
-      accumulator.declare(accType) chain
+      variable.declareVariable(indexType) chain
+      accumulator.declareVariable(accType) chain
       expression.semanticCheck(SemanticContext.Simple)
     } chain expression.expectType(init.types, AccumulatorExpressionTypeMismatchMessageGenerator) chain
     this.specifyType(s => init.types(s) leastUpperBounds expression.types(s)) chain

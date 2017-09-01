@@ -28,7 +28,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   test("happy when we have no named paths") {
     val ast = Query(None, SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(varFor("n")), Seq.empty, None)(pos))))(pos), Seq.empty, None)(pos),
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None)(pos)
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None, None)(pos)
     ))(pos))(pos)
 
     condition(ast) shouldBe empty
@@ -38,7 +38,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
     val namedPattern: NamedPatternPart = NamedPatternPart(varFor("p"), EveryPath(NodePattern(Some(varFor("n")), Seq.empty, None)(pos)))(pos)
     val ast = Query(None, SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None)(pos)
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None, None)(pos)
     ))(pos))(pos)
 
     condition(ast) should equal(Seq(s"Expected none but found $namedPattern at position $pos"))
@@ -47,7 +47,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
   test("should allow named path for shortest path") {
     val ast = Query(None, SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(NamedPatternPart(varFor("p"), ShortestPaths(NodePattern(Some(varFor("n")), Seq.empty, None)(pos), single = true)(pos))(pos)))(pos), Seq.empty, None)(pos),
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None)(pos)
+      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))(pos)))(pos), None, None, None, None)(pos)
     ))(pos))(pos)
 
     condition(ast) shouldBe empty

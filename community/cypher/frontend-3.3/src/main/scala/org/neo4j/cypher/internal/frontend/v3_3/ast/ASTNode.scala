@@ -27,7 +27,10 @@ trait ASTNode
 
   self =>
 
-  def recordCurrentScope: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentScope(this))
+  def recordCurrentScope: SemanticCheck = recordCurrentScopeOnly chain recordCurrentContextGraphsOnly
+
+  def recordCurrentScopeOnly: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentScope(this))
+  def recordCurrentContextGraphsOnly: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentContextGraphs(this))
 
   def position: InputPosition
 
@@ -59,10 +62,10 @@ trait ASTPhrase extends ASTNodeType { self: ASTNode => }
 trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
   self: ASTNode =>
   def name: String
-  def dependencies = expression.dependencies
+  def dependencies: Set[Variable] = expression.dependencies
   def expression: Expression
 
-  def semanticCheck =
+  def semanticCheck: SemanticCheck =
     containsNoVariables chain
       literalShouldBeUnsignedInteger chain
       expression.semanticCheck(Expression.SemanticContext.Simple) chain
@@ -71,7 +74,7 @@ trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
   private def containsNoVariables: SemanticCheck = {
     val deps = dependencies
     if (deps.nonEmpty) {
-      val id = deps.toSeq.sortBy(_.position).head
+      val id = deps.toSeq.minBy(_.position)
       SemanticError(s"It is not allowed to refer to variables in $name", id.position)
     }
     else SemanticCheckResult.success
