@@ -129,7 +129,7 @@ public abstract class TokenAccess<R>
 
     private abstract static class TokenIterator<T> extends PrefetchingResourceIterator<T>
     {
-        final Statement statement;
+        Statement statement;
         final TokenAccess<T> access;
         final Iterator<Token> tokens;
 
@@ -143,7 +143,11 @@ public abstract class TokenAccess<R>
         @Override
         public void close()
         {
-            statement.close();
+            if ( statement != null )
+            {
+                statement.close();
+                statement = null;
+            }
         }
 
         static <T> ResourceIterator<T> inUse( Statement statement, TokenAccess<T> access )
