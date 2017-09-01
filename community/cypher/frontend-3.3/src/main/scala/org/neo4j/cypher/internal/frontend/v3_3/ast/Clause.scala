@@ -112,7 +112,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graphs.foldSemanticCheck(_.ensureVariableDefined()) chain
+    graphs.foldSemanticCheck(_.ensureGraphDefined()) chain
     recordCurrentScope
 }
 
@@ -122,7 +122,9 @@ final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputP
   override def name = "PERSIST"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain graph.semanticCheck
+    super.semanticCheck chain
+      graph.semanticCheck chain
+      recordCurrentScope
 }
 
 final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -140,7 +142,9 @@ final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def name = "RELOCATE"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain graph.semanticCheck
+    super.semanticCheck chain
+      graph.semanticCheck chain
+      recordCurrentScope
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {

@@ -30,7 +30,11 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
   //
   def semanticCheck(ctx: SemanticContext): (SemanticState) => SemanticCheckResult = s => this.ensureVariableDefined()(s) match {
     case Right(ss) => SemanticCheckResult.success(ss)
-    case Left(error) => SemanticCheckResult.error(declareVariable(CTAny.covariant)(s).right.get, error)
+    case Left(error) => declareVariable(CTAny.covariant)(s) match {
+        // if the variable is a graph, declaring it will fail
+      case Right(ss) => SemanticCheckResult.error(ss, error)
+      case Left(_error) => SemanticCheckResult.error(s, _error)
+    }
   }
 
   // double-dispatch helpers

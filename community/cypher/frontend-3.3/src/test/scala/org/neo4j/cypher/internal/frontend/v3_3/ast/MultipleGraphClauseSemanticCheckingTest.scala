@@ -906,6 +906,146 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("using graph variable in normal variable position") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |RETURN foo GRAPHS bar
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("`foo` already declared as graph")
+      )
+    }
+  }
+
+  test("using normal variable in graph position") {
+    parsing(
+      """WITH 1 AS a GRAPHS foo >> bar
+        |RETURN GRAPHS a
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("`a` already declared as variable")
+      )
+    }
+  }
+
+  test("using normal variable in graph definition") {
+    parsing(
+      """WITH 1 AS a GRAPHS foo >> bar
+        |WITH GRAPH a
+        |RETURN GRAPHS a
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(
+        Set("`a` already declared as variable")
+      )
+    }
+
+  }
+
+  test("persist graph") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |PERSIST GRAPH foo TO 'url'
+        |RETURN GRAPHS bar
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |foo >> bar
+          |// Persist(false,GraphAs(Variable(foo),Some(Variable(foo))),GraphUrl(Right(StringLiteral(url))))
+          |foo >> bar
+          |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,Set())
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19 64
+          |    GRAPH foo: 12 37
+          |  }
+          |  {
+          |    GRAPH bar: 64
+          |  }
+          |}"""
+    }
+  }
+
+  test("relocate graph") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |RELOCATE SNAPSHOT GRAPH foo TO 'url'
+        |RETURN GRAPHS bar
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |foo >> bar
+          |// Relocate(true,GraphAs(Variable(foo),Some(Variable(foo))),GraphUrl(Right(StringLiteral(url))))
+          |foo >> bar
+          |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,Set())
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19 74
+          |    GRAPH foo: 12 47
+          |  }
+          |  {
+          |    GRAPH bar: 74
+          |  }
+          |}"""
+    }
+  }
+
+  test("delete graphs") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |DELETE GRAPHS foo, bar
+        |RETURN 1
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |foo >> bar
+          |// DeleteGraphs(List(Variable(foo), Variable(bar)))
+          |foo >> bar
+          |// Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set())
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19 42
+          |    GRAPH foo: 12 37
+          |  }
+          |  {
+          |    1: 54
+          |  }
+          |}"""
+    }
+  }
+
   implicit class verify(actual: String) {
     def shouldEqualFixNewlines(expected: String): Unit = {
       StringHelper.RichString(actual.trim.stripMargin).fixNewLines should equal(StringHelper.RichString(expected.trim.stripMargin).fixNewLines)
