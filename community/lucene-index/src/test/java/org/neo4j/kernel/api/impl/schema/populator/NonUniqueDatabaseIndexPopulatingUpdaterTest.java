@@ -201,9 +201,9 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        String expectedString1 = documentRepresentingProperties( (long) 1, "foo" ).toString();
-        String expectedString2 = documentRepresentingProperties( (long) 2, "bar" ).toString();
-        String expectedString3 = documentRepresentingProperties( (long) 3, "qux" ).toString();
+        String expectedString1 = documentRepresentingProperties( 1, "foo" ).toString();
+        String expectedString2 = documentRepresentingProperties( 2, "bar" ).toString();
+        String expectedString3 = documentRepresentingProperties( 3, "qux" ).toString();
         String expectedString4 = documentRepresentingProperties( 4, "git", "bit" ).toString();
 
         updater.process( add( 1, SCHEMA_DESCRIPTOR, "foo" ) );
@@ -225,8 +225,8 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         LuceneIndexWriter writer = mock( LuceneIndexWriter.class );
         NonUniqueLuceneIndexPopulatingUpdater updater = newUpdater( writer );
 
-        String expectedString1 = documentRepresentingProperties( (long) 1, "after1" ).toString();
-        String expectedString2 = documentRepresentingProperties( (long) 2, "after2" ).toString();
+        String expectedString1 = documentRepresentingProperties( 1, "after1" ).toString();
+        String expectedString2 = documentRepresentingProperties( 2, "after2" ).toString();
         String expectedString3 = documentRepresentingProperties( 3, "bit", "after2" ).toString();
 
         updater.process( change( 1, SCHEMA_DESCRIPTOR, "before1", "after1" ) );
@@ -272,11 +272,6 @@ public class NonUniqueDatabaseIndexPopulatingUpdaterTest
         assertEquals( expectedIndexSize, sample.indexSize() );
         assertEquals( expectedUniqueValues, sample.uniqueValues() );
         assertEquals( expectedSampleSize, sample.sampleSize() );
-    }
-
-    private static NonUniqueLuceneIndexPopulatingUpdater newUpdater()
-    {
-        return newUpdater( newSampler() );
     }
 
     private static NonUniqueLuceneIndexPopulatingUpdater newUpdater( NonUniqueIndexSampler sampler )

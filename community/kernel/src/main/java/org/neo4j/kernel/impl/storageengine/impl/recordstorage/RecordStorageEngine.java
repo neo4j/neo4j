@@ -125,6 +125,8 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
@@ -165,7 +167,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final RelationshipDeleter relationshipDeleter;
     private final PropertyCreator propertyCreator;
     private final PropertyDeleter propertyDeleter;
-    private boolean started;
 
     public RecordStorageEngine(
             File storeDir,
@@ -358,7 +359,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        appliers.add( new NeoStoreBatchTransactionApplier( mode.version(), neoStores, cacheAccess, lockService() ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode.version(), neoStores, cacheAccess, lockService( mode ) ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
@@ -388,9 +389,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
     }
 
-    private LockService lockService()
+    private LockService lockService( TransactionApplicationMode mode )
     {
-        return started ? lockService : NO_LOCK_SERVICE;
+        return mode == RECOVERY || mode == REVERSE_RECOVERY ? NO_LOCK_SERVICE : lockService;
     }
 
     public void satisfyDependencies( DependencySatisfier satisfier )
@@ -430,7 +431,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         indexingService.start();
         labelScanStore.start();
         idController.start();
-        started = true;
     }
 
     @Override

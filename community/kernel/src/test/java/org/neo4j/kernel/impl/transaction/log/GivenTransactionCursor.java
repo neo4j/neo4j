@@ -30,7 +30,7 @@ public class GivenTransactionCursor implements TransactionCursor
     private int index = -1;
     private final CommittedTransactionRepresentation[] transactions;
 
-    public GivenTransactionCursor( CommittedTransactionRepresentation... transactions )
+    private GivenTransactionCursor( CommittedTransactionRepresentation... transactions )
     {
         this.transactions = transactions;
     }

@@ -237,12 +237,12 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         private final TestGraphDatabaseFactoryState state;
         private final boolean impermanent;
 
-        public TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
         {
             this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
-        public TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
                 DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );

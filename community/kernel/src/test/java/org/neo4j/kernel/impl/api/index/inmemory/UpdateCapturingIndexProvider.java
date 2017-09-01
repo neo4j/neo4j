@@ -44,7 +44,7 @@ public class UpdateCapturingIndexProvider extends SchemaIndexProvider
 
     public UpdateCapturingIndexProvider( SchemaIndexProvider actual, Map<Long,Collection<IndexEntryUpdate>> initialUpdates )
     {
-        super( actual.getProviderDescriptor(), actual.priority() );
+        super( actual );
         this.actual = actual;
         this.initialUpdates = initialUpdates;
     }

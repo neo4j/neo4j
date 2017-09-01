@@ -97,7 +97,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     @Override
     public boolean next() throws IOException
     {
-        while ( !exhausted() )
+        if ( !exhausted() )
         {
             if ( currentChunkExhausted() )
             {

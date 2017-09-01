@@ -48,7 +48,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
-    private TransactionQueue transactionsToApply;
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
@@ -86,8 +85,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     @Override
     public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception
     {
-        transactionsToApply = new TransactionQueue( 100, ( first, last ) -> storageEngine.apply( first, mode ) );
-        return new RecoveryVisitor( transactionsToApply );
+        return new RecoveryVisitor( new TransactionQueue( 100, ( first, last ) -> storageEngine.apply( first, mode ) ) );
     }
 
     @Override

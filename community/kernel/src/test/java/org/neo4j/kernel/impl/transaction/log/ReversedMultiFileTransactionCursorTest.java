@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -135,25 +133,21 @@ public class ReversedMultiFileTransactionCursorTest
             logs[logVersion] = transactions( transactionCounts[logVersion], txId );
         }
 
-        when( result.apply( any( LogPosition.class ) ) ).thenAnswer( new Answer<TransactionCursor>()
+        when( result.apply( any( LogPosition.class ) ) ).thenAnswer( invocation ->
         {
-            @Override
-            public TransactionCursor answer( InvocationOnMock invocation ) throws Throwable
+            LogPosition position = invocation.getArgumentAt( 0, LogPosition.class );
+            if ( position == null )
             {
-                LogPosition position = invocation.getArgumentAt( 0, LogPosition.class );
-                if ( position == null )
-                {
-                    // A mockito issue when calling the "when" methods, I believe
-                    return null;
-                }
-
-                // For simplicity the offset means, in this test, the array offset
-                CommittedTransactionRepresentation[] transactions = logs[toIntExact( position.getLogVersion() )];
-                CommittedTransactionRepresentation[] subset =
-                        copyOfRange( transactions, toIntExact( position.getByteOffset() - baseOffset ), transactions.length );
-                ArrayUtil.reverse( subset );
-                return given( subset );
+                // A mockito issue when calling the "when" methods, I believe
+                return null;
             }
+
+            // For simplicity the offset means, in this test, the array offset
+            CommittedTransactionRepresentation[] transactions = logs[toIntExact( position.getLogVersion() )];
+            CommittedTransactionRepresentation[] subset =
+                    copyOfRange( transactions, toIntExact( position.getByteOffset() - baseOffset ), transactions.length );
+            ArrayUtil.reverse( subset );
+            return given( subset );
         } );
         return result;
     }

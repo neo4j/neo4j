@@ -28,8 +28,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import static java.lang.Integer.max;
-
 /**
  * Set a test to loop a number of times. If you find yourself using this in a production test, you are probably doing
  * something wrong.
@@ -95,9 +93,13 @@ public class RepeatRule implements TestRule
     public Statement apply( Statement base, Description description )
     {
         Repeat repeat = description.getAnnotation( Repeat.class );
-        if ( repeat != null || defaultTimes > 1 )
+        if ( repeat != null )
         {
-            return new RepeatStatement( max( repeat != null ? repeat.times() : 1, defaultTimes ), base, description );
+            return new RepeatStatement( repeat.times(), base, description );
+        }
+        if ( defaultTimes > 1 )
+        {
+            return new RepeatStatement( defaultTimes, base, description );
         }
         return base;
     }

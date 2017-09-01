@@ -52,7 +52,7 @@ public class Recovery extends LifecycleAdapter
         { // no-op by default
         }
 
-        default void reverseStoreRecoveryCompleted( long checkpointTxId )
+        default void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
         { // no-op by default
         }
     }
@@ -102,18 +102,18 @@ public class Recovery extends LifecycleAdapter
         spi.startRecovery();
 
         // Backwards for neo store only
-        long checkpointTxId = TransactionIdStore.BASE_TX_ID;
+        long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
         try (   TransactionCursor transactionsToRecover = spi.getTransactionsInReverseOrder( recoveryFromPosition );
                 RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( REVERSE_RECOVERY ); )
         {
             while ( transactionsToRecover.next() )
             {
                 recoveryVisitor.visit( transactionsToRecover.get() );
-                checkpointTxId = transactionsToRecover.get().getCommitEntry().getTxId();
+                lowestRecoveredTxId = transactionsToRecover.get().getCommitEntry().getTxId();
             }
         }
 
-        monitor.reverseStoreRecoveryCompleted( checkpointTxId );
+        monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
 
         // Forward with all appliers
         LogPosition recoveryToPosition;
