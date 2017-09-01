@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 /**
  * Static methods for computing the hashCode of primitive numbers and arrays of primitive numbers.
- *
+ * <p>
  * Also compares Value typed number arrays.
  */
 @SuppressWarnings( "WeakerAccess" )
@@ -32,6 +32,24 @@ public final class NumberValues
 {
     private NumberValues()
     {
+    }
+
+    /*
+     * Using the fact that the hashcode ∑x_i * 31^(i-1) can be expressed as
+     * a dot product, [v_1, v_2, v_2, ...] • [1, 31, 31^2,...]. By expressing
+     * it in that way the compiler is smart enough to better parallelize the
+     * computation of the hash code.
+     */
+    private static final int MAX_LENGTH = 10000;
+    private static final int[] COEFFICIENTS = new int[MAX_LENGTH + 1];
+
+    static
+    {
+        COEFFICIENTS[0] = 1;
+        for ( int i = 1; i <= MAX_LENGTH; ++i )
+        {
+            COEFFICIENTS[i] = 31 * COEFFICIENTS[i - 1];
+        }
     }
 
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
@@ -49,52 +67,109 @@ public final class NumberValues
             return hash( asLong );
         }
         long bits = Double.doubleToLongBits( number );
-        return (int)(bits ^ (bits >>> 32));
+        return (int) (bits ^ (bits >>> 32));
     }
 
+    /*
+     * This is a slightly silly optimization but by turning the computation
+     * of the hashcode into a dot product we trick the jit compiler to use SIMD
+     * instructions and performance doubles.
+     */
     public static int hash( byte[] values )
     {
-        int result = 1;
-        for ( byte value : values )
+        final int max = values.length;
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( short[] values )
     {
-        int result = 1;
-        for ( short value : values )
+        final int max = values.length;
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
+        }
+        return result;
+    }
+
+    public static int hash( char[] values )
+    {
+        final int max = values.length;
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
+        {
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( int[] values )
     {
-        int result = 1;
-        for ( int value : values )
+        final int max = values.length;
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( long[] values )
     {
-        int result = 1;
-        for ( long value : values )
+        final int max = values.length;
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * NumberValues.hash( values[i] );
         }
         return result;
     }
+
+    public static int hash( Object[] values )
+    {
+        return Arrays.hashCode( values );
+    }
+
+    //19000
+    /*
+     * This is identical to Arrays.hashCode but without
+     * null checks, so only use if certain that there are no
+     * null values
+     */
+//    public static int hash( Object[] values )
+//    {
+//        int result = 1;
+//        for ( Object element : values )
+//        {
+//            result = 31 * result + element.hashCode();
+//        }
+//        return result;
+//    }
+
+//16922.201
+//    public static int hash( Object[] a )
+//    {
+//        int result = 1;
+//        int i = 0;
+//        for ( ; i + 3 < a.length; i += 4 )
+//        {
+//            result = 31 * 31 * 31 * 31 * result
+//                     + 31 * 31 * 31 * a[i].hashCode()
+//                     + 31 * 31 * a[i + 1].hashCode()
+//                     + 31 * a[i + 2].hashCode()
+//                     + a[i + 3].hashCode();
+//        }
+//        for ( ; i < a.length; i++ )
+//        {
+//            result = 31 * result + a[i].hashCode();
+//        }
+//        return result;
+//    }
 
     public static int hash( float[] values )
     {
@@ -167,7 +242,7 @@ public final class NumberValues
     // Tested by PropertyValueComparisonTest
     public static int compareDoubleAgainstLong( double lhs, long rhs )
     {
-        if  ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
+        if ( (NON_DOUBLE_LONG & rhs) != NON_DOUBLE_LONG )
         {
             if ( Double.isNaN( lhs ) )
             {
@@ -185,7 +260,7 @@ public final class NumberValues
     // Tested by PropertyValueComparisonTest
     public static int compareLongAgainstDouble( long lhs, double rhs )
     {
-        return - compareDoubleAgainstLong( rhs, lhs );
+        return -compareDoubleAgainstLong( rhs, lhs );
     }
 
     public static boolean numbersEqual( IntegralArray lhs, IntegralArray rhs )

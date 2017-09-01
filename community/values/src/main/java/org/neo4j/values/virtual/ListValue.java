@@ -31,6 +31,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
@@ -263,7 +264,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int computeHash()
         {
-            return Arrays.hashCode( values );
+            return NumberValues.hash( values );
         }
     }
 
