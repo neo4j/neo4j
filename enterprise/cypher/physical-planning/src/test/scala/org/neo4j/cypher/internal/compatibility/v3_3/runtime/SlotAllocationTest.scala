@@ -551,7 +551,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     )
     val aggregation = Aggregation(expand, grouping, aggregations)(solved)
     aggregation.assignIds()
-    
+
     // when
     val allocations = SlotAllocation.allocateSlots(aggregation)
 
