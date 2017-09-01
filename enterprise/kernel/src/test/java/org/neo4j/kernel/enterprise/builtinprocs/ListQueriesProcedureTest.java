@@ -31,11 +31,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
+import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.Collections.singletonMap;
@@ -83,7 +85,11 @@ public class ListQueriesProcedureTest
     }.startLazily();
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
+
     private static final int SECONDS_TIMEOUT = 120;
+
+    @Rule
+    public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
 
     @Test
     public void shouldContainTheQueryItself() throws Exception
@@ -117,7 +123,7 @@ public class ListQueriesProcedureTest
     {
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        try ( Resource<Node> test = test( db::createNode, query ) )
         {
             // when
             Map<String,Object> data = getQueryListing( query );
@@ -169,7 +175,6 @@ public class ListQueriesProcedureTest
             // then
             assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
             assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
-
         }
     }
 
@@ -179,7 +184,7 @@ public class ListQueriesProcedureTest
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
         final Node node;
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        try ( Resource<Node> test = test( db::createNode, query ) )
         {
             node = test.resource();
             // when
@@ -192,7 +197,7 @@ public class ListQueriesProcedureTest
                     instanceOf( Long.class ), greaterThan( 0L ) ) ) );
         }
 
-        try ( Resource<Node> test = test( () -> node, Transaction::acquireWriteLock, query ) )
+        try ( Resource<Node> test = test( () -> node, query ) )
         {
             // when
             Map<String,Object> data = getQueryListing( query );
@@ -218,7 +223,7 @@ public class ListQueriesProcedureTest
                 locked.add( db.createNode( label( "X" ) ).getId() );
             }
             return db.createNode( label( "Y" ) );
-        }, Transaction::acquireWriteLock, query ) )
+        }, query ) )
         {
             // when
             try ( Result rows = db.execute( "CALL dbms.listQueries() "
@@ -320,7 +325,7 @@ public class ListQueriesProcedureTest
             Node node = db.createNode( label( "Node" ) );
             node.setProperty( "value", 5L );
             return node;
-        }, Transaction::acquireWriteLock, QUERY ) )
+        }, QUERY ) )
         {
             // when
             Map<String,Object> data = getQueryListing( QUERY );
@@ -346,7 +351,7 @@ public class ListQueriesProcedureTest
         Map<String,Object> data;
 
         // when
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        try ( Resource<Node> test = test( db::createNode, query ) )
         {
             data = getQueryListing( query );
         }
@@ -364,7 +369,7 @@ public class ListQueriesProcedureTest
         Map<String,Object> data;
 
         // when
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        try ( Resource<Node> test = test( db::createNode, query ) )
         {
             data = getQueryListing( query );
         }
@@ -379,7 +384,7 @@ public class ListQueriesProcedureTest
     {
         String query = "MATCH (n) SET n.v = n.v + 1";
         db.execute( query ).close(); // ensure it's cached first
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query );
+        try ( Resource<Node> test = test( db::createNode, query );
               PrintWriter out = new PrintWriter( System.out ) )
         {
             db.execute( "CALL dbms.listQueries" ).writeAsStringTo( out );
@@ -396,7 +401,7 @@ public class ListQueriesProcedureTest
             Node node = db.createNode( label( label ) );
             node.setProperty( property, 5L );
             return node;
-        }, Transaction::acquireWriteLock, QUERY1 ) )
+        }, QUERY1 ) )
         {
             // when
             Map<String,Object> data = getQueryListing( QUERY1 );
@@ -421,7 +426,7 @@ public class ListQueriesProcedureTest
             Node node = db.createNode( label( label ) );
             node.setProperty( property, 4L );
             return node;
-        }, Transaction::acquireWriteLock, QUERY2 ) )
+        }, QUERY2 ) )
         {
             // when
             Map<String,Object> data = getQueryListing( QUERY2 );
@@ -483,7 +488,7 @@ public class ListQueriesProcedureTest
         }
     }
 
-    private <T> Resource<T> test( Supplier<T> setup, BiConsumer<Transaction,T> lock, String query )
+    private <T extends PropertyContainer> Resource<T> test( Supplier<T> setup, String query )
             throws TimeoutException, InterruptedException, ExecutionException
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
@@ -498,7 +503,7 @@ public class ListQueriesProcedureTest
         {
             try ( Transaction tx = db.beginTx() )
             {
-                lock.accept( tx, resource );
+                tx.acquireWriteLock( resource );
                 resourceLocked.countDown();
                 listQueriesLatch.await();
             }
@@ -512,6 +517,6 @@ public class ListQueriesProcedureTest
             return null;
         }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
 
-        return new Resource<T>( listQueriesLatch, resource );
+        return new Resource<>( listQueriesLatch, resource );
     }
 }
