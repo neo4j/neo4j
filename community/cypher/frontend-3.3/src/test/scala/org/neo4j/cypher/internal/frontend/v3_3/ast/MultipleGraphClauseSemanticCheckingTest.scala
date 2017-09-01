@@ -346,7 +346,7 @@ class MultipleGraphClauseSemanticCheckingTest
           |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
           |source >> target
           |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewTargetGraph(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new)),false)))),None,None,None,None),line 2, column 6 (offset: 64))
-          |new >> new
+          |source >> new
           |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set()),line 3, column 1 (offset: 83))
           |--
           |// End
@@ -360,7 +360,7 @@ class MultipleGraphClauseSemanticCheckingTest
           |    GRAPH source: 18
           |    GRAPH target: 43
           |  }
-          |  { /* new >> new */
+          |  { /* source >> new */
           |    a: 10 90
           |    GRAPH new: 70
           |    GRAPH source: 18
@@ -471,6 +471,40 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("create graph") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |CREATE GRAPH zig AT 'url'
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (CreateRegularGraph(false,Variable(zig),None,GraphUrl(Right(StringLiteral(url)))),line 2, column 8 (offset: 30))
+          |foo >> bar
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 3, column 1 (offset: 49))
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |    GRAPH zig: 36
+          |  }
+          |  {
+          |    1: 57
+          |  }
+          |}"""
+    }
+  }
+
   test("Resolution of unaliased SOURCE GRAPH") {
     parsing(
       """WITH GRAPHS foo >> bar, baz
@@ -517,6 +551,47 @@ class MultipleGraphClauseSemanticCheckingTest
           |    b: 79
           |    GRAPH baz: 51
           |    GRAPH foo: 69
+          |  }
+          |}"""
+    }
+  }
+
+  test("create graph and set source") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |CREATE GRAPH zig AT 'url' >>
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (CreateRegularGraph(false,Variable(zig),None,GraphUrl(Right(StringLiteral(url)))),line 2, column 27 (offset: 49))
+          |foo >> bar
+          |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewContextGraphs(GraphAs(Variable(zig),Some(Variable(zig)),false),None))),None,None,None,None),line 2, column 27 (offset: 49))
+          |zig >> zig
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 3, column 1 (offset: 52))
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |    GRAPH zig: 36
+          |  }
+          |  { /* zig >> zig */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |    GRAPH zig: 36
+          |  }
+          |  {
+          |    1: 60
           |  }
           |}"""
     }
@@ -738,6 +813,7 @@ class MultipleGraphClauseSemanticCheckingTest
         |MATCH (a:City)
         |RETURN a.name GRAPHS *
         |""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
       result.errors shouldBe empty
       verify(result.formattedContexts) shouldEqualFixNewlines
         """// Start
@@ -789,7 +865,48 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  private implicit class verify(actual: String) {
+  test("create graph and set target") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |CREATE >> GRAPH zig AT 'url'
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (CreateRegularGraph(false,Variable(zig),None,GraphUrl(Right(StringLiteral(url)))),line 2, column 11 (offset: 33))
+          |foo >> bar
+          |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewTargetGraph(GraphAs(Variable(zig),Some(Variable(zig)),false)))),None,None,None,None),line 2, column 11 (offset: 33))
+          |foo >> zig
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 3, column 1 (offset: 52))
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |    GRAPH zig: 39
+          |  }
+          |  { /* foo >> zig */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |    GRAPH zig: 39
+          |  }
+          |  {
+          |    1: 60
+          |  }
+          |}"""
+    }
+  }
+
+  implicit class verify(actual: String) {
     def shouldEqualFixNewlines(expected: String): Unit = {
       StringHelper.RichString(actual.trim.stripMargin).fixNewLines should equal(StringHelper.RichString(expected.trim.stripMargin).fixNewLines)
     }

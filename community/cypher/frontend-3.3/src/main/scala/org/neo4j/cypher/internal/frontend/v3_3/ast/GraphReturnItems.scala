@@ -74,7 +74,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
 
   val graphs: Seq[SingleGraphAs] = items.flatMap(_.graphs)
 
-  val singleGraph: Option[SingleGraphAs] = if (graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
+  val singleGraph: Option[SingleGraphAs] = if (!includeExisting && graphs.nonEmpty && graphs.tail.isEmpty) graphs.headOption else None
   val newSource: Option[SingleGraphAs] = singleGraph orElse items.flatMap(_.newSource).headOption
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 

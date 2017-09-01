@@ -94,42 +94,15 @@ final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Op
   extends CreateGraphClause {
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    updateSetContextGraphs() chain
-    recordCurrentScope
+    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
 
-  private def updateSetContextGraphs(): SemanticCheck = {
-    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-      s.currentScope.contextGraphs match {
-        case Some(context) =>
-          s.updateContextGraphs(context.updated(Some(graph.name)))
-        case None =>
-          Left(SemanticError("No context graph in scope", position))
-      }
-    }
-    graph.declareGraph chain check
-  }
 }
 
 final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain
-    updateSetContextGraphs() chain
-    recordCurrentScope
-
-  private def updateSetContextGraphs(): SemanticCheck = {
-    val check: (SemanticState) => Either[SemanticError, SemanticState] = (s: SemanticState) => {
-      s.currentScope.contextGraphs match {
-        case Some(context) =>
-          s.updateContextGraphs(context.updated(Some(context.source), Some(graph.name)))
-        case None =>
-          Left(SemanticError("No context graph in scope", position))
-      }
-    }
-    graph.declareGraph chain check
-  }
+    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
 }
 
 final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)

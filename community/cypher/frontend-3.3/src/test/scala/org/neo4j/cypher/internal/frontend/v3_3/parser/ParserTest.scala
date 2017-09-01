@@ -60,7 +60,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
   def assertFails(s: String)(implicit p: Rule1[T]) {
     parseRule(p ~ EOI, s).result match {
       case None    =>
-      case Some(a) => fail(s"'$s' should not have been parsed correctly, parsed as $a")
+      case Some(thing) => fail(s"'$s' should not have been parsed correctly, parsed as $thing")
     }
   }
 
