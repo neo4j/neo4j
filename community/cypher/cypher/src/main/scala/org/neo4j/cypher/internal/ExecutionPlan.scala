@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.{Result, Transaction}
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.query.PlannerInfo
+import org.neo4j.values.virtual.MapValue
 
 final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, statement: Statement)
 
 trait ExecutionPlan {
 
-  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): Result
+  def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: MapValue): Result
 
   def isPeriodicCommit: Boolean
 

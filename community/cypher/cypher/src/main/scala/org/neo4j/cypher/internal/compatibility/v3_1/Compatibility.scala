@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_1
 
 import java.util.Collections.emptyList
+import java.util.function.BiConsumer
 
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
@@ -39,7 +40,10 @@ import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
+import scala.collection.mutable
 import scala.util.Try
 
 trait Compatibility {
@@ -128,6 +132,16 @@ trait Compatibility {
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
 
     override def plannerInfo = new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
+
+
+    override def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode, params: MapValue): Result = {
+      var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
+      params.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
+      })
+
+      run(transactionalContext, executionMode, map.toMap)
+    }
   }
 
 }

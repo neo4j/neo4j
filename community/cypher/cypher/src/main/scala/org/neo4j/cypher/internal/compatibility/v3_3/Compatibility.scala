@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan => ExecutionPlan_v3_3}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValues
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3
@@ -50,6 +49,7 @@ import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -169,7 +169,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     }
 
     def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
-            params: Map[String, Any]): Result = {
+            params: MapValue): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
@@ -179,7 +179,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
 
         val context = queryContext(transactionalContext)
 
-        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, asValues(params))
+        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq:_*),
