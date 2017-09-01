@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -312,17 +314,21 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            return getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
-         }
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys = getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && querys.isEmpty() )
+            {
+                return Stream.<QueryTerminationResult>builder().add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
+            }
+            return querys.stream().map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+        }
         catch ( UncaughtCheckedException uncaught )
         {
             throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
@@ -332,20 +338,29 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
         {
-            Set<Long> queryIds = idTexts
-                .stream()
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) )
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
-                .collect( toSet() );
 
-            return getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+            Set<Long> queryIds = idTexts.stream().map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) ).map(
+                    catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) ).collect( toSet() );
+
+            Set<QueryTerminationResult> terminatedQuerys = getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) ).map(
+                    catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) ).collect( toSet() );
+            boolean killQueryVerbose = resolver.resolveDependency( Config.class ).get( GraphDatabaseSettings.kill_query_verbose );
+            if ( killQueryVerbose && terminatedQuerys.size() != idTexts.size() )
+            {
+                for ( String id : idTexts )
+                {
+                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    {
+                        terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
+                    }
+                }
+            }
+            return terminatedQuerys.stream();
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -495,11 +510,21 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         public final String queryId;
         public final String username;
+        public String message = "Query found";
 
         public QueryTerminationResult( QueryId queryId, String username )
         {
             this.queryId = queryId.toString();
             this.username = username;
+        }
+    }
+
+    public static class QueryFailedTerminationResult extends QueryTerminationResult
+    {
+        public QueryFailedTerminationResult( QueryId queryId )
+        {
+            super( queryId, "n/a" );
+            super.message = "No Query found with this id";
         }
     }
 
