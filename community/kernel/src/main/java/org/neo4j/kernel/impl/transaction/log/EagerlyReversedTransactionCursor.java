@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
  * The idea is that this should only be done for a subset of a bigger transaction log stream, typically
  * for one log file.
  *
- * For reversing a transaction log consisting of multiple log files {@link FileWiseReversedTransactionCursor}
+ * For reversing a transaction log consisting of multiple log files {@link ReversedMultiFileTransactionCursor}
  * should be used (it will use this class internally though).
  *
- * @see FileWiseReversedTransactionCursor
+ * @see ReversedMultiFileTransactionCursor
  */
 class EagerlyReversedTransactionCursor implements TransactionCursor
 {
