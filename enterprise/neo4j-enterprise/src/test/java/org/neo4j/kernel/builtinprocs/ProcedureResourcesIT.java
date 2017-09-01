@@ -245,6 +245,25 @@ public class ProcedureResourcesIT
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey:foo*'" );
             break;
+        case "db.index.manual.in":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.manual.out":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.manual.between":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
         case "db.index.manual.seek.relationships":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey'" );
