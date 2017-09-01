@@ -164,6 +164,48 @@ public class ExecutionResultTest
         Assert.assertThat( drop.getQueryStatistics().getConstraintsRemoved(), equalTo( 1 ) );
     }
 
+    @Test
+    public void shouldShowRuntimeInExecutionPlanDescription()
+    {
+        // Given
+        Result result = db.execute( "EXPLAIN MATCH (n) RETURN n.prop" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "runtime" ), notNullValue() );
+        assertThat( arguments.get( "runtime-impl" ), notNullValue() );
+    }
+
+    @Test
+    public void shouldShowCompiledRuntimeInExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "EXPLAIN CYPHER runtime=compiled MATCH (n) RETURN n.prop" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "runtime" ), equalTo( "COMPILED" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "COMPILED" ) );
+    }
+
+    @Test
+    public void shouldShowInterpretedRuntimeInExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "EXPLAIN CYPHER runtime=interpreted MATCH (n) RETURN n.prop" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "runtime" ), equalTo( "INTERPRETED" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "INTERPRETED" ) );
+    }
+
     private void createNode()
     {
         try ( Transaction tx = db.beginTx() )
