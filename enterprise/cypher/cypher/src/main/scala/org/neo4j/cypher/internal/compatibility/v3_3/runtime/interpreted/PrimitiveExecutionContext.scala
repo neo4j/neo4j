@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.values.{AnyValue, AnyValues}
 
 object PrimitiveExecutionContext {
@@ -79,7 +80,7 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   override def iterator =
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).
     // Please do not use in production code.
-    (longs.map(i => ("LongSlot", AnyValues.of(i))) ++ refs.map(i => ("RefSlot", AnyValues.of(i)))).iterator
+    (longs.map(i => ("LongSlot", ValueUtils.of(i))) ++ refs.map(i => ("RefSlot", ValueUtils.of(i)))).iterator
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
