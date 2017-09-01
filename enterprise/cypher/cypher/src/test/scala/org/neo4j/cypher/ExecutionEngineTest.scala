@@ -883,22 +883,6 @@ order by a.COL1""")
     intercept[SyntaxException](executeWithAllPlanners("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
-  test("should not hang") {
-    // given
-    createNode()
-    createNode()
-
-    // when
-    timeOutIn(20, TimeUnit.SECONDS) {
-      executeWithAllPlannersAndCompatibilityMode(
-        "MATCH (x)-->(a), (x)-->(b) " +
-        "WHERE x.foo > 2 AND x.prop IN ['val'] " +
-        "AND id(a) = 0 AND id(b) = 1 " +
-        "RETURN x")
-    }
-    // then
-  }
-
   test("should return null on all comparisons against null") {
     // given
 
