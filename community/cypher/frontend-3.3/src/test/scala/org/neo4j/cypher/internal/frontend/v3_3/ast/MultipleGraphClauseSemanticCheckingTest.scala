@@ -430,17 +430,18 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  private def strip(text: String) =
-    org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString(text.trim.stripMargin).fixNewLines
+  private def strip(text: String) = text.trim.stripMargin
 
   private def fullScopeTree(state: SemanticState): String = state.scopeTree.toStringWithoutId.trim
+
+  import scala.compat.Platform.EOL
 
   private def contextsByPosition(state: SemanticState): String = {
     val astNodes = state.recordedContextGraphs.keySet ++ state.recordedScopes.keySet
     val keys = astNodes.toSeq.sortBy(x => x.position.offset -> x.toString)
-    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast, "--")}\n// $ast")
+    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast, "--")}$EOL// $ast")
     val finalContext = state.currentScope.contextGraphs.map(_.toString).getOrElse("--")
-    s"// Start\n${values.mkString("\n")}\n$finalContext\n// End"
+    s"// Start$EOL${values.mkString(EOL)}$EOL$finalContext$EOL// End"
   }
 
   override def convert(astNode: ast.Statement): SemanticCheckResult = {
