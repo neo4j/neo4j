@@ -62,8 +62,6 @@ public class RecoveryRequiredChecker
             return false;
         }
 
-        long logVersion = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
-        MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION, logVersion );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();

@@ -34,7 +34,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -44,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 
 public class LogVersionUpgradeCheckerIT
 {
@@ -142,10 +142,15 @@ public class LogVersionUpgradeCheckerIT
         try ( Lifespan lifespan = new Lifespan( logFile ) )
         {
             FlushablePositionAwareChannel channel = logFile.getWriter();
-            TransactionLogWriter transactionLogWriter = new TransactionLogWriter( new LogEntryWriter( channel,
-                    logVersion ) );
 
-            transactionLogWriter.checkPoint( tailInformation.lastCheckPoint.getLogPosition() );
+            LogPosition logPosition = tailInformation.lastCheckPoint.getLogPosition();
+
+            // Fake record
+            channel.put( logVersion.byteCode() )
+                    .put( CHECK_POINT )
+                    .putLong( logPosition.getLogVersion() )
+                    .putLong( logPosition.getByteOffset() );
+
             channel.prepareForFlush().flush();
         }
     }
