@@ -215,16 +215,20 @@ public class BuiltInProceduresTest
                         "db.index.manual.seek.nodes(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: NODE?)",
                         "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`"),
                 record( "db.index.manual.relationships",
-                        "db.index.manual.relationships(indexName :: STRING?, query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "db.index.manual.relationships(indexName :: STRING?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`"),
                 record( "db.index.manual.in",
-                        "db.index.manual.in(indexName :: STRING?, in :: NODE?, query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "db.index.manual.in(indexName :: STRING?, in :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship from manual index, starting at the node 'in'."),
                 record( "db.index.manual.out",
-                        "db.index.manual.out(indexName :: STRING?, out :: NODE?, query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "db.index.manual.out(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship from manual index, ending at the node 'out'."),
                 record( "db.index.manual.between",
-                        "db.index.manual.between(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "db.index.manual.between(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
                         "Search relationship from manual index, starting at the node 'in' and ending at 'out'."),
                 record( "db.index.manual.seek.relationships",
                         "db.index.manual.seek.relationships(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
