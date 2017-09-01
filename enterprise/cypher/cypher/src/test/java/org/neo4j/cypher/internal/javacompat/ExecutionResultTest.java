@@ -206,6 +206,20 @@ public class ExecutionResultTest
         assertThat( arguments.get( "runtime-impl" ), equalTo( "INTERPRETED" ) );
     }
 
+    @Test
+    public void shouldShowProcedureRuntimeInExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "EXPLAIN CALL db.labels" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
+    }
+
     private void createNode()
     {
         try ( Transaction tx = db.beginTx() )

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, ProcedureCallMode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature}
@@ -112,15 +112,19 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
     }
 
-    private def createNormalPlan =
-      PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-        Seq(createSignatureArgument),
-        resultSymbols.map(_._1).toSet
-      )
+  private def createNormalPlan =
+    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+                        Seq(createSignatureArgument,
+                            Runtime(ProcedureRuntimeName.toTextOutput),
+                            RuntimeImpl(ProcedureRuntimeName.name)),
+                        resultSymbols.map(_._1).toSet
+    )
 
     private def createProfilePlanGenerator(rowCounter: Counter) = () =>
       PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-        Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)),
+        Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted),
+            Runtime(ProcedureRuntimeName.toTextOutput),
+            RuntimeImpl(ProcedureRuntimeName.name)),
         resultSymbols.map(_._1).toSet
       )
 
