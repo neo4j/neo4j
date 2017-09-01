@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import java.io.{File, PrintWriter}
-import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
@@ -878,22 +877,6 @@ order by a.COL1""")
 
   test("merge should not support map parameters for defining properties") {
     intercept[SyntaxException](executeWithAllPlanners("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
-  }
-
-  test("should not hang") {
-    // given
-    createNode()
-    createNode()
-
-    // when
-    timeOutIn(2, TimeUnit.SECONDS) {
-      executeWithAllPlannersAndCompatibilityMode(
-        "MATCH (x)-->(a), (x)-->(b) " +
-        "WHERE x.foo > 2 AND x.prop IN ['val'] " +
-        "AND id(a) = 0 AND id(b) = 1 " +
-        "RETURN x")
-    }
-    // then
   }
 
   test("should return null on all comparisons against null") {
