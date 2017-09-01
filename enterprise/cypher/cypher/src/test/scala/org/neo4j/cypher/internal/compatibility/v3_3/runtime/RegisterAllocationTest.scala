@@ -428,7 +428,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("unwind and project and sort") {
-    // given UNWIND [1,2,3] as x RETURN x
+    // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
     val xVarName = IdName.fromVariable(xVar)
     val leaf = SingleRow()(solved)

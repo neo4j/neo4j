@@ -171,16 +171,16 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         FullPruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
 
       case Sort(_, sortItems) =>
-        SortPipe(source, sortItems.map(translateSortDescription))(id = id)
+        SortPipe(source, sortItems.map(translateColumnOrder))(id = id)
 
       case SkipPlan(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)
 
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
-        Top1Pipe(source, sortItems.map(translateSortDescription).toList)(id = id)
+        Top1Pipe(source, sortItems.map(translateColumnOrder).toList)(id = id)
 
       case Top(_, sortItems, limit) =>
-        TopNPipe(source, sortItems.map(translateSortDescription).toList, buildExpression(limit))(id = id)
+        TopNPipe(source, sortItems.map(translateColumnOrder).toList, buildExpression(limit))(id = id)
 
       case LimitPlan(_, count, DoNotIncludeTies) =>
         LimitPipe(source, buildExpression(count))(id = id)
@@ -413,7 +413,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
-  private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
+  private def translateColumnOrder(s: logical.SortDescription): pipes.ColumnOrder = s match {
     case logical.Ascending(IdName(name)) => pipes.Ascending(name)
     case logical.Descending(IdName(name)) => pipes.Descending(name)
   }

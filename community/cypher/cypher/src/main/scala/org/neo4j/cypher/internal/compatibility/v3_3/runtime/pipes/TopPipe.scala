@@ -33,10 +33,10 @@ import scala.math._
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
+abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
   extends PipeWithSource(source)  {
 
-  val sortItems: Array[SortDescription] = sortDescription.toArray
+  val sortItems: Array[ColumnOrder] = sortDescription.toArray
   private val sortItemsCount: Int = sortItems.length
 
   type SortDataWithContext = (Array[AnyValue], ExecutionContext)
@@ -47,7 +47,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
       val v2 = b._1
       var i = 0
       while (i < sortItemsCount) {
-        val res = sortItems(i).compareAny(v1(i), v2(i))
+        val res = sortItems(i).compareValues(v1(i), v2(i))
 
         if (res != 0)
           return res
@@ -65,7 +65,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
     (sortItems.map(column => ctx(column.id)), ctx)
 }
 
-case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
+case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpression: Expression)
                    (val id: Id = new Id) extends TopPipe(source, sortDescription) {
 
   countExpression.registerOwningPipe(this)
@@ -124,7 +124,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
  * Special case for when we only have one element, in this case it is no idea to store
  * an array, instead just store a single value.
  */
-case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
+case class Top1Pipe(source: Pipe, sortDescription: List[ColumnOrder])
                    (val id: Id = new Id)
   extends TopPipe(source, sortDescription) {
 
@@ -157,7 +157,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
 /*
  * Special case for when we only want one element, and all others that have the same value (tied for first place)
  */
-case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
+case class Top1WithTiesPipe(source: Pipe, sortDescription: List[ColumnOrder])
                            (val id: Id = new Id)
   extends TopPipe(source, sortDescription) {
 

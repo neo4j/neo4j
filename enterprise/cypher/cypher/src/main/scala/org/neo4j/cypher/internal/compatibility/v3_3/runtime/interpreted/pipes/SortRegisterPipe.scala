@@ -26,39 +26,38 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.values.{AnyValue, AnyValues}
 
-case class SortRegisterPipe(source: Pipe, orderBy: Seq[SortDescription], pipelineInformation: PipelineInformation)(val id: Id = new Id)
+case class SortRegisterPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
+  assert(orderBy.nonEmpty)
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    assert(orderBy.nonEmpty)
-    val orderings = orderBy.map(new InnerOrdering(_)(state))
-    val comparator = orderings.reduceLeft((a:Comparator[ExecutionContext], b) => a.thenComparing(b))
+    val orderings = orderBy.map(new ExecutionContextOrdering(_)(state))
+    val comparator = orderings.reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
     val array = input.toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
   }
 }
 
-
-private class InnerOrdering(order: SortDescription)(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
+private class ExecutionContextOrdering(order: ColumnOrder)(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-    val column = order.offset
-    val aVal = a.getRefAt(column)
-    val bVal = b.getRefAt(column)
-    order.compareAny(aVal, bVal)
+    val columnSlot = order.slot
+    val aVal = a.getRefAt(columnSlot)
+    val bVal = b.getRefAt(columnSlot)
+    order.compareValues(aVal, bVal)
   }
 }
 
-sealed trait SortDescription {
-  def offset: Int
+sealed trait ColumnOrder {
+  def slot: Int
 
-  def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
+  def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
 }
 
-case class Ascending(offset: Int) extends SortDescription {
-  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
+case class Ascending(slot: Int) extends ColumnOrder {
+  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
-case class Descending(offset: Int) extends SortDescription {
-  override def compareAny(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
+case class Descending(slot: Int) extends ColumnOrder {
+  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
 }
