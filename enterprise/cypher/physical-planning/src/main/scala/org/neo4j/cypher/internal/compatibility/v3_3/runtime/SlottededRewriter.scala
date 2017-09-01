@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
@@ -42,16 +43,15 @@ class SlottededRewriter(tokenContext: TokenContext) {
     case _ => false
   }
 
-  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
+  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlanId, PipelineInformation]): LogicalPlan = {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
-    var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
       would just write to the row the data that is already in it, we can just skip them
        */
       case oldPlan@Projection(_, expressions) =>
-        val information = pipelineInformation(oldPlan)
+        val information = pipelineInformation(oldPlan.assignedId)
         val rewriter = rewriteCreator(information, oldPlan)
 
         val newExpressions = expressions collect {
@@ -61,8 +61,6 @@ class SlottededRewriter(tokenContext: TokenContext) {
         val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
         newPipelineInfo += (newPlan -> information)
 
-        rewrites += (oldPlan -> newPlan)
-
         newPlan
 
       case oldPlan: VarExpand =>
@@ -70,7 +68,7 @@ class SlottededRewriter(tokenContext: TokenContext) {
         The node and edge predicates will be set and evaluated on the incoming rows, not on the outgoing ones.
         We need to use the incoming pipeline info for predicate rewriting
          */
-        val incomingPipeline = pipelineInformation(oldPlan.left)
+        val incomingPipeline = pipelineInformation(oldPlan.left.assignedId)
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
 
         val newNodePredicate = oldPlan.nodePredicate.endoRewrite(rewriter)
@@ -86,15 +84,14 @@ class SlottededRewriter(tokenContext: TokenContext) {
         Since the logical plan pipeinformation is about the output rows we still need to remember the
         outgoing pipeline info here
          */
-        val outgoingPipeline = pipelineInformation(oldPlan)
+        val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
         newPipelineInfo += (newPlan -> outgoingPipeline)
-
-        rewrites += (oldPlan -> newPlan)
 
         newPlan
 
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
-        val incomingPipeline = pipelineInformation(oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way")))
+        val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
+        val incomingPipeline = pipelineInformation(leftPlan.assignedId)
         val rewriter = rewriteCreator(incomingPipeline, oldPlan)
         val newPlan = oldPlan.endoRewrite(rewriter)
 
@@ -102,18 +99,15 @@ class SlottededRewriter(tokenContext: TokenContext) {
         Since the logical plan pipeinformation is about the output rows we still need to remember the
         outgoing pipeline info here
          */
-        val outgoingPipeline = pipelineInformation(oldPlan)
+        val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
         newPipelineInfo += (newPlan -> outgoingPipeline)
-        rewrites += (oldPlan -> newPlan)
         newPlan
 
       case oldPlan: LogicalPlan =>
-        val information = pipelineInformation(oldPlan)
+        val information = pipelineInformation(oldPlan.assignedId)
         val rewriter = rewriteCreator(information, oldPlan)
         val newPlan = oldPlan.endoRewrite(rewriter)
         newPipelineInfo += (newPlan -> information)
-
-        rewrites += (oldPlan -> newPlan)
 
         newPlan
     })
@@ -124,14 +118,7 @@ class SlottededRewriter(tokenContext: TokenContext) {
     // TODO: This should probably only run when -ea is enabled
     resultPlan.findByAllClass[Variable].foreach(v => throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan"))
 
-    // re-apply the rewrites to the keys of the pipeline information
-    val rewriter = createRewriterFrom(rewrites)
-    val massagesPipelineinfo = newPipelineInfo.toMap map {
-      case (plan: LogicalPlan, v: PipelineInformation) =>
-        plan.endoRewrite(rewriter) -> v
-    }
-
-    (resultPlan, massagesPipelineinfo)
+    resultPlan
   }
 
   private def createRewriterFrom(rewrites: Map[LogicalPlan, LogicalPlan]) = topDown(Rewriter.lift {

@@ -50,13 +50,14 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   implicit private val table = SemanticTable()
 
   private def build(beforeRewrite: LogicalPlan): Pipe = {
+    beforeRewrite.assignIds()
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
     when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
     val context: EnterpriseRuntimeContext = CompiledRuntimeContextHelper.create(planContext = planContext)
-    val beforePipelines: Map[LogicalPlan, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottededRewriter = new SlottededRewriter(context.planContext)
-    val (logicalPlan, pipelines) = slottededRewriter(beforeRewrite, beforePipelines)
+    val logicalPlan = slottededRewriter(beforeRewrite, pipelines)
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
