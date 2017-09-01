@@ -45,17 +45,20 @@ abstract class LogicalPlan
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
-  def assignedId: Int = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
-  def assignIds(): Unit = recurseAssignIds(0)
+  def assignedId: LogicalPlanId = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
+  def assignIds(): Unit = recurseAssignIds(new LogicalPlanId(0))
 
-  private var _id: Option[Int] = None
-  protected def assignId(id: Option[Int]): Unit = _id = id
+  private var _id: Option[LogicalPlanId] = None
+  protected def assignId(id: Option[LogicalPlanId]): Unit = _id = id
 
-  protected def recurseAssignIds(sofar: Int): Int = {
+  protected def recurseAssignIds(sofar: LogicalPlanId): LogicalPlanId = {
+    if(_id.nonEmpty)
+      throw new InternalException("Id has already been assigned")
+
     val sofarPrim = lhs.map(_.recurseAssignIds(sofar)).getOrElse(sofar)
     val sofarBis = rhs.map(_.recurseAssignIds(sofarPrim)).getOrElse(sofarPrim)
     _id = Some(sofarBis)
-    sofarBis + 1
+    sofarBis++
   }
 
   override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
@@ -191,3 +194,7 @@ final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: 
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
 final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
+
+class LogicalPlanId(val underlying: Int) extends AnyVal {
+  def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)
+}

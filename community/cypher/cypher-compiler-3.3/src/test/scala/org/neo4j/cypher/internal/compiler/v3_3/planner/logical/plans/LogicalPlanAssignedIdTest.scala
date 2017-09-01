@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -62,13 +62,20 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
 
     applyAll.assignIds()
 
-    sr1A.assignedId should equal(0)
-    sr2A.assignedId should equal(1)
-    applyA.assignedId should equal(2)
-    sr1B.assignedId should equal(3)
-    sr2B.assignedId should equal(4)
-    applyB.assignedId should equal(5)
-    applyAll.assignedId should equal(6)
+    sr1A.assignedId.underlying should equal(0)
+    sr2A.assignedId.underlying should equal(1)
+    applyA.assignedId.underlying should equal(2)
+    sr1B.assignedId.underlying should equal(3)
+    sr2B.assignedId.underlying should equal(4)
+    applyB.assignedId.underlying should equal(5)
+    applyAll.assignedId.underlying should equal(6)
+  }
+
+  test("cant assign ids twice") {
+    val sr1 = SingleRow()(solved)
+    val pr = Projection(sr1, Map.empty)(solved)
+    pr.assignIds()
+    intercept[CypherException](pr.assignIds())
   }
 
 }
