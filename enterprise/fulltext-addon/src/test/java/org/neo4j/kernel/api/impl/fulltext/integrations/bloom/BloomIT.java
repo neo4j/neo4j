@@ -25,6 +25,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,6 +34,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -59,13 +62,13 @@ public class BloomIT
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
-        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(),
-                Collections.singletonMap( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" ) );
     }
 
     @Test
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
+        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(),
+                Collections.singletonMap( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" ) );
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -83,6 +86,34 @@ public class BloomIT
         assertFalse( result.hasNext() );
         result = db.execute( String.format( RELS, "relate" ) );
         assertEquals( 0L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldBeAbleToConfigureAnalyzer() throws Exception
+    {
+        Map<Setting<?>,String> config = new HashMap<>();
+        config.put( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        config.put( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
+        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node1 = db.createNode();
+            node1.setProperty( "prop", "Det finns en mening" );
+            Node node2 = db.createNode();
+            node2.setProperty( "prop", "There is a sentance" );
+            transaction.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "is" ) );
+        assertEquals( 1L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( NODES, "a" ) );
+        assertEquals( 1L, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( NODES, "det" ) );
+        assertFalse( result.hasNext() );
+        result = db.execute( String.format( NODES, "en" ) );
         assertFalse( result.hasNext() );
     }
 

@@ -91,7 +91,7 @@ public class LuceneFulltext extends AbstractLuceneIndex
         return result;
     }
 
-    public PartitionedIndexWriter getIndexWriter( WritableDatabaseFulltext writableIndex ) throws IOException
+    public PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex ) throws IOException
     {
         ensureOpen();
         return new PartitionedIndexWriter( writableIndex );

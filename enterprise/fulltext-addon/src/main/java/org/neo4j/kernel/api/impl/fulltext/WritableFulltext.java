@@ -27,11 +27,11 @@ import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-class WritableDatabaseFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
+class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
     private final LuceneFulltext luceneFulltext;
 
-    WritableDatabaseFulltext( LuceneFulltext luceneFulltext )
+    WritableFulltext( LuceneFulltext luceneFulltext )
     {
         super( luceneFulltext );
         this.luceneFulltext = luceneFulltext;
@@ -52,7 +52,7 @@ class WritableDatabaseFulltext extends WritableAbstractDatabaseIndex<LuceneFullt
         return luceneIndex.getFirstPartition( partitions );
     }
 
-    public Set<String> properites()
+    public Set<String> properties()
     {
         return luceneIndex.getProperties();
     }

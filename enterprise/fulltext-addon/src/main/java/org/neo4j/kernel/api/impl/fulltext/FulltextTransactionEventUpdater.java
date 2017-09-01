@@ -87,7 +87,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
         //update node indices
         try
         {
-            for ( WritableDatabaseFulltext nodeIndex : fulltextProvider.nodeIndices() )
+            for ( WritableFulltext nodeIndex : fulltextProvider.nodeIndices() )
             {
                 Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
                 removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
@@ -95,7 +95,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
                 refreshIndex( nodeIndex );
             }
             //update relationship indices
-            for ( WritableDatabaseFulltext relationshipIndex : fulltextProvider.relationshipIndices() )
+            for ( WritableFulltext relationshipIndex : fulltextProvider.relationshipIndices() )
             {
                 Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
                 removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
@@ -109,11 +109,11 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
         }
     }
 
-    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableDatabaseFulltext index ) throws IOException
+    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index ) throws IOException
     {
         for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
         {
-            Set<String> indexedProperties = index.properites();
+            Set<String> indexedProperties = index.properties();
             if ( !Collections.disjoint( indexedProperties, stateEntry.getValue().keySet() ) )
             {
                 long entityId = stateEntry.getKey();
@@ -130,11 +130,11 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
     }
 
     private <E extends Entity> void removePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
-            WritableDatabaseFulltext index ) throws IOException
+            WritableFulltext index ) throws IOException
     {
         for ( PropertyEntry<E> propertyEntry : propertyEntries )
         {
-            if ( index.properites().contains( propertyEntry.key() ) )
+            if ( index.properties().contains( propertyEntry.key() ) )
             {
                 long entityId = propertyEntry.entity().getId();
                 Map<String,Object> allProperties = state.get( entityId );
@@ -146,7 +146,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
         }
     }
 
-    private void refreshIndex( WritableDatabaseFulltext index )
+    private void refreshIndex( WritableFulltext index )
     {
         try
         {

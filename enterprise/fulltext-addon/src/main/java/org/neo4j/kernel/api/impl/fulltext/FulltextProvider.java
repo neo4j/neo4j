@@ -117,14 +117,14 @@ public class FulltextProvider implements AutoCloseable
         return relationshipProperties.toArray( new String[0] );
     }
 
-    public Set<WritableDatabaseFulltext> nodeIndices()
+    public Set<WritableFulltext> nodeIndices()
     {
-        return nodeIndices.values().stream().map( WritableDatabaseFulltext::new ).collect( Collectors.toSet() );
+        return nodeIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public Set<WritableDatabaseFulltext> relationshipIndices()
+    public Set<WritableFulltext> relationshipIndices()
     {
-        return relationshipIndices.values().stream().map( WritableDatabaseFulltext::new ).collect( Collectors.toSet() );
+        return relationshipIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
     public FulltextReader getReader( String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
