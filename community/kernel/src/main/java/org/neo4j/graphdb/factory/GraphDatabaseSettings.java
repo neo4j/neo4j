@@ -622,6 +622,15 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> procedure_unrestricted =
             setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
 
+    @Description("Specifies whether or not dbms.killQueries produces a verbose output, with information about which queries were not found" )
+    public static final Setting<Boolean> kill_query_verbose =
+            setting( "dbms.procedures.kill_query_verbose", BOOLEAN, TRUE );
+
+    @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
+    @Internal
+    public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
+            "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
+
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
             "If this setting is left empty no procedures will be loaded." )
