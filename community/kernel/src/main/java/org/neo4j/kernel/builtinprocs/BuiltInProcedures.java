@@ -65,9 +65,16 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        try ( Statement statement = tx.acquireStatement() )
+        Statement statement = tx.acquireStatement();
+        try
         {
+            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream
             return TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ).stream();
+        }
+        catch ( Throwable t )
+        {
+            statement.close();
+            throw t;
         }
     }
 
@@ -75,9 +82,16 @@ public class BuiltInProcedures
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        try ( Statement statement = tx.acquireStatement() )
+        Statement statement = tx.acquireStatement();
+        try
         {
+            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream
             return TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ).stream();
+        }
+        catch ( Throwable t )
+        {
+            statement.close();
+            throw t;
         }
     }
 
@@ -85,9 +99,16 @@ public class BuiltInProcedures
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        try ( Statement statement = tx.acquireStatement() )
+        Statement statement = tx.acquireStatement();
+        try
         {
+            // Ownership of the reference to the acquired statement is transfered to the returned iterator stream
             return TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ).stream();
+        }
+        catch ( Throwable t )
+        {
+            statement.close();
+            throw t;
         }
     }
 

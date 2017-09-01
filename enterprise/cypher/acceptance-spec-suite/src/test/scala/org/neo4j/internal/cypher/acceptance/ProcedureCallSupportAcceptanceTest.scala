@@ -87,4 +87,26 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       map("one", "alpha", "newTwo", "beta")
     ))
   }
+
+  test("should be able to execute union of multiple token accessing procedures") {
+    val a = createLabeledNode("Foo")
+    val b = createLabeledNode("Bar")
+    relate(a, b, "REL", Map("prop" -> 1))
+
+    val query =
+      "CALL db.labels() YIELD label RETURN label as result " +
+      "UNION " +
+      "CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType as result " +
+      "UNION " +
+      "CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey as result"
+
+    val result = graph.execute(query)
+
+    result.columnAs[String]("result").stream().toArray.toList shouldEqual List(
+      "Foo",
+      "Bar",
+      "REL",
+      "prop"
+    )
+  }
 }
