@@ -41,6 +41,7 @@ import static java.lang.String.format;
 class BoltMessageLoggerImpl implements BoltMessageLogger
 {
     private static final ObjectMapper jsonObjectMapper = new ObjectMapper();
+    public static final Supplier<String> PLACEHOLDER_DETAIL_SUPPLIER = () -> "-";
     private final BoltMessageLog messageLog;
 
     private final String remoteAddress;
@@ -60,13 +61,13 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void clientEvent( String eventName )
     {
-        infoLogger().accept( format( "C: <%s>", eventName ) );
+        clientEvent( eventName, PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void clientEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLoggerWithArgs().accept( format( "C: <%s>", eventName ), detailsSupplier.get() );
+        infoLoggerWithDetails().accept( format( "C: %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
@@ -78,13 +79,13 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void serverEvent( String eventName )
     {
-        infoLogger().accept( format( "S: <%s>", eventName ) );
+        serverEvent( eventName, PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void serverEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLoggerWithArgs().accept( format( "S: <%s>", eventName ), detailsSupplier.get() );
+        infoLoggerWithDetails().accept( format( "S: %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
@@ -103,78 +104,55 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     public void logInit( String userAgent, Map<String,Object> authToken )
     {
         // log only auth toke keys, not values that include password
-        infoLoggerWithArgs().accept( "C: INIT", format( "%s %s", userAgent, json( authToken.keySet() ) ) );
+        clientEvent( "INIT", () -> format( "%s %s", userAgent, json( authToken.keySet() ) ) );
     }
 
     @Override
     public void logRun( String statement, Map<String,Object> parameters )
     {
-        infoLoggerWithArgs().accept( "C: RUN", format( "%s %s", statement, json( parameters ) ) );
+        clientEvent( "RUN", () -> format( "%s %s", statement, json( parameters ) ) );
     }
 
     @Override
     public void logPullAll()
     {
-        infoLogger().accept( "C: PULL_ALL" );
+        clientEvent( "PULL_ALL", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void logDiscardAll()
     {
-        infoLogger().accept( "C: DISCARD_ALL" );
+        clientEvent( "DISCARD_ALL", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void logAckFailure()
     {
-        infoLogger().accept( "C: ACK_FAILURE" );
+        clientEvent( "ACK_FAILURE", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void logReset()
     {
-        infoLogger().accept( "C: RESET" );
+        clientEvent( "RESET", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override
     public void logSuccess( Object metadata )
     {
-        infoLoggerWithArgs().accept( "S: SUCCESS", json( metadata ) );
+        serverEvent( "SUCCESS", () -> json( metadata ) );
     }
 
     @Override
     public void logFailure( Status status, String errorMessage )
     {
-        infoLoggerWithArgs().accept( "S: FAILURE", format( "%s %s", status.code().serialize(), errorMessage ) );
+        serverEvent( "FAILURE", () -> format( "%s %s", status.code().serialize(), errorMessage ) );
     }
 
     @Override
     public void logIgnored()
     {
-        infoLogger().accept( "S: IGNORED" );
-    }
-
-    private Consumer<String> infoLogger()
-    {
-        if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
-        {
-            channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
-        }
-
-        String boltXCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
-        return formatMessageWithEventName ->
-                messageLog.info( remoteAddress, formatMessageWithEventName, boltXCorrelationId );
-    }
-
-    private String randomCorrelationIdGenerator()
-    {
-        return UUID.randomUUID().toString();
-    }
-
-    private BiConsumer<String, String> infoLoggerWithArgs()
-    {
-        return ( formatMessageWithEventName, details ) ->
-                infoLogger().accept( format( "%s %s", formatMessageWithEventName, details ) );
+        serverEvent( "IGNORED", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     private Consumer<String> errorLogger( String errorMessage )
@@ -184,9 +162,28 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
             channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
         }
 
-        String boltXCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
+        String boltCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
         return formatMessageWithEventName ->
-                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, boltXCorrelationId );
+                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, boltCorrelationId );
+    }
+
+    private String randomCorrelationIdGenerator()
+    {
+        return UUID.randomUUID().toString();
+    }
+
+    private BiConsumer<String, String> infoLoggerWithDetails()
+    {
+        if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
+        {
+            channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
+        }
+
+        String boltCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
+        return ( formatMessageWithEventName, details ) ->
+                messageLog.info( remoteAddress,
+                        boltCorrelationId,
+                        format( "%s %s", formatMessageWithEventName, details ) );
     }
 
     private BiConsumer<String, String> errorLoggerWithArgs( String errorMessage )

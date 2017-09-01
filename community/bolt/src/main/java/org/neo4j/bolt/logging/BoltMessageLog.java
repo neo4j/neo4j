@@ -54,66 +54,66 @@ public class BoltMessageLog extends LifecycleAdapter
 
     public void error( String remoteAddress, String message )
     {
-        inner.error( "[%s] %s", remoteAddress, message );
+        inner.error( "%s %s", remoteAddress, message );
     }
 
     public void error( String remoteAddress, String message, String arg1 )
     {
-        inner.error( "[%s] %s %s", remoteAddress, message, arg1 );
+        inner.error( "%s %s %s", remoteAddress, message, arg1 );
     }
 
     public void error( String remoteAddress, String message, String arg1, String arg2 )
     {
-        inner.error( "[%s] %s %s %s", remoteAddress, message, arg1, arg2 );
+        inner.error( "%s %s %s %s", remoteAddress, message, arg1, arg2 );
     }
 
     public void warn( String remoteAddress, String message )
     {
-        inner.warn( "[%s] %s", remoteAddress, message );
+        inner.warn( "%s %s", remoteAddress, message );
     }
 
     public void warn( String remoteAddress, String message, String arg1 )
     {
-        inner.warn( "[%s] %s %s", remoteAddress, message, arg1 );
+        inner.warn( "%s %s %s", remoteAddress, message, arg1 );
     }
 
     public void warn( String remoteAddress, String message, String arg1, String arg2 )
     {
-        inner.warn( "[%s] %s %s %s", remoteAddress, message, arg1, arg2 );
+        inner.warn( "%s %s %s %s", remoteAddress, message, arg1, arg2 );
     }
 
     public void info( String remoteAddress, String message )
     {
-        inner.info( "[%s] %s", remoteAddress, message );
+        inner.info( "%s %s", remoteAddress, message );
     }
 
     public void info( String remoteAddress, String message, String arg1 )
     {
-        inner.info( "[%s] %s %s", remoteAddress, message, arg1 );
+        inner.info( "%s %s %s", remoteAddress, message, arg1 );
     }
 
     public void info( String remoteAddress, String message, String arg1, String arg2 )
     {
-        inner.info( "[%s] %s %s %s", remoteAddress, message, arg1, arg2 );
+        inner.info( "%s %s %s %s", remoteAddress, message, arg1, arg2 );
     }
 
     public void info( String remoteAddress, String message, String arg1, String arg2, String arg3 )
     {
-        inner.info( "[%s] %s %s %s", remoteAddress, message, arg1, arg2, arg3 );
+        inner.info( "%s %s %s %s", remoteAddress, message, arg1, arg2, arg3 );
     }
 
     public void debug( String remoteAddress, String message )
     {
-        inner.debug( "[%s] %s", remoteAddress, message );
+        inner.debug( "%s %s", remoteAddress, message );
     }
 
     public void debug( String remoteAddress, String message, String arg1 )
     {
-        inner.debug( "[%s] %s %s", remoteAddress, message, arg1 );
+        inner.debug( "%s %s %s", remoteAddress, message, arg1 );
     }
 
     public void debug( String remoteAddress, String message, String arg1, String arg2 )
     {
-        inner.debug( "[%s] %s %s %s", remoteAddress, message, arg1, arg2 );
+        inner.debug( "%s %s %s %s", remoteAddress, message, arg1, arg2 );
     }
 }
