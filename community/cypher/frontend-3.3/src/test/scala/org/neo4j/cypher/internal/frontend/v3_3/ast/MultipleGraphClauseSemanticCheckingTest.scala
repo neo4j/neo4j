@@ -429,7 +429,7 @@ class MultipleGraphClauseSemanticCheckingTest
       ))
     }
   }
-  
+
   test("graphs are not lost across update statements") {
     parsing(
       """WITH GRAPHS foo >> bar
@@ -476,15 +476,170 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
+  test("Resolution of unaliased SOURCE GRAPH") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH baz, SOURCE GRAPH >>
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts should equal(strip(
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)))))),None,None,None,None)
+          |foo >> bar
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None)
+          |foo >> bar
+          |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)))), NewContextGraphs(SourceGraphAs(None),None))),None,None,None,None)
+          |foo >> foo
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
+          |foo >> foo
+          |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
+          |--
+          |// End"""))
+      result.formattedScopes should equal(strip(
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24 51
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> foo */
+          |    a: 35 43 44
+          |    b: 79
+          |    GRAPH baz: 51
+          |    GRAPH foo: 69
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 79
+          |    GRAPH baz: 51
+          |    GRAPH foo: 69
+          |  }
+          |}"""))
+    }
+  }
+
+  test("Resolution of unaliased SOURCE GRAPH does not fail if graph is also passed on explicitly") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH baz, GRAPH foo, SOURCE GRAPH >>
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts should equal(strip(
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)))))),None,None,None,None)
+          |foo >> bar
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None)
+          |foo >> bar
+          |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)))), ReturnedGraph(GraphAs(Variable(foo),Some(Variable(foo)))), NewContextGraphs(SourceGraphAs(None),None))),None,None,None,None)
+          |foo >> foo
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
+          |foo >> foo
+          |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
+          |--
+          |// End"""))
+      result.formattedScopes should equal(strip(
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24 51
+          |    GRAPH foo: 12 62
+          |  }
+          |  { /* foo >> foo */
+          |    a: 35 43 44
+          |    b: 90
+          |    GRAPH baz: 51
+          |    GRAPH foo: 62 80
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 90
+          |    GRAPH baz: 51
+          |    GRAPH foo: 62 80
+          |  }
+          |}"""))
+    }
+  }
+
+  test("Resolution of unaliased TARGET GRAPH does not fail if graph is also passed on explicitly") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH bar, GRAPH foo >> TARGET GRAPH
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts should equal(strip(
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)))))),None,None,None,None)
+          |foo >> bar
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None)
+          |foo >> bar
+          |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar)))), NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(TargetGraphAs(None))))),None,None,None,None)
+          |foo >> bar
+          |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
+          |foo >> bar
+          |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
+          |--
+          |// End"""))
+      result.formattedScopes should equal(strip(
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19 51
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12 62
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43 44
+          |    b: 89
+          |    GRAPH bar: 51
+          |    GRAPH foo: 62 82
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 89
+          |    GRAPH bar: 51
+          |    GRAPH foo: 62 82
+          |  }
+          |}"""))
+    }
+  }
+
+  private def strip(text: String) = text.trim.stripMargin
+
+  private def fullScopeTree(state: SemanticState): String = state.scopeTree.toStringWithoutId.trim
+
+  import scala.compat.Platform.EOL
+
   implicit class verify(actual: String) {
     def shouldEqualFixNewlines(expected: String): Unit = {
       StringHelper.RichString(actual.trim.stripMargin).fixNewLines should equal(StringHelper.RichString(expected.trim.stripMargin).fixNewLines)
     }
   }
-
-  private def fullScopeTree(state: SemanticState): String = state.scopeTree.toStringWithoutId.trim
-
-  import scala.compat.Platform.EOL
 
   private def contextsByPosition(state: SemanticState): String = {
     val astNodes = state.recordedContextGraphs.keySet ++ state.recordedScopes.keySet

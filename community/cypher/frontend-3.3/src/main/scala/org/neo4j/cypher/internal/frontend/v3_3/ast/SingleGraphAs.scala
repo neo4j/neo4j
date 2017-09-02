@@ -16,27 +16,54 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
+import org.neo4j.cypher.internal.frontend.v3_3.{ContextGraphs, InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking, SemanticState}
 
 sealed trait SingleGraphAs extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
   def as: Option[Variable]
 
-  def name: Option[String] = as.map(_.name)
+  def name(context: Option[ContextGraphs]): Option[String] = as.map(_.name)
+
+  def isUnboundContextGraph: Boolean = false
 
   def withNewName(newName: Variable): SingleGraphAs
 
   override def semanticCheck: SemanticCheck = SemanticCheckResult.success
   def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.declareGraph)
+  def implicitGraph(context: Option[ContextGraphs]): SemanticCheck = SemanticCheckResult.success
 }
 
 sealed trait BoundGraphAs extends SingleGraphAs
 
-final case class SourceGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundGraphAs {
+sealed trait BoundContextGraphAs extends BoundGraphAs {
+
+  override def isUnboundContextGraph: Boolean = as.isEmpty
+
+  protected def contextGraphName: String
+
+  override def declareGraph: SemanticCheck = as match {
+    case Some(v) => v.declareGraph
+    case None => SemanticCheckResult.success
+  }
+
+  override def implicitGraph(context: Option[ContextGraphs]): SemanticCheck = as match {
+    case Some(_) =>
+      SemanticCheckResult.success
+    case None =>
+      val check = (_: SemanticState).implicitContextGraph(context.map(_.source), position, contextGraphName)
+      check
+  }
+}
+
+final case class SourceGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundContextGraphAs {
+  override protected def contextGraphName: String = "source graph"
+  override def name(context: Option[ContextGraphs]): Option[String] = super.name(context) orElse context.map(_.source)
   override def withNewName(newName: Variable): SourceGraphAs = copy(as = Some(newName))(position)
 }
 
-final case class TargetGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundGraphAs {
+final case class TargetGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundContextGraphAs {
+  override protected def contextGraphName: String = "target graph"
+  override def name(context: Option[ContextGraphs]): Option[String] = super.name(context) orElse context.map(_.target)
   override def withNewName(newName: Variable): TargetGraphAs = copy(as = Some(newName))(position)
 }
 

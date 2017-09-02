@@ -347,6 +347,13 @@ case class SemanticState(currentScope: ScopeLocation,
   def addNotification(notification: InternalNotification): SemanticState =
     copy(notifications = notifications + notification)
 
+  def implicitContextGraph(variable: Option[String], position: InputPosition, contextGraphName: String)
+  : Either[SemanticError, SemanticState] =
+    variable match {
+      case Some(name) => implicitGraph(Variable(name)(position))
+      case None => Left(SemanticError(s"No $contextGraphName in scope", position))
+    }
+
   def implicitGraph(variable: ast.Variable): Either[SemanticError, SemanticState] =
     this.symbol(variable.name) match {
       case None =>
