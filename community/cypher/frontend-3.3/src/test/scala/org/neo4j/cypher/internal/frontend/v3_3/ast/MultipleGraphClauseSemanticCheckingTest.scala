@@ -429,6 +429,52 @@ class MultipleGraphClauseSemanticCheckingTest
       ))
     }
   }
+  
+  test("graphs are not lost across update statements") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |CREATE (a)
+        |MERGE (b {name: a.name})
+        |CREATE (b)-->(b)
+        |WITH *
+        |DELETE (a)
+        |RETURN GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts should equal(strip(
+        """// Start
+          |--
+          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |foo >> bar
+          |// With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List()),None,None,None,None)
+          |foo >> bar
+          |// Return(false,DiscardCardinality(),Some(GraphReturnItems(true,List())),None,None,None,Set())
+          |--
+          |// End"""))
+      result.formattedScopes should equal(strip(
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 31 50
+          |    b: 41 67 73
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 31 50 91
+          |    b: 41 67 73
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |}"""))
+    }
+  }
 
   implicit class verify(actual: String) {
     def shouldEqualFixNewlines(expected: String): Unit = {
