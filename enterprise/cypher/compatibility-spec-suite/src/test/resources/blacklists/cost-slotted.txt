@@ -232,6 +232,7 @@ Failing when using a variable that is already bound in CREATE
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
 Combine MATCH, WITH and CREATE
+A bound node should be recognized after projection with WITH + MERGE node
 A bound node should be recognized after projection with WITH + MERGE pattern
 Delete nodes
 Detach delete node
