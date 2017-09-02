@@ -38,6 +38,12 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
   def declareGraph: (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareGraph(this)
 
+  def declareGraphMarkedAsGenerated: SemanticCheck = {
+    val declare = (_: SemanticState).declareGraph(this)
+    val mark = (_: SemanticState).localMarkAsGenerated(this)
+    declare chain mark
+  }
+
   def implicitGraph: (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitGraph(this)
 

@@ -20,45 +20,34 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
-  def graphs: Seq[SingleGraphAs]
+  def graphs: Set[SingleGraphAs]
 
   def newSource: Option[SingleGraphAs] = None
   def newTarget: Option[SingleGraphAs] = None
 
   def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem]
-
-  def declareGraphs: SemanticCheck
-  def implicitGraphs(context: Option[ContextGraphs]): SemanticCheck
 }
 
 final case class ReturnedGraph(item: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = Seq(item)
+  override def graphs: Set[SingleGraphAs] = Set(item)
 
   override def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem] =
     if (pred(item)) Some(this) else None
-
-  override def declareGraphs: SemanticCheck = item.declareGraph
-  override def implicitGraphs(context: Option[ContextGraphs]): SemanticCheck = item.implicitGraph(context)
 }
 
 final case class NewTargetGraph(target: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = Seq(target)
+  override def graphs: Set[SingleGraphAs] = Set(target)
   override def newTarget = Some(target)
 
   override def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem] =
     if (pred(target)) Some(this) else None
-
-  override def declareGraphs: SemanticCheck = target.declareGraph
-  override def implicitGraphs(context: Option[ContextGraphs]): SemanticCheck = target.implicitGraph(context)
 }
 
 final case class NewContextGraphs(source: SingleGraphAs,
                                   override val newTarget: Option[SingleGraphAs] = None)
                                  (val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = newTarget match {
-    case Some(target) => Seq(source, target)
-    case None => Seq(source)
-  }
+
+  override def graphs: Set[SingleGraphAs] = Set(source) ++ newTarget.toSet
 
   override def newSource: Option[SingleGraphAs] = Some(source)
 
@@ -70,12 +59,6 @@ final case class NewContextGraphs(source: SingleGraphAs,
       }
     else
       newTarget.flatMap { target => if (pred(target)) Some(NewTargetGraph(target)(position)) else None }
-
-  override def declareGraphs: SemanticCheck =
-    source.declareGraph chain newTarget.foldSemanticCheck(_.declareGraph)
-
-  override def implicitGraphs(context: Option[ContextGraphs]): SemanticCheck =
-    source.implicitGraph(context) chain newTarget.foldSemanticCheck(_.implicitGraph(context))
 }
 
 object PassAllGraphReturnItems {
@@ -122,8 +105,8 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
     }
     (
       when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
-      items.foldSemanticCheck(_.declareGraphs) chain
-      items.foldSemanticCheck(_.implicitGraphs(previousScope.contextGraphs)) chain
+      items.flatMap(_.graphs).foldSemanticCheck(_.declareGraph) chain
+      items.flatMap(_.graphs).foldSemanticCheck(_.implicitGraph(previousScope.contextGraphs)) chain
       updateContext
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
   }

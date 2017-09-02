@@ -22,14 +22,20 @@ sealed trait SingleGraphAs extends ASTNode with ASTParticle with SemanticCheckab
 
   def as: Option[Variable]
 
+  def generated: Boolean
+
   def name(context: Option[ContextGraphs]): Option[String] = as.map(_.name)
 
   def isUnboundContextGraph: Boolean = false
 
   def withNewName(newName: Variable): SingleGraphAs
+  def asGenerated: SingleGraphAs
 
   override def semanticCheck: SemanticCheck = SemanticCheckResult.success
-  def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.declareGraph)
+
+  def declareGraph: SemanticCheck =
+    as.foldSemanticCheck(v => if (generated) v.declareGraphMarkedAsGenerated else v.declareGraph)
+
   def implicitGraph(context: Option[ContextGraphs]): SemanticCheck = SemanticCheckResult.success
 }
 
@@ -42,7 +48,7 @@ sealed trait BoundContextGraphAs extends BoundGraphAs {
   protected def contextGraphName: String
 
   override def declareGraph: SemanticCheck = as match {
-    case Some(v) => v.declareGraph
+    case Some(v) => if (generated) v.declareGraphMarkedAsGenerated else v.declareGraph
     case None => SemanticCheckResult.success
   }
 
@@ -55,39 +61,47 @@ sealed trait BoundContextGraphAs extends BoundGraphAs {
   }
 }
 
-final case class SourceGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundContextGraphAs {
+final case class SourceGraphAs(as: Option[Variable], generated: Boolean = false)(val position: InputPosition) extends BoundContextGraphAs {
   override protected def contextGraphName: String = "source graph"
   override def name(context: Option[ContextGraphs]): Option[String] = super.name(context) orElse context.map(_.source)
   override def withNewName(newName: Variable): SourceGraphAs = copy(as = Some(newName))(position)
+  override def asGenerated: SourceGraphAs = copy(generated = true)(position)
 }
 
-final case class TargetGraphAs(as: Option[Variable])(val position: InputPosition) extends BoundContextGraphAs {
+final case class TargetGraphAs(as: Option[Variable], generated: Boolean = false)(val position: InputPosition) extends BoundContextGraphAs {
   override protected def contextGraphName: String = "target graph"
   override def name(context: Option[ContextGraphs]): Option[String] = super.name(context) orElse context.map(_.target)
   override def withNewName(newName: Variable): TargetGraphAs = copy(as = Some(newName))(position)
+  override def asGenerated: TargetGraphAs = copy(generated = true)(position)
 }
 
-final case class GraphAs(ref: Variable, as: Option[Variable])(val position: InputPosition)
+final case class GraphAs(ref: Variable, as: Option[Variable], generated: Boolean = false)(val position: InputPosition)
   extends BoundGraphAs {
 
   override def withNewName(newName: Variable): GraphAs = copy(as = Some(newName))(position)
+  override def asGenerated: GraphAs = copy(generated = true)(position)
+
   override def semanticCheck: SemanticCheck = ref.ensureGraphDefined()
   override def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.implicitGraph)
 }
 
 sealed trait NewGraphAs extends SingleGraphAs
 
-final case class GraphOfAs(of: Pattern, as: Option[Variable])(val position: InputPosition)
+final case class GraphOfAs(of: Pattern, as: Option[Variable], generated: Boolean = false)(val position: InputPosition)
   extends NewGraphAs {
 
   override def withNewName(newName: Variable): GraphOfAs = copy(as = Some(newName))(position)
+  override def asGenerated: GraphOfAs = copy(generated = true)(position)
+
   override def semanticCheck: SemanticCheck = of.semanticCheck(Pattern.SemanticContext.Create)
 }
 
-final case class GraphAtAs(at: GraphUrl, as: Option[Variable])(val position: InputPosition)
+final case class GraphAtAs(at: GraphUrl, as: Option[Variable], generated: Boolean = false)(val position: InputPosition)
   extends NewGraphAs {
 
   override def withNewName(newName: Variable): GraphAtAs = copy(as = Some(newName))(position)
+  override def asGenerated: GraphAtAs = copy(generated = true)(position)
+
   override def semanticCheck: SemanticCheck = at.semanticCheck
 }
 

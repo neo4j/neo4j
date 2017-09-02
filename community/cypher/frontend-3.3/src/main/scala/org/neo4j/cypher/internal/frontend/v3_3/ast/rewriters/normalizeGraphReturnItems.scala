@@ -27,11 +27,11 @@ case object normalizeGraphReturnItems extends Rewriter {
   private val rewriter = Rewriter.lift {
     case item: SourceGraphAs => item
     case item: TargetGraphAs => item
-    case graphItem@GraphAs(ref, None) =>
+    case graphItem@GraphAs(ref, None, _) =>
       graphItem.copy(as = Some(ref))(graphItem.position)
     case graphItem: SingleGraphAs if graphItem.as.isEmpty =>
       val pos = graphItem.position.bumped()
-      graphItem.withNewName(Variable(FreshIdNameGenerator.name(pos))(pos))
+      graphItem.withNewName(Variable(FreshIdNameGenerator.name(pos))(pos)).asGenerated
   }
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])

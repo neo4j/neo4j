@@ -555,7 +555,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
 object From {
   def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph)(position)))(position))(position)
   }
 }
 
