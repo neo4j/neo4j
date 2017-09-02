@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 
-object EnterpriseExpressionConverters extends ExpressionConverter {
+object SlottedExpressionConverters extends ExpressionConverter {
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
       case runtimeAst.NodeFromRegister(offset, _) =>

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationSt
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.SlottedPipeBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.EnterpriseExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
@@ -56,7 +56,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters = new ExpressionConverters(EnterpriseExpressionConverters, CommunityExpressionConverter)
+      val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = EnterprisePipeBuilderFactory(

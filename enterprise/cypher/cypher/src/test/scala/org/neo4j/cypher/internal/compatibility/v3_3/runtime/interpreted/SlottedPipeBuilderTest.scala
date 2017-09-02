@@ -57,7 +57,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val registeredRewriter = new RegisteredRewriter(context.planContext)
     val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-    val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+    val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
       expressionConverters = converters, pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines))
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, table, IDPPlannerName)
