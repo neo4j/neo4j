@@ -34,19 +34,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.FileIsMappedException;
 import org.neo4j.io.pagecache.tracing.EvictionRunEvent;
 import org.neo4j.io.pagecache.tracing.FlushEventOpportunity;
 import org.neo4j.io.pagecache.tracing.MajorFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageFaultEvent;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
@@ -395,14 +394,6 @@ public class MuninnPageCache implements PageCache
 
         // no mapping exists
         return null;
-    }
-
-    private void assertNotMapped( File file, FileIsMappedException.Operation operation ) throws IOException
-    {
-        if ( tryGetMappingOrNull( file ) != null )
-        {
-            throw new FileIsMappedException( file, operation );
-        }
     }
 
     /**
