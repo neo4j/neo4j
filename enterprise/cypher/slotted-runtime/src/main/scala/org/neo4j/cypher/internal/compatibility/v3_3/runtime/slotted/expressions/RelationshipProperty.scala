@@ -26,14 +26,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class RelationshipProperty(offset: Int, token: Int) extends Expression with RegisterExpression {
+case class RelationshipProperty(offset: Int, token: Int) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     state.query.relationshipOps.getProperty(ctx.getLongAt(offset), token)
 
 }
 
-case class RelationshipPropertyLate(offset: Int, propKey: String) extends Expression with RegisterExpression {
+case class RelationshipPropertyLate(offset: Int, propKey: String) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
@@ -45,7 +45,7 @@ case class RelationshipPropertyLate(offset: Int, propKey: String) extends Expres
 
 }
 
-case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate with RegisterExpression {
+case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate with SlottedExpression {
 
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     Some(state.query.relationshipOps.hasProperty(m.getLongAt(offset), token))
@@ -54,7 +54,7 @@ case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate
   override def containsIsNull = false
 }
 
-case class RelationshipPropertyExistsLate(offset: Int, propKey: String) extends Predicate with RegisterExpression {
+case class RelationshipPropertyExistsLate(offset: Int, propKey: String) extends Predicate with SlottedExpression {
 
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)

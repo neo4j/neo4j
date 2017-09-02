@@ -17,16 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.longValue
-
-case class IdFromSlot(offset: Int) extends Expression with SlottedExpression {
-
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
-
-}
+case class ReferenceFromSlot(offset: Int) extends RuntimeExpression

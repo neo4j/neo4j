@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.helpers.Null
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class NullCheck(offset: Int, inner: Expression) extends Expression with RegisterExpression {
+case class NullCheck(offset: Int, inner: Expression) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     if (nodeIsNull(ctx.getLongAt(offset))) Values.NO_VALUE else inner(ctx)

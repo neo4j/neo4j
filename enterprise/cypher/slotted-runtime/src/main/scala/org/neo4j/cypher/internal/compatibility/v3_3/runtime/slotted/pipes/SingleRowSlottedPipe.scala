@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.longValue
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 
-case class IdFromSlot(offset: Int) extends Expression with SlottedExpression {
+case class SingleRowSlottedPipe(pipelineInformation: PipelineInformation)(val id: Id = new Id) extends Pipe {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
 
+  def internalCreateResults(state: QueryState) =
+    Iterator(PrimitiveExecutionContext(pipelineInformation))
 }

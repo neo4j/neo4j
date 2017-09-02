@@ -48,10 +48,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    createRegisteredRuntimeExecPlan(from, context)
+    createSlottedRuntimeExecPlan(from, context)
   }
 
-  private def createRegisteredRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
+  private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
@@ -75,7 +75,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
@@ -85,19 +85,19 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val registeredRewriter = new RegisteredRewriter(context.planContext)
-    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    val beforePipelines: Map[LogicalPlan, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val slottedRewriter = new SlottededRewriter(context.planContext)
+    val (logicalPlan, pipelines) = slottedRewriter(beforeRewrite, beforePipelines)
     (logicalPlan, pipelines)
   }
 
-  case class RegisteredExecutionPlan(fingerprint: PlanFingerprintReference,
-                                     isPeriodicCommit: Boolean,
-                                     plannerUsed: PlannerName,
-                                     override val plannedIndexUsage: Seq[IndexUsage],
-                                     runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
-                                     pipe: Pipe,
-                                     config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
+  case class SlottedExecutionPlan(fingerprint: PlanFingerprintReference,
+                                  isPeriodicCommit: Boolean,
+                                  plannerUsed: PlannerName,
+                                  override val plannedIndexUsage: Seq[IndexUsage],
+                                  runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
+                                  pipe: Pipe,
+                                  config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
                      params: MapValue): InternalExecutionResult =

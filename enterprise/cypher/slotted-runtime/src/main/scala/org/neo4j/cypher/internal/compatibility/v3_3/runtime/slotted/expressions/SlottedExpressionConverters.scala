@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 object SlottedExpressionConverters extends ExpressionConverter {
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
-      case runtimeAst.NodeFromRegister(offset, _) =>
-        Some(runtimeExpression.NodeFromRegister(offset))
-      case runtimeAst.RelationshipFromRegister(offset, _) =>
-        Some(runtimeExpression.RelationshipFromRegister(offset))
-      case runtimeAst.ReferenceFromRegister(offset) =>
-        Some(runtimeExpression.ReferenceFromRegister(offset))
+      case runtimeAst.NodeFromSlot(offset, _) =>
+        Some(runtimeExpression.NodeFromSlot(offset))
+      case runtimeAst.RelationshipFromSlot(offset, _) =>
+        Some(runtimeExpression.RelationshipFromSlot(offset))
+      case runtimeAst.ReferenceFromSlot(offset) =>
+        Some(runtimeExpression.ReferenceFromSlot(offset))
       case runtimeAst.NodeProperty(offset, token, _) =>
         Some(runtimeExpression.NodeProperty(offset, token))
       case runtimeAst.RelationshipProperty(offset, token, _) =>

@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values
 
 case class GetDegreePrimitive(offset: Int, typ: Option[String], direction: SemanticDirection)
   extends Expression
-    with RegisterExpression{
+    with SlottedExpression{
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = typ match {
     case None => Values.longValue(state.query.nodeGetDegree(ctx.getLongAt(offset), direction))

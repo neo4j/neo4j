@@ -17,16 +17,19 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.longValue
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class IdFromSlot(offset: Int) extends Expression with SlottedExpression {
-
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
-
+case class ApplySlottedPipe(lhs: Pipe, rhs: Pipe)
+                           (val id: Id = new Id)
+  extends PipeWithSource(lhs) with Pipe {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.flatMap {
+      lhsContext =>
+        val rhsState = state.withInitialContext(lhsContext)
+        rhs.createResults(rhsState)
+    }
 }

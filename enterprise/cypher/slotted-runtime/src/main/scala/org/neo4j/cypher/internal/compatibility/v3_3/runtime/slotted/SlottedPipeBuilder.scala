@@ -60,29 +60,29 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case AllNodesScan(IdName(column), _) =>
-        AllNodesScanRegisterPipe(column, pipelineInformation)(id)
+        AllNodesScanSlottedPipe(column, pipelineInformation)(id)
 
       case NodeIndexScan(IdName(column), label, propertyKeys, _) =>
-        NodeIndexScanRegisterPipe(column, label, propertyKeys, pipelineInformation)(id)
+        NodeIndexScanSlottedPipe(column, label, propertyKeys, pipelineInformation)(id)
 
       case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekRegisterPipe(column, label, propertyKeys,
+        NodeIndexSeekSlottedPipe(column, label, propertyKeys,
                                   valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id)
 
       case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekRegisterPipe(column, label, propertyKeys,
+        NodeIndexSeekSlottedPipe(column, label, propertyKeys,
                                   valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
       case _: Argument =>
-        ArgumentRegisterPipe(pipelineInformation)(id)
+        ArgumentSlottedPipe(pipelineInformation)(id)
 
       case NodeByLabelScan(IdName(column), label, _) =>
-        NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
+        NodesByLabelScanSlottedPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case SingleRow() =>
-        SingleRowRegisterPipe(pipelineInformation)(id)
+        SingleRowSlottedPipe(pipelineInformation)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
@@ -99,26 +99,26 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     plan match {
       case ProduceResult(columns, _) =>
         val runtimeColumns = createProjectionsForResult(columns, pipeline)
-        ProduceResultRegisterPipe(source, runtimeColumns)(id)
+        ProduceResultSlottedPipe(source, runtimeColumns)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
         val fromSlot = pipeline.getLongOffsetFor(from)
         val relSlot = pipeline.getLongOffsetFor(relName)
         val toSlot = pipeline.getLongOffsetFor(to)
-        ExpandAllRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
+        ExpandAllSlottedPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
         val fromOffset = pipeline.getLongOffsetFor(from)
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(to)
-        ExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipeline)(id)
+        ExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val fromOffset = pipeline.getLongOffsetFor(fromName)
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+        OptionalExpandAllSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
                                       pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
@@ -126,7 +126,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+        OptionalExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
                                        pipeline)(id)
 
       case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
@@ -146,7 +146,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val tempNodeOffset = incomingPipeline.getLongOffsetFor(tempNode)
         val tempEdgeOffset = incomingPipeline.getLongOffsetFor(tempEdge)
         val sizeOfTemporaryStorage = 2
-        VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types), min,
+        VarLengthExpandSlottedPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types), min,
                                     max, shouldExpandAll, pipeline,
                                     tempNodeOffset = tempNodeOffset,
                                     tempEdgeOffset = tempEdgeOffset,
@@ -157,7 +157,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
-        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
+        OptionalSlottededPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case Projection(_, expressions) =>
         val expressionsWithSlots = expressions map {
@@ -165,21 +165,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             val slot = pipeline.get(k).get
             slot -> convertExpressions(e)
         }
-        ProjectionRegisterPipe(source, expressionsWithSlots)(id)
+        ProjectionSlottedPipe(source, expressionsWithSlots)(id)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply),
+        CreateNodeSlottedPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply),
                                props.map(convertExpressions))(id)
 
       case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
+        MergeCreateNodeSlottedPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id)
 
       case UnwindCollection(_, IdName(name), expression) =>
         val offset = pipeline.getReferenceOffsetFor(name)
-        UnwindRegisterPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
+        UnwindSlottedPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
 
       // Aggregation without grouping, such as RETURN count(*)
       case Aggregation(_, groupingExpressions, aggregationExpression) if groupingExpressions.isEmpty =>
@@ -188,7 +188,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
               .asInstanceOf[AggregationExpression]
         }
-        EagerAggregationWithoutGroupingRegisterPipe(source,
+        EagerAggregationWithoutGroupingSlottedPipe(source,
           pipeline,
           aggregation)(id)
 
@@ -202,7 +202,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
               .asInstanceOf[AggregationExpression]
         }
-        EagerAggregationRegisterPipe(source,
+        EagerAggregationSlottedPipe(source,
                                      pipeline,
                                      grouping,
                                      aggregation)(id)
@@ -213,21 +213,21 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
             pipeline.getReferenceOffsetFor(key) -> expressionConverters.toCommandExpression(expression)
         }
 
-        DistinctRegisterPipe(source, pipeline, grouping)(id)
+        DistinctSlottedPipe(source, pipeline, grouping)(id)
 
       case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
         val fromOffset = pipeline(startNode).offset
         val endOffset = pipeline(endNode).offset
-        CreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,
+        CreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,
                                        pipeline, props.map(convertExpressions))(id = id)
 
       case MergeCreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
         val fromOffset = pipeline(startNode).offset
         val endOffset = pipeline(endNode).offset
-        MergeCreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable),
+        MergeCreateRelationshipSlottedPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable),
                                             endOffset, pipeline, props.map(convertExpressions))(id = id)
 
-      // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
+      // Pipes that do not themselves read/write slots should be fine to use the fallback (non-slot aware pipes)
       case _: Selection |
            _: Limit |
            _: ErrorPlan |
@@ -262,16 +262,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       k =>
         pipelineInformation1(k) match {
           case LongSlot(offset, false, CTNode, _) =>
-            k -> slottedExpressions.NodeFromRegister(offset)
+            k -> slottedExpressions.NodeFromSlot(offset)
           case LongSlot(offset, true, CTNode, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromRegister(offset))
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
           case LongSlot(offset, false, CTRelationship, _) =>
-            k -> slottedExpressions.RelationshipFromRegister(offset)
+            k -> slottedExpressions.RelationshipFromSlot(offset)
           case LongSlot(offset, true, CTRelationship, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromRegister(offset))
+            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
 
           case RefSlot(offset, _, _, _) =>
-            k -> slottedExpressions.ReferenceFromRegister(offset)
+            k -> slottedExpressions.ReferenceFromSlot(offset)
 
           case _ =>
             throw new InternalException(s"Did not find `$k` in the pipeline information")
@@ -296,7 +296,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case Apply(_, _) =>
-        ApplyRegisterPipe(lhs, rhs)(id)
+        ApplySlottedPipe(lhs, rhs)(id)
 
       case _: SemiApply |
            _: AntiSemiApply =>
@@ -306,7 +306,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val lhsPlan = plan.lhs.get
         val lhsLongCount = pipelines(lhsPlan).numberOfLongs
         val lhsRefCount = pipelines(lhsPlan).numberOfReferences
-        CartesianProductRegisterPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
+        CartesianProductSlottedPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
 
       case ConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {
@@ -315,7 +315,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         })
         val longOffsets = longIds.map(e => pipeline.getLongOffsetFor(e.name))
         val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
-        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = false, pipeline)(id)
+        ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = false, pipeline)(id)
 
       case AntiConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {
@@ -324,7 +324,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         })
         val longOffsets = longIds.map(e => pipeline.getLongOffsetFor(e.name))
         val refOffsets = refIds.map(e => pipeline.getReferenceOffsetFor(e.name))
-        ConditionalApplyRegisterPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
+        ConditionalApplySlottedPipe(lhs, rhs, longOffsets, refOffsets, negated = true, pipeline)(id)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }

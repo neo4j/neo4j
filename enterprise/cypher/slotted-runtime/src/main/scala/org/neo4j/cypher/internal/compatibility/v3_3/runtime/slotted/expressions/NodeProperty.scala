@@ -28,13 +28,13 @@ import org.neo4j.values.storable.Values
 
 
 
-case class NodeProperty(offset: Int, token: Int) extends Expression with RegisterExpression {
+case class NodeProperty(offset: Int, token: Int) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
 }
 
-case class NodePropertyLate(offset: Int, propKey: String) extends Expression with RegisterExpression {
+case class NodePropertyLate(offset: Int, propKey: String) extends Expression with SlottedExpression {
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
@@ -46,7 +46,7 @@ case class NodePropertyLate(offset: Int, propKey: String) extends Expression wit
 
 }
 
-case class NodePropertyExists(offset: Int, token: Int) extends Predicate with RegisterExpression {
+case class NodePropertyExists(offset: Int, token: Int) extends Predicate with SlottedExpression {
 
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     Some(state.query.nodeOps.hasProperty(m.getLongAt(offset), token))
@@ -55,7 +55,7 @@ case class NodePropertyExists(offset: Int, token: Int) extends Predicate with Re
   override def containsIsNull = false
 }
 
-case class NodePropertyExistsLate(offset: Int, propKey: String) extends Predicate with RegisterExpression {
+case class NodePropertyExistsLate(offset: Int, propKey: String) extends Predicate with SlottedExpression {
 
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)

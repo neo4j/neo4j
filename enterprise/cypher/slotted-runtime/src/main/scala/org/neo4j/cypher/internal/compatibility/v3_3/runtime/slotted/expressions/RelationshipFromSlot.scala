@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.longValue
+import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.values.virtual.EdgeValue
 
-case class IdFromSlot(offset: Int) extends Expression with SlottedExpression {
+case class RelationshipFromSlot(offset: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): EdgeValue =
+    ValueUtils.fromRelationshipProxy(state.query.relationshipOps.getById(ctx.getLongAt(offset)))
 
 }
