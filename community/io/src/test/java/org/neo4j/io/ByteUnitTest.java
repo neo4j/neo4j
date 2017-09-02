@@ -231,4 +231,34 @@ public class ByteUnitTest
         assertEquals( "977.5MiB", ByteUnit.bytesToString( 1025000000 ) );
         assertEquals( "9.546GiB", ByteUnit.bytesToString( 10250000000L) );
     }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowWhenParsingInvalidUnit() throws Exception
+    {
+        ByteUnit.parse( "1 XB" );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowWhenParsingUnitInterjectedWithNumber() throws Exception
+    {
+        ByteUnit.parse( "1K2i3B" );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowWhenParsingNonNumbericTest() throws Exception
+    {
+        ByteUnit.parse( "abc" );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowWhenParsingOnlyUnit() throws Exception
+    {
+        ByteUnit.parse( "MiB" );
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mustThrowWhenParsingUnitBeforeValue() throws Exception
+    {
+        ByteUnit.parse( "MiB 1" );
+    }
 }

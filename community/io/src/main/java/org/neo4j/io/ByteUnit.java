@@ -206,6 +206,7 @@ public enum ByteUnit
         long result = 0;
         int len = text.length();
         int unitCharacter = 0;
+        int digitCharacters = 0;
         Stream<Pair<String,ByteUnit>> unitsStream = listUnits();
 
         for ( int i = 0; i < len; i++ )
@@ -214,11 +215,16 @@ public enum ByteUnit
             int digit = Character.digit( ch, 10 );
             if ( digit != -1 )
             {
+                if ( unitCharacter != 0 )
+                {
+                    throw invalidFormat( text );
+                }
                 if ( result != 0 )
                 {
                     result *= 10;
                 }
                 result += digit;
+                digitCharacters++;
             }
             else if ( !Character.isWhitespace( ch ) )
             {
@@ -228,17 +234,27 @@ public enum ByteUnit
             }
         }
 
+        if ( digitCharacters == 0 )
+        {
+            throw invalidFormat( text );
+        }
+
         if ( unitCharacter > 0 )
         {
             ByteUnit byteUnit = unitsStream.map( Pair::other ).findFirst().orElse( null );
             if ( byteUnit == null )
             {
-                throw new IllegalArgumentException( "Unknown byte unit in '" + text + "'" );
+                throw invalidFormat( text );
             }
             result = byteUnit.toBytes( result );
         }
 
         return result;
+    }
+
+    private static IllegalArgumentException invalidFormat( String text )
+    {
+        return new IllegalArgumentException( "Invalid number format: '" + text + "'" );
     }
 
     private static Stream<Pair<String,ByteUnit>> listUnits()
