@@ -317,19 +317,21 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "true" ) );
 
         String query = "CALL dbms.killQuery('query-9999999999')";
-        Map<String,String> expected = new HashMap<>();
-        expected.put( "queryId", "query-9999999999" );
-        expected.put( "username", "n/a" );
-        expected.put( "message", "No Query found with this id" );
+        Map<String,Object> expected = new HashMap<>();
+        expected.put( "queryId", valueOf( "query-9999999999" ) );
+        expected.put( "username", valueOf( "n/a" ) );
+        expected.put( "message", valueOf( "No Query found with this id" ) );
         assertSuccess( adminSubject, query, r -> Assert.assertThat( r.next(), equalTo( expected ) ) );
     }
 
     @Test
     public void shouldNotGiveNiceMessageAtFailWhenTryingToKillWhenConfigured() throws Throwable
     {
-        super.setUp();
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "false" ) );
         String query = "CALL dbms.killQuery('query-9999999999')";
-        assertSuccess( adminSubject, query, r -> Assert.assertThat( r.hasNext(), is( false ) ) );
+        assertSuccess( adminSubject, query, r ->
+
+                Assert.assertThat( r.hasNext(), is( false ) ) );
     }
 
     @Test
@@ -340,15 +342,15 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
 
         //Expect
-        Set<Map<String,String>> expected = new HashSet<>();
-        Map<String,String> firstResultExpected = new HashMap<>();
-        firstResultExpected.put( "queryId", "query-9999999989" );
-        firstResultExpected.put( "username", "n/a" );
-        firstResultExpected.put( "message", "No Query found with this id" );
-        Map<String,String> secoundResultExpected = new HashMap<>();
-        secoundResultExpected.put( "queryId", "query-9999999999" );
-        secoundResultExpected.put( "username", "n/a" );
-        secoundResultExpected.put( "message", "No Query found with this id" );
+        Set<Map<String,Object>> expected = new HashSet<>();
+        Map<String,Object> firstResultExpected = new HashMap<>();
+        firstResultExpected.put( "queryId", valueOf( "query-9999999989" ) );
+        firstResultExpected.put( "username", valueOf( "n/a" ) );
+        firstResultExpected.put( "message", valueOf( "No Query found with this id" ) );
+        Map<String,Object> secoundResultExpected = new HashMap<>();
+        secoundResultExpected.put( "queryId", valueOf( "query-9999999999" ) );
+        secoundResultExpected.put( "username", valueOf( "n/a" ) );
+        secoundResultExpected.put( "message", valueOf( "No Query found with this id" ) );
         expected.add( firstResultExpected );
         expected.add( secoundResultExpected );
 
