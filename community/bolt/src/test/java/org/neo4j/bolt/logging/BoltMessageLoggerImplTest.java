@@ -26,6 +26,9 @@ public class BoltMessageLoggerImplTest
 
     private static final String REMOTE_ADDRESS = "localhost/127.0.0.1:60297";
     private static final String CORRELATION_ID = "Bolt-X-CorrelationId-1234";
+    private static String errorMessage = "Oh my woes!";
+    private static Neo4jError error = Neo4jError.from( new DeadlockDetectedException( errorMessage ) );
+
     @Mock
     private Channel channel;
     @Mock
@@ -149,23 +152,17 @@ public class BoltMessageLoggerImplTest
     @Test
     public void logFailure() throws Exception
     {
-        // given
-        String errorMessage = "Oh my woes!";
-        Neo4jError error = Neo4jError.from( new DeadlockDetectedException( errorMessage ) );
         // when
-        boltMessageLogger.logFailure( error.status(), errorMessage );
+        boltMessageLogger.logFailure( error.status() );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID,
-                "S: FAILURE Neo.TransientError.Transaction.DeadlockDetected Oh my woes!" );
+                "S: FAILURE Neo.TransientError.Transaction.DeadlockDetected" );
 
     }
 
     @Test
     public void logCorrelationIdClientEvent() throws Exception
     {
-        // given
-        when( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( true );
-
         // when
         boltMessageLogger.clientEvent( "TEST" );
 
@@ -184,22 +181,28 @@ public class BoltMessageLoggerImplTest
         boltMessageLogger.clientError( "TEST", "errorMessage", () -> "details" );
 
         // then
-        verify( boltMessageLog ).error( REMOTE_ADDRESS, "errorMessage", "C: <TEST> details",
-                CORRELATION_ID );
+        verify( boltMessageLog ).error( REMOTE_ADDRESS, CORRELATION_ID, "C: <TEST> details", "errorMessage" );
     }
 
     @Test
     public void logCorrelationIdServerError() throws Exception
     {
-        // given
-        when( channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( true );
-
         // when
         boltMessageLogger.serverError( "TEST", "errorMessage" );
 
         // then
-        verify( boltMessageLog ).error( REMOTE_ADDRESS, "errorMessage", "S: <TEST>",
-                CORRELATION_ID );
+        verify( boltMessageLog ).error( REMOTE_ADDRESS, CORRELATION_ID, "S: <TEST>", "errorMessage" );
+    }
+
+    @Test
+    public void logServerErrorWithStatus() throws Exception
+    {
+        // when
+        boltMessageLogger.serverError( "TEST", error.status() );
+
+        // then
+        verify( boltMessageLog ).error( REMOTE_ADDRESS, CORRELATION_ID, "S: <TEST>",
+                "Neo.TransientError.Transaction.DeadlockDetected" );
     }
 
     @Test
@@ -244,7 +247,6 @@ public class BoltMessageLoggerImplTest
 
         // then
         verify( correlationIdAttribute ).set( anyString() );
-        verify( boltMessageLog ).error( REMOTE_ADDRESS, "errorMessage", "S: <TEST>",
-                CORRELATION_ID );
+        verify( boltMessageLog ).error( REMOTE_ADDRESS, CORRELATION_ID, "S: <TEST>", "errorMessage" );
     }
 }

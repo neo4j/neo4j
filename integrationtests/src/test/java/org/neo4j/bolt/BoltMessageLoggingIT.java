@@ -193,9 +193,8 @@ public class BoltMessageLoggingIT
 
     private Driver newDriver()
     {
-        org.neo4j.driver.v1.Config driverConfig = org.neo4j.driver.v1.Config.build().
-                withEncryptionLevel( org.neo4j.driver.v1.Config.EncryptionLevel.NONE )
-                .toConfig();
+        org.neo4j.driver.v1.Config driverConfig = org.neo4j.driver.v1.Config.build()
+                .withoutEncryption().toConfig();
 
         return GraphDatabase.driver( boltUri(), driverConfig );
     }

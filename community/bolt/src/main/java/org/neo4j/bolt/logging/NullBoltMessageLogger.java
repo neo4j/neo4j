@@ -68,7 +68,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void serverError( String eventName, Status status, String errorMessage )
+    public void serverError( String eventName, Status status )
     {
     }
 
@@ -108,7 +108,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logFailure( Status status, String errorMessage )
+    public void logFailure( Status status )
     {
     }
 

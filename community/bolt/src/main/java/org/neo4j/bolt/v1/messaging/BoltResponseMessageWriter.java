@@ -97,7 +97,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onFailure( Status status, String errorMessage ) throws IOException
     {
-        messageLogger.logFailure( status, errorMessage );
+        messageLogger.logFailure( status );
         packer.packStructHeader( 1, FAILURE.signature() );
         packer.packMapHeader( 2 );
 
@@ -113,7 +113,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onFatal( Status status, String errorMessage ) throws IOException
     {
-        messageLogger.serverError( "FATAL", status, errorMessage );
+        messageLogger.serverError( "FATAL", status);
         onFailure( status, errorMessage );
         flush();
     }

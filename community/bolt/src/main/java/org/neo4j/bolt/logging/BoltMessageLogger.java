@@ -38,7 +38,7 @@ public interface BoltMessageLogger
 
     void serverError( String eventName, String errorMessage );
 
-    void serverError( String eventName, Status status, String errorMessage );
+    void serverError( String eventName, Status status );
 
     void logInit( String userAgent, Map<String,Object> authToken );
 
@@ -54,7 +54,7 @@ public interface BoltMessageLogger
 
     void logSuccess( Object metadata );
 
-    void logFailure( Status status, String errorMessage );
+    void logFailure( Status status );
 
     void logIgnored();
 }

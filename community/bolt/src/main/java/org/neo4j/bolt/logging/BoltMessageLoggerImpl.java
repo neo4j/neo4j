@@ -41,7 +41,7 @@ import static java.lang.String.format;
 class BoltMessageLoggerImpl implements BoltMessageLogger
 {
     private static final ObjectMapper jsonObjectMapper = new ObjectMapper();
-    public static final Supplier<String> PLACEHOLDER_DETAIL_SUPPLIER = () -> "-";
+    private static final Supplier<String> PLACEHOLDER_DETAIL_SUPPLIER = () -> "-";
     private final BoltMessageLog messageLog;
 
     private final String remoteAddress;
@@ -67,7 +67,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void clientEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLoggerWithDetails().accept( format( "C: %s", eventName ), detailsSupplier.get() );
+        infoLogger().accept( format( "C: %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
@@ -85,7 +85,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void serverEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLoggerWithDetails().accept( format( "S: %s", eventName ), detailsSupplier.get() );
+        infoLogger().accept( format( "S: %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
@@ -95,9 +95,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void serverError( String eventName, Status status, String errorMessage )
+    public void serverError( String eventName, Status status )
     {
-        errorLoggerWithArgs( errorMessage ).accept( format( "S: <%s>", eventName ), status.code().serialize() );
+        serverError( eventName, status.code().serialize() );
     }
 
     @Override
@@ -144,9 +144,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logFailure( Status status, String errorMessage )
+    public void logFailure( Status status )
     {
-        serverEvent( "FAILURE", () -> format( "%s %s", status.code().serialize(), errorMessage ) );
+        serverEvent( "FAILURE", () -> status.code().serialize() );
     }
 
     @Override
@@ -164,7 +164,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
         String boltCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
         return formatMessageWithEventName ->
-                messageLog.error( remoteAddress, errorMessage, formatMessageWithEventName, boltCorrelationId );
+                messageLog.error( remoteAddress, boltCorrelationId, formatMessageWithEventName, errorMessage );
     }
 
     private String randomCorrelationIdGenerator()
@@ -172,7 +172,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
         return UUID.randomUUID().toString();
     }
 
-    private BiConsumer<String, String> infoLoggerWithDetails()
+    private BiConsumer<String, String> infoLogger()
     {
         if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
         {
