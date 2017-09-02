@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.EnterprisePipeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.SlottedPipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
@@ -123,7 +123,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters,
                                           expressionToExpression)
 
-      new EnterprisePipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
+      new SlottedPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
         expressionToExpression)
     }
   }

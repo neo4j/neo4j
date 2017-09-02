@@ -38,14 +38,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
-class EnterprisePipeBuilder(fallback: PipeBuilder,
-                            expressionConverters: ExpressionConverters,
-                            idMap: Map[LogicalPlan, Id],
-                            monitors: Monitors,
-                            pipelines: Map[LogicalPlan, PipelineInformation],
-                            readOnly: Boolean,
-                            rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
-                           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
+class SlottedPipeBuilder(fallback: PipeBuilder,
+                         expressionConverters: ExpressionConverters,
+                         idMap: Map[LogicalPlan, Id],
+                         monitors: Monitors,
+                         pipelines: Map[LogicalPlan, PipelineInformation],
+                         readOnly: Boolean,
+                         rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
+                        (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
   extends PipeBuilder {
 
   private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
