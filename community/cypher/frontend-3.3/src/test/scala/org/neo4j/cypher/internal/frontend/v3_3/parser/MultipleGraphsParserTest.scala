@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, Clause, GraphReturnItems, PassAllGraphReturnItems}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, PassAllGraphReturnItems}
 import org.parboiled.scala.Rule1
 
 class MultipleGraphsParserTest
@@ -63,9 +63,7 @@ class MultipleGraphsParserTest
     ))(pos)))
   }
 
-  // TODO: Doesn't work because the `>>` operator thinks `WITH a` is a new graph named `WITH` and expects `a` to be the start of `AT` or `AS`, and fails when the subsequent whitespace is not `t` or `s`.
-  // Using explicit 2nd argument to >> works (see above), or using `FROM`
-  ignore("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
+  test("WITH 1 AS a WITH a GRAPH AT 'url' AS foo >> WITH a GRAPHS foo, >> GRAPH AT 'url2' AS bar RETURN GRAPHS bar, foo") {
     yields(ast.Query(None, ast.SingleQuery(Seq(
       ast.With(
         ast.ReturnItems(includeExisting = false, Seq(ast.AliasedReturnItem(literalInt(1), varFor("a"))(pos)))(pos),

@@ -28,13 +28,13 @@ trait Graphs
     ((Parameter ~~> (Left(_))) | (StringLiteral ~~> (Right(_)))) ~~>> (ast.GraphUrl(_))
   }
 
-  def GraphRef: Rule1[ast.Variable] = Variable
+  def GraphRef: Rule1[ast.Variable] = !ReservedClauseStartKeyword ~~ Variable
 
   def GraphRefList: Rule1[List[ast.Variable]] =
     oneOrMore(GraphRef, separator = CommaSep)
 
   private def AsGraph: Rule1[ast.Variable] =
-    keyword("AS") ~~ Variable
+    keyword("AS") ~~ GraphRef
 
   private def GraphAlias: Rule2[Variable, Option[Variable]] = rule("<graph-ref> AS <name>") {
     GraphRef ~~ optional(AsGraph)
