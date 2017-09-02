@@ -64,6 +64,7 @@ trait Query extends Parser
     | Persist
     | Relocate
     | Return
+    | Snapshot
     | Pragma
   )
 

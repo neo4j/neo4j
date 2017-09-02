@@ -66,21 +66,29 @@ trait Clauses extends Parser
     CreatedGraphAt | CreatedGraphAs
 
   private def CreatedGraphAt: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
-    Snapshot ~~ keyword("GRAPH") ~~ Variable ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~> {
+    OptSnapshot ~~ keyword("GRAPH") ~~ Variable ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~> {
       (snapshot, graph, pattern, url) => (snapshot, graph, pattern, url)
     }
 
   private def CreatedGraphAs: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
-    Snapshot ~~ keyword("GRAPH") ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~ keyword("AS") ~~ Variable ~~> {
+    OptSnapshot ~~ keyword("GRAPH") ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~ keyword("AS") ~~ Variable ~~> {
       (snapshot, pattern, url, graph) => (snapshot, graph, pattern, url)
     }
 
+  private def OptSnapshot: Rule1[Boolean] = rule("[SNAPSHOT]") {
+    optional(keyword("SNAPSHOT") ~~ push(true)) ~~>(_.getOrElse(false))
+  }
+
   def Persist: Rule1[ast.Persist] = rule("PERSIST") {
-    keyword("PERSIST") ~~ Snapshot ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Persist(_, _, _))
+    keyword("PERSIST") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Persist(_, _))
+  }
+
+  def Snapshot: Rule1[ast.Snapshot] = rule("SNAPSHOT") {
+    keyword("SNAPSHOT") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Snapshot(_, _))
   }
 
   def Relocate: Rule1[ast.Relocate] = rule("RELOCATE") {
-    keyword("RELOCATE") ~~ Snapshot ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Relocate(_, _, _))
+    keyword("RELOCATE") ~~ BoundGraph ~~ keyword("TO") ~~ GraphUrl ~~>>(ast.Relocate(_, _))
   }
 
   def DeleteGraphs: Rule1[ast.DeleteGraphs] = rule("DELETE GRAPHS") {
@@ -91,9 +99,6 @@ trait Clauses extends Parser
     )
   }
 
-  private def Snapshot: Rule1[Boolean] = rule("SNAPSHOT") {
-    optional(keyword("SNAPSHOT") ~~ push(true)) ~~>(_.getOrElse(false))
-  }
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)

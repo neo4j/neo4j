@@ -71,35 +71,31 @@ class MultipleGraphClausesParsingTest
   }
 
   test("PERSIST GRAPH foo TO 'url'") {
-    yields(ast.Persist(snapshot = false, graph("foo"), url("url")))
+    yields(ast.Persist(graph("foo"), url("url")))
   }
 
   test("PERSIST SOURCE GRAPH TO 'url'") {
-    yields(ast.Persist(snapshot = false, ast.SourceGraphAs(None)(pos), url("url")))
+    yields(ast.Persist(ast.SourceGraphAs(None)(pos), url("url")))
   }
 
   test("PERSIST TARGET GRAPH TO 'url'") {
-    yields(ast.Persist(snapshot = false, ast.TargetGraphAs(None)(pos), url("url")))
+    yields(ast.Persist(ast.TargetGraphAs(None)(pos), url("url")))
   }
 
-  test("PERSIST SNAPSHOT SOURCE GRAPH TO 'url'") {
-    yields(ast.Persist(snapshot = true, ast.SourceGraphAs(None)(pos), url("url")))
+  test("SNAPSHOT GRAPH foo TO 'url'") {
+    yields(ast.Snapshot(graph("foo"), url("url")))
   }
 
-  test("PERSIST SNAPSHOT TARGET GRAPH TO 'url'") {
-    yields(ast.Persist(snapshot = true, ast.TargetGraphAs(None)(pos), url("url")))
+  test("SNAPSHOT SOURCE GRAPH TO 'url'") {
+    yields(ast.Snapshot(ast.SourceGraphAs(None)(pos), url("url")))
   }
 
-  test("PERSIST SNAPSHOT GRAPH foo TO 'url'") {
-    yields(ast.Persist(snapshot = true, graph("foo"), url("url")))
+  test("SNAPSHOT TARGET GRAPH TO 'url'") {
+    yields(ast.Snapshot(ast.TargetGraphAs(None)(pos), url("url")))
   }
 
   test("RELOCATE GRAPH foo TO 'url'") {
-    yields(ast.Relocate(snapshot = false, graph("foo"), url("url")))
-  }
-
-  test("RELOCATE SNAPSHOT GRAPH foo TO 'url'") {
-    yields(ast.Relocate(snapshot = true, graph("foo"), url("url")))
+    yields(ast.Relocate(graph("foo"), url("url")))
   }
 
   test("DELETE GRAPHS foo, bar") {
