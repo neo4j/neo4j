@@ -87,7 +87,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
-  def isStarOnly: Boolean = includeExisting && items.isEmpty
+  def isGraphsStarOnly: Boolean = includeExisting && items.isEmpty
 
   val graphs: Seq[SingleGraphAs] = items.flatMap(_.graphs)
 

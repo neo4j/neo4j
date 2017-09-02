@@ -519,7 +519,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
     val variableStar = returnItems.isStarOnly
-    val graphsStar = graphReturnItems.forall(_.isStarOnly)
+    val graphsStar = graphReturnItems.forall(_.isGraphsStarOnly)
     declareAllTheThings
   }
 
