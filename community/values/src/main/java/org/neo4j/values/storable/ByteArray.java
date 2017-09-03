@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class ByteArray extends IntegralArray
+public abstract class ByteArray extends IntegralArray
 {
     abstract byte[] value();
 

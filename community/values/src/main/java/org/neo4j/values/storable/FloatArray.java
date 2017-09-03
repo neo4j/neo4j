@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class FloatArray extends FloatingPointArray
+public abstract class FloatArray extends FloatingPointArray
 {
     abstract float[] value();
 
