@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_2.executionplan
 
+
+import org.neo4j.cypher.internal.compiler.v3_2._
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.pipes._
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LogicalPlan2PlanDescription
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{CSVResources, QueryContext}
-import org.neo4j.cypher.internal.compiler.v3_2.{ExecutionMode, ExplainMode, _}
-import org.neo4j.cypher.internal.frontend.v3_2.CypherException
+import org.neo4j.cypher.internal.frontend.v3_2.{CypherException, ProfilerStatisticsNotReadyException}
 import org.neo4j.cypher.internal.frontend.v3_2.phases.InternalNotificationLogger
 
 import scala.collection.mutable
@@ -95,7 +96,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
-        val descriptor = buildDescriptor(planDescription, resultIterator.wasMaterialized)
+        val verifyProfileReady = () => {
+          val isResultReady = resultIterator.wasMaterialized
+          if (!isResultReady) {
+            taskCloser.close(success = false)
+            throw new ProfilerStatisticsNotReadyException()
+          }
+        }
+        val descriptor = buildDescriptor(planDescription, verifyProfileReady)
         new PipeExecutionResult(resultIterator, columns, state, descriptor, planType, queryType)
       }
     }
@@ -108,8 +116,8 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       resultIterator
     }
 
-    private def buildDescriptor(planDescription: InternalPlanDescription, isProfileReady: => Boolean): () => InternalPlanDescription =
-      () => pipeDecorator.decorate(planDescription, isProfileReady)
+    private def buildDescriptor(planDescription: InternalPlanDescription, verifyProfileReady: () => Unit): () => InternalPlanDescription =
+      () => pipeDecorator.decorate(planDescription, verifyProfileReady)
   }
 
   private def getQueryType = {
