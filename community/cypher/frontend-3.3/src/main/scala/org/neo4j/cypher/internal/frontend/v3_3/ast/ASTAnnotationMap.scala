@@ -26,6 +26,9 @@ object ASTAnnotationMap {
 }
 
 class ASTAnnotationMap[K <: ASTNode, V] private (store: Map[(K, InputPosition), V]) extends Map[K, V] {
+
+  def keyPositionSet: Set[(K, InputPosition)] = store.keySet
+
   override def +[B1 >: V](kv: (K, B1)): ASTAnnotationMap[K, B1] =
     new ASTAnnotationMap(store + (((kv._1, kv._1.position), kv._2)))
 
