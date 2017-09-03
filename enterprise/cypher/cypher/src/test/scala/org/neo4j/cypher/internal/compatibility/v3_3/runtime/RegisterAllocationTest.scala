@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{plans => logicalPlans}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, plans => logicalPlans}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -424,6 +424,31 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(unwind) should equal(PipelineInformation(numberOfLongs = 0, numberOfReferences = 1, slots = Map(
       "x" -> RefSlot(0, nullable = true, CTAny, "x")
     )))
+    allocations(produceResult) shouldBe theSameInstanceAs(allocations(unwind))
+  }
+
+  test("unwind and project and sort") {
+    // given UNWIND [1,2,3] as x RETURN x ORDER BY x
+    val xVar = varFor("x")
+    val xVarName = IdName.fromVariable(xVar)
+    val leaf = SingleRow()(solved)
+    val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
+    val sort = Sort(unwind, List(Ascending(xVarName)))(solved)
+    val produceResult = ProduceResult(Seq("x"), sort)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(produceResult)
+
+    // then
+    allocations should have size 4
+    allocations(leaf) should equal(PipelineInformation(Map.empty, 0, 0))
+
+
+    val expectedPipeline = PipelineInformation(numberOfLongs = 0, numberOfReferences = 1, slots = Map(
+      "x" -> RefSlot(0, nullable = true, CTAny, "x")
+    ))
+    allocations(unwind) should equal(expectedPipeline)
+    allocations(sort) shouldBe theSameInstanceAs(allocations(unwind))
     allocations(produceResult) shouldBe theSameInstanceAs(allocations(unwind))
   }
 

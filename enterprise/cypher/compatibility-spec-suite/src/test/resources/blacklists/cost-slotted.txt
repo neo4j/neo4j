@@ -6,40 +6,22 @@ Get rows in the middle
 
 handling long chanins of operators
 Handle ORDER BY with LIMIT 1
-Handle projections with ORDER BY - GH#4937
 Keeping used expression 1
-Limiting amount of rows when there are fewer left than the LIMIT argument
 Matching and returning ordered results, with LIMIT
-ORDER BY DESC should order booleans in the expected order
-ORDER BY DESC should order floats in the expected order
-ORDER BY DESC should order ints in the expected order
-ORDER BY DESC should order strings in the expected order
-ORDER BY DESC should return results in descending order
-ORDER BY a DISTINCT column
 ORDER BY and LIMIT can be used
-ORDER BY should order booleans in the expected order
-ORDER BY should order floats in the expected order
-ORDER BY should order ints in the expected order
-ORDER BY should order strings in the expected order
-ORDER BY should return results in ascending order
 ORDER BY with LIMIT 0 should not generate errors
 ORDER BY with negative parameter for LIMIT should not generate errors
-Renaming columns before ORDER BY should return results in ascending order
 Returned columns do not change from using ORDER BY
-Returning all variables with ordering
 Simple counting of nodes
 Start the result from the second row by param
 Start the result from the second row
 Support column renaming for aggregates as well
 Support ordering by a property after being distinct-ified
 Support sort and distinct
-Using aliased DISTINCT expression in ORDER BY
 Support multiple divisions in aggregate function
-Sort on aggregate function and normal property
 Handle aggregation on functions
 Aggregates in aggregates
 Aggregates with arithmetics
-Aggregates ordered by arithmetics
 Aggregation of named paths
 Aggregation with `min()`
 Keeping used expression 2
@@ -150,7 +132,6 @@ Variable length optional relationships
 Variable length optional relationships with length predicates
 Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
-ORDER BY of a column introduced in RETURN should return salient results in ascending order
 Pattern comprehension and ORDER BY
 Returning a pattern comprehension
 Returning a pattern comprehension with label predicate
@@ -175,15 +156,11 @@ Remove a single relationship property
 Remove a single relationship property
 Remove multiple relationship properties
 Remove a missing property should be a valid operation
-Sort on aggregated function
-Count star should count everything in scope
 Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Do not fail when returning type of deleted relationships
 Fail when sorting on variable removed by DISTINCT
-Fail when ordering nodes
-Ordering with aggregation
 Return all variables
 Setting and returning the size of a list property
 Setting and returning the size of a list property
@@ -231,8 +208,6 @@ Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
-Handle dependencies across WITH with SKIP
-ORDER BY on an aggregating key
 A simple pattern with one bound endpoint
 Nested maps
 Connected components succeeding WITH

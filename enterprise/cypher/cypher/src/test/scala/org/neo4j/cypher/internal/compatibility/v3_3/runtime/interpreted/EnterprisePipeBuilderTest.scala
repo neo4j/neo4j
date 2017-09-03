@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, plans}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -575,7 +575,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val leaf = NodeIndexScan(
       "n",
       LabelToken("Awesome", LabelId(0)),
-      PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+      PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)),
       Set.empty)(solved)
 
     // when
@@ -586,9 +586,9 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(
       NodeIndexScanRegisterPipe(
         "n",
-        LabelToken("Awesome",LabelId(0)),
-        PropertyKeyToken("prop",PropertyKeyId(0)),
-        PipelineInformation(Map("n" ->  LongSlot(0, nullable = false, CTNode, "n")),1, 0))())
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken("prop", PropertyKeyId(0)),
+        PipelineInformation(Map("n" -> LongSlot(0, nullable = false, CTNode, "n")), 1, 0))())
   }
 
   test("Should use NodeIndexUniqeSeek") {
@@ -606,6 +606,32 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
         PipelineInformation(Map(
           "z" -> LongSlot(0, nullable = false, CTNode, "z")
         ), numberOfLongs = 1, numberOfReferences = 0))()
+    )
+  }
+
+  test("unwind and sort") {
+    // given UNWIND [1,2,3] as x RETURN x ORDER BY x
+    val xVar = varFor("x")
+    val xVarName = IdName.fromVariable(xVar)
+    val leaf = SingleRow()(solved)
+    val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
+    val sort = Sort(unwind, List(Ascending(xVarName)))(solved)
+
+    // when
+    val pipe = build(sort)
+
+    // then
+    val expectedPipeline1 = PipelineInformation(Map.empty, 0, 0)
+    val expectedPipeline2 = PipelineInformation(numberOfLongs = 0, numberOfReferences = 1, slots = Map(
+      "x" -> RefSlot(0, nullable = true, CTAny, "x")
+    ))
+
+    pipe should equal(
+      SortRegisterPipe(orderBy = Seq(pipes.Ascending(0)), pipelineInformation = expectedPipeline2,
+        source = UnwindRegisterPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
+          source = SingleRowRegisterPipe(expectedPipeline1)()
+        )()
+      )()
     )
   }
 
