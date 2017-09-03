@@ -45,7 +45,7 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     //THEN
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20)
@@ -63,7 +63,7 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     //THEN
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20,
@@ -90,7 +90,7 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     //THEN
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 25)
@@ -112,7 +112,7 @@ class ProfilerTest extends CypherFunSuite {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     //THEN
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 25, expectedPageCacheHits = 2, expectedPageCacheMisses = 7)
@@ -139,7 +139,7 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(apply.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     // THEN
     assertRecorded(decoratedResult, "rhs", expectedRows = 10 * 20, expectedDbHits = 10 * 30)
@@ -167,7 +167,7 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(pipeUnderInspection.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
     assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS)
@@ -195,7 +195,7 @@ class ProfilerTest extends CypherFunSuite {
 
     // WHEN we create the results,
     materialize(pipeUnderInspection.createResults(queryState))
-    val decoratedResult = profiler.decorate(planDescription, isProfileReady = true)
+    val decoratedResult = profiler.decorate(planDescription, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the page cache hits
     assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = 2, expectedPageCacheHits = 3, expectedPageCacheMisses = 4)
@@ -231,7 +231,7 @@ class ProfilerTest extends CypherFunSuite {
       "innerInner" -> innerInnerPipe,
       "Projection" -> pipeUnderInspection
     )
-    val decoratedResult = profiler.decorate(description, isProfileReady = true)
+    val decoratedResult = profiler.decorate(description, verifyProfileReady = () => {})
 
     // THEN the ProjectionNewPipe has correctly recorded the dbhits
     assertRecorded(decoratedResult, "Projection", expectedRows = 1, expectedDbHits = DB_HITS * 2)
