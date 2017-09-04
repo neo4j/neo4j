@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -59,7 +60,7 @@ public class CausalClusterInProcessRunner
             Path clusterPath = Files.createTempDirectory( "causal-cluster" );
             System.out.println( "clusterPath = " + clusterPath );
 
-            CausalCluster cluster = new CausalCluster( 3, 3, clusterPath, toOutputStream( System.out ) );
+            CausalCluster cluster = new CausalCluster( 3, 3, clusterPath, toOutputStream( System.out ), PortPickingStrategy.DEFAULT );
 
             System.out.println( "Waiting for cluster to boot up..." );
             cluster.boot();
@@ -79,22 +80,88 @@ public class CausalClusterInProcessRunner
         System.exit( 0 );
     }
 
+    abstract static class PortPickingStrategy
+    {
+        public static final PortPickingStrategy DEFAULT = new PortPickingStrategy()
+        {
+            @Override
+            int port( int offset, int id )
+            {
+                return offset + id;
+            }
+        };
+
+        abstract int port( int offset, int id );
+
+        int hazelcastPort( int coreId )
+        {
+            return port( 55000, coreId );
+        }
+
+        int txCorePort( int coreId )
+        {
+            return port( 56000, coreId );
+        }
+
+        int raftCorePort( int coreId )
+        {
+            return port( 57000, coreId );
+        }
+
+        int boltCorePort( int coreId )
+        {
+            return port( 58000, coreId );
+        }
+
+        int httpCorePort( int coreId )
+        {
+            return port( 59000, coreId );
+        }
+
+        int httpsCorePort( int coreId )
+        {
+            return port( 60000, coreId );
+        }
+
+        int txReadReplicaPort( int replicaId )
+        {
+            return port( 56500, replicaId );
+        }
+
+        int boltReadReplicaPort( int replicaId )
+        {
+            return port( 58500, replicaId );
+        }
+
+        int httpReadReplicaPort( int replicaId )
+        {
+            return port( 59500, replicaId );
+        }
+
+        int httpsReadReplicaPort( int replicaId )
+        {
+            return port( 60500, replicaId );
+        }
+    }
+
     static class CausalCluster
     {
         private final int nCores;
         private final int nReplicas;
         private final Path clusterPath;
         private final Log log;
+        private final PortPickingStrategy portPickingStrategy;
 
         private List<ServerControls> coreControls = synchronizedList( new ArrayList<>() );
         private List<ServerControls> replicaControls = synchronizedList( new ArrayList<>() );
 
-        CausalCluster( int nCores, int nReplicas, Path clusterPath, LogProvider logProvider )
+        CausalCluster( int nCores, int nReplicas, Path clusterPath, LogProvider logProvider, PortPickingStrategy portPickingStrategy )
         {
             this.nCores = nCores;
             this.nReplicas = nReplicas;
             this.clusterPath = clusterPath;
             this.log = logProvider.getLog( getClass() );
+            this.portPickingStrategy = portPickingStrategy;
         }
 
         void boot() throws IOException, InterruptedException
@@ -103,7 +170,7 @@ public class CausalClusterInProcessRunner
 
             for ( int coreId = 0; coreId < nCores; coreId++ )
             {
-                int hazelcastPort = 55000 + coreId;
+                int hazelcastPort = portPickingStrategy.hazelcastPort( coreId );
                 initialMembers.add( "localhost:" + hazelcastPort );
             }
 
@@ -112,12 +179,12 @@ public class CausalClusterInProcessRunner
 
             for ( int coreId = 0; coreId < nCores; coreId++ )
             {
-                int hazelcastPort = 55000 + coreId;
-                int txPort = 56000 + coreId;
-                int raftPort = 57000 + coreId;
-                int boltPort = 58000 + coreId;
-                int httpPort = 59000 + coreId;
-                int httpsPort = 60000 + coreId;
+                int hazelcastPort = portPickingStrategy.hazelcastPort( coreId );
+                int txPort = portPickingStrategy.txCorePort( coreId );
+                int raftPort = portPickingStrategy.raftCorePort( coreId );
+                int boltPort = portPickingStrategy.boltCorePort( coreId );
+                int httpPort = portPickingStrategy.httpCorePort( coreId );
+                int httpsPort = portPickingStrategy.httpsCorePort( coreId );
 
                 String homeDir = "core-" + coreId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -140,6 +207,8 @@ public class CausalClusterInProcessRunner
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
+                builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
                 int finalCoreId = coreId;
                 Thread coreThread = new Thread( () ->
                 {
@@ -157,10 +226,10 @@ public class CausalClusterInProcessRunner
 
             for ( int replicaId = 0; replicaId < nReplicas; replicaId++ )
             {
-                int txPort = 56500 + replicaId;
-                int boltPort = 58500 + replicaId;
-                int httpPort = 59500 + replicaId;
-                int httpsPort = 60500 + replicaId;
+                int txPort = portPickingStrategy.txReadReplicaPort( replicaId );
+                int boltPort = portPickingStrategy.boltReadReplicaPort( replicaId );
+                int httpPort = portPickingStrategy.httpReadReplicaPort( replicaId );
+                int httpsPort = portPickingStrategy.httpsReadReplicaPort( replicaId );
 
                 String homeDir = "replica-" + replicaId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -178,6 +247,7 @@ public class CausalClusterInProcessRunner
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
+                builder.withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
                 int finalReplicaId = replicaId;
                 Thread replicaThread = new Thread( () ->
                 {

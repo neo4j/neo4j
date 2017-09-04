@@ -162,9 +162,9 @@ public class DetectAllRelationshipInconsistenciesIT
     private GraphDatabaseAPI getGraphDatabaseAPI()
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() );
-        GraphDatabaseService database = builder
+        GraphDatabaseService database = factory.newEmbeddedDatabaseBuilder( directory.absolutePath() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
         return (GraphDatabaseAPI) database;
     }

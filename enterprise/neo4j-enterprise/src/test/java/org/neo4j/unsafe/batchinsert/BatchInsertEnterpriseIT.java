@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -40,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -56,7 +58,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  * that exist in enterprise edition.
  */
 @RunWith( Parameterized.class )
-public class BatchInsertEnterpriseTest
+public class BatchInsertEnterpriseIT
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
@@ -100,7 +102,11 @@ public class BatchInsertEnterpriseTest
         }
 
         // THEN
-        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory.directory() );
+        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory.directory() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
+
         try ( Transaction tx = db.beginTx() )
         {
             Node node1 = db.getNodeById( node1Id );
@@ -191,6 +197,7 @@ public class BatchInsertEnterpriseTest
     {
         return new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 

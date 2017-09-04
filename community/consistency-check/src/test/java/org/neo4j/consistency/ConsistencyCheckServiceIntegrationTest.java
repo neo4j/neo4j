@@ -161,6 +161,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Config configuration = Config.defaults( settings() );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
 
         String propertyKey = "itemId";
@@ -316,6 +317,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
         try
         {
@@ -354,6 +356,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Map<String, String> defaults = new HashMap<>();
         defaults.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         defaults.put( GraphDatabaseSettings.record_format.name(), getRecordFormatName() );
+        defaults.put( "dbms.backup.enabled", "false" );
         return stringMap( defaults, strings );
     }
 

@@ -199,6 +199,7 @@ public class ParallelBatchImporterTest
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( storeDir )
+                    .setConfig( "dbms.backup.enabled", "false" )
                     .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
             {

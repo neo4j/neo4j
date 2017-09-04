@@ -473,7 +473,10 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         Applier()
         {
-            database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
+            database = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                    .newEmbeddedDatabaseBuilder( directory )
+                    .setConfig( "dbms.backup.enabled", "false" )
+                    .newGraphDatabase();
             DependencyResolver dependencyResolver = database.getDependencyResolver();
 
             commitProcess = new TransactionRepresentationCommitProcess(
@@ -527,6 +530,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 // tests and records around that. Those tests could change, but the simpler option is to just
                 // keep the block size to 60 and let them be.
                 .setConfig( GraphDatabaseSettings.label_block_size, "60" )
+                .setConfig( "dbms.backup.enabled", "false" )
                 .newGraphDatabase();
         try
         {

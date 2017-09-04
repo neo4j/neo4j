@@ -23,7 +23,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.harness.extensionpackage.MyEnterpriseUnmanagedExtension;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.HTTP;
@@ -39,7 +41,8 @@ public class EnterpriseNeo4jRuleTest
     public Neo4jRule neo4j = new EnterpriseNeo4jRule()
             .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
                     getRelativePath( getSharedTestTemporaryFolder(), LegacySslPolicyConfig.certificates_directory ) )
-            .withExtension( "/test", MyEnterpriseUnmanagedExtension.class );
+            .withExtension( "/test", MyEnterpriseUnmanagedExtension.class )
+            .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();

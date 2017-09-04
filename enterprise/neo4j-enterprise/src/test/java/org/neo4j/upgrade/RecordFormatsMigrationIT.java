@@ -26,6 +26,7 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -137,6 +138,7 @@ public class RecordFormatsMigrationIT
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormatName )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 
