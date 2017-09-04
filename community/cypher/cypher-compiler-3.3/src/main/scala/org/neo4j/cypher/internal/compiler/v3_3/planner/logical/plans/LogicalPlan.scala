@@ -49,7 +49,6 @@ abstract class LogicalPlan
   def assignIds(): Unit = recurseAssignIds(new LogicalPlanId(0))
 
   private var _id: Option[LogicalPlanId] = None
-  protected def assignId(id: Option[LogicalPlanId]): Unit = _id = id
 
   protected def recurseAssignIds(sofar: LogicalPlanId): LogicalPlanId = {
     if(_id.nonEmpty)

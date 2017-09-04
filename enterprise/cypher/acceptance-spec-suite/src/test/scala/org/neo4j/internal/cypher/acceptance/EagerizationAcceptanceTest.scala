@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Planners, Runtimes, TestConfiguration, Versions}
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
@@ -78,7 +79,7 @@ class EagerizationAcceptanceTest
                   |RETURN n.val AS nv, m.val AS mv
                 """.stripMargin
 
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3, Configs.Rule2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
 
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
                                     Map("nv" -> 2, "mv" -> 2)))
@@ -263,7 +264,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
 
     // only run against one scenario, otherwise count increments unpredictably due to fallback
-    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.SlottedInterpreted
+    val succeedScenarios = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Interpreted)
     succeedScenarios.scenarios.size should equal(1)
     val result = succeedWithAndMaybeCheckPlans(
       succeedScenarios,
@@ -370,7 +371,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
     // only run against one scenario, otherwise count increments unpredictably due to fallback
-    val succeedScenarios = Configs.Version3_3 - Configs.Procs - Configs.Compiled - Configs.AllRulePlanners - Configs.SlottedInterpreted
+    val succeedScenarios = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes.Interpreted)
     succeedScenarios.scenarios.size should equal(1)
     val result = succeedWithAndMaybeCheckPlans(
       succeedScenarios,
@@ -720,10 +721,7 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH () CREATE () WITH * MATCH (n) RETURN count(*) AS count"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
 
     assertStats(result, nodesCreated = 2)
     result.columnAs[Int]("count").next should equal(8)
@@ -736,10 +734,7 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN count(*)"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
 
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 10, propertiesWritten = 10)
@@ -1012,10 +1007,7 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH ()-[:TYPE]->() CREATE (a)-[:TYPE]->(b) WITH * MATCH ()-[:TYPE]->() CREATE (c)-[:TYPE]->(d) RETURN count(*)"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 20, relationshipsCreated = 10)
     assertNumberOfEagerness(query, 3, optimalEagerCount = 2)
@@ -1622,10 +1614,7 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:A) WITH a MATCH (a2) RETURN count (a2) AS nodes"
 
-    val result: InternalExecutionResult = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2, labelsAdded = 2)
     result.toList should equal(List(Map("nodes" -> 15)))
     assertNumberOfEagerness(query, 1)
@@ -1872,10 +1861,7 @@ class EagerizationAcceptanceTest
     createLabeledNode("B")
     val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 4, nodesCreated = 2)
     assertNumberOfEagerness(query, 2)
@@ -2107,10 +2093,7 @@ class EagerizationAcceptanceTest
     createNode("prop" -> 42)
     val query = "MATCH (n {prop: 42}) CREATE (m) WITH * MATCH (o) SET n.prop = 42 RETURN count(*) as count"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.columnAs[Int]("count").next should equal(12)
     assertStats(result, propertiesWritten = 12, nodesCreated = 2)
     assertNumberOfEagerness(query, 1)
@@ -2131,10 +2114,7 @@ class EagerizationAcceptanceTest
         |SET m.prop = 42
         |RETURN count(*) as count""".stripMargin
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
     assertNumberOfEagerness(query, 1)
@@ -2290,10 +2270,7 @@ class EagerizationAcceptanceTest
     createLabeledNode("Foo")
     val query = "MATCH (n) CREATE (m:Foo) WITH * MATCH (o:Foo) REMOVE n:Foo RETURN count(*)"
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertNumberOfEagerness(query, 2)
     assertStats(result, labelsAdded = 2, labelsRemoved = 2, nodesCreated = 2)
@@ -2713,10 +2690,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels
                 """.stripMargin
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.toList should equal(List(Map("labels" -> List()), Map("labels" -> List())))
     assertStats(result, labelsAdded = 2)
     assertNumberOfEagerness(query, 1)
@@ -2733,10 +2707,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels
                 """.stripMargin
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.toList should equal(List(Map("labels" -> List("Foo")), Map("labels" -> List("Foo"))))
     assertStats(result, labelsRemoved = 2)
     assertNumberOfEagerness(query, 1)
@@ -2752,10 +2723,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels(n), labels(m)
                 """.stripMargin
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
                                     Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
     assertStats(result, labelsAdded = 2)
@@ -2790,10 +2758,7 @@ class EagerizationAcceptanceTest
                   |RETURN labels(n), labels(m)
                 """.stripMargin
 
-    val result = updateWith(
-      Configs.CommunityInterpreted - Configs.Cost2_3 - Configs.Rule2_3,
-      Configs.Rule2_3,
-      query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Version2_3, Configs.Rule2_3, query)
     result.toList should equal(List(Map("labels(n)" -> List(), "labels(m)" -> List()),
                                     Map("labels(n)" -> List(), "labels(m)" -> List())))
     assertStats(result, labelsRemoved = 2)

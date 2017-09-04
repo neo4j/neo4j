@@ -135,7 +135,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                                                     checkPlans: Boolean,
                                                     executeBefore: () => Unit,
                                                     params: (String, Any)*): InternalExecutionResult = {
-    assertHasNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
     val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
 
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
@@ -186,7 +186,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     lastResult
   }
 
-  private def assertHasNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
+  private def assertNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
     val hasOverlap = expectedSuccessFrom.scenarios.exists(ignoreScenarios.scenarios.contains(_))
     if (hasOverlap)
       fail("Set of configurations that were expected to succeed and the set of configs that should be ignored are overlapping")
@@ -206,7 +206,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
   InternalExecutionResult = {
-    assertHasNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
     val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
     if (expectedSuccessFrom.scenarios.isEmpty) {
       for (thisScenario <- runAgainstScenarios.scenarios) {
