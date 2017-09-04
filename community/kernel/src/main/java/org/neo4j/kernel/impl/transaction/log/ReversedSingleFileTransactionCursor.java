@@ -126,11 +126,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
         {
             long deltaOffset = highOffset - offsets[--newLowOffsetIndex];
             if ( deltaOffset > CHUNK_SIZE )
-            {   // We've come too far
-                if ( chunkStartOffsetIndex - newLowOffsetIndex > 1 )
-                {   // Don't include last this transaction, since it wasn't the only one
-                    newLowOffsetIndex++;
-                }
+            {   // We've now read more than the read-ahead size, let's call this the end of this chunk
                 break;
             }
         }
@@ -176,6 +172,6 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     @Override
     public LogPosition position()
     {
-        throw new UnsupportedOperationException( "Perhaps not required" );
+        throw new UnsupportedOperationException( "Should not be called" );
     }
 }

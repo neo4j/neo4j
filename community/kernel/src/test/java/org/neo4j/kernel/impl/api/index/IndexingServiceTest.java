@@ -44,9 +44,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -677,7 +675,7 @@ public class IndexingServiceTest
         return true;
     }
 
-    private IndexUpdates nodeIdsAsIndexUpdates( PrimitiveLongSet nodeIds )
+    private IndexUpdates nodeIdsAsIndexUpdates( long... nodeIds )
     {
         return new IndexUpdates()
         {
@@ -685,7 +683,10 @@ public class IndexingServiceTest
             public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
             {
                 List<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
-                nodeIds.visitKeys( nodeId -> updates.add( IndexEntryUpdate.add( 0, index.schema(), Values.of( 1 ) ) ) );
+                for ( long nodeId : nodeIds )
+                {
+                    updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
+                }
                 return updates.iterator();
             }
 
@@ -699,7 +700,7 @@ public class IndexingServiceTest
             @Override
             public boolean hasUpdates()
             {
-                return !nodeIds.isEmpty();
+                return nodeIds.length > 0;
             }
         };
     }
@@ -737,8 +738,7 @@ public class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( index );
         reset( accessor );
-        indexing.apply( nodeIdsAsIndexUpdates( PrimitiveLongCollections.asSet(
-                PrimitiveLongCollections.iterator( nodeId ) ) ) );
+        indexing.apply( nodeIdsAsIndexUpdates( nodeId ) );
         // and WHEN starting, i.e. completing recovery
         life.start();
 
