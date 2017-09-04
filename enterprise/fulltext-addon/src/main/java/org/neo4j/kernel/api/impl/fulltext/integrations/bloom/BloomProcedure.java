@@ -34,6 +34,9 @@ import org.neo4j.kernel.api.proc.QualifiedName;
 
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
+/**
+ * Procedures for querying the bloom fulltext addon.
+ */
 public class BloomProcedure extends CallableProcedure.BasicProcedure
 {
     private static final String OUTPUT_NAME = "entityid";
@@ -43,6 +46,12 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     private final FulltextProvider provider;
     private FulltextProvider.FULLTEXT_HELPER_TYPE type;
 
+    /**
+     * Creates a procedure for querying the bloom fulltext addon.
+     * @param type The type of fulltext helper to be queried.
+     * @param identifier The identifier of the fulltext helper.
+     * @param provider The provider of the fulltext helper.
+     */
     public BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE type, String identifier, FulltextProvider provider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME + type ) ).in( "terms",

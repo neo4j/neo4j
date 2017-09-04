@@ -34,7 +34,7 @@ import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
-public class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
+class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
 
     private FulltextProvider fulltextProvider;

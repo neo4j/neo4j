@@ -57,18 +57,18 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String... tokens )
+    public PrimitiveLongIterator query( String... terms )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
         Query query;
         try
         {
-            query = multiFieldQueryParser.parse( String.join( " ", tokens ) );
+            query = multiFieldQueryParser.parse( String.join( " ", terms ) );
         }
         catch ( ParseException e )
         {
-            query = parseFallbackBooleanQuery( multiFieldQueryParser, tokens );
+            query = parseFallbackBooleanQuery( multiFieldQueryParser, terms );
         }
         return query( query );
     }
@@ -93,18 +93,18 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( String... tokens )
+    public PrimitiveLongIterator fuzzyQuery( String... terms )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
         Query query;
         try
         {
-            query = multiFieldQueryParser.parse(  String.join( "~ ", tokens ) + "~" );
+            query = multiFieldQueryParser.parse(  String.join( "~ ", terms ) + "~" );
         }
         catch ( ParseException e )
         {
-            query = parseFallbackBooleanQuery( multiFieldQueryParser, tokens );
+            query = parseFallbackBooleanQuery( multiFieldQueryParser, terms );
         }
         return query( query );
     }

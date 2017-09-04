@@ -67,7 +67,8 @@ public class FulltextProvider implements AutoCloseable
         {
             closed = true;
             db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-            nodeIndices.values().forEach( luceneFulltextHelper -> {
+            nodeIndices.values().forEach( luceneFulltextHelper ->
+            {
                 try
                 {
                     luceneFulltextHelper.close();
@@ -77,7 +78,8 @@ public class FulltextProvider implements AutoCloseable
                     e.printStackTrace();
                 }
             } );
-            relationshipIndices.values().forEach( luceneFulltextHelper -> {
+            relationshipIndices.values().forEach( luceneFulltextHelper ->
+            {
                 try
                 {
                     luceneFulltextHelper.close();

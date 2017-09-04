@@ -27,6 +27,12 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+/**
+ * A {@link KernelExtensionFactory} for the bloom fulltext addon.
+ *
+ * @see BloomProcedure
+ * @see LoadableBloomFulltextConfig
+ */
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
 

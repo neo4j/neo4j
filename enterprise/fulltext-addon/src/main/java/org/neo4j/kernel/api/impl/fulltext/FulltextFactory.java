@@ -34,6 +34,9 @@ import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
+/**
+ * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
+ */
 public class FulltextFactory
 {
     private final FileSystemAbstraction fileSystem;
@@ -41,6 +44,13 @@ public class FulltextFactory
     private final File storeDir;
     private final Analyzer analyzer;
 
+    /**
+     * Creates a factory for the specified location and analyzer.
+     * @param fileSystem The filesystem to use.
+     * @param storeDir Store directory of the database.
+     * @param analyzer The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
+     * @throws IOException
+     */
     public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Analyzer analyzer ) throws IOException
     {
         this.analyzer = analyzer;
@@ -50,11 +60,20 @@ public class FulltextFactory
         this.storeDir = storeDir;
     }
 
-    public void createFulltextHelper( String identifier, FulltextProvider.FULLTEXT_HELPER_TYPE type, String[] properties, FulltextProvider provider ) throws IOException
+    /**
+     * Creates an instance of {@link LuceneFulltext} and registers it with the supplied {@link FulltextProvider}.
+     * @param identifier The identifier of the new fulltext helper
+     * @param type The type of the new fulltext helper
+     * @param properties The properties to index
+     * @param provider The provider to register with
+     * @throws IOException
+     */
+    public void createFulltextHelper( String identifier, FulltextProvider.FULLTEXT_HELPER_TYPE type, String[] properties, FulltextProvider provider )
+            throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier(
-                identifier ).withDirectoryFactory( directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
+                directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
         provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
     }
 }

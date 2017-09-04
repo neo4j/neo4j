@@ -42,16 +42,6 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         return luceneFulltext.getIndexWriter( this );
     }
 
-    public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
-    {
-        return luceneIndex.hasSinglePartition( partitions );
-    }
-
-    public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
-    {
-        return luceneIndex.getFirstPartition( partitions );
-    }
-
     Set<String> properties()
     {
         return luceneIndex.getProperties();

@@ -55,15 +55,15 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String... query )
+    public PrimitiveLongIterator query( String... terms )
     {
-        return partitionedOperation( reader -> innerQuery( reader, query ) );
+        return partitionedOperation( reader -> innerQuery( reader, terms ) );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( String... query )
+    public PrimitiveLongIterator fuzzyQuery( String... terms )
     {
-        return partitionedOperation( reader -> innerFuzzyQuery( reader, query ) );
+        return partitionedOperation( reader -> innerFuzzyQuery( reader, terms ) );
     }
 
     private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, String... query )

@@ -97,7 +97,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return new PartitionedIndexWriter( writableIndex );
     }
 
-    public ReadOnlyFulltext getIndexReader() throws IOException
+    ReadOnlyFulltext getIndexReader() throws IOException
     {
         ensureOpen();
         List<AbstractIndexPartition> partitions = getPartitions();
