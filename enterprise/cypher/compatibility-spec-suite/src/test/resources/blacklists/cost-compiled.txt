@@ -123,8 +123,6 @@ Return a var length path of length zero
 Return a named var length path of length zero
 Do not fail when evaluating predicates with illegal operations if the AND'ed predicate evaluates to false
 Do not fail when evaluating predicates with illegal operations if the OR'd predicate evaluates to true
-Fail when comparing strings and integers using > in an AND'd predicate
-Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
 Zero-length variable length pattern in the middle of the pattern
 Simple variable length pattern
@@ -243,7 +241,6 @@ Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Do not fail when returning type of deleted relationships
 Fail when sorting on variable removed by DISTINCT
-Fail when ordering nodes
 Ordering with aggregation
 Return all variables
 Setting and returning the size of a list property
@@ -384,7 +381,6 @@ Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 NOT and false
-Fail when trying to compare strings and numbers
 Aliasing
 Handle dependencies across WITH
 Handle dependencies across WITH with SKIP

@@ -2,8 +2,6 @@
 Aggregates inside normal functions
 Aggregation of named paths
 Aggregation with `min()`
-Get node degree via length of pattern expression
-Get node degree via length of pattern expression that specifies a relationship type
 Return a var length path of length zero
 Remove multiple node properties
 Remove multiple relationship properties
@@ -73,11 +71,9 @@ Ignore null when setting properties using an appending map
 Ignore null when setting properties using an overriding map
 Ignore null when setting label
 Ignore null when removing label
-Pattern expression inside list comprehension
 Fail when returning properties of deleted nodes
 Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
-Fail when returning type of deleted relationships
 `toFloat()` on mixed number types
 `toString()` handling boolean properties
 `toString()` handling inlined boolean

@@ -22,15 +22,27 @@ package cypher.cucumber
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.util
 
 import gherkin.formatter.model.{Match, Result}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.io.Source
 
 object BlacklistPlugin {
   private var _blacklist: Set[String] = null
+  private val _usedScenarios: mutable.Set[String] = mutable.Set()
 
-  def blacklisted(name: String) = blacklist().contains(normalizedScenarioName(name))
+  def blacklisted(name: String) = {
+    val newName = normalizedScenarioName(name)
+    _usedScenarios.add(newName)
+    blacklist().contains(newName)
+  }
+
+  def getDiffBetweenBlacklistAndUsedScenarios(): util.Set[String] = {
+    blacklist().diff(_usedScenarios).asJava
+  }
 
   def normalizedScenarioName(name: String) = {
     val builder = new StringBuilder
