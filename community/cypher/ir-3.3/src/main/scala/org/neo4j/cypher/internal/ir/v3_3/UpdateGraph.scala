@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Labels
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, symbols}
 
 import scala.annotation.tailrec
 
@@ -28,9 +30,9 @@ trait UpdateGraph {
 
   def mutatingPatterns: Seq[MutatingPattern]
 
-  def readOnly = mutatingPatterns.isEmpty
+  def readOnly: Boolean = mutatingPatterns.isEmpty
 
-  def containsUpdates = !readOnly
+  def containsUpdates: Boolean = !readOnly
 
   def containsMergeRecursive: Boolean = mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty ||
     foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(_.containsMergeRecursive))
@@ -38,19 +40,19 @@ trait UpdateGraph {
   /*
    * Finds all nodes being created with CREATE (a)
    */
-  def createNodePatterns = mutatingPatterns.collect {
+  def createNodePatterns: Seq[CreateNodePattern] = mutatingPatterns.collect {
     case p: CreateNodePattern => p
   }
 
-  def mergeNodePatterns = mutatingPatterns.collect {
+  def mergeNodePatterns: Seq[MergeNodePattern] = mutatingPatterns.collect {
     case m: MergeNodePattern => m
   }
 
-  def mergeRelationshipPatterns = mutatingPatterns.collect {
+  def mergeRelationshipPatterns: Seq[MergeRelationshipPattern] = mutatingPatterns.collect {
     case m: MergeRelationshipPattern => m
   }
 
-  def foreachPatterns = mutatingPatterns.collect {
+  def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
     case p: ForeachPattern => p
   }
 
@@ -64,7 +66,7 @@ trait UpdateGraph {
   /*
    * Finds all identifiers being deleted.
    */
-  def identifiersToDelete = (deleteExpressions flatMap {
+  def identifiersToDelete: Set[IdName] = (deleteExpressions flatMap {
     // DELETE n
     case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
     // DELETE (n)-[r]-()
@@ -92,14 +94,14 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
-  def createNodeProperties = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
+  def createNodeProperties: CreatesPropertyKeys = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
     CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNodePattern.properties):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodePatterns.flatMap(c => c.properties)):_*)
 
   /*
    * Finds all rel properties being created with CREATE
    */
-  def createRelProperties = CreatesPropertyKeys(createRelationshipPatterns.flatMap(_.properties):_*) +
+  def createRelProperties: CreatesPropertyKeys = CreatesPropertyKeys(createRelationshipPatterns.flatMap(_.properties):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelPatterns.flatMap(c => c.properties)):_*)
 
   /*
@@ -137,7 +139,7 @@ trait UpdateGraph {
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qg: QueryGraph) = {
+  def overlaps(qg: QueryGraph): Boolean = {
     containsUpdates && {
       val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
@@ -150,13 +152,18 @@ trait UpdateGraph {
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
-  def overlapsHorizon(horizon: QueryHorizon) = containsUpdates && ({
-    val propertiesReadInHorizon = horizon.dependingExpressions.collect {
-      case p: Property => p.propertyKey
-    }.toSet
+  def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Boolean =
+    containsUpdates && ({
+      val propertiesReadInHorizon = horizon.dependingExpressions.collect {
+        case p: Property => p
+      }.toSet
 
-    setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
-  } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
+      val maybeNode: Property => Boolean = maybeType(semanticTable, symbols.CTNode.invariant)
+      val maybeRel: Property => Boolean = maybeType(semanticTable, symbols.CTRelationship.invariant)
+
+      setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
+      setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
+    } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
 
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
     containsUpdates && {
@@ -178,7 +185,7 @@ trait UpdateGraph {
    * Checks for overlap between nodes being read in the query graph
    * and those being created here
    */
-  def createNodeOverlap(qg: QueryGraph) = {
+  def createNodeOverlap(qg: QueryGraph): Boolean = {
     def labelsOverlap(labelsToRead: Set[LabelName], labelsToWrite: Set[LabelName]): Boolean = {
       labelsToRead.isEmpty || (labelsToRead intersect labelsToWrite).nonEmpty
     }
@@ -194,7 +201,7 @@ trait UpdateGraph {
       //MATCH () CREATE ()?
       qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty ||
         //MATCH (:B {prop:..}) CREATE (:B {prop:..})
-        labelsOverlap(qg.allKnownLabelsOnNode(p).toSet, createLabels) &&
+        labelsOverlap(qg.allKnownLabelsOnNode(p), createLabels) &&
           propsOverlap(readProps, createNodeProperties)
     })
   }
@@ -209,7 +216,7 @@ trait UpdateGraph {
    * Checks for overlap between rels being read in the query graph
    * and those being created here
    */
-  def createRelationshipOverlap(qg: QueryGraph) = {
+  def createRelationshipOverlap(qg: QueryGraph): Boolean = {
     def typesOverlap(typesToRead: Set[RelTypeName], typesToWrite: Set[RelTypeName]): Boolean = {
       typesToRead.isEmpty || (typesToRead intersect typesToWrite).nonEmpty
     }
@@ -265,7 +272,7 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qg: QueryGraph) =
+  def setPropertyOverlap(qg: QueryGraph): Boolean =
     setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) ||
       setRelPropertyOverlap(qg.allKnownRelProperties.map(_.propertyKey))
 
@@ -297,6 +304,18 @@ trait UpdateGraph {
         })
     }
   }
+
+  /**
+   * Checks whether the expression that a property is called on could be of type `typeSpec`.
+   */
+  def maybeType(semanticTable: SemanticTable, typeSpec: TypeSpec)(p:Property): Boolean =
+    semanticTable.types.get(p.map) match {
+      case Some(expressionTypeInfo) =>
+        val actualType = expressionTypeInfo.actual
+        actualType == typeSpec || actualType == symbols.CTAny.invariant
+
+      case None => throw new InternalException(s"Expression ${p.map} has to type from semantic analysis")
+    }
 
   /*
   * Checks for overlap between what node props are read in query graph
