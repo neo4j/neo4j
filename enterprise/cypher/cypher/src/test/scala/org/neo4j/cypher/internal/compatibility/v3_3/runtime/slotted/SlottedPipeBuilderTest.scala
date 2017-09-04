@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.EnterprisePipeBuilderFactory
@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{pipes => slottedPipes}
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
@@ -627,9 +628,9 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     ))
 
     pipe should equal(
-      SortRegisterPipe(orderBy = Seq(pipes.Ascending(0)), pipelineInformation = expectedPipeline2,
-        source = UnwindRegisterPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
-          source = SingleRowRegisterPipe(expectedPipeline1)()
+      SortRegisterPipe(orderBy = Seq(slottedPipes.Ascending(0)), pipelineInformation = expectedPipeline2,
+        source = UnwindSlottedPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
+          source = SingleRowSlottedPipe(expectedPipeline1)()
         )()
       )()
     )

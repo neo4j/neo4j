@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{pipes => slottedPipes}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes, Pipe, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{expressions => slottedExpressions}
@@ -242,16 +241,16 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  private def translateColumnOrder(pipeline: PipelineInformation, s: logical.SortDescription): slottedPipes.ColumnOrder = s match {
+  private def translateColumnOrder(pipeline: PipelineInformation, s: logical.SortDescription): ColumnOrder = s match {
     case logical.Ascending(IdName(name)) => {
       pipeline.get(name) match {
-        case Some(slot) => slottedPipes.Ascending(slot.offset)
+        case Some(slot) => pipes.Ascending(slot.offset)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
     }
     case logical.Descending(IdName(name)) => {
       pipeline.get(name) match {
-        case Some(slot) => slottedPipes.Descending(slot.offset)
+        case Some(slot) => pipes.Descending(slot.offset)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
     }

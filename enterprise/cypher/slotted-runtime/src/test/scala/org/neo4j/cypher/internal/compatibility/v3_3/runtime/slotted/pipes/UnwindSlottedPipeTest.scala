@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.ReferenceFromSlot
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
