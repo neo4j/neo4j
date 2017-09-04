@@ -176,13 +176,13 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
   private def rewrittenQuery: String = {
     val rewritten = items.map {
       case NodeByIdentifiedIndex(variable, index, key, expression) =>
-        s"CALL db.nodeManualIndexSeek('$index', '$key', '${expression.asCanonicalStringVal}') YIELD node AS ${variable.asCanonicalStringVal}"
+        s"CALL db.index.manual.seek.nodes('$index', '$key', '${expression.asCanonicalStringVal}') YIELD node AS ${variable.asCanonicalStringVal}"
       case NodeByIndexQuery(variable, index, expression) =>
-        s"CALL db.nodeManualIndexSearch('$index', '${expression.asCanonicalStringVal}') YIELD node AS ${variable.asCanonicalStringVal}"
+        s"CALL db.index.manual.nodes('$index', '${expression.asCanonicalStringVal}') YIELD node AS ${variable.asCanonicalStringVal}"
       case RelationshipByIdentifiedIndex(variable, index, key, expression) =>
-        s"CALL db.relationshipManualIndexSeek('$index', '$key', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
+        s"CALL db.index.manual.seek.relationships('$index', '$key', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
       case RelationshipByIndexQuery(variable, index, expression) =>
-        s"CALL db.relationshipManualIndexSearch('$index', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
+        s"CALL db.index.manual.relationships('$index', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
       case AllNodes(variable) => s"MATCH (${variable.asCanonicalStringVal})"
       case AllRelationships(variable) =>  s"MATCH ()-[${variable.asCanonicalStringVal}]->()"
       case NodeByIds(variable, ids) =>

@@ -24,10 +24,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -68,17 +66,14 @@ public class ProcedureResourcesIT
     @Test
     public void allProcedures() throws Exception
     {
-        // given
-        Map<String,List<Object>> allProceduresWithParameters = allProceduresWithParameters();
-
         // when
         createLegacyIndex();
         createIndex();
-        for ( Map.Entry<String,List<Object>> procedureWithParams : allProceduresWithParameters.entrySet() )
+        for ( ProcedureSignature procedure : db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures() )
         {
             // then
             initialData();
-            verifyProcedureCloseAllAcquiredKernelStatements( procedureWithParams.getKey(), procedureWithParams.getValue() );
+            verifyProcedureCloseAllAcquiredKernelStatements( procedureDataFor( procedure ) );
             clearDb();
         }
     }
@@ -99,13 +94,12 @@ public class ProcedureResourcesIT
         }
     }
 
-    private void verifyProcedureCloseAllAcquiredKernelStatements( String procedureName, List<Object> parameters )
-            throws ExecutionException, InterruptedException
+    private void verifyProcedureCloseAllAcquiredKernelStatements( ProcedureData proc ) throws ExecutionException, InterruptedException
     {
-        String failureMessage = "Failed on procedure " + procedureName;
+        String failureMessage = "Failed on procedure " + proc.name;
         try ( Transaction outer = db.beginTx() )
         {
-            String procedureQuery = buildProcedureQuery( procedureName, parameters );
+            String procedureQuery = proc.buildProcedureQuery();
             exhaust( db.execute( procedureQuery ) ).close();
             exhaust( db.execute( "MATCH (mo:Label) WHERE mo.prop = 'n/a' RETURN mo" ) ).close();
             executeInOtherThread( "CREATE(mo:Label) SET mo.prop = 'val' RETURN mo" );
@@ -152,16 +146,6 @@ public class ProcedureResourcesIT
         }
     }
 
-    private String buildProcedureQuery( String procedureName, List<Object> parameters )
-    {
-        StringJoiner stringJoiner = new StringJoiner( ",", "CALL " + procedureName + "(", ")" );
-        for ( Object parameter : parameters )
-        {
-            stringJoiner.add( parameter.toString() );
-        }
-        return stringJoiner.toString();
-    }
-
     private void clearDb()
     {
         try ( Transaction tx = db.beginTx() )
@@ -171,79 +155,182 @@ public class ProcedureResourcesIT
         }
     }
 
-    private Map<String,List<Object>> allProceduresWithParameters()
+    private static class ProcedureData
     {
-        Set<ProcedureSignature> allProcedures = db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures();
-        Map<String,List<Object>> allProceduresWithParameters = new HashMap<>();
-        for ( ProcedureSignature procedure : allProcedures )
+        private final String name;
+        private final List<Object> params = new ArrayList<>();
+        private String setupQuery;
+        private String postQuery;
+
+        private ProcedureData( ProcedureSignature procedure )
         {
-            List<Object> params = paramsFor( procedure );
-            allProceduresWithParameters.put( procedure.name().toString(), params );
+            this.name = procedure.name().toString();
         }
-        return allProceduresWithParameters;
+
+        private void withParam( Object param )
+        {
+            this.params.add( param );
+        }
+
+        private void withSetup( String setupQuery, String postQuery )
+        {
+            this.setupQuery = setupQuery;
+            this.postQuery = postQuery;
+        }
+
+        private String buildProcedureQuery()
+        {
+            StringJoiner stringJoiner = new StringJoiner( ",", "CALL " + name + "(", ")" );
+            for ( Object parameter : params )
+            {
+                stringJoiner.add( parameter.toString() );
+            }
+            if ( setupQuery != null && postQuery != null )
+            {
+                return setupQuery + " " + stringJoiner.toString() + " " + postQuery;
+            }
+            else
+            {
+                return stringJoiner.toString();
+            }
+        }
     }
 
-    private List<Object> paramsFor( ProcedureSignature procedure )
+    private ProcedureData procedureDataFor( ProcedureSignature procedure )
     {
-        List<Object> parameters = new ArrayList<>();
-        switch ( procedure.name().toString() )
+        ProcedureData proc = new ProcedureData( procedure );
+        switch ( proc.name )
         {
         case "db.createProperty":
-            parameters.add( "'propKey'" );
+            proc.withParam( "'propKey'" );
             break;
         case "db.resampleIndex":
-            parameters.add( "'" + indexDefinition + "'" );
+            proc.withParam( "'" + indexDefinition + "'" );
             break;
         case "db.createRelationshipType":
-            parameters.add( "'RelType'" );
+            proc.withParam( "'RelType'" );
             break;
         case "dbms.queryJmx":
-            parameters.add( "'*:*'" );
+            proc.withParam( "'*:*'" );
             break;
         case "db.awaitIndex":
-            parameters.add( "'" + indexDefinition + "'" );
-            parameters.add( 100 );
+            proc.withParam( "'" + indexDefinition + "'" );
+            proc.withParam( 100 );
             break;
         case "db.createLabel":
-            parameters.add( "'OtherLabel'" );
+            proc.withParam( "'OtherLabel'" );
             break;
         case "dbms.killQuery":
-            parameters.add( "'query-1234'" );
+            proc.withParam( "'query-1234'" );
             break;
         case "dbms.killQueries":
-            parameters.add( "['query-1234']" );
+            proc.withParam( "['query-1234']" );
             break;
         case "dbms.setTXMetaData":
-            parameters.add( "{realUser:'MyMan'}" );
+            proc.withParam( "{realUser:'MyMan'}" );
             break;
         case "dbms.listActiveLocks":
-            parameters.add( "'query-1234'" );
+            proc.withParam( "'query-1234'" );
             break;
-        case "db.nodeManualIndexSeek":
-            parameters.add( "'" + legacyIndexName + "'" );
-            parameters.add( "'noKey'" );
-            parameters.add( "'noValue'" );
+        case "db.index.manual.seek.nodes":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
             break;
-        case "db.nodeManualIndexSearch":
-            parameters.add( "'" + legacyIndexName + "'" );
-            parameters.add( "'noKey:foo*'" );
+        case "db.index.manual.nodes":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipManualIndexSearch":
-            parameters.add( "'" + relLegacyIndexName + "'" );
-            parameters.add( "'noKey:foo*'" );
+        case "db.index.manual.relationships":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.relationshipManualIndexSeek":
-            parameters.add( "'" + relLegacyIndexName + "'" );
-            parameters.add( "'noKey'" );
-            parameters.add( "'noValue'" );
+        case "db.index.manual.in":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.manual.out":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.manual.between":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "n" );
+            proc.withParam( "'noKey:foo*'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
+            break;
+        case "db.index.manual.seek.relationships":
+            proc.withParam( "'" + relLegacyIndexName + "'" );
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.auto.seek.nodes":
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.auto.nodes":
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.auto.relationships":
+            proc.withParam( "'noKey:foo*'" );
+            break;
+        case "db.index.auto.seek.relationships":
+            proc.withParam( "'noKey'" );
+            proc.withParam( "'noValue'" );
+            break;
+        case "db.index.manual.exists.forNodes":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            break;
+        case "db.index.manual.exists.forRelationships":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            break;
+        case "db.index.manual.forNodes":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            break;
+        case "db.index.manual.forRelationships":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            break;
+        case "db.index.manual.add.node":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'prop'" );
+            proc.withParam( "'value'");
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.manual.add.relationship":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "r" );
+            proc.withParam( "'prop'" );
+            proc.withParam( "'value'");
+            proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.manual.remove.node":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "n" );
+            proc.withParam( "'prop'" );
+            proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.manual.remove.relationship":
+            proc.withParam( "'" + legacyIndexName + "'" );
+            proc.withParam( "r" );
+            proc.withParam( "'prop'" );
+            proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
+            break;
+        case "db.index.manual.drop":
+            proc.withParam( "'" + legacyIndexName + "'" );
             break;
         case "dbms.setConfigValue":
-            parameters.add( "'dbms.logs.query.enabled'" );
-            parameters.add( "'false'" );
+            proc.withParam( "'dbms.logs.query.enabled'" );
+            proc.withParam( "'false'" );
             break;
         default:
         }
-        return parameters;
+        return proc;
     }
 
     private void executeInOtherThread( String query ) throws ExecutionException, InterruptedException
