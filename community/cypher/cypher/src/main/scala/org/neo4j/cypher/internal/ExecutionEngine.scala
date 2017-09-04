@@ -23,7 +23,7 @@ import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.values.virtual.MapValue
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 /**
@@ -88,9 +89,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
-    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
+    val scalaParams: Map[String, Any] = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
-    preparedPlanExecution.profile(wrappedContext, scalaParams)
+    preparedPlanExecution.profile(wrappedContext, ValueConversion.asValues(scalaParams))
   }
 
   def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
@@ -103,7 +104,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
-    preparedPlanExecution.execute(wrappedContext, scalaParams)
+    preparedPlanExecution.execute(wrappedContext, ValueConversion.asValues(scalaParams))
+  }
+
+  def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {
+    val (preparedPlanExecution, wrappedContext) = planQuery(context)
+    preparedPlanExecution.execute(wrappedContext, mapParams)
   }
 
   protected def parseQuery(queryText: String): ParsedQuery =
@@ -153,7 +159,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
         val ((plan: ExecutionPlan, extractedParameters), touched) = try {
           // fetch plan cache
-          val cache = getOrCreateFromSchemaState(tc.readOperations, {
+          val cache: QueryCache[String, (ExecutionPlan, Map[String, Any])] = getOrCreateFromSchemaState(tc.readOperations, {
             cacheMonitor.cacheFlushDetected(tc.statement)
             val lruCache = new LFUCache[String, (ExecutionPlan, Map[String, Any])](getPlanCacheSize)
             new QueryCache(cacheAccessor, lruCache)

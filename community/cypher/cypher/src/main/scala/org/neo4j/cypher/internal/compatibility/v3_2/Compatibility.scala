@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_2
 
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
@@ -26,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{BaseState, CompilationPhaseTracer, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_2.{ExceptionTranslatingPlanContext, TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper => TransactionalContextWrapperV3_2}
@@ -39,7 +40,10 @@ import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
 
+import scala.collection.mutable
 import scala.util.Try
 
 trait Compatibility[C <: CompilerContext] {
@@ -145,6 +149,15 @@ trait Compatibility[C <: CompilerContext] {
         case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
         case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
       }.asJava)
+    }
+
+    override def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode, params: MapValue): Result = {
+      var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
+      params.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
+      })
+
+      run(transactionalContext, executionMode, map.toMap)
     }
   }
 
