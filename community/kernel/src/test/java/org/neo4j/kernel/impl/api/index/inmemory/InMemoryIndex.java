@@ -24,8 +24,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -48,16 +46,6 @@ class InMemoryIndex
     protected final InMemoryIndexImplementation indexData;
     private InternalIndexState state = InternalIndexState.POPULATING;
     String failure;
-
-    private final PrimitiveLongVisitor<RuntimeException> removeFromIndex = new PrimitiveLongVisitor<RuntimeException>()
-    {
-        @Override
-        public boolean visited( long nodeId ) throws RuntimeException
-        {
-            indexData.remove( nodeId );
-            return false;
-        }
-    };
 
     InMemoryIndex()
     {
@@ -93,7 +81,6 @@ class InMemoryIndex
     }
 
     protected boolean add( long nodeId, Value[] propertyValues, boolean applyIdempotently )
-            throws IndexEntryConflictException, IOException
     {
         assert propertyValues.length > 0;
         return indexData.add( nodeId, applyIdempotently, propertyValues );
@@ -288,12 +275,6 @@ class InMemoryIndex
         public void close() throws IOException, IndexEntryConflictException
         {
         }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds )
-        {
-            nodeIds.visitKeys( removeFromIndex );
-        }
     }
 
     InMemoryIndex snapshot()
@@ -348,5 +329,10 @@ class InMemoryIndex
             repr = propertyValue.toString();
         }
         return repr;
+    }
+
+    boolean hasSameContentsAs( InMemoryIndex otherIndex )
+    {
+        return indexData.hasSameContentsAs( otherIndex.indexData );
     }
 }

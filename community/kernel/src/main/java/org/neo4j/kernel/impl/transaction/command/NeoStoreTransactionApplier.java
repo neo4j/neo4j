@@ -26,9 +26,13 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
+import org.neo4j.kernel.impl.transaction.command.Command.Version;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -40,15 +44,17 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
  */
 public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
 {
+    private final Version version;
     private final LockGroup lockGroup;
     private final long transactionId;
     private final NeoStores neoStores;
     private final CacheAccessBackDoor cacheAccess;
-    private LockService lockService;
+    private final LockService lockService;
 
-    public NeoStoreTransactionApplier( NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
+    public NeoStoreTransactionApplier( Version version, NeoStores neoStores, CacheAccessBackDoor cacheAccess, LockService lockService,
             long transactionId, LockGroup lockGroup )
     {
+        this.version = version;
         this.lockGroup = lockGroup;
         this.transactionId = transactionId;
         this.lockService = lockService;
@@ -69,7 +75,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
         // update store
-        neoStores.getNodeStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getNodeStore(), command );
         return false;
     }
 
@@ -78,7 +84,7 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     {
         lockGroup.add( lockService.acquireRelationshipLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
-        neoStores.getRelationshipStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getRelationshipStore(), command );
         return false;
     }
 
@@ -95,37 +101,35 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
             lockGroup.add( lockService.acquireRelationshipLock( command.getRelId(), LockService.LockType.WRITE_LOCK ) );
         }
 
-        // track the dynamic value record high ids
-        // update store
-        neoStores.getPropertyStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getPropertyStore(), command );
         return false;
     }
 
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        neoStores.getRelationshipGroupStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getRelationshipGroupStore(), command );
         return false;
     }
 
     @Override
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
     {
-        neoStores.getRelationshipTypeTokenStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getRelationshipTypeTokenStore(), command );
         return false;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
-        neoStores.getLabelTokenStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getLabelTokenStore(), command );
         return false;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
-        neoStores.getPropertyKeyTokenStore().updateRecord( command.getAfter() );
+        updateStore( neoStores.getPropertyKeyTokenStore(), command );
         return false;
     }
 
@@ -177,7 +181,12 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
     {
-        neoStores.getMetaDataStore().setGraphNextProp( command.getAfter().getNextProp() );
+        neoStores.getMetaDataStore().setGraphNextProp( version.select( command ).getNextProp() );
         return false;
+    }
+
+    private <RECORD extends AbstractBaseRecord> void updateStore( RecordStore<RECORD> store, BaseCommand<RECORD> command )
+    {
+        store.updateRecord( version.select( command ) );
     }
 }

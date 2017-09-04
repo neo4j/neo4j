@@ -19,6 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.kernel.impl.transaction.command.Command.Version;
+
+import static org.neo4j.kernel.impl.transaction.command.Command.Version.AFTER;
+import static org.neo4j.kernel.impl.transaction.command.Command.Version.BEFORE;
+
 /**
  * Mode of {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode) applying transactions}.
  * Depending on how transaction state have been built, additional work may need to be performed during
@@ -34,7 +39,9 @@ public enum TransactionApplicationMode
     INTERNAL(
             false, // id tracking not needed since that is done in the transaction before commit
             false, // cache invalidation not needed since cache can be updated
-            false  // no extra care in terms of idempotency needs to be taken
+            false, // no extra care in terms of idempotency needs to be taken
+            true,  // include all stores
+            AFTER
             ),
 
     /**
@@ -43,9 +50,11 @@ public enum TransactionApplicationMode
      * transaction does.
      */
     EXTERNAL(
-            true, // id tracking needed since that hasn't been done prior to receiving this external transaction
-            true, // cache invalidation needed since not enough information available to update cache
-            false // no extra care in terms of idempotency needs to be taken
+            true,  // id tracking needed since that hasn't been done prior to receiving this external transaction
+            true,  // cache invalidation needed since not enough information available to update cache
+            false, // no extra care in terms of idempotency needs to be taken
+            true,  // include all stores
+            AFTER
             ),
 
     /**
@@ -56,20 +65,39 @@ public enum TransactionApplicationMode
     RECOVERY(
             true,  // id tracking not needed because id generators will be rebuilt after recovery anyway
             false, // during recovery there's not really a cache to invalidate so don't bother
-            true   // extra care needs to be taken to ensure idempotency since this transaction
-                   // may have been applied previously
+            true,  // extra care needs to be taken to ensure idempotency since this transaction may have been applied previously
+            true,  // include all stores
+            AFTER
+            ),
+
+    /**
+     * Transaction that is recovered during a phase of reverse recovery in order to rewind neo store back
+     * to a state where forward recovery then can commence from. Rewinding the store back to the point
+     * if the last checkpoint will allow for correct updates to indexes, because indexes reads from
+     * a mix of log and store to produce its updates.
+     */
+    REVERSE_RECOVERY(
+            false, // id tracking not needed because this is for the initial reverse recovery
+            false, // cache invalidation not needed because this is for the initial reverse recovery
+            true,  // extra care in terms of idempotency needs to be taken
+            false, // only apply to neo store
+            BEFORE
             );
 
     private final boolean needsHighIdTracking;
     private final boolean needsCacheInvalidation;
     private final boolean needsIdempotencyChecks;
+    private final boolean indexesAndCounts;
+    private final Version version;
 
     TransactionApplicationMode( boolean needsHighIdTracking, boolean needsCacheInvalidation,
-            boolean ensureIdempotency )
+            boolean ensureIdempotency, boolean indexesAndCounts, Version version )
     {
         this.needsHighIdTracking = needsHighIdTracking;
         this.needsCacheInvalidation = needsCacheInvalidation;
         this.needsIdempotencyChecks = ensureIdempotency;
+        this.indexesAndCounts = indexesAndCounts;
+        this.version = version;
     }
 
     /**
@@ -94,5 +122,21 @@ public enum TransactionApplicationMode
     public boolean needsIdempotencyChecks()
     {
         return needsIdempotencyChecks;
+    }
+
+    /**
+     * @return whether or not to include auxiliary stores, such as indexing, counts and statistics.
+     */
+    public boolean needsAuxiliaryStores()
+    {
+        return indexesAndCounts;
+    }
+
+    /**
+     * @return which version of commands to apply, where some commands have before/after versions.
+     */
+    public Version version()
+    {
+        return version;
     }
 }

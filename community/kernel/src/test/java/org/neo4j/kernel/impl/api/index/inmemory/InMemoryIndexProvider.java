@@ -114,4 +114,17 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
         }
         return new InMemoryIndexProvider( priority, copy );
     }
+
+    public boolean dataEquals( InMemoryIndexProvider other )
+    {
+        for ( Map.Entry<Long,InMemoryIndex> entry : indexes.entrySet() )
+        {
+            InMemoryIndex otherIndex = other.indexes.get( entry.getKey() );
+            if ( otherIndex == null || !entry.getValue().hasSameContentsAs( otherIndex ) )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }

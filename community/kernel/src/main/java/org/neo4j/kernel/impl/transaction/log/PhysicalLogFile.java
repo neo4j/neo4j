@@ -258,10 +258,16 @@ public class PhysicalLogFile implements LogFile, Lifecycle
     @Override
     public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
+        return getReader( position, readerLogVersionBridge );
+    }
+
+    @Override
+    public ReadableLogChannel getReader( LogPosition position, LogVersionBridge logVersionBridge ) throws IOException
+    {
         PhysicalLogVersionedStoreChannel logChannel =
                 openForVersion( logFiles, fileSystem, position.getLogVersion(), false );
         logChannel.position( position.getByteOffset() );
-        return new ReadAheadLogChannel( logChannel, readerLogVersionBridge );
+        return new ReadAheadLogChannel( logChannel, logVersionBridge );
     }
 
     public static PhysicalLogVersionedStoreChannel openForVersion( PhysicalLogFiles logFiles,

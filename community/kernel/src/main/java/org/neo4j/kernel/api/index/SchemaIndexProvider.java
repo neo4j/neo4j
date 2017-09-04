@@ -135,6 +135,11 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     protected final int priority;
     private final Descriptor providerDescriptor;
 
+    protected SchemaIndexProvider( SchemaIndexProvider copySource )
+    {
+        this( copySource.providerDescriptor, copySource.priority );
+    }
+
     protected SchemaIndexProvider( Descriptor descriptor, int priority )
     {
         assert descriptor != null;

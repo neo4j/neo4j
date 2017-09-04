@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -38,13 +37,6 @@ class FusionIndexUpdater implements IndexUpdater
         this.nativeUpdater = nativeUpdater;
         this.luceneUpdater = luceneUpdater;
         this.selector = selector;
-    }
-
-    @Override
-    public void remove( PrimitiveLongSet nodeIds ) throws IOException
-    {
-        nativeUpdater.remove( nodeIds );
-        luceneUpdater.remove( nodeIds );
     }
 
     @Override

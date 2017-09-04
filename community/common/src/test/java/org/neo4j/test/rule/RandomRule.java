@@ -27,7 +27,9 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.List;
 import java.util.Random;
+import java.util.function.Consumer;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Randoms;
@@ -186,6 +188,16 @@ public class RandomRule implements TestRule
     public <T> T among( T[] among )
     {
         return randoms.among( among );
+    }
+
+    public <T> T among( List<T> among )
+    {
+        return randoms.among( among );
+    }
+
+    public <T> void among( List<T> among, Consumer<T> action )
+    {
+        randoms.among( among, action );
     }
 
     public Number numberPropertyValue()

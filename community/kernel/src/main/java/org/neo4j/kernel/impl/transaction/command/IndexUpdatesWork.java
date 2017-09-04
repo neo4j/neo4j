@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -84,15 +83,6 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
                         return item.iterator();
                     }
                 };
-            }
-
-            @Override
-            public void collectUpdatedNodeIds( PrimitiveLongSet target )
-            {
-                for ( IndexUpdates indexUpdates : updates )
-                {
-                    indexUpdates.collectUpdatedNodeIds( target );
-                }
             }
 
             @Override

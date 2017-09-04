@@ -39,6 +39,10 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_S
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {
+    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
+                    BASE_TX_COMMIT_TIMESTAMP );
+
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
@@ -55,6 +59,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public TransactionCursor getTransactions( LogPosition position ) throws IOException
     {
         return new PhysicalTransactionCursor<>( logFile.getReader( position ), new VersionAwareLogEntryReader<>() );
+    }
+
+    @Override
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
+    {
+        return ReversedMultiFileTransactionCursor.fromLogFile( logFile, backToPosition );
     }
 
     @Override
@@ -91,10 +101,6 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
                             "Perhaps it just recently was deleted? [" + e.getMessage() + "]" );
         }
     }
-
-    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
-            new TransactionMetadataCache.TransactionMetadata( -1, -1, LogPosition.start( 0 ), BASE_TX_CHECKSUM,
-                    BASE_TX_COMMIT_TIMESTAMP );
 
     @Override
     public TransactionMetadata getMetadataFor( long transactionId ) throws IOException

@@ -32,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -69,7 +68,6 @@ import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -203,10 +201,6 @@ public class IndexRecoveryIT
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )
                 .getOnlineAccessor( anyLong(), any( IndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         assertEquals( expectedUpdates, writer.batchedUpdates );
-        for ( IndexEntryUpdate update : writer.batchedUpdates )
-        {
-            assertTrue( writer.recoveredNodes.contains( update.getEntityId() ) );
-        }
     }
 
     @Test
@@ -363,7 +357,6 @@ public class IndexRecoveryIT
     {
         private final Set<IndexEntryUpdate> regularUpdates = new HashSet<>();
         private final Set<IndexEntryUpdate> batchedUpdates = new HashSet<>();
-        private final Set<Long> recoveredNodes = new HashSet<>();
 
         @Override
         public IndexUpdater newUpdater( final IndexUpdateMode mode )
@@ -386,16 +379,6 @@ public class IndexRecoveryIT
                         default:
                             throw new UnsupportedOperationException(  );
                     }
-                }
-
-                @Override
-                public void remove( PrimitiveLongSet nodeIds ) throws IOException
-                {
-                    nodeIds.visitKeys( nodeId ->
-                    {
-                        recoveredNodes.add( nodeId );
-                        return false;
-                    } );
                 }
             };
         }

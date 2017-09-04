@@ -24,8 +24,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -53,30 +51,6 @@ public class FusionIndexUpdaterTest
         nativeUpdater = mock( IndexUpdater.class );
         luceneUpdater = mock( IndexUpdater.class );
         fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, luceneUpdater, new NativeSelector() );
-    }
-
-    /* remove */
-
-    @Test
-    public void removeMustRemoveFromBothNativeAndLucene() throws Exception
-    {
-        // when
-        PrimitiveLongSet nodeIds = asPrimitiveSet( 1, 2, 3 );
-        fusionIndexUpdater.remove( nodeIds );
-
-        // then
-        verify( nativeUpdater, times( 1 ) ).remove( nodeIds );
-        verify( luceneUpdater, times( 1 ) ).remove( nodeIds );
-    }
-
-    private PrimitiveLongSet asPrimitiveSet( long... nodeIds )
-    {
-        PrimitiveLongSet set = Primitive.longSet();
-        for ( long nodeId : nodeIds )
-        {
-            set.add( nodeId );
-        }
-        return set;
     }
 
     /* process */

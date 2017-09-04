@@ -125,6 +125,8 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
@@ -357,7 +359,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
-        appliers.add( new NeoStoreBatchTransactionApplier( neoStores, cacheAccess, lockService ) );
+        appliers.add( new NeoStoreBatchTransactionApplier( mode.version(), neoStores, cacheAccess, lockService( mode ) ) );
         if ( mode.needsHighIdTracking() )
         {
             appliers.add( new HighIdBatchTransactionApplier( neoStores ) );
@@ -366,23 +368,30 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             appliers.add( new CacheInvalidationBatchTransactionApplier( neoStores, cacheAccess ) );
         }
+        if ( mode.needsAuxiliaryStores() )
+        {
+            // Counts store application
+            appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
 
-        // Counts store application
-        appliers.add( new CountsStoreBatchTransactionApplier( neoStores.getCounts(), mode ) );
+            // Schema index application
+            appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
+                    neoStores.getNodeStore(),
+                    indexUpdatesConverter ) );
 
-        // Schema index application
-        appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
-                neoStores.getNodeStore(),
-                indexUpdatesConverter, mode ) );
-
-        // Legacy index application
-        appliers.add(
-                new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
-                        mode ) );
+            // Legacy index application
+            appliers.add(
+                    new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
+                            mode ) );
+        }
 
         // Perform the application
         return new BatchTransactionApplierFacade(
                 appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
+    }
+
+    private LockService lockService( TransactionApplicationMode mode )
+    {
+        return mode == RECOVERY || mode == REVERSE_RECOVERY ? NO_LOCK_SERVICE : lockService;
     }
 
     public void satisfyDependencies( DependencySatisfier satisfier )

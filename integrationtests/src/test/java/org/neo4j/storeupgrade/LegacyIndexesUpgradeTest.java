@@ -73,7 +73,15 @@ public class LegacyIndexesUpgradeTest
     public void successfulMigrationWithoutLegacyIndexes() throws Exception
     {
         prepareStore( "empty-legacy-index-db.zip" );
-        startDbAndCheckData();
+        GraphDatabaseService db = startDatabase( true );
+        try
+        {
+            checkDbAccessible( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -81,9 +89,16 @@ public class LegacyIndexesUpgradeTest
     {
         prepareStore( "legacy-index-db.zip" );
 
-        startDbAndCheckData();
-
-        checkIndexData();
+        GraphDatabaseService db = startDatabase( true );
+        try
+        {
+            checkDbAccessible( db );
+            checkIndexData( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
 
         checkMigrationProgressFeedback();
     }
@@ -95,19 +110,6 @@ public class LegacyIndexesUpgradeTest
         expectedException.expect( new NestedThrowableMatcher( UpgradeNotAllowedByConfigurationException.class ) );
 
         startDatabase( false );
-    }
-
-    private void startDbAndCheckData()
-    {
-        GraphDatabaseService db = startDatabase( true );
-        try
-        {
-            checkDbAccessible( db );
-        }
-        finally
-        {
-            db.shutdown();
-        }
     }
 
     private void checkDbAccessible( GraphDatabaseService db )
@@ -128,27 +130,19 @@ public class LegacyIndexesUpgradeTest
         return builder.newGraphDatabase();
     }
 
-    private void checkIndexData()
+    private void checkIndexData( GraphDatabaseService db )
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDir.graphDbDir() );
-        try
-        {
-            IntFunction<String> keyFactory = basicKeyFactory();
-            Factory<Node> readNodes = readNodes( db );
-            readIndex( db, nodeIndex( db, "node-1", EXACT_CONFIG ), readNodes, keyFactory, stringValues() );
-            readIndex( db, nodeIndex( db, "node-2", EXACT_CONFIG ), readNodes, keyFactory, intValues() );
-            readIndex( db, nodeIndex( db, "node-3", FULLTEXT_CONFIG ), readNodes, keyFactory, stringValues() );
-            readIndex( db, nodeIndex( db, "node-4", FULLTEXT_CONFIG ), readNodes, keyFactory, longValues() );
-            Factory<Relationship> relationships = readRelationships( db );
-            readIndex( db, relationshipIndex( db, "rel-1", EXACT_CONFIG ), relationships, keyFactory, stringValues() );
-            readIndex( db, relationshipIndex( db, "rel-2", EXACT_CONFIG ), relationships, keyFactory, floatValues() );
-            readIndex( db, relationshipIndex( db, "rel-3", FULLTEXT_CONFIG ), relationships, keyFactory, stringValues() );
-            readIndex( db, relationshipIndex( db, "rel-4", FULLTEXT_CONFIG ), relationships, keyFactory, doubleValues() );
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        IntFunction<String> keyFactory = basicKeyFactory();
+        Factory<Node> readNodes = readNodes( db );
+        readIndex( db, nodeIndex( db, "node-1", EXACT_CONFIG ), readNodes, keyFactory, stringValues() );
+        readIndex( db, nodeIndex( db, "node-2", EXACT_CONFIG ), readNodes, keyFactory, intValues() );
+        readIndex( db, nodeIndex( db, "node-3", FULLTEXT_CONFIG ), readNodes, keyFactory, stringValues() );
+        readIndex( db, nodeIndex( db, "node-4", FULLTEXT_CONFIG ), readNodes, keyFactory, longValues() );
+        Factory<Relationship> relationships = readRelationships( db );
+        readIndex( db, relationshipIndex( db, "rel-1", EXACT_CONFIG ), relationships, keyFactory, stringValues() );
+        readIndex( db, relationshipIndex( db, "rel-2", EXACT_CONFIG ), relationships, keyFactory, floatValues() );
+        readIndex( db, relationshipIndex( db, "rel-3", FULLTEXT_CONFIG ), relationships, keyFactory, stringValues() );
+        readIndex( db, relationshipIndex( db, "rel-4", FULLTEXT_CONFIG ), relationships, keyFactory, doubleValues() );
     }
 
     private void prepareStore( String store ) throws IOException

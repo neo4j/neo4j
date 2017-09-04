@@ -24,7 +24,6 @@ import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -70,12 +69,6 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
         default:
             throw new IllegalStateException( "Unknown update mode " + update.values() );
         }
-    }
-
-    @Override
-    public final void remove( PrimitiveLongSet nodeIds )
-    {
-        throw new UnsupportedOperationException( "Should not remove from populating index" );
     }
 
     /**

@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.concurrent.Work;
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Exceptions;
@@ -61,8 +60,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     private final KEY treeKey;
     private final VALUE treeValue;
     private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
-    private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
-    private WorkSync<IndexUpdateApply,IndexUpdateWork> workSync;
+    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> workSync;
 
     private Writer<KEY,VALUE> singleTreeWriter;
     private byte[] failureBytes;
@@ -74,7 +72,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
-        singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
     }
 
     @Override
@@ -127,7 +124,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         return new IndexUpdater()
         {
             private boolean closed;
-            private Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
             public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
@@ -141,11 +138,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             {
                 applyWithWorkSync( updates );
                 closed = true;
-            }
-
-            @Override
-            public void remove( PrimitiveLongSet nodeIds ) throws IOException
-            {   // no-op
             }
 
             private void assertOpen()
@@ -191,7 +183,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     {
         try
         {
-            workSync.apply( new IndexUpdateWork( updates ) );
+            workSync.apply( new IndexUpdateWork<>( updates ) );
         }
         catch ( ExecutionException e )
         {
@@ -270,7 +262,8 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         }
     }
 
-    private static class IndexUpdateWork implements Work<IndexUpdateApply,IndexUpdateWork>
+    private static class IndexUpdateWork<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+            implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
         private final Collection<? extends IndexEntryUpdate<?>> updates;
 
@@ -280,15 +273,15 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         }
 
         @Override
-        public IndexUpdateWork combine( IndexUpdateWork work )
+        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork<KEY,VALUE> work )
         {
             ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
             combined.addAll( work.updates );
-            return new IndexUpdateWork( combined );
+            return new IndexUpdateWork<>( combined );
         }
 
         @Override
-        public void apply( IndexUpdateApply indexUpdateApply ) throws Exception
+        public void apply( IndexUpdateApply<KEY,VALUE> indexUpdateApply ) throws Exception
         {
             for ( IndexEntryUpdate<?> indexEntryUpdate : updates )
             {

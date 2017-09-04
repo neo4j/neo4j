@@ -25,7 +25,6 @@ import org.mockito.ArgumentCaptor;
 import java.io.IOException;
 import java.util.List;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
@@ -37,10 +36,8 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -56,22 +53,6 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
 public class UniqueDatabaseIndexPopulatingUpdaterTest
 {
     private static final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 1, 42 );
-
-    @Test
-    public void removeNotSupported()
-    {
-        UniqueLuceneIndexPopulatingUpdater updater = newUpdater();
-
-        try
-        {
-            updater.remove( PrimitiveLongCollections.setOf( 1, 2, 3 ) );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( UnsupportedOperationException.class ) );
-        }
-    }
 
     @Test
     public void closeVerifiesUniquenessOfAddedValues() throws Exception

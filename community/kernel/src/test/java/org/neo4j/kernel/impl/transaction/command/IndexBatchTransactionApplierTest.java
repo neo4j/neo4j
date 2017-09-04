@@ -38,8 +38,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
-
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -65,8 +63,7 @@ public class IndexBatchTransactionApplierTest
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ),
-                new PropertyPhysicalToLogicalConverter( propertyStore ),
-                TransactionApplicationMode.INTERNAL ) )
+                new PropertyPhysicalToLogicalConverter( propertyStore ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {

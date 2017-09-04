@@ -91,6 +91,44 @@ public abstract class Command implements StorageCommand
         }
     }
 
+    /**
+     * Many commands have before/after versions of their records. In some scenarios there's a need
+     * to parameterize which of those to work with.
+     */
+    public enum Version
+    {
+        /**
+         * The "before" version of a command's record. I.e. the record how it looked before changes took place.
+         */
+        BEFORE
+        {
+            @Override
+            <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command )
+            {
+                return command.getBefore();
+            }
+        },
+        /**
+         * The "after" version of a command's record. I.e. the record how it looks after changes took place.
+         */
+        AFTER
+        {
+            @Override
+            <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command )
+            {
+                return command.getAfter();
+            }
+        };
+
+        /**
+         * Selects one of the versions of a {@link BaseCommand}.
+         *
+         * @param command command to select a version from.
+         * @return the specific record version in this command.
+         */
+        abstract <RECORD extends AbstractBaseRecord> RECORD select( BaseCommand<RECORD> command );
+    }
+
     protected final void setup( long key, Mode mode )
     {
         this.mode = mode;
@@ -471,26 +509,11 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public abstract static class TokenCommand<RECORD extends TokenRecord> extends Command
+    public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD>
     {
-        protected final RECORD before;
-        protected final RECORD after;
-
         public TokenCommand( RECORD before, RECORD after )
         {
-            setup( after.getId(), Mode.fromRecordState( after ) );
-            this.before = before;
-            this.after = after;
-        }
-
-        public RECORD getBefore()
-        {
-            return before;
-        }
-
-        public RECORD getAfter()
-        {
-            return after;
+            super( before, after );
         }
 
         @Override

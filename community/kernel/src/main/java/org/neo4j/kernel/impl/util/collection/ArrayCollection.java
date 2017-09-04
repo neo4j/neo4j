@@ -91,7 +91,7 @@ public class ArrayCollection<T> implements Collection<T>
     }
 
     @SuppressWarnings( "unchecked" )
-    private T item( int at )
+    public T item( int at )
     {
         return (T) array[at];
     }

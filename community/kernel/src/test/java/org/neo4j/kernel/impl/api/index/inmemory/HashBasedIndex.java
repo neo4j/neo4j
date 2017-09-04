@@ -317,4 +317,9 @@ class HashBasedIndex extends InMemoryIndexImplementation
         return toPrimitiveIterator( nodeIds.iterator() );
     }
 
+    @Override
+    boolean hasSameContentsAs( InMemoryIndexImplementation other )
+    {
+        return this.data.equals( ((HashBasedIndex)other).data );
+    }
 }

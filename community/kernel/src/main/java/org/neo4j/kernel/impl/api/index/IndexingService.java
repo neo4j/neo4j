@@ -26,16 +26,12 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -100,7 +96,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider logProvider;
     private final Monitor monitor;
-    private final PrimitiveLongSet recoveredNodeIds = Primitive.longSet( 20 );
     private final JobScheduler scheduler;
     private final SchemaState schemaState;
 
@@ -114,12 +109,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public interface Monitor
     {
-        void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds );
-
-        void applyingRecoveredUpdate( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate );
-
-        void recoveredUpdatesApplied();
-
         void populationCompleteOn( IndexDescriptor descriptor );
 
         void indexPopulationScanComplete();
@@ -129,22 +118,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     public static class MonitorAdapter implements Monitor
     {
-        @Override
-        public void recoveredUpdatesApplied()
-        {   // Do nothing
-        }
-
-        @Override
-        public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
-        {   // Do nothing
-        }
-
-        @Override
-        public void applyingRecoveredUpdate( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
-        {
-            // empty
-        }
-
         @Override
         public void populationCompleteOn( IndexDescriptor descriptor )
         {   // Do nothing
@@ -246,7 +219,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         state = State.STARTING;
 
-        applyRecoveredUpdates();
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
 
         final Map<Long,RebuildingIndexDescriptor> rebuildingDescriptors = new HashMap<>();
@@ -419,9 +391,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         if ( state == State.NOT_STARTED )
         {
-            // We're in recovery, which means we'll merely be noting which entity ids are to be refreshed
-            // and we'll refresh them completely after recovery completes.
-            updates.collectUpdatedNodeIds( recoveredNodeIds );
+            // We're in recovery, which means we'll be telling indexes to apply with additional care for making
+            // idempotent changes.
+            apply( updates, IndexUpdateMode.RECOVERY );
         }
         else if ( state == State.RUNNING || state == State.STARTING )
         {
@@ -518,37 +490,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.setIndexMap( indexMap );
     }
 
-    private void applyRecoveredUpdates() throws IOException, IndexEntryConflictException
-    {
-        if ( log.isDebugEnabled() )
-        {
-            log.debug( "Applying recovered updates: " + recoveredNodeIds );
-        }
-        monitor.applyingRecoveredData( recoveredNodeIds );
-        if ( !recoveredNodeIds.isEmpty() )
-        {
-            try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( IndexUpdateMode.RECOVERY ) )
-            {
-                for ( IndexUpdater updater : updaterMap )
-                {
-                    updater.remove( recoveredNodeIds );
-                }
-
-                Iterator<NodeUpdates> updates = recoveredNodeUpdatesIterator();
-                Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> indexEntryUpdates =
-                        Iterators.flatMap( nodeUpdates -> convertToIndexUpdates( nodeUpdates ).iterator(), updates );
-                while ( indexEntryUpdates.hasNext() )
-                {
-                    IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate = indexEntryUpdates.next();
-                    monitor.applyingRecoveredUpdate( indexUpdate );
-                    processUpdate( updaterMap, indexUpdate );
-                }
-                monitor.recoveredUpdatesApplied();
-            }
-        }
-        recoveredNodeIds.clear();
-    }
-
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
             throws IOException, IndexEntryConflictException
     {
@@ -557,12 +498,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         {
             updater.process( indexUpdate );
         }
-    }
-
-    private Iterator<NodeUpdates> recoveredNodeUpdatesIterator()
-    {
-        PrimitiveLongIterator nodeIdIterator = recoveredNodeIds.iterator();
-        return new NodeUpdatesIterator( storeView, nodeIdIterator );
     }
 
     public void dropIndex( IndexRule rule )

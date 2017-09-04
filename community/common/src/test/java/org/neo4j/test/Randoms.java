@@ -20,8 +20,10 @@
 package org.neo4j.test;
 
 import java.lang.reflect.Array;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import static java.lang.Integer.bitCount;
 import static java.lang.Math.abs;
@@ -214,6 +216,20 @@ public class Randoms
     public <T> T among( T[] among )
     {
         return among[random.nextInt( among.length )];
+    }
+
+    public <T> T among( List<T> among )
+    {
+        return among.get( random.nextInt( among.size() ) );
+    }
+
+    public <T> void among( List<T> among, Consumer<T> action )
+    {
+        if ( !among.isEmpty() )
+        {
+            T item = among( among );
+            action.accept( item );
+        }
     }
 
     public Number numberPropertyValue()

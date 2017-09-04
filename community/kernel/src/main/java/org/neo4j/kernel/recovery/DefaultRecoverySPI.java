@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -34,10 +33,11 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 
 public class DefaultRecoverySPI implements Recovery.SPI
 {
@@ -48,8 +48,6 @@ public class DefaultRecoverySPI implements Recovery.SPI
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
-    private Visitor<CommittedTransactionRepresentation,Exception> recoveryVisitor;
-    private TransactionQueue transactionsToApply;
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
@@ -74,7 +72,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
-    public Visitor<CommittedTransactionRepresentation,Exception> startRecovery()
+    public void startRecovery()
     {
         // Calling this method means that recovery is required, tell storage engine about it
         // This method will be called before recovery actually starts and so will ensure that
@@ -82,11 +80,12 @@ public class DefaultRecoverySPI implements Recovery.SPI
         // already started btw.
         // Go and read more at {@link CommonAbstractStore#deleteIdGenerator()}
         storageEngine.prepareForRecoveryRequired();
+    }
 
-        transactionsToApply = new TransactionQueue( 10_000, ( first, last ) -> storageEngine.apply( first, RECOVERY ) );
-        recoveryVisitor = new RecoveryVisitor( transactionsToApply );
-
-        return recoveryVisitor;
+    @Override
+    public RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception
+    {
+        return new RecoveryVisitor( new TransactionQueue( 100, ( first, last ) -> storageEngine.apply( first, mode ) ) );
     }
 
     @Override
@@ -96,12 +95,17 @@ public class DefaultRecoverySPI implements Recovery.SPI
     }
 
     @Override
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition position ) throws IOException
+    {
+        return logicalTransactionStore.getTransactionsInReverseOrder( position );
+    }
+
+    @Override
     public void allTransactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
             LogPosition positionAfterLastRecoveredTransaction ) throws Exception
     {
         if ( lastRecoveredTransaction != null )
         {
-            transactionsToApply.empty();
             transactionIdStore.setLastCommittedAndClosedTransactionId(
                     lastRecoveredTransaction.getCommitEntry().getTxId(),
                     LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
@@ -114,7 +118,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
                 positionAfterLastRecoveredTransaction.getByteOffset() );
     }
 
-    static class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation,Exception>
+    static class RecoveryVisitor implements RecoveryApplier
     {
         private final TransactionQueue transactionsToApply;
 
@@ -133,6 +137,12 @@ public class DefaultRecoverySPI implements Recovery.SPI
             tx.logPosition( transaction.getStartEntry().getStartPosition() );
             transactionsToApply.queue( tx );
             return false;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            transactionsToApply.empty();
         }
     }
 }

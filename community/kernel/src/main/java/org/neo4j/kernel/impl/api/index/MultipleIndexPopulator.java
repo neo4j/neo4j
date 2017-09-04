@@ -32,7 +32,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -417,12 +416,6 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.multipleIndexPopulator = multipleIndexPopulator;
             this.populationsWithUpdaters = populationsWithUpdaters;
             this.log = logProvider.getLog( getClass() );
-        }
-
-        @Override
-        public void remove( PrimitiveLongSet nodeIds )
-        {
-            throw new UnsupportedOperationException( "Index populators don't do removal" );
         }
 
         @Override

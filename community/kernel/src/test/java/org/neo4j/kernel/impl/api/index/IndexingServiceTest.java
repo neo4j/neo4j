@@ -38,18 +38,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntPredicate;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -108,7 +103,6 @@ import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -128,7 +122,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.setOf;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -682,84 +675,19 @@ public class IndexingServiceTest
         return true;
     }
 
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void recoveredUpdatesShouldBeApplied() throws Exception
-    {
-        // Given
-        final long nodeId1 = 1;
-        final long nodeId2 = 2;
-        final PrimitiveLongSet nodeIds = setOf( nodeId1, nodeId2 );
-
-        final NodeUpdates nodeUpdate1 = addNodeUpdate( nodeId1, "foo" );
-        final NodeUpdates nodeUpdate2 = addNodeUpdate( nodeId2, "bar" );
-
-        final AtomicBoolean applyingRecoveredDataCalled = new AtomicBoolean();
-        final AtomicBoolean recoveredUpdatesAppliedCalled = new AtomicBoolean();
-
-        // Mockito not used here because it does not work well with mutable objects (set of recovered node ids in
-        // this case, which is cleared at the end of recovery).
-        // See https://code.google.com/p/mockito/issues/detail?id=126 and
-        // https://groups.google.com/forum/#!topic/mockito/_A4BpsEAY9s
-        IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
-        {
-
-            private final Set<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new HashSet<>();
-
-            @Override
-            public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
-            {
-                assertEquals( nodeIds, recoveredNodeIds );
-                applyingRecoveredDataCalled.set( true );
-            }
-
-            @Override
-            public void applyingRecoveredUpdate( IndexEntryUpdate<LabelSchemaDescriptor> indexUpdate )
-            {
-                updates.add( indexUpdate );
-            }
-
-            @Override
-            public void recoveredUpdatesApplied()
-            {
-                recoveredUpdatesAppliedCalled.set( true );
-                assertEquals( 2, updates.size() );
-            }
-        };
-
-        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), monitor );
-        indexing.createIndexes( IndexRule
-                .indexRule( 1, IndexDescriptorFactory.forLabel( labelId, index.schema().getPropertyId() ),
-                        new SchemaIndexProvider.Descriptor( "quantum-dex", "25.0" ) ) );
-
-        when( storeView.nodeAsUpdates( eq( nodeId1 ) ) ).thenReturn( nodeUpdate1 );
-        when( storeView.nodeAsUpdates( eq( nodeId2 ) ) ).thenReturn( nodeUpdate2 );
-
-        // When
-        life.init();
-        IndexUpdates updates = nodeIdsAsIndexUpdates( nodeIds );
-        indexing.apply( updates );
-        life.start();
-
-        // Then
-        assertTrue( "applyingRecoveredData was not called", applyingRecoveredDataCalled.get() );
-        assertTrue( "recoveredUpdatesApplied was not called", recoveredUpdatesAppliedCalled.get() );
-    }
-
-    private IndexUpdates nodeIdsAsIndexUpdates( PrimitiveLongSet nodeIds )
+    private IndexUpdates nodeIdsAsIndexUpdates( long... nodeIds )
     {
         return new IndexUpdates()
         {
             @Override
             public Iterator<IndexEntryUpdate<LabelSchemaDescriptor>> iterator()
             {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public void collectUpdatedNodeIds( final PrimitiveLongSet target )
-            {
-                target.addAll( nodeIds.iterator() );
+                List<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new ArrayList<>();
+                for ( long nodeId : nodeIds )
+                {
+                    updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
+                }
+                return updates.iterator();
             }
 
             @Override
@@ -772,7 +700,7 @@ public class IndexingServiceTest
             @Override
             public boolean hasUpdates()
             {
-                return !nodeIds.isEmpty();
+                return nodeIds.length > 0;
             }
         };
     }
@@ -780,7 +708,6 @@ public class IndexingServiceTest
     /*
      * See comments in IndexingService#createIndex
      */
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldNotLoseIndexDescriptorDueToOtherSimilarIndexDuringRecovery() throws Exception
     {
@@ -808,11 +735,10 @@ public class IndexingServiceTest
         IndexRule otherIndex = IndexRule.indexRule( otherIndexId, index.getIndexDescriptor(), PROVIDER_DESCRIPTOR );
         indexing.createIndexes( otherIndex );
         indexing.dropIndex( otherIndex );
-        indexing.apply( nodeIdsAsIndexUpdates( PrimitiveLongCollections.asSet(
-                PrimitiveLongCollections.iterator( nodeId ) ) ) );
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( index );
         reset( accessor );
+        indexing.apply( nodeIdsAsIndexUpdates( nodeId ) );
         // and WHEN starting, i.e. completing recovery
         life.start();
 

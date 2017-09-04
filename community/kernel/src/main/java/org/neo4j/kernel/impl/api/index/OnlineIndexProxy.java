@@ -47,6 +47,7 @@ public class OnlineIndexProxy implements IndexProxy
     private final IndexStoreView storeView;
     private final SchemaIndexProvider.Descriptor providerDescriptor;
     private final IndexCountsRemover indexCountsRemover;
+    private boolean started;
 
     // About this flag: there are two online "modes", you might say...
     // - One is the pure starting of an already online index which was cleanly shut down and all that.
@@ -90,12 +91,14 @@ public class OnlineIndexProxy implements IndexProxy
     @Override
     public void start()
     {
+        started = true;
     }
 
     @Override
     public IndexUpdater newUpdater( final IndexUpdateMode mode )
     {
-        return updateCountingUpdater( accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode ) );
+        IndexUpdater actual = accessor.newUpdater( forcedIdempotentMode ? IndexUpdateMode.RECOVERY : mode );
+        return started ? updateCountingUpdater( actual ) : actual;
     }
 
     private IndexUpdater updateCountingUpdater( final IndexUpdater indexUpdater )

@@ -215,7 +215,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
-
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
@@ -233,17 +232,17 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         };
     }
 
-    static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
+    public static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
     {
         private final TestGraphDatabaseFactoryState state;
         private final boolean impermanent;
 
-        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
         {
             this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
-        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
                 DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );
