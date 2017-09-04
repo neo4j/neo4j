@@ -107,7 +107,7 @@ object Eagerness {
   def headWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
                        (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
+    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
     else
@@ -117,7 +117,7 @@ object Eagerness {
   def tailWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)
                              (implicit context: LogicalPlanningContext): LogicalPlan = {
     val alwaysEager = context.config.updateStrategy.alwaysEager
-    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
+    val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon, context.semanticTable)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInTail(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
     else
@@ -165,7 +165,7 @@ object Eagerness {
     val conflict =
       if (tail.queryGraph.writeOnly) false
       else (head.queryGraph overlaps tail.queryGraph) ||
-        (head.queryGraph overlapsHorizon tail.horizon) ||
+        head.queryGraph.overlapsHorizon(tail.horizon, context.semanticTable) ||
         deleteReadOverlap(head.queryGraph, tail.queryGraph)
     if (conflict)
       true
@@ -176,8 +176,9 @@ object Eagerness {
   }
 
   @tailrec
-  def horizonReadWriteConflict(head: PlannerQuery, tail: PlannerQuery): Boolean = {
-    val conflict = tail.queryGraph.overlapsHorizon(head.horizon)
+  def horizonReadWriteConflict(head: PlannerQuery, tail: PlannerQuery)
+                              (implicit context: LogicalPlanningContext): Boolean = {
+    val conflict = tail.queryGraph.overlapsHorizon(head.horizon, context.semanticTable)
     if (conflict)
       true
     else if (tail.tail.isEmpty)
