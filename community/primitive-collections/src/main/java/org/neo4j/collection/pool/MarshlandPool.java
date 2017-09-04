@@ -63,8 +63,8 @@ public class MarshlandPool<T> implements Pool<T>
     };
 
     // Used to reclaim objects from dead threads
-    private final Set<LocalSlotReference> slotReferences =
-            newSetFromMap( new ConcurrentHashMap<LocalSlotReference, Boolean>() );
+    private final Set<LocalSlotReference<T>> slotReferences =
+            newSetFromMap( new ConcurrentHashMap<LocalSlotReference<T>, Boolean>() );
     private final ReferenceQueue<LocalSlot<T>> objectsFromDeadThreads = new ReferenceQueue<>();
 
     public MarshlandPool( Factory<T> objectFactory )
@@ -84,22 +84,22 @@ public class MarshlandPool<T> implements Pool<T>
         LocalSlot<T> localSlot = puddle.get();
 
         T object = localSlot.object;
-        if ( object != null )
+        if ( object != null && localSlot.acquire() )
         {
-            localSlot.set( null );
             return object;
         }
 
         // Try the reference queue, containing objects from dead threads
-        LocalSlotReference<T> slotReference = (LocalSlotReference) objectsFromDeadThreads.poll();
+        @SuppressWarnings( "unchecked" )
+        LocalSlotReference<T> slotReference = (LocalSlotReference<T>) objectsFromDeadThreads.poll();
         if ( slotReference != null && slotReference.object != null )
         {
             slotReferences.remove( slotReference );
-            return slotReference.object;
+            return localSlot.assignIfNotAssigned( slotReference.object );
         }
 
         // Fall back to the delegate pool
-        return pool.acquire();
+        return localSlot.assignIfNotAssigned( pool.acquire() );
     }
 
     @Override
@@ -108,40 +108,35 @@ public class MarshlandPool<T> implements Pool<T>
         // Return it locally if possible
         LocalSlot<T> localSlot = puddle.get();
 
-        if ( localSlot.object == null )
-        {
-            localSlot.set( obj );
-        }
-
-        // Fall back to the delegate pool
-        else
-        {
+        if ( !localSlot.release( obj ) )
+        {   // Fall back to the delegate pool
             pool.release( obj );
         }
+        // else it was released back into the slot
     }
 
     /**
      * Dispose of all objects in this pool, releasing them back to the delegate pool
      */
+    @SuppressWarnings( "unchecked" )
     public void disposeAll()
     {
-        for ( LocalSlotReference slotReference : slotReferences )
+        for ( LocalSlotReference<T> slotReference : slotReferences )
         {
-            LocalSlot<T> slot = (LocalSlot) slotReference.get();
+            LocalSlot<T> slot = slotReference.get();
             if ( slot != null )
             {
-                T obj = slot.object;
+                T obj = slot.clear();
                 if ( obj != null )
                 {
-                    slot.set( null );
                     pool.release( obj );
                 }
             }
         }
 
-        for ( LocalSlotReference<T> reference = (LocalSlotReference) objectsFromDeadThreads.poll();
+        for ( LocalSlotReference<T> reference = (LocalSlotReference<T>) objectsFromDeadThreads.poll();
             reference != null;
-            reference = (LocalSlotReference) objectsFromDeadThreads.poll() )
+            reference = (LocalSlotReference<T>) objectsFromDeadThreads.poll() )
         {
             T instance = reference.object;
             if ( instance != null )
@@ -159,11 +154,11 @@ public class MarshlandPool<T> implements Pool<T>
     /**
      * This is used to trigger the GC to notify us whenever the thread local has been garbage collected.
      */
-    private static class LocalSlotReference<T> extends WeakReference<LocalSlot>
+    private static class LocalSlotReference<T> extends WeakReference<LocalSlot<T>>
     {
         private T object;
 
-        private LocalSlotReference( LocalSlot referent, ReferenceQueue<? super LocalSlot> q )
+        private LocalSlotReference( LocalSlot<T> referent, ReferenceQueue<? super LocalSlot<T>> q )
         {
             super( referent, q );
         }
@@ -175,14 +170,82 @@ public class MarshlandPool<T> implements Pool<T>
     private static class LocalSlot<T>
     {
         private T object;
-        private final LocalSlotReference phantomReference;
+        private final LocalSlotReference<T> phantomReference;
+        private boolean acquired;
 
         LocalSlot( ReferenceQueue<LocalSlot<T>> referenceQueue )
         {
-            phantomReference = new LocalSlotReference( this, referenceQueue );
+            phantomReference = new LocalSlotReference<>( this, referenceQueue );
         }
 
-        public void set(T obj)
+        T clear()
+        {
+            T result = acquired ? null : object;
+            set( null );
+            acquired = false;
+            return result;
+        }
+
+        /**
+         * Will assign {@code obj} to this slot if not already assigned.
+         * When calling this method this slot may be in different states:
+         * <ul>
+         * <li>object = null, acquired = false: initial assignment</li>
+         * <li>object != null, acquired = true: already assigned, but someone has it already</li>
+         * </ul>
+         *
+         * @param obj instance to assign
+         * @return the {@code obj} for convenience for the caller
+         */
+        T assignIfNotAssigned( T obj )
+        {
+            if ( object == null )
+            {
+                boolean wasAcquired = acquire();
+                assert wasAcquired;
+                set( obj );
+            }
+            else
+            {
+                assert acquired;
+            }
+            return obj;
+        }
+
+        /**
+         * Marks this slot as not acquired anymore. This will only succeed if the released object matches the
+         * object in this slot.
+         *
+         * @param obj the object to release and to match with this slot object.
+         * @return whether or not {@code obj} matches the slot object.
+         */
+        boolean release( T obj )
+        {
+            if ( obj == object )
+            {
+                assert acquired;
+                acquired = false;
+                return true;
+            }
+            return false;
+        }
+
+        /**
+         * Marks this slot as acquired. Object must have been assigned at this point.
+         *
+         * @return {@code true} if this slot wasn't acquired when calling this method, otherwise {@code false}.
+         */
+        boolean acquire()
+        {
+            if ( acquired )
+            {
+                return false;
+            }
+            acquired = true;
+            return true;
+        }
+
+        private void set( T obj )
         {
             phantomReference.object = obj;
             this.object = obj;
