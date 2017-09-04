@@ -437,7 +437,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     val produceResult = ProduceResult(Seq("x"), sort)
 
     // when
-    val allocations = RegisterAllocation.allocateRegisters(produceResult)
+    val allocations = SlotAllocation.allocateSlots(produceResult)
 
     // then
     allocations should have size 4
