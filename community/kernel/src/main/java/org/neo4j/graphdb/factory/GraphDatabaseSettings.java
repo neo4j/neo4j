@@ -115,9 +115,12 @@ public abstract class GraphDatabaseSettings
             "allows an upgrade to be performed.")
     public static final Setting<Boolean> allow_store_upgrade = setting("dbms.allow_format_migration", BOOLEAN, FALSE );
 
-    @Description( "Database record format. Enterprise edition only. Valid values: `standard`, `high_limit`. " +
-                  "Default value:  `standard`." )
-    public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "" );
+    @Description( "Database record format. Valid values: `standard`, `high_limit`. " +
+            "`high-limit` is available for Enterprise Edition only. " +
+            "It is required if you have a graph that is larger than 34 billion nodes, 34 billion relationships, or 68 billion properties. " +
+            "The record format can be changed from `standard` to `high-limit` at any time and the change does not require a store migration. However, the change is irreversible. " +
+            "Certain operations may suffer from a performance penalty of up to 10%, which is why this format is not switched on by default.")
+    public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "standard" );
 
     // Cypher settings
     // TODO: These should live with cypher
