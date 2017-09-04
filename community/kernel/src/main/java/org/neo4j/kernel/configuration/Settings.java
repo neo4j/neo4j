@@ -93,12 +93,8 @@ public class Settings
 
     public static final String SEPARATOR = ",";
 
-    public static final String DURATION_FORMAT = "\\d+(ms|s|m)";
-    public static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
+    private static final String SIZE_FORMAT = "\\d+[kmgKMG]?";
 
-    private static final String DURATION_UNITS = DURATION_FORMAT.substring(
-            DURATION_FORMAT.indexOf( '(' ) + 1, DURATION_FORMAT.indexOf( ')' ) )
-            .replace( "|", ", " );
     private static final String SIZE_UNITS = Arrays.toString(
             SIZE_FORMAT.substring( SIZE_FORMAT.indexOf( '[' ) + 1,
                     SIZE_FORMAT.indexOf( ']' ) )
@@ -569,13 +565,20 @@ public class Settings
         @Override
         public Duration apply( String value )
         {
-            return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
+            try
+            {
+                return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
+            }
+            catch ( RuntimeException e )
+            {
+                throw new IllegalArgumentException( "Error parsing duration setting", e );
+            }
         }
 
         @Override
         public String toString()
         {
-            return "a duration (valid units are `" + DURATION_UNITS.replace( ", ", "`, `" ) + "`; default unit is `s`)";
+            return "a duration (" + TimeUtil.VALID_TIME_DESCRIPTION + ")";
         }
     };
 

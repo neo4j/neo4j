@@ -24,7 +24,9 @@ import java.util.function.Function;
 
 public final class TimeUtil
 {
-    public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
+    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
+
+    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ms', 's', 'm' and 'h'; default unit is 's'";
 
     public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
     {
@@ -47,25 +49,22 @@ public final class TimeUtil
             int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
             String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
             TimeUnit timeUnit;
-            if ( unit.equals( "ms" ) )
+            switch ( unit )
             {
+            case "ms":
                 timeUnit = TimeUnit.MILLISECONDS;
-            }
-            else if ( unit.equals( "s" ) )
-            {
+                break;
+            case "s":
                 timeUnit = TimeUnit.SECONDS;
-            }
-            else if ( unit.equals( "m" ) )
-            {
+                break;
+            case "m":
                 timeUnit = TimeUnit.MINUTES;
-            }
-            else if ( unit.equals( "h" ) )
-            {
+                break;
+            case "h":
                 timeUnit = TimeUnit.HOURS;
-            }
-            else
-            {
-                throw new RuntimeException( "Unrecognized unit " + unit );
+                break;
+            default:
+                throw new RuntimeException( "Unrecognized unit " + unit + ". " + VALID_TIME_DESCRIPTION );
             }
             return timeUnit.toMillis( amount );
         }
@@ -73,5 +72,6 @@ public final class TimeUtil
 
     private TimeUtil()
     {
+        throw new AssertionError(); // no instances
     }
 }
