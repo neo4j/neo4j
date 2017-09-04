@@ -36,15 +36,17 @@ public final class NumberValues
 
     /*
      * Using the fact that the hashcode ∑x_i * 31^(i-1) can be expressed as
-     * a dot product, [v_1, v_2, v_2, ...] • [1, 31, 31^2,...]. By expressing
+     * a dot product, [1, v_1, v_2, v_2, ..., v_n] • [31^n, 31^{n-1}, ..., 31, 1]. By expressing
      * it in that way the compiler is smart enough to better parallelize the
      * computation of the hash code.
      */
-    private static final int MAX_LENGTH = 10000;
+    static final int MAX_LENGTH = 10000;
     private static final int[] COEFFICIENTS = new int[MAX_LENGTH + 1];
 
     static
     {
+        //We are defining the coefficient vector backwards, [1, 31, 31^2,...]
+        //makes it easier and faster do find the starting position later
         COEFFICIENTS[0] = 1;
         for ( int i = 1; i <= MAX_LENGTH; ++i )
         {
@@ -77,7 +79,7 @@ public final class NumberValues
      */
     public static int hash( byte[] values )
     {
-        final int max = values.length;
+        final int max = Math.min(values.length, MAX_LENGTH);
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -88,7 +90,7 @@ public final class NumberValues
 
     public static int hash( short[] values )
     {
-        final int max = values.length;
+        final int max = Math.min(values.length, MAX_LENGTH);
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -99,7 +101,7 @@ public final class NumberValues
 
     public static int hash( char[] values )
     {
-        final int max = values.length;
+        final int max = Math.min(values.length, MAX_LENGTH);
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -110,7 +112,7 @@ public final class NumberValues
 
     public static int hash( int[] values )
     {
-        final int max = values.length;
+        final int max = Math.min(values.length, MAX_LENGTH);
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -121,7 +123,7 @@ public final class NumberValues
 
     public static int hash( long[] values )
     {
-        final int max = values.length;
+        final int max = Math.min(values.length, MAX_LENGTH);
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -134,42 +136,6 @@ public final class NumberValues
     {
         return Arrays.hashCode( values );
     }
-
-    //19000
-    /*
-     * This is identical to Arrays.hashCode but without
-     * null checks, so only use if certain that there are no
-     * null values
-     */
-//    public static int hash( Object[] values )
-//    {
-//        int result = 1;
-//        for ( Object element : values )
-//        {
-//            result = 31 * result + element.hashCode();
-//        }
-//        return result;
-//    }
-
-//16922.201
-//    public static int hash( Object[] a )
-//    {
-//        int result = 1;
-//        int i = 0;
-//        for ( ; i + 3 < a.length; i += 4 )
-//        {
-//            result = 31 * 31 * 31 * 31 * result
-//                     + 31 * 31 * 31 * a[i].hashCode()
-//                     + 31 * 31 * a[i + 1].hashCode()
-//                     + 31 * a[i + 2].hashCode()
-//                     + a[i + 3].hashCode();
-//        }
-//        for ( ; i < a.length; i++ )
-//        {
-//            result = 31 * result + a[i].hashCode();
-//        }
-//        return result;
-//    }
 
     public static int hash( float[] values )
     {
