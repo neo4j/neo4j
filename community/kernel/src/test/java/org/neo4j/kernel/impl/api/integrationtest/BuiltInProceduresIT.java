@@ -231,6 +231,21 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "db.index.manual.seek.relationships(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
                         "(relationship :: RELATIONSHIP?)",
                         "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`"
+                } ),
+                equalTo( new Object[]{"db.index.manual.between",
+                        "db.index.manual.between(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship from manual index, starting at the node 'in' and ending at 'out'."
+                } ),
+                equalTo( new Object[]{"db.index.manual.in",
+                        "db.index.manual.in(indexName :: STRING?, in :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship from manual index, starting at the node 'in'."
+                } ),
+                equalTo( new Object[]{"db.index.manual.out",
+                        "db.index.manual.out(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship from manual index, ending at the node 'out'."
                 } )
         ) );
         commit();
