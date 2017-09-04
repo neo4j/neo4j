@@ -577,4 +577,87 @@ public class LuceneFulltextUpdaterTest
             }
         }
     }
+
+    @Test
+    public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
+        {
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
+
+            long firstID;
+            long secondID;
+            long thirdID;
+            long fourthID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                Node node2 = db.createNode( LABEL );
+                Node node3 = db.createNode( LABEL );
+                Node node4 = db.createNode( LABEL );
+                firstID = node.getId();
+                secondID = node2.getId();
+                thirdID = node3.getId();
+                fourthID = node4.getId();
+                node.setProperty( "prop", "zibre" );
+                node2.setProperty( "prop", "zebrae" );
+                node3.setProperty( "prop", "zebra" );
+                node4.setProperty( "prop", "zibra" );
+
+                tx.success();
+            }
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            {
+
+                PrimitiveLongIterator zebra = reader.fuzzyQuery( "zebra" );
+                assertEquals( thirdID, zebra.next() );
+                assertEquals( secondID, zebra.next() );
+                assertEquals( fourthID, zebra.next() );
+                assertEquals( firstID, zebra.next() );
+                assertFalse( zebra.hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotReturnNonMatches() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
+        {
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextHelper( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"}, provider );
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                Node node2 = db.createNode( LABEL );
+                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
+                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
+                node.setProperty( "prop", "Hello. Hello again." );
+                node2.setProperty( "prop2", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                rel1.setProperty( "prop", "Hello. Hello again." );
+                rel2.setProperty( "prop2", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+
+                tx.success();
+            }
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            {
+                PrimitiveLongIterator zebra = reader.query( "zebra" );
+                assertFalse( zebra.hasNext() );
+            }
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) )
+            {
+
+                PrimitiveLongIterator zebra = reader.query( "zebra" );
+                assertFalse( zebra.hasNext() );
+            }
+        }
+    }
 }
