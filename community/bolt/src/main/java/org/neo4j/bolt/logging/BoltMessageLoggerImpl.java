@@ -108,9 +108,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logRun( String statement, Map<String,Object> parameters )
+    public void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier )
     {
-        clientEvent( "RUN", () -> format( "%s %s", statement, json( parameters ) ) );
+        clientEvent( "RUN", () -> format( "%s %s", statement, json( parametersSupplier.get() ) ) );
     }
 
     @Override
@@ -138,9 +138,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logSuccess( Object metadata )
+    public void logSuccess( Supplier<String> metadataSupplier )
     {
-        serverEvent( "SUCCESS", () -> json( metadata ) );
+        serverEvent( "SUCCESS", () -> json( metadataSupplier.get() ) );
     }
 
     @Override

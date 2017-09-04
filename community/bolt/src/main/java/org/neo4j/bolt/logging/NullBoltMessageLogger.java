@@ -78,7 +78,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logRun( String statement, Map<String,Object> parameters )
+    public void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier )
     {
     }
 
@@ -103,7 +103,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logSuccess( Object metadata )
+    public void logSuccess( Supplier<String> metadataSupplier )
     {
     }
 

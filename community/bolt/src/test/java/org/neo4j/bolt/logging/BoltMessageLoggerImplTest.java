@@ -1,7 +1,25 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.bolt.logging;
 
 import java.net.InetSocketAddress;
-import java.util.Collections;
 
 import io.netty.channel.Channel;
 import io.netty.util.Attribute;
@@ -14,13 +32,15 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.DeadlockDetectedException;
 
+import static java.util.Collections.singletonMap;
+
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith( MockitoJUnitRunner.class )
 public class BoltMessageLoggerImplTest
 {
 
@@ -74,7 +94,6 @@ public class BoltMessageLoggerImplTest
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "S: TEST details" );
     }
 
-
     @Test
     public void logAckFailure() throws Exception
     {
@@ -89,7 +108,7 @@ public class BoltMessageLoggerImplTest
     public void logInit() throws Exception
     {
         // when
-        boltMessageLogger.logInit( "userAgent", Collections.singletonMap( "username", "password" ) );
+        boltMessageLogger.logInit( "userAgent", singletonMap( "username", "password" ) );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C: INIT userAgent [\"username\"]" );
 
@@ -99,7 +118,7 @@ public class BoltMessageLoggerImplTest
     public void logRun() throws Exception
     {
         // when
-        boltMessageLogger.logRun( "RETURN 42", Collections.singletonMap( "param1", "value" ) );
+        boltMessageLogger.logRun( "RETURN 42", () -> singletonMap( "param1", "value" ) );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C: RUN RETURN 42 {\"param1\":\"value\"}" );
     }
@@ -135,7 +154,7 @@ public class BoltMessageLoggerImplTest
     public void logSuccess() throws Exception
     {
         // when
-        boltMessageLogger.logSuccess( "metadata" );
+        boltMessageLogger.logSuccess( () -> "metadata" );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "S: SUCCESS \"metadata\"" );
     }

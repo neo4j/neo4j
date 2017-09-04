@@ -20,9 +20,14 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter;
 import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
@@ -79,11 +84,20 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
-        //TODO: Use supplier
-        messageLogger.logSuccess( metadata );
+        messageLogger.logSuccess( metadataSupplier( metadata ) );
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );
         onMessageComplete.onMessageComplete();
+    }
+
+    private Supplier<String> metadataSupplier( MapValue metadata )
+    {
+        return () ->
+        {
+            MapToObjectWriter writer = new MapToObjectWriter();
+            metadata.writeTo( writer );
+            return writer.value().toString();
+        };
     }
 
     @Override
@@ -121,6 +135,37 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     public void flush() throws IOException
     {
         packer.flush();
+    }
+
+    private class MapToObjectWriter extends BaseToObjectValueWriter<RuntimeException>
+    {
+
+        private UnsupportedOperationException exception =
+                new UnsupportedOperationException( "Functionality not implemented." );
+
+        @Override
+        protected Node newNodeProxyById( long id )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Relationship newRelationshipProxyById( long id )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+        {
+            throw exception;
+        }
+
+        @Override
+        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        {
+            throw exception;
+        }
     }
 
 }

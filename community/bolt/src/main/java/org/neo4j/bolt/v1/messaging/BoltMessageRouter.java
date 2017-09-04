@@ -88,7 +88,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onRun( String statement, Map<String,Object> params )
     {
-        messageLogger.logRun(statement, params);
+        messageLogger.logRun( statement, () -> params );
         worker.enqueue( session -> session.run( statement, params, runHandler ) );
     }
 

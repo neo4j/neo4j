@@ -42,7 +42,7 @@ public interface BoltMessageLogger
 
     void logInit( String userAgent, Map<String,Object> authToken );
 
-    void logRun( String statement, Map<String,Object> parameters );
+    void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier );
 
     void logPullAll();
 
@@ -52,7 +52,7 @@ public interface BoltMessageLogger
 
     void logReset();
 
-    void logSuccess( Object metadata );
+    void logSuccess( Supplier<String> metadataSupplier );
 
     void logFailure( Status status );
 
