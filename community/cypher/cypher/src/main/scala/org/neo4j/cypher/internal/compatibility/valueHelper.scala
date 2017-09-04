@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.util.function.BiConsumer
 
+import org.neo4j.cypher.internal.javacompat.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{BooleanValue, FloatingPointValue, LongValue, TextValue, NoValue}
-import org.neo4j.values.virtual.EdgeValue.RelationshipProxyWrappingEdgeValue
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue}
-import org.neo4j.values.virtual.NodeValue.NodeProxyWrappingNodeValue
 
 import scala.collection.mutable
 
@@ -34,7 +33,7 @@ object valueHelper {
     case s: TextValue => s.stringValue()
     case b: BooleanValue => b.booleanValue()
     case d: FloatingPointValue => d.doubleValue()
-    case n: LongValue => n.value()
+    case d: IntegralValue => d.longValue()
 
     case m: MapValue => {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
@@ -46,6 +45,7 @@ object valueHelper {
     case n: NodeProxyWrappingNodeValue => n.nodeProxy()
     case n: RelationshipProxyWrappingEdgeValue => n.relationshipProxy()
     case a: ListValue => Vector(a.asArray().map(fromValue): _*)
-    case n: NoValue => None
+    case Values.NO_VALUE => null
   }
+
 }
