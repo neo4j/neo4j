@@ -38,12 +38,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LegacyIndexTest
 {
-    private static final long TEST_TIMEOUT = 40_000;
-
     @Rule
     public TestDirectory directory = TestDirectory.testDirectory();
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void legacyIndexPopulationWithBunchOfFields() throws Exception
     {
         BatchInserter batchNode = BatchInserters.inserter( directory.graphDbDir() );
