@@ -996,6 +996,7 @@ public class ImportToolTest
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeData.getAbsolutePath(),
                     "--bad", bad.getAbsolutePath(),
+                    "--stacktrace", // trying to find flaky test origin
                     "--skip-bad-relationships", "false",
                     "--relationships", relationshipData1.getAbsolutePath() + MULTI_FILE_DELIMITER +
                                        relationshipData2.getAbsolutePath() );
