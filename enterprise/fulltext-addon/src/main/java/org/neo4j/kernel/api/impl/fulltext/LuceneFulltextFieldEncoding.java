@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Value;
 
 class LuceneFulltextFieldEncoding
 {
-    public static Field encodeField( String name, Value value )
+    static Field encodeField( String name, Value value )
     {
         String stringValue = value.prettyPrint();
 

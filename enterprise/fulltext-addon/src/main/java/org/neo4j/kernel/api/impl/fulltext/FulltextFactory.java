@@ -38,30 +38,23 @@ public class FulltextFactory
 {
     private final FileSystemAbstraction fileSystem;
     private final WritableIndexPartitionFactory partitionFactory;
-    private final Factory<IndexWriterConfig> population;
     private final File storeDir;
     private final Analyzer analyzer;
-
-    public LuceneFulltext createFulltextHelper( String identifier, FULLTEXT_HELPER_TYPE type, String[] properties )
-    {
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
-                directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
-        return new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type );
-    }
-
-    public enum FULLTEXT_HELPER_TYPE
-    {
-        NODES,
-        RELATIONSHIPS
-    }
 
     public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Analyzer analyzer ) throws IOException
     {
         this.analyzer = analyzer;
         this.fileSystem = fileSystem;
-        population = () -> IndexWriterConfigs.population( analyzer );
+        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( analyzer );
         partitionFactory = new WritableIndexPartitionFactory( population );
         this.storeDir = storeDir;
+    }
+
+    public void createFulltextHelper( String identifier, FulltextProvider.FULLTEXT_HELPER_TYPE type, String[] properties, FulltextProvider provider ) throws IOException
+    {
+        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier(
+                identifier ).withDirectoryFactory( directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
+        provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
     }
 }

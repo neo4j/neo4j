@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
 import static java.util.Collections.singletonMap;
 
-public class LuceneFulltext extends AbstractLuceneIndex
+class LuceneFulltext extends AbstractLuceneIndex
 {
 
     private static final String KEY_STATUS = "status";
@@ -48,12 +48,12 @@ public class LuceneFulltext extends AbstractLuceneIndex
     private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
     private final Analyzer analyzer;
     private final String identifier;
-    private final FulltextFactory.FULLTEXT_HELPER_TYPE type;
+    private final FulltextProvider.FULLTEXT_HELPER_TYPE type;
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
     private final Set<String> properties;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer,
-            String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type )
+            String identifier, FulltextProvider.FULLTEXT_HELPER_TYPE type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( Arrays.asList( properties ) ) );
@@ -91,7 +91,7 @@ public class LuceneFulltext extends AbstractLuceneIndex
         return result;
     }
 
-    public PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex ) throws IOException
+    PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex ) throws IOException
     {
         ensureOpen();
         return new PartitionedIndexWriter( writableIndex );
@@ -104,17 +104,17 @@ public class LuceneFulltext extends AbstractLuceneIndex
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    public FulltextFactory.FULLTEXT_HELPER_TYPE getType()
+    FulltextProvider.FULLTEXT_HELPER_TYPE getType()
     {
         return type;
     }
 
-    public Set<String> getProperties()
+    Set<String> getProperties()
     {
         return properties;
     }
 
-    public String getIdentifier()
+    String getIdentifier()
     {
         return identifier;
     }

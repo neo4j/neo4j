@@ -30,7 +30,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
 
-    public static final String SERVICE_NAME = "bloom";
+    private static final String SERVICE_NAME = "bloom";
 
     public interface Dependencies
     {
@@ -43,7 +43,7 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         Procedures procedures();
     }
 
-    public BloomKernelExtensionFactory()
+    BloomKernelExtensionFactory()
     {
         super( SERVICE_NAME );
     }

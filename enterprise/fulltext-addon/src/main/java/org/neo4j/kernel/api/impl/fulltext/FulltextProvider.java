@@ -67,8 +67,7 @@ public class FulltextProvider implements AutoCloseable
         {
             closed = true;
             db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-            nodeIndices.values().forEach( luceneFulltextHelper ->
-            {
+            nodeIndices.values().forEach( luceneFulltextHelper -> {
                 try
                 {
                     luceneFulltextHelper.close();
@@ -78,8 +77,7 @@ public class FulltextProvider implements AutoCloseable
                     e.printStackTrace();
                 }
             } );
-            relationshipIndices.values().forEach( luceneFulltextHelper ->
-            {
+            relationshipIndices.values().forEach( luceneFulltextHelper -> {
                 try
                 {
                     luceneFulltextHelper.close();
@@ -92,10 +90,10 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    public synchronized void register( LuceneFulltext fulltextHelper ) throws IOException
+    synchronized void register( LuceneFulltext fulltextHelper ) throws IOException
     {
         fulltextHelper.open();
-        if ( fulltextHelper.getType() == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )
+        if ( fulltextHelper.getType() == FULLTEXT_HELPER_TYPE.NODES )
         {
             nodeIndices.put( fulltextHelper.getIdentifier(), fulltextHelper );
             nodeProperties.addAll( fulltextHelper.getProperties() );
@@ -107,29 +105,29 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    public String[] getNodeProperties()
+    String[] getNodeProperties()
     {
         return nodeProperties.toArray( new String[0] );
     }
 
-    public String[] getRelationshipProperties()
+    String[] getRelationshipProperties()
     {
         return relationshipProperties.toArray( new String[0] );
     }
 
-    public Set<WritableFulltext> nodeIndices()
+    Set<WritableFulltext> writableNodeIndices()
     {
         return nodeIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public Set<WritableFulltext> relationshipIndices()
+    Set<WritableFulltext> writableRelationshipIndices()
     {
         return relationshipIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public ReadOnlyFulltext getReader( String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
+    public ReadOnlyFulltext getReader( String identifier, FULLTEXT_HELPER_TYPE type ) throws IOException
     {
-        if ( type == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )
+        if ( type == FULLTEXT_HELPER_TYPE.NODES )
         {
             return nodeIndices.get( identifier ).getIndexReader();
         }
@@ -137,5 +135,25 @@ public class FulltextProvider implements AutoCloseable
         {
             return relationshipIndices.get( identifier ).getIndexReader();
         }
+    }
+
+    public enum FULLTEXT_HELPER_TYPE
+    {
+        NODES
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return "Nodes";
+                    }
+                },
+        RELATIONSHIPS
+                {
+                    @Override
+                    public String toString()
+                    {
+                        return "Relationships";
+                    }
+                }
     }
 }

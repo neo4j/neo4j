@@ -39,7 +39,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
 
     private FulltextProvider fulltextProvider;
 
-    public FulltextTransactionEventUpdater( FulltextProvider fulltextProvider )
+    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider )
     {
         this.fulltextProvider = fulltextProvider;
     }
@@ -87,7 +87,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
         //update node indices
         try
         {
-            for ( WritableFulltext nodeIndex : fulltextProvider.nodeIndices() )
+            for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
             {
                 Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
                 removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
@@ -95,7 +95,7 @@ public class FulltextTransactionEventUpdater implements TransactionEventHandler<
                 refreshIndex( nodeIndex );
             }
             //update relationship indices
-            for ( WritableFulltext relationshipIndex : fulltextProvider.relationshipIndices() )
+            for ( WritableFulltext relationshipIndex : fulltextProvider.writableRelationshipIndices() )
             {
                 Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
                 removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );

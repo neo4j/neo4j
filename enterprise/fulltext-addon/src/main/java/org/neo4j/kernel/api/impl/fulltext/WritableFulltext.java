@@ -37,7 +37,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         this.luceneFulltext = luceneFulltext;
     }
 
-    public PartitionedIndexWriter getIndexWriter() throws IOException
+    PartitionedIndexWriter getIndexWriter() throws IOException
     {
         return luceneFulltext.getIndexWriter( this );
     }
@@ -52,7 +52,7 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         return luceneIndex.getFirstPartition( partitions );
     }
 
-    public Set<String> properties()
+    Set<String> properties()
     {
         return luceneIndex.getProperties();
     }

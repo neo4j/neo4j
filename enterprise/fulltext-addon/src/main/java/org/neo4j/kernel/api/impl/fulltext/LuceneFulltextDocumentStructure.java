@@ -51,7 +51,7 @@ class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long id, Map<String,Object> values )
+    static Document documentRepresentingProperties( long id, Map<String,Object> values )
     {
         DocWithId document = reuseDocument( id );
         document.setValues( values );
@@ -111,7 +111,7 @@ class LuceneFulltextDocumentStructure
 
     }
 
-    public static Term newTermForChangeOrRemove( long id )
+    static Term newTermForChangeOrRemove( long id )
     {
         return new Term( ID_KEY, "" + id );
     }

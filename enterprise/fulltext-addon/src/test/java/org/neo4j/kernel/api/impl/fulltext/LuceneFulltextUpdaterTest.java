@@ -39,7 +39,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextFactory.FULLTEXT_HELPER_TYPE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FULLTEXT_HELPER_TYPE;
 
 public class LuceneFulltextUpdaterTest
 {
@@ -61,7 +61,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -96,7 +96,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
 
             long firstID;
@@ -132,7 +132,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -167,7 +167,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -210,7 +210,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -259,7 +259,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -302,7 +302,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"}, provider );
 
             long firstID;
             long secondID;
@@ -365,7 +365,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -399,7 +399,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"}, provider );
 
             long firstID;
             long secondID;
@@ -439,7 +439,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"first", "last"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"first", "last"}, provider );
 
             long firstID;
             long secondID;
@@ -486,8 +486,8 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
-            provider.register( fulltextFactory.createFulltextHelper( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextHelper( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"}, provider );
 
             long firstNodeID;
             long secondNodeID;
@@ -546,7 +546,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;

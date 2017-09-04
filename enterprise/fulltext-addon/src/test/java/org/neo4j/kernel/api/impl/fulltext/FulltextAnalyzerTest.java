@@ -37,7 +37,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextFactory.FULLTEXT_HELPER_TYPE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FULLTEXT_HELPER_TYPE;
 
 public class FulltextAnalyzerTest
 {
@@ -56,7 +56,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -92,7 +92,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;

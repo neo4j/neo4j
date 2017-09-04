@@ -20,14 +20,13 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
-import org.neo4j.kernel.api.impl.fulltext.LuceneFulltext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Neo4jTypes;
@@ -37,26 +36,28 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class BloomProcedure extends CallableProcedure.BasicProcedure
 {
-    public static final String OUTPUT_NAME = "entityid";
+    private static final String OUTPUT_NAME = "entityid";
     private static final String PROCEDURE_NAME = "bloomFulltext";
     private static final String[] PROCEDURE_NAMESPACE = {"db", "fulltext"};
-    private final LuceneFulltext luceneFulltext;
-    private String type;
+    private final String identifier;
+    private final FulltextProvider provider;
+    private FulltextProvider.FULLTEXT_HELPER_TYPE type;
 
-    BloomProcedure( String type, LuceneFulltext luceneFulltext )
+    public BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE type, String identifier, FulltextProvider provider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME + type ) ).in( "terms",
                 Neo4jTypes.NTList( Neo4jTypes.NTString ) ).out( OUTPUT_NAME, Neo4jTypes.NTInteger ).description(
                 String.format( "Queries the bloom index for %s.", type ) ).build() );
-        this.luceneFulltext = luceneFulltext;
         this.type = type;
+        this.identifier = identifier;
+        this.provider = provider;
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
         String[] query = ((ArrayList<String>) input[0]).toArray( new String[0] );
-        try ( ReadOnlyFulltext indexReader = luceneFulltext.getIndexReader() )
+        try ( ReadOnlyFulltext indexReader = provider.getReader( identifier, type ) )
         {
             PrimitiveLongIterator primitiveLongIterator = indexReader.fuzzyQuery( query );
             return new RawIterator<Object[],ProcedureException>()

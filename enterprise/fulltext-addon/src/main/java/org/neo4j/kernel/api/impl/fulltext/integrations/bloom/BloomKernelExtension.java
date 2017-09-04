@@ -29,21 +29,19 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
-import org.neo4j.kernel.api.impl.fulltext.LuceneFulltext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class BloomKernelExtension extends LifecycleAdapter
+class BloomKernelExtension extends LifecycleAdapter
 {
     private final File storeDir;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final GraphDatabaseService db;
     private final Procedures procedures;
-    private FulltextFactory fulltextFactory;
 
-    public BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures )
+    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -68,15 +66,14 @@ public class BloomKernelExtension extends LifecycleAdapter
         }
 
         FulltextProvider provider = FulltextProvider.instance( db );
-        fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-        LuceneFulltext nodes = fulltextFactory.createFulltextHelper( "bloomNodes", FulltextFactory.FULLTEXT_HELPER_TYPE.NODES, properties );
-        LuceneFulltext relationships =
-                fulltextFactory.createFulltextHelper( "bloomRelationships", FulltextFactory.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, properties );
-        provider.register( nodes );
-        provider.register( relationships );
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
+        String bloomNodes = "bloomNodes";
+        fulltextFactory.createFulltextHelper( bloomNodes, FulltextProvider.FULLTEXT_HELPER_TYPE.NODES, properties, provider );
+        String bloomRelationships = "bloomRelationships";
+        fulltextFactory.createFulltextHelper( bloomRelationships, FulltextProvider.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, properties, provider );
 
-        procedures.register( new BloomProcedure( "Nodes", nodes ) );
-        procedures.register( new BloomProcedure( "Relationships", relationships ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE.NODES, bloomNodes, provider ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, bloomRelationships, provider ) );
     }
 
     @Override
