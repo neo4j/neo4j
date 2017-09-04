@@ -51,7 +51,7 @@ public class AcceptanceSpecSuiteTest
     {
     }
 
-    public static abstract class Base
+    public abstract static class Base
     {
         @AfterClass
         public static void teardown()
