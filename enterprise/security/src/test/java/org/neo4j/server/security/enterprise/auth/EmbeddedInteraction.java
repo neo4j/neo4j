@@ -77,6 +77,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
         builder.setConfig( new BoltConnector( "bolt" ).type, "BOLT" );
         builder.setConfig( new BoltConnector( "bolt" ).enabled, "true" );
         builder.setConfig( new BoltConnector( "bolt" ).encryption_level, OPTIONAL.name() );
+        builder.setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" );
         builder.setConfig( LegacySslPolicyConfig.tls_key_file, NeoInteractionLevel.tempPath( "key", ".key" ) );
         builder.setConfig( LegacySslPolicyConfig.tls_certificate_file,
                 NeoInteractionLevel.tempPath( "cert", ".cert" ) );
