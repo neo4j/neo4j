@@ -38,32 +38,44 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
  *
  * @see SimpleFulltextReader
  */
-class PartitionedFulltextReader implements FulltextReader
+class PartitionedFulltextReader implements ReadOnlyFulltext
 {
 
-    private final List<FulltextReader> indexReaders;
+    private final List<ReadOnlyFulltext> indexReaders;
 
     PartitionedFulltextReader( List<PartitionSearcher> partitionSearchers, String[] properties, Analyzer analyzer )
     {
-        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) )
-                .collect( Collectors.toList() ) );
+        this( partitionSearchers.stream().map( partitionSearcher -> new SimpleFulltextReader( partitionSearcher, properties, analyzer ) ).collect(
+                Collectors.toList() ) );
     }
 
-    private PartitionedFulltextReader( List<FulltextReader> readers )
+    private PartitionedFulltextReader( List<ReadOnlyFulltext> readers )
     {
         this.indexReaders = readers;
     }
 
+    @Override
     public PrimitiveLongIterator query( String... query )
     {
         return partitionedOperation( reader -> innerQuery( reader, query ) );
     }
 
-    private PrimitiveLongIterator innerQuery( FulltextReader reader, String... query )
+    @Override
+    public PrimitiveLongIterator fuzzyQuery( String... query )
+    {
+        return partitionedOperation( reader -> innerFuzzyQuery( reader, query ) );
+    }
+
+    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, String... query )
     {
 
         return reader.query( query );
+    }
 
+    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, String... query )
+    {
+
+        return reader.fuzzyQuery( query );
     }
 
     public void close()
@@ -78,10 +90,8 @@ class PartitionedFulltextReader implements FulltextReader
         }
     }
 
-    private PrimitiveLongIterator partitionedOperation(
-            Function<FulltextReader,PrimitiveLongIterator> readerFunction )
+    private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
     {
-        return PrimitiveLongCollections
-                .concat( indexReaders.parallelStream().map( readerFunction::apply ).collect( Collectors.toList() ) );
+        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction::apply ).collect( Collectors.toList() ) );
     }
 }

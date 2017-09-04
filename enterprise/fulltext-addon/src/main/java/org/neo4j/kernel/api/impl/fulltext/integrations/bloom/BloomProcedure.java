@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.impl.fulltext.FulltextReader;
+import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
 import org.neo4j.kernel.api.impl.fulltext.LuceneFulltext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
@@ -36,9 +37,9 @@ import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 public class BloomProcedure extends CallableProcedure.BasicProcedure
 {
+    public static final String OUTPUT_NAME = "entityid";
     private static final String PROCEDURE_NAME = "bloomFulltext";
     private static final String[] PROCEDURE_NAMESPACE = {"db", "fulltext"};
-    public static final String OUTPUT_NAME = "entityid";
     private final LuceneFulltext luceneFulltext;
     private String type;
 
@@ -54,10 +55,10 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input ) throws ProcedureException
     {
-        String[] query = Arrays.stream( input ).map( Object::toString ).toArray( String[]::new );
-        try ( FulltextReader indexReader = luceneFulltext.getIndexReader() )
+        String[] query = ((ArrayList<String>) input[0]).toArray( new String[0] );
+        try ( ReadOnlyFulltext indexReader = luceneFulltext.getIndexReader() )
         {
-            PrimitiveLongIterator primitiveLongIterator = indexReader.query( query );
+            PrimitiveLongIterator primitiveLongIterator = indexReader.fuzzyQuery( query );
             return new RawIterator<Object[],ProcedureException>()
             {
                 @Override

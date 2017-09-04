@@ -46,7 +46,7 @@ public class FulltextFactory
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
-                directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltextHelper" ).toFile() );
+                directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
         return new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type );
     }
 

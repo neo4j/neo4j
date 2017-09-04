@@ -72,7 +72,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "and" ).hasNext() );
@@ -108,7 +108,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 assertEquals( firstID, reader.query( "and" ).next() );
                 assertEquals( firstID, reader.query( "in" ).next() );

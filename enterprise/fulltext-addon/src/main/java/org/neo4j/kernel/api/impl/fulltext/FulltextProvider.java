@@ -127,7 +127,7 @@ public class FulltextProvider implements AutoCloseable
         return relationshipIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public FulltextReader getReader( String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
+    public ReadOnlyFulltext getReader( String identifier, FulltextFactory.FULLTEXT_HELPER_TYPE type ) throws IOException
     {
         if ( type == FulltextFactory.FULLTEXT_HELPER_TYPE.NODES )
         {

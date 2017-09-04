@@ -21,7 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
-public interface FulltextReader extends AutoCloseable
+public interface ReadOnlyFulltext extends AutoCloseable
 {
     PrimitiveLongIterator query( String... query );
+    PrimitiveLongIterator fuzzyQuery( String... query );
 }

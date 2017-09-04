@@ -46,8 +46,8 @@ public class LuceneFulltextUpdaterTest
     public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
     @ClassRule
     public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @ClassRule
-    public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
@@ -61,7 +61,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -78,7 +78,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertEquals( firstID, reader.query( "hello" ).next() );
@@ -96,7 +96,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
 
             long firstID;
@@ -113,7 +113,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator node1prop = reader.query( "1" );
                 assertEquals( firstID, node1prop.next() );
@@ -132,7 +132,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -148,7 +148,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator sant = reader.query( "true" );
                 assertEquals( firstID, sant.next() );
@@ -167,23 +167,27 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
+            long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.createNode( LABEL );
                 Node node2 = db.createNode( LABEL );
+                Node node3 = db.createNode( LABEL );
                 firstID = node.getId();
                 secondID = node2.getId();
+                thirdID = node3.getId();
                 node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
                 node2.setProperty( "prop", new int[]{1, 27, 48} );
+                node3.setProperty( "prop", new int[]{1, 2, 48} );
 
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
                 PrimitiveLongIterator strings = reader.query( "live" );
                 assertEquals( firstID, strings.next() );
@@ -191,6 +195,10 @@ public class LuceneFulltextUpdaterTest
                 PrimitiveLongIterator ints = reader.query( "27" );
                 assertEquals( secondID, ints.next() );
                 assertFalse( ints.hasNext() );
+                PrimitiveLongIterator moreInts = reader.query( "1", "2" );
+                assertEquals( thirdID, moreInts.next() );
+                assertEquals( secondID, moreInts.next() );
+                assertFalse( moreInts.hasNext() );
             }
         }
     }
@@ -202,7 +210,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -228,7 +236,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -251,7 +259,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             long secondID;
@@ -276,7 +284,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -294,7 +302,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
 
             long firstID;
             long secondID;
@@ -337,7 +345,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -357,7 +365,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -373,7 +381,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -391,7 +399,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop", "prop2"} ) );
 
             long firstID;
             long secondID;
@@ -405,15 +413,15 @@ public class LuceneFulltextUpdaterTest
                 secondID = node2.getId();
                 thirdID = node3.getId();
                 node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
-                node2.setProperty( "prop", "Olof och Hans tomtar med karl som tomtar ofta" );
-                node2.setProperty( "prop2", "karl tomtar" );
-                node3.setProperty( "prop", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
+                node2.setProperty( "prop", "Olof och Hans" );
+                node2.setProperty( "prop2", "och karl" );
+                node3.setProperty( "prop2", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
                 tx.success();
             }
 
             PrimitiveLongIterator iterator;
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 iterator = reader.query( "tomtar", "karl" );
@@ -431,7 +439,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"first", "last"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"first", "last"} ) );
 
             long firstID;
             long secondID;
@@ -459,7 +467,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
@@ -478,8 +486,8 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            provider.register( fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
-            provider.register( fulltextFactory.createFulltextHelper( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+            provider.register( fulltextFactory.createFulltextHelper( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS, new String[]{"prop"} ) );
 
             long firstNodeID;
             long secondNodeID;
@@ -504,7 +512,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( FulltextReader reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -516,7 +524,7 @@ public class LuceneFulltextUpdaterTest
                 PrimitiveLongIterator different = reader.query( "different" );
                 assertFalse( different.hasNext() );
             }
-            try ( FulltextReader reader = provider.getReader( "bloomRelationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", FULLTEXT_HELPER_TYPE.RELATIONSHIPS ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -527,6 +535,45 @@ public class LuceneFulltextUpdaterTest
                 PrimitiveLongIterator different = reader.query( "different" );
                 assertEquals( secondRelID, different.next() );
                 assertFalse( different.hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void fuzzyQueryShouldBeFuzzy() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
+        {
+            provider.register( fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"} ) );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                Node node2 = db.createNode( LABEL );
+                firstID = node.getId();
+                secondID = node2.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+
+                tx.success();
+            }
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            {
+
+                assertEquals( firstID, reader.fuzzyQuery( "hella" ).next() );
+                assertEquals( secondID, reader.fuzzyQuery( "zebre" ).next() );
+                assertEquals( secondID, reader.fuzzyQuery( "zedink" ).next() );
+                assertEquals( secondID, reader.fuzzyQuery( "cruss" ).next() );
+                assertFalse( reader.query( "hella" ).hasNext() );
+                assertFalse( reader.query( "zebre" ).hasNext() );
+                assertFalse( reader.query( "zedink" ).hasNext() );
+                assertFalse( reader.query( "cruss" ).hasNext() );
             }
         }
     }

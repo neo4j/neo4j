@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
+import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -42,7 +43,7 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
  *
  * @see PartitionedFulltextReader
  */
-class SimpleFulltextReader implements FulltextReader
+class SimpleFulltextReader implements ReadOnlyFulltext
 {
     private final PartitionSearcher partitionSearcher;
     private final Analyzer analyzer;
@@ -55,12 +56,28 @@ class SimpleFulltextReader implements FulltextReader
         this.analyzer = analyzer;
     }
 
-    public PrimitiveLongIterator query( String... query )
+    @Override
+    public PrimitiveLongIterator query( String... tokens )
     {
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        QueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
-        for ( String s : query )
+        Query query;
+        try
+        {
+            query = multiFieldQueryParser.parse( String.join( " ", tokens ) );
+        }
+        catch ( ParseException e )
+        {
+            query = parseFallbackBooleanQuery( multiFieldQueryParser, tokens );
+        }
+        return query( query );
+    }
+
+    private Query parseFallbackBooleanQuery( MultiFieldQueryParser multiFieldQueryParser, String[] tokens )
+    {
+        Query query;
+        BooleanQuery.Builder builder = new BooleanQuery.Builder();
+        for ( String s : tokens )
         {
             for ( String property : properties )
             {
@@ -71,9 +88,28 @@ class SimpleFulltextReader implements FulltextReader
                 }
             }
         }
-        return query( builder.build() );
+        query = builder.build();
+        return query;
     }
 
+    @Override
+    public PrimitiveLongIterator fuzzyQuery( String... tokens )
+    {
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
+        Query query;
+        try
+        {
+            query = multiFieldQueryParser.parse(  String.join( "~ ", tokens ) + "~" );
+        }
+        catch ( ParseException e )
+        {
+            query = parseFallbackBooleanQuery( multiFieldQueryParser, tokens );
+        }
+        return query( query );
+    }
+
+    @Override
     public void close()
     {
         try
@@ -86,7 +122,7 @@ class SimpleFulltextReader implements FulltextReader
         }
     }
 
-    protected PrimitiveLongIterator query( Query query )
+    private PrimitiveLongIterator query( Query query )
     {
         try
         {
