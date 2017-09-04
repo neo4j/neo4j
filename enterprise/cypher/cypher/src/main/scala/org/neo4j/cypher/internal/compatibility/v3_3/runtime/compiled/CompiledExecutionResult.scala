@@ -53,7 +53,10 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {
-    if (!taskCloser.isClosed) throw new ProfilerStatisticsNotReadyException
+    if (!taskCloser.isClosed) {
+      completed(success = false)
+      throw new ProfilerStatisticsNotReadyException
+    }
 
     compiledCode.executionPlanDescription()
       .addArgument(Runtime(CompiledRuntimeName.toTextOutput))

@@ -140,7 +140,9 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   }
 
   override def executionPlanDescription(): InternalPlanDescription = executionMode match {
-    case ProfileMode if executionResults.hasNext => throw new ProfilerStatisticsNotReadyException()
+    case ProfileMode if executionResults.hasNext =>
+      completed(success = false)
+      throw new ProfilerStatisticsNotReadyException()
     case _ => executionPlanDescriptionGenerator()
       .addArgument(Runtime(ProcedureRuntimeName.toTextOutput))
       .addArgument(RuntimeImpl(ProcedureRuntimeName.toTextOutput))

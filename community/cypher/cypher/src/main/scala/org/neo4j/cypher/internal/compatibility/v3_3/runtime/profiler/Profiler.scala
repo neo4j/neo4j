@@ -23,9 +23,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
@@ -78,9 +77,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     databaseInfo.edition != Edition.community
   }
 
-  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = {
-    if (!isProfileReady)
-      throw new ProfilerStatisticsNotReadyException()
+  def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription = {
+    verifyProfileReady()
 
     plan map {
       input: InternalPlanDescription =>
@@ -108,8 +106,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-    def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription =
-      outerProfiler.decorate(plan, isProfileReady)
+    def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription =
+      outerProfiler.decorate(plan, verifyProfileReady)
   }
 
   def registerParentPipe(pipe: Pipe): Unit =
