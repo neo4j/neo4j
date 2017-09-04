@@ -129,7 +129,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
       "a relationship pattern, ',', USING, WHERE, LOAD CSV, FROM, INTO, START, MATCH, UNWIND, MERGE, " +
       "CREATE GRAPH >>, CREATE >> GRAPH, CREATE GRAPH, CREATE, SET, DELETE GRAPHS, DELETE, REMOVE, FOREACH, WITH, " +
-      "CALL, PERSIST, RELOCATE, RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
+      "CALL, PERSIST, RELOCATE, RETURN, SNAPSHOT, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
       33
     )
   }
