@@ -73,13 +73,16 @@ object BlacklistPlugin {
 class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
 
   override def before(`match`: Match, result: Result): Unit = {
-    val url = getClass.getResource(blacklistFile.getPath)
-    if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
-    val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
-    BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
-      case (set, scenarioName) =>
-        val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
-        if (normalizedName.isEmpty || normalizedName.startsWith("//")) set else set + normalizedName
+    if (BlacklistPlugin._blacklist == null) {
+      // only do this the first time
+      val url = getClass.getResource(blacklistFile.getPath)
+      if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
+      val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
+      BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
+        case (set, scenarioName) =>
+          val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
+          if (normalizedName.isEmpty || normalizedName.startsWith("//")) set else set + normalizedName
+      }
     }
   }
 }
