@@ -126,7 +126,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
                 }
 
                 @Override
-                public String getPopulationFailure( long indexId ) throws IllegalStateException
+                public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -164,11 +164,11 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
      *
      * Implementations are expected to persist this failure
      */
-    public abstract String getPopulationFailure( long indexId ) throws IllegalStateException;
+    public abstract String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(long)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(long, IndexDescriptor)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
      */

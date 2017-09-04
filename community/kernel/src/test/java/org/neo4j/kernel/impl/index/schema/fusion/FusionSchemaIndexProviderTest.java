@@ -40,6 +40,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
@@ -50,6 +51,8 @@ public class FusionSchemaIndexProviderTest
 
     private SchemaIndexProvider nativeProvider;
     private SchemaIndexProvider luceneProvider;
+    private IndexDescriptor supportedDescriptor = IndexDescriptorFactory.forLabel( 0, 0 );
+    private IndexDescriptor unsupportedDescriptor = IndexDescriptorFactory.forLabel( 0, 0, 1 );
 
     @Before
     public void setup()
@@ -139,12 +142,12 @@ public class FusionSchemaIndexProviderTest
         // ... no failure
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
+        when( nativeProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenThrow( nativeThrow );
+        when( luceneProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenThrow( luceneThrow );
         // then
         try
         {
-            fusionSchemaIndexProvider.getPopulationFailure( 0 );
+            fusionSchemaIndexProvider.getPopulationFailure( 0, supportedDescriptor );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -161,10 +164,10 @@ public class FusionSchemaIndexProviderTest
         // ... native failure
         String nativeFailure = "native failure";
         IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
+        when( nativeProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenReturn( nativeFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenThrow( luceneThrow );
         // then
-        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( nativeFailure ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, supportedDescriptor ), containsString( nativeFailure ) );
     }
 
     @Test
@@ -176,10 +179,10 @@ public class FusionSchemaIndexProviderTest
         // ... lucene failure
         String luceneFailure = "lucene failure";
         IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
+        when( nativeProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenThrow( nativeThrow );
+        when( luceneProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenReturn( luceneFailure );
         // then
-        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( luceneFailure ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0, supportedDescriptor ), containsString( luceneFailure ) );
     }
 
     @Test
@@ -191,11 +194,25 @@ public class FusionSchemaIndexProviderTest
         // ... native and lucene failure
         String luceneFailure = "lucene failure";
         String nativeFailure = "native failure";
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
+        when( nativeProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenReturn( nativeFailure );
+        when( luceneProvider.getPopulationFailure( anyLong(), eq( supportedDescriptor ) ) ).thenReturn( luceneFailure );
         // then
-        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0 );
+        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, supportedDescriptor );
         assertThat( populationFailure, containsString( nativeFailure ) );
+        assertThat( populationFailure, containsString( luceneFailure ) );
+    }
+
+    @Test
+    public void getPopulationFailureMustReportFailureWhenLuceneFailureAndNativeNotExpected() throws Exception
+    {
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
+
+        // when
+        // ... native and lucene failure
+        String luceneFailure = "lucene failure";
+        when( luceneProvider.getPopulationFailure( anyLong(), eq( unsupportedDescriptor ) ) ).thenReturn( luceneFailure );
+        // then
+        String populationFailure = fusionSchemaIndexProvider.getPopulationFailure( 0, unsupportedDescriptor );
         assertThat( populationFailure, containsString( luceneFailure ) );
     }
 

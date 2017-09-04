@@ -199,7 +199,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     indexProxy = indexProxyCreator.createRecoveringIndexProxy( descriptor, providerDescriptor );
                     break;
                 case FAILED:
-                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId ) );
+                    IndexPopulationFailure failure = failure( provider.getPopulationFailure( indexId, descriptor ) );
                     indexProxy = indexProxyCreator
                             .createFailedIndexProxy( indexId, descriptor, providerDescriptor, failure );
                     break;

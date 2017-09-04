@@ -102,7 +102,7 @@ public interface IndexPopulator
 
     /**
      * Called then a population failed. The failure string should be stored for future retrieval by
-     * {@link SchemaIndexProvider#getPopulationFailure(long)}. Called before {@link #close(boolean)}
+     * {@link SchemaIndexProvider#getPopulationFailure(long, IndexDescriptor)}. Called before {@link #close(boolean)}
      * if there was a failure during population.
      *
      * @param failure the description of the failure.
