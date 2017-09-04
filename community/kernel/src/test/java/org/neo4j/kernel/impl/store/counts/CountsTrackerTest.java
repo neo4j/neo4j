@@ -369,7 +369,7 @@ public class CountsTrackerTest
         // WHEN
         Predicate<Thread> arrived = thread ->
             stackTraceContains( thread, all( classNameContains( "Rotation" ), methodIs( "rotate" ) ) );
-        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 100, MILLISECONDS );
+        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 1, SECONDS );
         try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
