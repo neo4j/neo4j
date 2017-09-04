@@ -103,8 +103,8 @@ public class Recovery extends LifecycleAdapter
 
         // Backwards for neo store only
         long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-        try (   TransactionCursor transactionsToRecover = spi.getTransactionsInReverseOrder( recoveryFromPosition );
-                RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( REVERSE_RECOVERY ); )
+        try ( TransactionCursor transactionsToRecover = spi.getTransactionsInReverseOrder( recoveryFromPosition );
+              RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( REVERSE_RECOVERY ); )
         {
             while ( transactionsToRecover.next() )
             {
@@ -118,8 +118,8 @@ public class Recovery extends LifecycleAdapter
         // Forward with all appliers
         LogPosition recoveryToPosition;
         CommittedTransactionRepresentation lastTransaction = null;
-        try (   TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition );
-                RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( RECOVERY ); )
+        try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition );
+              RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( RECOVERY ); )
         {
             while ( transactionsToRecover.next() )
             {
