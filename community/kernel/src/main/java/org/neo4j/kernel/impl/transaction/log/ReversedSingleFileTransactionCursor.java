@@ -20,10 +20,12 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
+
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
 /**
  * Returns transactions in reverse order in a log file. It tries to keep peak memory consumption to a minimum
@@ -47,13 +49,12 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     private final ReadAheadLogChannel channel;
     private final TransactionCursor transactionCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of ReadAheadLogChannel
-    private final ArrayCollection<CommittedTransactionRepresentation> chunkTransactions = new ArrayCollection<>( 20 );
+    private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>( 20 );
+    private CommittedTransactionRepresentation currentChunkTransaction;
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
     private int offsetsLength;
     private int chunkStartOffsetIndex;
-    private int chunkLength;
-    private int chunkCursor;
     private long totalSize;
 
     ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel, LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
@@ -108,8 +109,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
             {
                 readNextChunk();
             }
-            chunkCursor++;
-            assert chunkCursor <= chunkLength;
+            currentChunkTransaction = chunkTransactions.pop();
             return true;
         }
         return false;
@@ -138,23 +138,22 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
 
         // We've established the chunk boundaries. Initialize all offsets and read the transactions in this
         // chunk into actual transaction objects
-        chunkLength = chunkStartOffsetIndex - newLowOffsetIndex;
+        int chunkLength = chunkStartOffsetIndex - newLowOffsetIndex;
         chunkStartOffsetIndex = newLowOffsetIndex;
-        chunkCursor = 0;
         channel.setCurrentPosition( offsets[chunkStartOffsetIndex] );
-        chunkTransactions.clear();
+        assert chunkTransactions.isEmpty();
         for ( int i = 0; i < chunkLength; i++ )
         {
             boolean success = transactionCursor.next();
             assert success;
 
-            chunkTransactions.add( transactionCursor.get() );
+            chunkTransactions.push( transactionCursor.get() );
         }
     }
 
     private boolean currentChunkExhausted()
     {
-        return chunkCursor == chunkLength;
+        return chunkTransactions.isEmpty();
     }
 
     private boolean exhausted()
@@ -171,7 +170,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     @Override
     public CommittedTransactionRepresentation get()
     {
-        return chunkTransactions.item( chunkLength - chunkCursor );
+        return currentChunkTransaction;
     }
 
     @Override
