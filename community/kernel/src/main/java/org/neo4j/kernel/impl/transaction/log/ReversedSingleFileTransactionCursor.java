@@ -74,6 +74,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
         long[] offsets = new long[10_000];
         int offsetCursor = 0;
 
+        long logVersion = channel.getVersion();
         long startOffset = channel.position();
         while ( transactionCursor.next() )
         {
@@ -82,9 +83,13 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
                 offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
             }
             offsets[offsetCursor++] = startOffset;
-            long nextStartOffset = channel.position();
-            assert nextStartOffset > startOffset : "It looks like this channel moved over to another version";
             startOffset = channel.position();
+        }
+
+        if ( channel.getVersion() != logVersion )
+        {
+            throw new IllegalArgumentException( "The channel which was passed in bridged multiple log versions, it started at version " +
+                    logVersion + ", but continued through to version " + channel.getVersion() + ". This isn't supported" );
         }
 
         offsetsLength = offsetCursor;

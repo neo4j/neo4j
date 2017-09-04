@@ -41,7 +41,11 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
@@ -119,6 +123,27 @@ public class ReversedSingleFileTransactionCursorTest
 
         // then
         assertEquals( 0, readTransactions.length );
+    }
+
+    @Test
+    public void shouldDetectAndPreventChannelReadingMultipleLogVersions() throws Exception
+    {
+        // given
+        writeTransactions( 1, 1, 1 );
+        logFile.rotate();
+        writeTransactions( 1, 1, 1 );
+
+        // when
+        try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
+        {
+            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>() );
+            fail( "Should've failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+            assertThat( e.getMessage(), containsString( "multiple log versions" ) );
+        }
     }
 
     private CommittedTransactionRepresentation[] readAllFromReversedCursor() throws IOException
