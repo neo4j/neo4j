@@ -98,7 +98,6 @@ public class LuceneFulltextUpdaterTest
         {
             fulltextFactory.createFulltextHelper( "nodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
 
-
             long firstID;
             long secondID;
             try ( Transaction tx = db.beginTx() )
