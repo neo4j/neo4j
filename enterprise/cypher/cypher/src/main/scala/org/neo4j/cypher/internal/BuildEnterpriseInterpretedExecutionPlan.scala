@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.EnterprisePipeBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, LogicalPlanIdentificationBuilder}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.SlottedPipeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
@@ -48,15 +48,15 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    createRegisteredRuntimeExecPlan(from, context)
+    createSlottedRuntimeExecPlan(from, context)
   }
 
-  private def createRegisteredRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
+  private def createSlottedRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters = new ExpressionConverters(EnterpriseExpressionConverters, CommunityExpressionConverter)
+      val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
                                                               pipeBuilderFactory = EnterprisePipeBuilderFactory(
@@ -75,7 +75,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+      val execPlan = SlottedExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
@@ -85,19 +85,19 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val registeredRewriter = new RegisteredRewriter(context.planContext)
-    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    val beforePipelines: Map[LogicalPlan, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val slottedRewriter = new SlottededRewriter(context.planContext)
+    val (logicalPlan, pipelines) = slottedRewriter(beforeRewrite, beforePipelines)
     (logicalPlan, pipelines)
   }
 
-  case class RegisteredExecutionPlan(fingerprint: PlanFingerprintReference,
-                                     isPeriodicCommit: Boolean,
-                                     plannerUsed: PlannerName,
-                                     override val plannedIndexUsage: Seq[IndexUsage],
-                                     runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
-                                     pipe: Pipe,
-                                     config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
+  case class SlottedExecutionPlan(fingerprint: PlanFingerprintReference,
+                                  isPeriodicCommit: Boolean,
+                                  plannerUsed: PlannerName,
+                                  override val plannedIndexUsage: Seq[IndexUsage],
+                                  runFunction: (QueryContext, ExecutionMode, MapValue) => InternalExecutionResult,
+                                  pipe: Pipe,
+                                  config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
 
     override def run(queryContext: QueryContext, planType: ExecutionMode,
                      params: MapValue): InternalExecutionResult =
@@ -123,7 +123,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters,
                                           expressionToExpression)
 
-      new EnterprisePipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
+      new SlottedPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
         expressionToExpression)
     }
   }

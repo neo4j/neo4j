@@ -43,6 +43,8 @@
         <module>spec-suite-tools</module>
         <module>acceptance-spec-suite</module>
         <module>compatibility-spec-suite</module>
+        <module>physical-planning</module>
+        <module>slotted-runtime</module>
         <module>cypher</module>
       </modules>
     </profile>
