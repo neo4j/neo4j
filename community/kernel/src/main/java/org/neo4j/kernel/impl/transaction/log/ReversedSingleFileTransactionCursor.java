@@ -39,6 +39,18 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
  * instantiated with a {@link LogVersionBridge} moving it over to other versions when exhausted. For reversing a whole
  * log stream consisting of multiple log files have a look at {@link ReversedMultiFileTransactionCursor}.
  *
+ * <pre>
+ *
+ *              ◄────────────────┤                          {@link #chunkTransactions} for the current chunk, reading {@link #readNextChunk()}.
+ * [2  |3|4    |5  |6          |7 |8   |9      |10  ]
+ * ▲   ▲ ▲     ▲   ▲           ▲  ▲    ▲       ▲
+ * │   │ │     │   │           │  │    │       │
+ * └───┴─┴─────┼───┴───────────┴──┴────┴───────┴─────────── {@link #offsets}
+ *             │
+ *             └─────────────────────────────────────────── {@link #chunkStartOffsetIndex} moves forward in {@link #readNextChunk()}
+ *
+ * </pre>
+ *
  * @see ReversedMultiFileTransactionCursor
  */
 class ReversedSingleFileTransactionCursor implements TransactionCursor
