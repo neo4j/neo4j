@@ -31,6 +31,7 @@ import scala.collection.mutable
 import scala.io.Source
 
 object BlacklistPlugin {
+  private var _uri:URI = null
   private var _blacklist: Set[String] = null
   private val _usedScenarios: mutable.Set[String] = mutable.Set()
 
@@ -73,8 +74,10 @@ object BlacklistPlugin {
 class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
 
   override def before(`match`: Match, result: Result): Unit = {
-    if (BlacklistPlugin._blacklist == null) {
-      // only do this the first time
+    if (!blacklistFile.equals(BlacklistPlugin._uri) ) {
+      // only do this the first time for each new URI
+      BlacklistPlugin._usedScenarios.clear()
+      BlacklistPlugin._uri = blacklistFile
       val url = getClass.getResource(blacklistFile.getPath)
       if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
       val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
