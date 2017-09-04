@@ -165,7 +165,7 @@ object Eagerness {
     val conflict =
       if (tail.queryGraph.writeOnly) false
       else (head.queryGraph overlaps tail.queryGraph) ||
-        (head.queryGraph.overlapsHorizon(tail.horizon, context.semanticTable)) ||
+        head.queryGraph.overlapsHorizon(tail.horizon, context.semanticTable) ||
         deleteReadOverlap(head.queryGraph, tail.queryGraph)
     if (conflict)
       true

@@ -56,7 +56,7 @@ class LoadCsvAcceptanceTest
     })
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
+      s"""LOAD CSV WITH HEADERS FROM '${urls.head}' AS row
           | CREATE (user:User{userID: row.USERID})
           | CREATE (order:Order{orderID: row.OrderId})
           | CREATE (user)-[acc:ORDERED]->(order)
@@ -93,7 +93,7 @@ class LoadCsvAcceptanceTest
     })
 
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
+      s"""LOAD CSV WITH HEADERS FROM '${urls.head}' AS row
          | WITH row.field1 as field, row.OrderId as order
          | MATCH (o) WHERE o.OrderId = order
          | SET o.field1 = field""".stripMargin)

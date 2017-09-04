@@ -30,9 +30,9 @@ trait UpdateGraph {
 
   def mutatingPatterns: Seq[MutatingPattern]
 
-  def readOnly = mutatingPatterns.isEmpty
+  def readOnly: Boolean = mutatingPatterns.isEmpty
 
-  def containsUpdates = !readOnly
+  def containsUpdates: Boolean = !readOnly
 
   def containsMergeRecursive: Boolean = mergeNodePatterns.nonEmpty || mergeRelationshipPatterns.nonEmpty ||
     foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(_.containsMergeRecursive))
@@ -40,19 +40,19 @@ trait UpdateGraph {
   /*
    * Finds all nodes being created with CREATE (a)
    */
-  def createNodePatterns = mutatingPatterns.collect {
+  def createNodePatterns: Seq[CreateNodePattern] = mutatingPatterns.collect {
     case p: CreateNodePattern => p
   }
 
-  def mergeNodePatterns = mutatingPatterns.collect {
+  def mergeNodePatterns: Seq[MergeNodePattern] = mutatingPatterns.collect {
     case m: MergeNodePattern => m
   }
 
-  def mergeRelationshipPatterns = mutatingPatterns.collect {
+  def mergeRelationshipPatterns: Seq[MergeRelationshipPattern] = mutatingPatterns.collect {
     case m: MergeRelationshipPattern => m
   }
 
-  def foreachPatterns = mutatingPatterns.collect {
+  def foreachPatterns: Seq[ForeachPattern] = mutatingPatterns.collect {
     case p: ForeachPattern => p
   }
 
@@ -66,7 +66,7 @@ trait UpdateGraph {
   /*
    * Finds all identifiers being deleted.
    */
-  def identifiersToDelete = (deleteExpressions flatMap {
+  def identifiersToDelete: Set[IdName] = (deleteExpressions flatMap {
     // DELETE n
     case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
     // DELETE (n)-[r]-()
@@ -94,14 +94,14 @@ trait UpdateGraph {
   /*
    * Finds all node properties being created with CREATE ({prop...})
    */
-  def createNodeProperties = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
+  def createNodeProperties: CreatesPropertyKeys = CreatesPropertyKeys(createNodePatterns.flatMap(_.properties):_*) +
     CreatesPropertyKeys(mergeNodePatterns.flatMap(_.createNodePattern.properties):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createNodePatterns.flatMap(c => c.properties)):_*)
 
   /*
    * Finds all rel properties being created with CREATE
    */
-  def createRelProperties = CreatesPropertyKeys(createRelationshipPatterns.flatMap(_.properties):_*) +
+  def createRelProperties: CreatesPropertyKeys = CreatesPropertyKeys(createRelationshipPatterns.flatMap(_.properties):_*) +
     CreatesPropertyKeys(mergeRelationshipPatterns.flatMap(_.createRelPatterns.flatMap(c => c.properties)):_*)
 
   /*
@@ -139,7 +139,7 @@ trait UpdateGraph {
    * Checks if there is overlap between what is being read in the query graph
    * and what is being written here
    */
-  def overlaps(qg: QueryGraph) = {
+  def overlaps(qg: QueryGraph): Boolean = {
     containsUpdates && {
       val readQg = qg.mergeQueryGraph.getOrElse(qg)
 
@@ -185,7 +185,7 @@ trait UpdateGraph {
    * Checks for overlap between nodes being read in the query graph
    * and those being created here
    */
-  def createNodeOverlap(qg: QueryGraph) = {
+  def createNodeOverlap(qg: QueryGraph): Boolean = {
     def labelsOverlap(labelsToRead: Set[LabelName], labelsToWrite: Set[LabelName]): Boolean = {
       labelsToRead.isEmpty || (labelsToRead intersect labelsToWrite).nonEmpty
     }
@@ -201,7 +201,7 @@ trait UpdateGraph {
       //MATCH () CREATE ()?
       qg.allKnownLabelsOnNode(p).isEmpty && readProps.isEmpty ||
         //MATCH (:B {prop:..}) CREATE (:B {prop:..})
-        labelsOverlap(qg.allKnownLabelsOnNode(p).toSet, createLabels) &&
+        labelsOverlap(qg.allKnownLabelsOnNode(p), createLabels) &&
           propsOverlap(readProps, createNodeProperties)
     })
   }
@@ -216,7 +216,7 @@ trait UpdateGraph {
    * Checks for overlap between rels being read in the query graph
    * and those being created here
    */
-  def createRelationshipOverlap(qg: QueryGraph) = {
+  def createRelationshipOverlap(qg: QueryGraph): Boolean = {
     def typesOverlap(typesToRead: Set[RelTypeName], typesToWrite: Set[RelTypeName]): Boolean = {
       typesToRead.isEmpty || (typesToRead intersect typesToWrite).nonEmpty
     }
@@ -272,7 +272,7 @@ trait UpdateGraph {
    * Checks for overlap between what props are read in query graph
    * and what is updated with SET and MERGE here
    */
-  def setPropertyOverlap(qg: QueryGraph) =
+  def setPropertyOverlap(qg: QueryGraph): Boolean =
     setNodePropertyOverlap(qg.allKnownNodeProperties.map(_.propertyKey)) ||
       setRelPropertyOverlap(qg.allKnownRelProperties.map(_.propertyKey))
 
