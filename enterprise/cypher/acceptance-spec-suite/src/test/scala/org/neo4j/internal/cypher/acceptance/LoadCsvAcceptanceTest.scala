@@ -24,7 +24,7 @@ import java.net.{URL, URLConnection, URLStreamHandler, URLStreamHandlerFactory}
 import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.NodeIndexSeek
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Eager, NodeIndexSeek}
 import org.neo4j.cypher.internal.compiler.v3_2.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.StringHelper.RichString
 import org.neo4j.graphdb.QueryExecutionException
@@ -79,6 +79,27 @@ class LoadCsvAcceptanceTest
       assertStats(result, propertiesWritten = 6)
       result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "user")
     }
+  }
+
+  test("import should not be eager") {
+    createNode(Map("OrderId" -> "4", "field1" -> "REPLACE_ME"))
+
+    val urls = csvUrls({
+      writer =>
+        writer.println("OrderId,field1")
+        writer.println("4,hi")
+        writer.println("5,yo")
+        writer.println("6,bye")
+    })
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      s"""LOAD CSV WITH HEADERS FROM '${urls(0)}' AS row
+         | WITH row.field1 as field, row.OrderId as order
+         | MATCH (o) WHERE o.OrderId = order
+         | SET o.field1 = field""".stripMargin)
+
+    result should not( use("Eager"))
+    assertStats(result, nodesCreated = 0, propertiesWritten = 1)
   }
 
   test("import three strings") {

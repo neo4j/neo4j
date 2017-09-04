@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.v3_2
 
+import org.neo4j.cypher.internal.frontend.v3_2.{InternalException, SemanticTable, symbols}
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.ast.functions.Labels
+import org.neo4j.cypher.internal.frontend.v3_2.symbols.TypeSpec
 
 import scala.annotation.tailrec
 
@@ -150,13 +152,18 @@ trait UpdateGraph {
   /*
    * Determines whether there's an overlap in writes being done here, and reads being done in the given horizon.
    */
-  def overlapsHorizon(horizon: QueryHorizon) = containsUpdates && ({
-    val propertiesReadInHorizon = horizon.dependingExpressions.collect {
-      case p: Property => p.propertyKey
-    }.toSet
+  def overlapsHorizon(horizon: QueryHorizon, semanticTable: SemanticTable): Boolean =
+    containsUpdates && ({
+      val propertiesReadInHorizon = horizon.dependingExpressions.collect {
+        case p: Property => p
+      }.toSet
 
-    setNodePropertyOverlap(propertiesReadInHorizon) || setRelPropertyOverlap(propertiesReadInHorizon)
-  } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
+      val maybeNode: Property => Boolean = maybeType(semanticTable, symbols.CTNode.invariant)
+      val maybeRel: Property => Boolean = maybeType(semanticTable, symbols.CTRelationship.invariant)
+
+      setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
+      setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
+    } || ((labelsToSet.nonEmpty || removeLabelPatterns.nonEmpty) && usesLabelsFunction(horizon)))
 
   def writeOnlyHeadOverlaps(qg: QueryGraph): Boolean = {
     containsUpdates && {
@@ -297,6 +304,18 @@ trait UpdateGraph {
         })
     }
   }
+
+  /**
+   * Checks whether the expression that a property is called on could be of type `typeSpec`.
+   */
+  def maybeType(semanticTable: SemanticTable, typeSpec: TypeSpec)(p:Property): Boolean =
+    semanticTable.types.get(p.map) match {
+      case Some(expressionTypeInfo) =>
+        val actualType = expressionTypeInfo.actual
+        actualType == typeSpec || actualType == symbols.CTAny.invariant
+
+      case None => throw new InternalException(s"Expression ${p.map} has to type from semantic analysis")
+    }
 
   /*
   * Checks for overlap between what node props are read in query graph
