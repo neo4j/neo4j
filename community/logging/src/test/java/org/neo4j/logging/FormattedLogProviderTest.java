@@ -19,9 +19,6 @@
  */
 package org.neo4j.logging;
 
-import org.junit.Test;
-import org.neo4j.function.Suppliers;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -29,11 +26,18 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
+import org.junit.Test;
+
+import org.neo4j.function.Suppliers;
+
 import static java.lang.String.format;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+
+import static org.neo4j.logging.FormattedLog.SIMPLE_DATE_FORMAT;
 
 public class FormattedLogProviderTest
 {
@@ -132,6 +136,6 @@ public class FormattedLogProviderTest
     {
         return new FormattedLogProvider(
                 Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                FormattedLog.UTC, true, levels, Level.INFO, true );
+                FormattedLog.UTC, SIMPLE_DATE_FORMAT, true, levels, Level.INFO, true );
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.logging;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.text.DateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.neo4j.function.Suppliers;
 
 import static org.neo4j.logging.FormattedLog.DEFAULT_CURRENT_DATE_SUPPLIER;
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
+import static org.neo4j.logging.FormattedLog.SIMPLE_DATE_FORMAT;
 import static org.neo4j.logging.FormattedLog.UTC;
 
 /**
@@ -52,6 +54,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
+        private DateFormat dateFormat = SIMPLE_DATE_FORMAT;
 
         private Builder()
         {
@@ -90,6 +93,17 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
             return this;
         }
 
+        /**
+         * Set the dateFormat for datestamps in the log
+         *
+         * @param dateFormat the dateFormat to use for datestamps
+         * @return this builder
+         */
+        public Builder withDateFormat( DateFormat dateFormat )
+        {
+            this.dateFormat = dateFormat;
+            return this;
+        }
         /**
          * Use the specified log {@link Level} for all {@link Log}s by default.
          *
@@ -195,8 +209,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, renderContext,
-                    levels, defaultLevel, autoFlush );
+            return new FormattedLogProvider( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier, timezone, dateFormat,
+                    renderContext, levels, defaultLevel, autoFlush );
         }
     }
 
@@ -207,6 +221,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final Map<String, Level> levels;
     private final Level defaultLevel;
     private final boolean autoFlush;
+    private final DateFormat dateFormat;
 
     /**
      * Start creating a {@link FormattedLogProvider} which will not render the context (the class name or log name) in each output line.
@@ -320,12 +335,14 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return new Builder().toPrintWriter( writerSupplier );
     }
 
-    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier, TimeZone timezone,boolean renderContext,
-            Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
+    FormattedLogProvider( Supplier<Date> currentDateSupplier, Supplier<PrintWriter> writerSupplier,
+                          TimeZone timezone, DateFormat dateFormat, boolean renderContext,
+                          Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
     {
         this.currentDateSupplier = currentDateSupplier;
         this.writerSupplier = writerSupplier;
         this.timezone = timezone;
+        this.dateFormat = dateFormat;
         this.renderContext = renderContext;
         this.levels = new HashMap<>( levels );
         this.defaultLevel = defaultLevel;
@@ -348,7 +365,8 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     private FormattedLog buildLog( String context, Level level )
     {
-        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( currentDateSupplier, writerSupplier, timezone, dateFormat,
+                this, renderContext ? context : null, level, autoFlush );
     }
 
     private Level levelForContext( String context )
