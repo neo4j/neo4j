@@ -73,8 +73,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureTest
 {
-    @Rule
-    public final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule()
+    private final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseBuilder builder )
