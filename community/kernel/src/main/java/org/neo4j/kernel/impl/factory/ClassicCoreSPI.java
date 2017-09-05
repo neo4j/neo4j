@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.Logger;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * This implements the backend for the "classic" Core API - meaning the surface-layer-of-the-database, thread bound API.
@@ -71,7 +72,21 @@ class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext transactionalContext )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext transactionalContext )
+    {
+        try
+        {
+            availability.assertDatabaseAvailable();
+            return dataSource.queryExecutor.get().executeQuery( query, parameters, transactionalContext );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
+    }
+
+    @Override
+    public Result executeQuery( String query, Map<String, Object> parameters, TransactionalContext transactionalContext )
     {
         try
         {

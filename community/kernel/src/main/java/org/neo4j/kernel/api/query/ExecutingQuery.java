@@ -34,6 +34,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicLongFieldUpdater.newUpdater;
@@ -51,7 +52,7 @@ public class ExecutingQuery
     private final String username;
     private final ClientConnectionInfo clientConnection;
     private final String queryText;
-    private final Map<String,Object> queryParameters;
+    private final MapValue queryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
@@ -76,7 +77,7 @@ public class ExecutingQuery
             ClientConnectionInfo clientConnection,
             String username,
             String queryText,
-            Map<String,Object> queryParameters,
+            MapValue queryParameters,
             Map<String,Object> transactionAnnotationData,
             LongSupplier activeLockCount,
             PageCursorCounters pageCursorCounters,
@@ -232,7 +233,7 @@ public class ExecutingQuery
         return queryText;
     }
 
-    public Map<String,Object> queryParameters()
+    public MapValue queryParameters()
     {
         return queryParameters;
     }

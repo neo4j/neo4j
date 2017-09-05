@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import java.io.File
 import java.nio.file.Files
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
@@ -45,6 +44,7 @@ import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLock
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -231,7 +231,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker)
-    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", Collections.emptyMap())
+    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", EMPTY_MAP)
   }
 
   //executes the provided pipes and returns execution times

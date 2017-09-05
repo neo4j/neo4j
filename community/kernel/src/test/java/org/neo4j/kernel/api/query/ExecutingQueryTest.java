@@ -52,6 +52,7 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutingQueryTest
 {
@@ -67,7 +68,7 @@ public class ExecutingQueryTest
             ClientConnectionInfo.EMBEDDED_CONNECTION,
             "neo4j",
             "hello world",
-            Collections.emptyMap(),
+            EMPTY_MAP,
             Collections.emptyMap(),
             () -> lockCount, page, Thread.currentThread(),
             clock,
@@ -78,7 +79,7 @@ public class ExecutingQueryTest
             ClientConnectionInfo.EMBEDDED_CONNECTION,
             "neo4j",
             "goodbye world",
-            Collections.emptyMap(),
+            EMPTY_MAP,
             Collections.emptyMap(),
             () -> lockCount, page, Thread.currentThread(),
             clock,
@@ -253,7 +254,7 @@ public class ExecutingQueryTest
                 ClientConnectionInfo.EMBEDDED_CONNECTION,
                 "neo4j",
                 "hello world",
-                Collections.emptyMap(),
+                EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
                 clock,
@@ -296,7 +297,7 @@ public class ExecutingQueryTest
                 ClientConnectionInfo.EMBEDDED_CONNECTION,
                 "neo4j",
                 "hello world",
-                Collections.emptyMap(),
+                EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount, PageCursorTracer.NULL, Thread.currentThread(),
                 clock,

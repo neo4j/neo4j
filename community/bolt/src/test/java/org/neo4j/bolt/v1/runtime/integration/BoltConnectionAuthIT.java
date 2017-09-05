@@ -38,6 +38,7 @@ import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class BoltConnectionAuthIT
 {
@@ -63,7 +64,7 @@ public class BoltConnectionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
@@ -87,7 +88,7 @@ public class BoltConnectionAuthIT
                 "scheme", "basic",
                 "principal", "neo4j",
                 "credentials", "neo4j" ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // Then
         assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
@@ -124,7 +125,7 @@ public class BoltConnectionAuthIT
                 "credentials", "neo4j",
                 "new_credentials", "secret"
         ), recorder );
-        machine.run( "CREATE ()", map(), recorder );
+        machine.run( "CREATE ()", EMPTY_MAP, recorder );
 
         // then
         assertThat( recorder.nextResponse(), succeeded() );

@@ -19,11 +19,13 @@
  */
 package org.neo4j.bolt.v1.runtime.bookmarking;
 
-import java.util.List;
-import java.util.Map;
-
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 
@@ -46,7 +48,7 @@ public class Bookmark
         return format( BOOKMARK_TX_PREFIX + "%d", txId );
     }
 
-    public static Bookmark fromParamsOrNull( Map<String,Object> params ) throws BookmarkFormatException
+    public static Bookmark fromParamsOrNull( MapValue params ) throws BookmarkFormatException
     {
         // try to parse multiple bookmarks, if available
         Bookmark bookmark = parseMultipleBookmarks( params );
@@ -64,24 +66,24 @@ public class Bookmark
         return txId;
     }
 
-    private static Bookmark parseMultipleBookmarks( Map<String,Object> params ) throws BookmarkFormatException
+    private static Bookmark parseMultipleBookmarks( MapValue params ) throws BookmarkFormatException
     {
-        Object bookmarksObject = params.get( BOOKMARKS_KEY );
+        AnyValue bookmarksObject = params.get( BOOKMARKS_KEY );
 
-        if ( bookmarksObject == null )
+        if ( bookmarksObject == Values.NO_VALUE )
         {
             return null;
         }
-        else if ( bookmarksObject instanceof List )
+        else if ( bookmarksObject instanceof ListValue )
         {
-            List<?> bookmarks = (List<?>) bookmarksObject;
+            ListValue bookmarks = (ListValue) bookmarksObject;
 
             long maxTxId = -1;
-            for ( Object bookmark : bookmarks )
+            for ( AnyValue bookmark : bookmarks )
             {
-                if ( bookmark != null )
+                if ( bookmark != Values.NO_VALUE )
                 {
-                    long txId = txIdFrom( bookmark.toString() );
+                    long txId = txIdFrom( bookmark );
                     if ( txId > maxTxId )
                     {
                         maxTxId = txId;
@@ -96,20 +98,24 @@ public class Bookmark
         }
     }
 
-    private static Bookmark parseSingleBookmark( Map<String,Object> params ) throws BookmarkFormatException
+    private static Bookmark parseSingleBookmark( MapValue params ) throws BookmarkFormatException
     {
-        Object bookmarkObject = params.get( BOOKMARK_KEY );
-        if ( bookmarkObject == null )
+        AnyValue bookmarkObject = params.get( BOOKMARK_KEY );
+        if ( bookmarkObject == Values.NO_VALUE )
         {
             return null;
         }
 
-        String bookmarkString = bookmarkObject.toString();
-        return new Bookmark( txIdFrom( bookmarkString ) );
+        return new Bookmark( txIdFrom( bookmarkObject ) );
     }
 
-    private static long txIdFrom( String bookmarkString ) throws BookmarkFormatException
+    private static long txIdFrom( AnyValue bookmark ) throws BookmarkFormatException
     {
+        if ( !(bookmark instanceof TextValue) )
+        {
+            throw new BookmarkFormatException( bookmark );
+        }
+        String bookmarkString = ((TextValue) bookmark).stringValue();
         if ( !bookmarkString.startsWith( BOOKMARK_TX_PREFIX ) )
         {
             throw new BookmarkFormatException( bookmarkString );

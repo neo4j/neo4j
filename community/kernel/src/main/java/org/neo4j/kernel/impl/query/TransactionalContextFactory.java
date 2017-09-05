@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.Map;
-
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.virtual.MapValue;
 
 public interface TransactionalContextFactory
 {
     TransactionalContext newContext( ClientConnectionInfo descriptor,
                   InternalTransaction tx,
                   String queryText,
-                  Map<String,Object> queryParameters
+                  MapValue queryParameters
     );
 }

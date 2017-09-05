@@ -27,10 +27,10 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ValueUtils
-import org.neo4j.cypher.internal.javacompat.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.helpers.ValueUtils
+import org.neo4j.helpers.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 
 class ExpandAllPipeTest extends CypherFunSuite {
 

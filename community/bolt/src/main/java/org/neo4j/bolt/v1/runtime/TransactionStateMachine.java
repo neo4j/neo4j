@@ -20,7 +20,6 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.ThrowingAction.noop;
 
@@ -69,7 +69,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException
+    public StatementMetadata run( String statement, MapValue params ) throws KernelException
     {
         before();
         try
@@ -153,7 +153,7 @@ public class TransactionStateMachine implements StatementProcessor
                 {
                     @Override
                     State run( MutableTransactionState ctx, SPI spi, String statement,
-                               Map<String, Object> params ) throws KernelException
+                               MapValue params ) throws KernelException
 
                     {
                         if ( BEGIN.matcher( statement ).matches() )
@@ -218,7 +218,7 @@ public class TransactionStateMachine implements StatementProcessor
                      * transaction to null.
                      */
                     private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, Map<String,Object> params )
+                            String statement, MapValue params )
                             throws TransactionFailureException, QueryExecutionKernelException
                     {
                         return executeQuery( ctx, spi, statement, params, () ->
@@ -240,7 +240,7 @@ public class TransactionStateMachine implements StatementProcessor
         EXPLICIT_TRANSACTION
                 {
                     @Override
-                    State run( MutableTransactionState ctx, SPI spi, String statement, Map<String, Object> params )
+                    State run( MutableTransactionState ctx, SPI spi, String statement, MapValue params )
                             throws KernelException
                     {
                         if ( BEGIN.matcher( statement ).matches() )
@@ -289,7 +289,7 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     private BoltResultHandle execute( MutableTransactionState ctx, SPI spi,
-                            String statement, Map<String,Object> params )
+                            String statement, MapValue params )
                             throws QueryExecutionKernelException
                     {
                         return executeQuery( ctx, spi, statement, params,
@@ -315,7 +315,7 @@ public class TransactionStateMachine implements StatementProcessor
         abstract State run( MutableTransactionState ctx,
                             SPI spi,
                             String statement,
-                            Map<String, Object> params ) throws KernelException;
+                            MapValue params ) throws KernelException;
 
         abstract void streamResult( MutableTransactionState ctx,
                                     ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
@@ -370,7 +370,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     private static BoltResultHandle executeQuery( MutableTransactionState ctx, SPI spi, String statement,
-                                                  Map<String,Object> params, ThrowingAction<KernelException> onFail )
+                                                  MapValue params, ThrowingAction<KernelException> onFail )
             throws QueryExecutionKernelException
     {
         return spi.executeQuery( ctx.querySource, ctx.securityContext, statement, params, onFail );
@@ -440,7 +440,7 @@ public class TransactionStateMachine implements StatementProcessor
         BoltResultHandle executeQuery( BoltQuerySource querySource,
                 SecurityContext securityContext,
                 String statement,
-                Map<String,Object> params,
+                MapValue params,
                 ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException;
     }
 }

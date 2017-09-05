@@ -21,8 +21,6 @@ package org.neo4j.server.security.enterprise.auth;
 
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -33,9 +31,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.values.AnyValues;
-import org.neo4j.values.virtual.MapValue;
-
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -46,6 +41,7 @@ import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRol
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.PUBLISHER;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.READER;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends ProcedureInteractionTestBase<S>
 {
@@ -75,7 +71,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         InternalTransaction transaction = localGraph
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
         Result result =
-                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
+                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", EMPTY_MAP );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
                 "dbms.security.listUsers only applies to native users." );
         assertThat( containsNotification( result, description ), equalTo( true ) );
@@ -93,7 +89,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         InternalTransaction transaction = localGraph
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
         Result result =
-                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", Collections.emptyMap() );
+                localGraph.execute( transaction, "EXPLAIN CALL dbms.security.listUsers", EMPTY_MAP );
         String description = String.format( "%s (%s)", Status.Procedure.ProcedureWarning.code().description(),
                 "dbms.security.listUsers only applies to native users." );
         assertThat( containsNotification( result, description ), equalTo( false ) );

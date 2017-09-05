@@ -131,7 +131,7 @@ class QueryLogger implements QueryExecutionMonitor
         result.append( sourceString ).append( " - " ).append( queryText );
         if ( logQueryParameters )
         {
-            QueryLogFormatter.formatMap( result.append(" - "), query.queryParameters(), passwordParams );
+            QueryLogFormatter.formatMapValue( result.append(" - "), query.queryParameters(), passwordParams );
         }
         QueryLogFormatter.formatMap( result.append(" - "), query.transactionAnnotationData() );
         return result.toString();

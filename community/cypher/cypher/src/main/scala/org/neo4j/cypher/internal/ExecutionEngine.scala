@@ -90,8 +90,13 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams: Map[String, Any] = scalaValues.asShallowScalaMap(javaParams)
+    profile(query, ValueConversion.asValues(scalaParams), context)
+  }
+
+  def profile(query: String, mapValue: MapValue, context: TransactionalContext): Result = {
+    // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
-    preparedPlanExecution.profile(wrappedContext, ValueConversion.asValues(scalaParams))
+    preparedPlanExecution.profile(wrappedContext, mapValue)
   }
 
   def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
@@ -103,8 +108,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
-    val (preparedPlanExecution, wrappedContext) = planQuery(context)
-    preparedPlanExecution.execute(wrappedContext, ValueConversion.asValues(scalaParams))
+   execute(query, ValueConversion.asValues(scalaParams), context)
   }
 
   def execute(query: String, mapParams: MapValue, context: TransactionalContext): Result = {

@@ -20,11 +20,12 @@
 package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
-import java.util.Map;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +41,7 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
  */
 public class MachineRoom
 {
-    static final Map<String, Object> EMPTY_PARAMS = emptyMap();
+    static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     static final String USER_AGENT = "BoltStateMachineTest/0.0";
 
     private MachineRoom()

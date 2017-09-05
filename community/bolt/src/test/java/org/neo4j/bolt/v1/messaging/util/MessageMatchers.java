@@ -50,7 +50,7 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
-import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipFromSlot(offset: Int) extends Expression with SlottedExpression {

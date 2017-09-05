@@ -32,7 +32,7 @@ import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
-import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;

@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -515,7 +516,7 @@ public class QueryLoggerTest
                 sessionInfo.withUsername( username ),
                 username,
                 queryText,
-                params,
+                ValueUtils.asMapValue( params ),
                 metaData,
                 () -> 0,
                 new PageCursorCounters()

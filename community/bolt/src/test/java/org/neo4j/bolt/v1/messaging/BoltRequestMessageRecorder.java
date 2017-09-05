@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.message.AckFailureMessage.ackFailure;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -52,7 +53,7 @@ public class BoltRequestMessageRecorder extends MessageRecorder<RequestMessage> 
     }
 
     @Override
-    public void onRun( String statement, Map<String, Object> params )
+    public void onRun( String statement, MapValue params )
     {
         messages.add( run( statement, params ) );
     }

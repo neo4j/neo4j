@@ -23,12 +23,11 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-
-import java.util.Map;
+import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
 {
-    StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException;
+    StatementMetadata run( String statement, MapValue params ) throws KernelException;
 
     void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception;
 

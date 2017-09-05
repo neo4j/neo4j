@@ -40,6 +40,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<EnterpriseSecurityContext>
 {
@@ -71,7 +72,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         try ( InternalTransaction tx = graph
                 .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
-            Result result = graph.execute( tx, "CALL dbms.listQueries", Collections.emptyMap() );
+            Result result = graph.execute( tx, "CALL dbms.listQueries", EMPTY_MAP );
             assertFalse( result.hasNext() );
             tx.success();
         }
@@ -94,7 +95,7 @@ public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInt
         try ( InternalTransaction tx = graph
                 .beginTransaction( KernelTransaction.Type.explicit, AnonymousContext.none() ) )
         {
-            graph.execute( tx, "CALL dbms.killQuery('" + id + "')", Collections.emptyMap() );
+            graph.execute( tx, "CALL dbms.killQuery('" + id + "')", EMPTY_MAP );
             throw new AssertionError( "Expected exception to be thrown" );
         }
         catch ( QueryExecutionException e )

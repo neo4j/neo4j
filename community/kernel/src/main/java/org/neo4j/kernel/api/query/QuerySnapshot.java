@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.virtual.MapValue;
 
 public class QuerySnapshot
 {
@@ -76,7 +77,7 @@ public class QuerySnapshot
         return query.queryText();
     }
 
-    public Map<String,Object> queryParameters()
+    public MapValue queryParameters()
     {
         return query.queryParameters();
     }

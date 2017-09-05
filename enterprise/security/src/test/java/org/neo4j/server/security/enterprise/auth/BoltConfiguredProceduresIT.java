@@ -21,7 +21,7 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
-import org.neo4j.cypher.internal.javacompat.ValueUtils;
+import org.neo4j.helpers.ValueUtils;
 
 public class BoltConfiguredProceduresIT extends ConfiguredProceduresTestBase<BoltInteraction.BoltSubject>
 {

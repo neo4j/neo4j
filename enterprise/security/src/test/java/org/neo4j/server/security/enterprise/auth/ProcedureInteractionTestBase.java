@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

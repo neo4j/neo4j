@@ -35,11 +35,11 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
-import org.neo4j.logging.Log;
-
+import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.server.web.HttpHeaderUtils.getTransactionTimeout;
 
@@ -84,7 +84,7 @@ public class CypherExecutor extends LifecycleAdapter
             HttpServletRequest request )
     {
         InternalTransaction tx = getInternalTransaction( request );
-        return contextFactory.newContext( HttpConnectionInfoFactory.create( request ), tx, query, parameters );
+        return contextFactory.newContext( HttpConnectionInfoFactory.create( request ), tx, query, asMapValue( parameters ));
     }
 
     private InternalTransaction getInternalTransaction( HttpServletRequest request )

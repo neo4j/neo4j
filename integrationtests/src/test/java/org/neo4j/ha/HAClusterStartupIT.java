@@ -28,7 +28,6 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Collections;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,6 +48,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 @RunWith( Enclosed.class )
 public class HAClusterStartupIT
@@ -106,7 +106,7 @@ public class HAClusterStartupIT
                         EnterpriseSecurityContext.AUTH_DISABLED
                     ) )
                     {
-                        Result result = gdb.execute( tx, "CALL dbms.listQueries()", Collections.emptyMap() );
+                        Result result = gdb.execute( tx, "CALL dbms.listQueries()", EMPTY_MAP );
                         assertTrue( result.hasNext() );
                         result.close();
 

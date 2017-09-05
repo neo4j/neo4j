@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.isGraphKernelResultValue
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Label._
 import org.neo4j.graphdb._
+import org.neo4j.helpers.ValueUtils.asMapValue
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.Statement
@@ -112,7 +113,7 @@ trait GraphIcing {
       val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService,
         locker)
-      val transactionalContext = contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, javaParams)
+      val transactionalContext = contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, asMapValue(javaParams))
       (tx, transactionalContext)
     }
 

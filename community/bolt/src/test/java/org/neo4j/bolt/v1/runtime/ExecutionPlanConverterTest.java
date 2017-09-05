@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.values.storable.DoubleValue;

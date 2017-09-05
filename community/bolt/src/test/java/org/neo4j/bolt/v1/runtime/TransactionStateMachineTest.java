@@ -22,21 +22,20 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Map;
-
+import org.neo4j.helpers.ValueUtils;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.time.FakeClock;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class TransactionStateMachineTest
 {
@@ -56,16 +55,16 @@ public class TransactionStateMachineTest
     public void shouldTransitionToExplicitTransactionOnBegin() throws Exception
     {
         assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "begin", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "begin", EMPTY_MAP ),
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "BEGIN", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "BEGIN", EMPTY_MAP ),
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "   begin   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   begin   ", EMPTY_MAP ),
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION );
         assertEquals( TransactionStateMachine.State.AUTO_COMMIT.run(
-                mutableState, stateMachineSPI, "   BeGiN ;   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   BeGiN ;   ", EMPTY_MAP ),
                 TransactionStateMachine.State.EXPLICIT_TRANSACTION );
     }
 
@@ -73,16 +72,16 @@ public class TransactionStateMachineTest
     public void shouldTransitionToAutoCommitOnCommit() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "commit", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "commit", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "COMMIT", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "COMMIT", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   commit   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   commit   ", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   CoMmIt ;   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   CoMmIt ;   ", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
     }
 
@@ -90,16 +89,16 @@ public class TransactionStateMachineTest
     public void shouldTransitionToAutoCommitOnRollback() throws Exception
     {
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "rollback", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "rollback", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "ROLLBACK", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "ROLLBACK", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   rollback   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   rollback   ", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
         assertEquals( TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                mutableState, stateMachineSPI, "   RoLlBaCk ;   ", Collections.emptyMap() ),
+                mutableState, stateMachineSPI, "   RoLlBaCk ;   ", EMPTY_MAP ),
                 TransactionStateMachine.State.AUTO_COMMIT );
     }
 
@@ -109,7 +108,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                    mutableState, stateMachineSPI, "begin", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, "begin", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -118,7 +117,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.EXPLICIT_TRANSACTION.run(
-                    mutableState, stateMachineSPI, " BEGIN ", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, " BEGIN ", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -132,7 +131,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, "rollback", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, "rollback", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -141,7 +140,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, " ROLLBACK ", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, " ROLLBACK ", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -155,7 +154,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, "commit", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, "commit", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -164,7 +163,7 @@ public class TransactionStateMachineTest
         try
         {
             TransactionStateMachine.State.AUTO_COMMIT.run(
-                    mutableState, stateMachineSPI, " COMMIT ", Collections.emptyMap() );
+                    mutableState, stateMachineSPI, " COMMIT ", EMPTY_MAP );
         }
         catch ( QueryExecutionKernelException ex )
         {
@@ -175,7 +174,7 @@ public class TransactionStateMachineTest
     @Test
     public void shouldNotWaitWhenNoBookmarkSupplied() throws Exception
     {
-        stateMachine.run( "BEGIN", emptyMap() );
+        stateMachine.run( "BEGIN", EMPTY_MAP );
         verify( stateMachineSPI, never() ).awaitUpToDate( anyLong() );
     }
 
@@ -189,7 +188,7 @@ public class TransactionStateMachineTest
     @Test
     public void shouldAwaitMultipleBookmarks() throws Exception
     {
-        Map<String,Object> params = map( "bookmarks", asList(
+        MapValue params = map( "bookmarks", asList(
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx5", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx9" )
         );
         stateMachine.run( "BEGIN", params );
@@ -199,11 +198,16 @@ public class TransactionStateMachineTest
     @Test
     public void shouldAwaitMultipleBookmarksWhenBothSingleAndMultipleSupplied() throws Exception
     {
-        Map<String,Object> params = map(
+        MapValue params = map(
                 "bookmark", "neo4j:bookmark:v1:tx42",
                 "bookmarks", asList( "neo4j:bookmark:v1:tx47", "neo4j:bookmark:v1:tx67", "neo4j:bookmark:v1:tx45" )
         );
         stateMachine.run( "BEGIN", params );
         verify( stateMachineSPI ).awaitUpToDate( 67 );
+    }
+
+    private MapValue map( Object... keyValues )
+    {
+        return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 }

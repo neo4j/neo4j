@@ -33,7 +33,7 @@ import java.util.Map;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.cypher.internal.javacompat.ValueUtils;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;

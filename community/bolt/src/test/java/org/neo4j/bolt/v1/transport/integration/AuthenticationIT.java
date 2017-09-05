@@ -51,10 +51,13 @@ import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -73,7 +76,8 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class AuthenticationIT
 {
     protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    protected Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
+    protected Neo4jWithSocket server =
+            new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
@@ -83,7 +87,7 @@ public class AuthenticationIT
         return new TestGraphDatabaseFactory();
     }
 
-    protected Consumer<Map<String, String>> getSettingsFunction()
+    protected Consumer<Map<String,String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
@@ -130,7 +134,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         verifyConnectionOpen();
     }
@@ -208,13 +212,14 @@ public class AuthenticationIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         InitMessage.init( "TestClient/1.1",
-                                map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme", "basic" ) ) ) );
+                                map( "principal", singletonList( "neo4j" ), "credentials", "neo4j", "scheme",
+                                        "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives( msgFailure( Status.Security.Unauthorized,
                 "Unsupported authentication token, the value associated with the key `principal` " +
-                        "must be a String but was: ArrayList" ) ) );
+                "must be a String but was: ArrayList" ) ) );
 
         assertThat( client, eventuallyDisconnects() );
     }
@@ -227,7 +232,8 @@ public class AuthenticationIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         InitMessage.init( "TestClient/1.1",
-                                map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme", "basic" ) ) ) );
+                                map( "principal", "neo4j", "this-should-have-been-credentials", "neo4j", "scheme",
+                                        "basic" ) ) ) );
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
@@ -376,11 +382,11 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess(map( "credentials_expired", true , "server", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
@@ -420,11 +426,11 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "secret" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "secret" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
@@ -451,21 +457,21 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version) ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "neo4j" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "neo4j" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
-                "Old password and new password cannot be the same.") ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+                "Old password and new password cannot be the same." ) ) );
 
         // However you should also be able to recover
         client.send( TransportTestUtil.chunk(
                 AckFailureMessage.ackFailure(),
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "abc" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
         assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
@@ -482,21 +488,21 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version) ) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "" ) ),
                 PullAllMessage.pullAll() ) );
 
         // Then
-        assertThat( client, eventuallyReceives( msgFailure(Status.General.InvalidArguments,
-                "A password cannot be empty.") ) );
+        assertThat( client, eventuallyReceives( msgFailure( Status.General.InvalidArguments,
+                "A password cannot be empty." ) ) );
 
         // However you should also be able to recover
         client.send( TransportTestUtil.chunk(
                 AckFailureMessage.ackFailure(),
-                RunMessage.run( "CALL dbms.security.changePassword", Collections.singletonMap( "password", "abc" ) ),
+                RunMessage.run( "CALL dbms.security.changePassword", singletonMap( "password", "abc" ) ),
                 PullAllMessage.pullAll() ) );
         assertThat( client, eventuallyReceives( msgIgnored(), msgSuccess(), msgSuccess(), msgSuccess() ) );
     }
@@ -513,7 +519,7 @@ public class AuthenticationIT
 
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true , "server", version)) ) );
+        assertThat( client, eventuallyReceives( msgSuccess( map( "credentials_expired", true, "server", version ) ) ) );
 
         // When
         client.send( TransportTestUtil.chunk(
@@ -551,7 +557,7 @@ public class AuthenticationIT
         {
             Assert.assertThat( t, instanceOf( FailureMessage.class ) );
             FailureMessage msg = (FailureMessage) t;
-            if ( !msg.status().equals( Status.Security.Unauthorized  ) ||
+            if ( !msg.status().equals( Status.Security.Unauthorized ) ||
                  !msg.message().contains( "The client is unauthorized due to authentication failure." ) )
             {
                 specialMessage = msg;
@@ -563,5 +569,10 @@ public class AuthenticationIT
         {
             return specialMessage != null;
         }
+    }
+
+    private MapValue singletonMap( String key, Object value )
+    {
+        return VirtualValues.map( Collections.singletonMap( key, ValueUtils.of( value ) ) );
     }
 }

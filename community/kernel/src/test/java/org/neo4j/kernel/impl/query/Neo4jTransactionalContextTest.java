@@ -26,7 +26,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
 
-import java.util.Collections;
 import java.util.Optional;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -60,6 +59,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class Neo4jTransactionalContextTest
 {
@@ -120,7 +120,7 @@ public class Neo4jTransactionalContextTest
         QueryRegistryOperations secondQueryRegistry = mock( QueryRegistryOperations.class );
 
         when( executingQuery.queryText() ).thenReturn( "X" );
-        when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
+        when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( queryService.beginTransaction( transactionType, securityContext ) ).thenReturn( secondTransaction );
         when( txBridge.getKernelTransactionBoundToThisThread( true ) ).thenReturn( initialKTX, secondKTX );
@@ -200,7 +200,7 @@ public class Neo4jTransactionalContextTest
         QueryRegistryOperations secondQueryRegistry = mock( QueryRegistryOperations.class );
 
         when( executingQuery.queryText() ).thenReturn( "X" );
-        when( executingQuery.queryParameters() ).thenReturn( Collections.emptyMap() );
+        when( executingQuery.queryParameters() ).thenReturn( EMPTY_MAP );
         Mockito.doThrow( RuntimeException.class ).when( initialTransaction ).close();
         when( initialStatement.queryRegistration() ).thenReturn( initialQueryRegistry );
         when( initialStatement.executionStatisticsOperations() ).thenReturn( initialExecutionStatisticOperations );

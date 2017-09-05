@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Reader for Bolt request messages made available via a {@link Neo4jPack.Unpacker}.
@@ -74,7 +75,7 @@ public class BoltRequestMessageReader
                     break;
                 case RUN:
                     String statement = unpacker.unpackString();
-                    Map<String,Object> params = unpacker.unpackToRawMap();
+                    MapValue params = unpacker.unpackMap();
                     Optional<Neo4jError> error = unpacker.consumeError();
                     if ( error.isPresent() )
                     {

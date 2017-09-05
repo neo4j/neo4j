@@ -39,11 +39,11 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipI
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}

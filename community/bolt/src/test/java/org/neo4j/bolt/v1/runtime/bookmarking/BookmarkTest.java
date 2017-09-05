@@ -21,13 +21,17 @@ package org.neo4j.bolt.v1.runtime.bookmarking;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.ValueUtils;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
+
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -36,12 +40,17 @@ import static org.junit.Assert.fail;
 
 public class BookmarkTest
 {
+    private MapValue singletonMap( String key, Object value )
+    {
+        return VirtualValues.map( Collections.singletonMap( key, ValueUtils.of( value ) ));
+    }
+
     @Test
     public void shouldFormatAndParseSingleBookmarkContainingTransactionId() throws Exception
     {
         // given
         long txId = 1234;
-        Map<String,Object> params = singletonMap( "bookmark", new Bookmark( txId ).toString() );
+        MapValue params = singletonMap( "bookmark", new Bookmark( txId ).toString() );
 
         // when
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
@@ -56,7 +65,7 @@ public class BookmarkTest
         // given
         long txId1 = 1234;
         long txId2 = 12345;
-        Map<String,Object> params = singletonMap( "bookmarks",
+        MapValue params = singletonMap( "bookmarks",
                 asList( new Bookmark( txId1 ).toString(), new Bookmark( txId2 ).toString() )
         );
 
@@ -72,7 +81,7 @@ public class BookmarkTest
     {
         // given
         String expected = "neo4j:bookmark:v1:tx1234";
-        Map<String,Object> params = singletonMap( "bookmark", expected );
+        MapValue params = singletonMap( "bookmark", expected );
 
         // when
         String actual = new Bookmark( Bookmark.fromParamsOrNull( params ).txId() ).toString();
@@ -87,7 +96,7 @@ public class BookmarkTest
         // given
         String txId1 = "neo4j:bookmark:v1:tx1234";
         String txId2 = "neo4j:bookmark:v1:tx12345";
-        Map<String,Object> params = singletonMap( "bookmarks", asList( txId1, txId2 ) );
+        MapValue params = singletonMap( "bookmarks", asList( txId1, txId2 ) );
 
         // when
         String actual = new Bookmark( Bookmark.fromParamsOrNull( params ).txId() ).toString();
@@ -210,7 +219,7 @@ public class BookmarkTest
     @Test
     public void shouldUseMultipleBookmarksWhenGivenBothSingleAndMultiple() throws Exception
     {
-        Map<String,Object> params = params(
+        MapValue params = params(
                 "neo4j:bookmark:v1:tx42",
                 asList( "neo4j:bookmark:v1:tx10", "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx3" ) );
 
@@ -222,7 +231,7 @@ public class BookmarkTest
     @Test
     public void shouldUseMultipleBookmarksWhenGivenOnlyMultiple() throws Exception
     {
-        Map<String,Object> params = params( null, asList( "neo4j:bookmark:v1:tx85", "neo4j:bookmark:v1:tx47",
+        MapValue params = params( null, asList( "neo4j:bookmark:v1:tx85", "neo4j:bookmark:v1:tx47",
                 "neo4j:bookmark:v1:tx15", "neo4j:bookmark:v1:tx6" ) );
 
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
@@ -233,7 +242,7 @@ public class BookmarkTest
     @Test
     public void shouldUseSingleBookmarkWhenGivenOnlySingle() throws Exception
     {
-        Map<String,Object> params = params( "neo4j:bookmark:v1:tx82", null );
+        MapValue params = params( "neo4j:bookmark:v1:tx82", null );
 
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
 
@@ -243,7 +252,7 @@ public class BookmarkTest
     @Test
     public void shouldUseSingleBookmarkWhenGivenBothSingleAndNullAsMultiple() throws Exception
     {
-        Map<String,Object> params = params( "neo4j:bookmark:v1:tx58", null );
+        MapValue params = params( "neo4j:bookmark:v1:tx58", null );
 
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
 
@@ -253,7 +262,7 @@ public class BookmarkTest
     @Test
     public void shouldUseSingleBookmarkWhenGivenBothSingleAndEmptyListAsMultiple() throws Exception
     {
-        Map<String,Object> params = params( "neo4j:bookmark:v1:tx67", emptyList() );
+        MapValue params = params( "neo4j:bookmark:v1:tx67", emptyList() );
 
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
 
@@ -263,7 +272,7 @@ public class BookmarkTest
     @Test
     public void shouldThrowWhenMultipleBookmarksIsNotAList() throws Exception
     {
-        Map<String,Object> params = params( "neo4j:bookmark:v1:tx67", new String[]{"neo4j:bookmark:v1:tx68"} );
+        MapValue params = params( "neo4j:bookmark:v1:tx67", new String[]{"neo4j:bookmark:v1:tx68"} );
 
         try
         {
@@ -279,7 +288,7 @@ public class BookmarkTest
     @Test
     public void shouldThrowWhenMultipleBookmarksIsNotAListOfStrings() throws Exception
     {
-        Map<String,Object> params = params(
+        MapValue params = params(
                 "neo4j:bookmark:v1:tx67",
                 asList( new String[]{"neo4j:bookmark:v1:tx50"}, new Object[]{"neo4j:bookmark:v1:tx89"} ) );
 
@@ -297,7 +306,7 @@ public class BookmarkTest
     @Test
     public void shouldThrowWhenOneOfMultipleBookmarksIsMalformed()
     {
-        Map<String,Object> params = params(
+        MapValue params = params(
                 "neo4j:bookmark:v1:tx67",
                 asList( "neo4j:bookmark:v1:tx99", "neo4j:bookmark:v1:tx12", "neo4j:bookmark:www:tx99" ) );
 
@@ -315,7 +324,7 @@ public class BookmarkTest
     @Test
     public void shouldThrowWhenSingleBookmarkIsMalformed()
     {
-        Map<String,Object> params = params( "neo4j:strange-bookmark:v1:tx6", null );
+        MapValue params = params( "neo4j:strange-bookmark:v1:tx6", null );
 
         try
         {
@@ -331,20 +340,20 @@ public class BookmarkTest
     @Test
     public void shouldReturnNullWhenNoBookmarks() throws Exception
     {
-        assertNull( Bookmark.fromParamsOrNull( emptyMap() ) );
+        assertNull( Bookmark.fromParamsOrNull( VirtualValues.EMPTY_MAP ) );
     }
 
     @Test
     public void shouldReturnNullWhenGivenEmptyListForMultipleBookmarks() throws Exception
     {
-        Map<String,Object> params = params( null, emptyList() );
+        MapValue params = params( null, emptyList() );
         assertNull( Bookmark.fromParamsOrNull( params ) );
     }
 
     @Test
     public void shouldSkipNullsInMultipleBookmarks() throws Exception
     {
-        Map<String,Object> params = params( null,
+        MapValue params = params( null,
                 asList( "neo4j:bookmark:v1:tx3", "neo4j:bookmark:v1:tx5", null, "neo4j:bookmark:v1:tx17" ) );
 
         Bookmark bookmark = Bookmark.fromParamsOrNull( params );
@@ -352,14 +361,14 @@ public class BookmarkTest
         assertEquals( 17, bookmark.txId() );
     }
 
-    private static Map<String,Object> params( String bookmark, Object bookmarks )
+    private static MapValue params( String bookmark, Object bookmarks )
     {
-        Map<String,Object> result = new HashMap<>();
+        Map<String,AnyValue> result = new HashMap<>();
         if ( bookmark != null )
         {
-            result.put( "bookmark", bookmark );
+            result.put( "bookmark", ValueUtils.of( bookmark ) );
         }
-        result.put( "bookmarks", bookmarks );
-        return result;
+        result.put( "bookmarks", ValueUtils.of( bookmarks ) );
+        return VirtualValues.map( result );
     }
 }

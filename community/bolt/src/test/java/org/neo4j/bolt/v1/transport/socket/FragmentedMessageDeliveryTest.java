@@ -42,10 +42,10 @@ import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.virtual.MapValue;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -136,7 +136,7 @@ public class FragmentedMessageDeliveryTest
         // Then the session should've received the specified messages, and the protocol should be in a nice clean state
         try
         {
-            verify( machine ).run( eq( "Mjölnir" ), anyMapOf( String.class, Object.class ), any( BoltResponseHandler.class ) );
+            verify( machine ).run( eq( "Mjölnir" ), any(MapValue.class), any( BoltResponseHandler.class ) );
         }
         catch ( AssertionError e )
         {

@@ -22,10 +22,17 @@ package org.neo4j.kernel.impl.query;
 import java.util.Map;
 
 import org.neo4j.graphdb.Result;
+import org.neo4j.values.virtual.MapValue;
 
 enum NoQueryEngine implements QueryExecutionEngine
 {
     INSTANCE;
+
+    @Override
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    {
+        throw noQueryEngine();
+    }
 
     @Override
     public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext context )
