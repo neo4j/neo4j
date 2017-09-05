@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.Node;
@@ -117,44 +118,6 @@ public class LuceneDataSource extends LifecycleAdapter
     private IndexReferenceFactory indexReferenceFactory;
     private Map<IndexIdentifier,Map<String,DocValuesType>> indexTypeMap;
 
-    public void assertValidType( String key, Object value, IndexIdentifier identifier )
-    {
-        DocValuesType expectedType;
-        String expectedTypeName;
-        if ( value instanceof Number )
-        {
-            expectedType = DocValuesType.SORTED_NUMERIC;
-            expectedTypeName = "numbers";
-        }
-        else
-        {
-            expectedType = DocValuesType.SORTED_SET;
-            expectedTypeName = "strings";
-        }
-        Map<String,DocValuesType> stringDocValuesTypeMap = indexTypeMap.get( identifier );
-        // If the index searcher has never been loaded, we need to load it now to populate the map.
-        if ( stringDocValuesTypeMap == null )
-        {
-            getIndexSearcher( identifier );
-            stringDocValuesTypeMap = indexTypeMap.get( identifier );
-        }
-        DocValuesType actualType;
-        synchronized ( stringDocValuesTypeMap )
-        {
-            actualType = stringDocValuesTypeMap.get( key );
-            if ( actualType == null )
-            {
-                actualType = expectedType;
-                stringDocValuesTypeMap.put( key, expectedType );
-            }
-        }
-        if ( !actualType.equals( expectedType ) )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
-        }
-    }
-
     /**
      * Constructs this data source.
      */
@@ -183,8 +146,39 @@ public class LuceneDataSource extends LifecycleAdapter
         this.indexReferenceFactory = readOnly ?
                                      new ReadOnlyIndexReferenceFactory( filesystemFacade, baseStorePath, typeCache ) :
                                      new WritableIndexReferenceFactory( filesystemFacade, baseStorePath, typeCache );
-        this.indexTypeMap = new HashMap<IndexIdentifier,Map<String,DocValuesType>>();
+        this.indexTypeMap = new ConcurrentHashMap<>();
         closed = false;
+    }
+
+    public void assertValidType( String key, Object value, IndexIdentifier identifier )
+    {
+        DocValuesType expectedType;
+        String expectedTypeName;
+        if ( value instanceof Number )
+        {
+            expectedType = DocValuesType.SORTED_NUMERIC;
+            expectedTypeName = "numbers";
+        }
+        else
+        {
+            expectedType = DocValuesType.SORTED_SET;
+            expectedTypeName = "strings";
+        }
+        Map<String,DocValuesType> stringDocValuesTypeMap = indexTypeMap.get( identifier );
+        // If the index searcher has never been loaded, we need to load it now to populate the map.
+        if ( stringDocValuesTypeMap == null )
+        {
+            getIndexSearcher( identifier );
+            stringDocValuesTypeMap = indexTypeMap.get( identifier );
+        }
+        DocValuesType actualType;
+
+        actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
+        if ( actualType != null && !actualType.equals( expectedType ) )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
+        }
     }
 
     public static File getLuceneIndexStoreDirectory(File storeDir)
@@ -325,7 +319,7 @@ public class LuceneDataSource extends LifecycleAdapter
             {
                 indexReference = indexReferenceFactory.createIndexReference( identifier );
                 indexSearchers.put( identifier, indexReference );
-                HashMap<String,DocValuesType> fieldTypes = new HashMap<>();
+                ConcurrentHashMap<String,DocValuesType> fieldTypes = new ConcurrentHashMap<>();
                 for ( LeafReaderContext leafReaderContext : indexReference.getSearcher().getTopReaderContext().leaves() )
                 {
                     for ( FieldInfo fieldInfo : leafReaderContext.reader().getFieldInfos() )
@@ -384,6 +378,7 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         closeIndex( identifier );
         FileUtils.deleteRecursively( getFileDirectory( baseStorePath, identifier ) );
+        indexTypeMap.remove( identifier );
         boolean removeFromIndexStore =
                 !recovery || (indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
