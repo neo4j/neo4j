@@ -104,7 +104,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class QueryExecutionLocks
+public class QueryExecutionLocksIT
 {
 
     @Rule
@@ -968,7 +968,10 @@ public class QueryExecutionLocks
             {
                 ThreadToStatementContextBridge bridge =
                         databaseRule.resolveDependency( ThreadToStatementContextBridge.class );
-                bridge.get().readOperations().schemaStateFlush();
+                try ( Statement statement = bridge.get() )
+                {
+                    statement.readOperations().schemaStateFlush();
+                }
             }
             executed = true;
         }
