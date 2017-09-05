@@ -122,7 +122,7 @@ class FusionIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         selector.select( nativePopulator, lucenePopulator, update.values() ).includeSample( update );
     }

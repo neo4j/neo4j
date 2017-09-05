@@ -40,7 +40,7 @@ class FusionIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         switch ( update.updateMode() )
         {

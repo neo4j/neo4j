@@ -61,7 +61,7 @@ public class UniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         sampler.increment( 1 );
     }

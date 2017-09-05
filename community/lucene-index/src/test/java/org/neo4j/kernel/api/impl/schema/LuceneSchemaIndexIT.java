@@ -64,16 +64,16 @@ public class LuceneSchemaIndexIT
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
+    private final IndexDescriptor descriptor = IndexDescriptorFactory.forLabel( 0, 0 );
 
     @Before
-    public void before() throws Exception
+    public void before()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "10" );
     }
 
     @After
-    public void after() throws IOException
+    public void after()
     {
         System.setProperty( "luceneSchemaIndex.maxPartitionSize", "" );
     }
@@ -123,7 +123,7 @@ public class LuceneSchemaIndexIT
     }
 
     @Test
-    public void updateMultiplePartitionedIndex() throws IOException, IndexEntryConflictException
+    public void updateMultiplePartitionedIndex() throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
@@ -308,9 +308,8 @@ public class LuceneSchemaIndexIT
         }
     }
 
-    private IndexEntryUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
         return IndexEntryUpdate.add( nodeId, descriptor.schema(), Values.of( value ) );
     }
-
 }

@@ -65,7 +65,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
@@ -150,7 +149,7 @@ public class IndexCRUDIT
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceSchemaIndexProviderFactory( "none", mockedIndexProvider );
     private ThreadToStatementContextBridge ctxSupplier;
-    private final Label myLabel = label( "MYLABEL" );
+    private final Label myLabel = Label.label( "MYLABEL" );
 
     private Node createNode( Map<String, Object> properties, Label ... labels )
     {
@@ -166,7 +165,6 @@ public class IndexCRUDIT
         }
     }
 
-    @SuppressWarnings( "deprecation" )
     @Before
     public void before() throws Exception
     {
@@ -203,7 +201,7 @@ public class IndexCRUDIT
 
     private class GatheringIndexWriter extends IndexAccessor.Adapter implements IndexPopulator
     {
-        private final Set<IndexEntryUpdate> updatesCommitted = new HashSet<>();
+        private final Set<IndexEntryUpdate<?>> updatesCommitted = new HashSet<>();
         private final Map<Object,Set<Long>> indexSamples = new HashMap<>();
 
         @Override
@@ -252,7 +250,7 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void includeSample( IndexEntryUpdate update )
+        public void includeSample( IndexEntryUpdate<?> update )
         {
             addValueToSample( update.getEntityId(), update.values()[0] );
         }

@@ -37,10 +37,10 @@ import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 public abstract class UniquePropertyIndexUpdater implements IndexUpdater
 {
     private final Map<Object, DiffSets<Long>> referenceCount = new HashMap<>();
-    private final ArrayList<IndexEntryUpdate> updates = new ArrayList<>();
+    private final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     @Override
-    public void process( IndexEntryUpdate update )
+    public void process( IndexEntryUpdate<?> update )
     {
         // build uniqueness verification state
         switch ( update.updateMode() )
@@ -70,7 +70,7 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
         flushUpdates( updates );
     }
 
-    protected abstract void flushUpdates( Iterable<IndexEntryUpdate> updates )
+    protected abstract void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
             throws IOException, IndexEntryConflictException;
 
     private DiffSets<Long> propertyValueDiffSet( Object value )

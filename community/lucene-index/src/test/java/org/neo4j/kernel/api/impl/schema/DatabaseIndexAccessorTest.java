@@ -329,27 +329,27 @@ public class DatabaseIndexAccessorTest
         }
     }
 
-    private IndexEntryUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
         return IndexQueryHelper.add( nodeId, index.schema(), value );
     }
 
-    private IndexEntryUpdate remove( long nodeId, Object value )
+    private IndexEntryUpdate<?> remove( long nodeId, Object value )
     {
         return IndexQueryHelper.remove( nodeId, index.schema(), value );
     }
 
-    private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
+    private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
     {
         return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
-    private void updateAndCommit( List<IndexEntryUpdate> nodePropertyUpdates )
+    private void updateAndCommit( List<IndexEntryUpdate<?>> nodePropertyUpdates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( IndexEntryUpdate update : nodePropertyUpdates )
+            for ( IndexEntryUpdate<?> update : nodePropertyUpdates )
             {
                 updater.process( update );
             }

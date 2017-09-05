@@ -94,7 +94,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
 
     private boolean updatesForCorrectIndex( Collection<? extends IndexEntryUpdate<?>> updates )
     {
-        for ( IndexEntryUpdate update : updates )
+        for ( IndexEntryUpdate<?> update : updates )
         {
             if ( !update.indexKey().schema().equals( luceneIndex.getDescriptor().schema() ) )
             {
@@ -104,7 +104,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
         return true;
     }
 
-    private static Document updateAsDocument( IndexEntryUpdate update )
+    private static Document updateAsDocument( IndexEntryUpdate<?> update )
     {
         return LuceneDocumentStructure.documentRepresentingProperties( update.getEntityId(), update.values() );
     }

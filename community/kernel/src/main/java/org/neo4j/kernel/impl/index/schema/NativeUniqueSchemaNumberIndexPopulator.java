@@ -42,7 +42,7 @@ class NativeUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE 
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         sampler.increment( 1 );
     }

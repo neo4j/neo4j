@@ -50,10 +50,10 @@ class UniqueInMemoryIndex extends InMemoryIndex
         return new UniquePropertyIndexUpdater()
         {
             @Override
-            protected void flushUpdates( Iterable<IndexEntryUpdate> updates )
+            protected void flushUpdates( Iterable<IndexEntryUpdate<?>> updates )
                     throws IOException, IndexEntryConflictException
             {
-                for ( IndexEntryUpdate update : updates )
+                for ( IndexEntryUpdate<?> update : updates )
                 {
                     switch ( update.updateMode() )
                     {
@@ -67,7 +67,7 @@ class UniqueInMemoryIndex extends InMemoryIndex
                             break;
                     }
                 }
-                for ( IndexEntryUpdate update : updates )
+                for ( IndexEntryUpdate<?> update : updates )
                 {
                     switch ( update.updateMode() )
                     {

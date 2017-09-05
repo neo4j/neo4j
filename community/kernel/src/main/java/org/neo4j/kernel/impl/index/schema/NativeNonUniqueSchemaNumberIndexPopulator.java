@@ -49,7 +49,7 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         if ( updateSampling )
         {

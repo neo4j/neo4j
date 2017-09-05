@@ -236,7 +236,7 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
         assertEquals( InternalIndexState.POPULATING, proxy.getState() );
 
-        IndexEntryUpdate value2 = add( 2, "value2" );
+        IndexEntryUpdate<?> value2 = add( 2, "value2" );
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
             updater.process( value2 );
@@ -1225,7 +1225,7 @@ public class IndexingServiceTest
 
                 @Override
                 public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater,
-                        IndexEntryUpdate update,
+                        IndexEntryUpdate<?> update,
                         long currentlyIndexedNodeId )
                 {
                     // no-op
