@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.SyntaxException
 
-class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
+class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with CypherComparisonSupport {
 
   test("should be able to filter as part of call") {
     // Given
@@ -37,6 +37,20 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
       List(
         Map("label" -> "B"),
         Map("label" -> "C")))
+  }
+
+  test("db.schema should not throw an exception") {
+    val neo = createLabeledNode("Neo")
+    val d1 = createLabeledNode("Department")
+    val e1 = createLabeledNode("Employee")
+    relate(e1, d1, "WORKS_AT", "Hallo")
+    relate(d1, neo, "PART_OF", "Hallo")
+
+    val query = "CALL db.schema()"
+    val result = succeedWith(Configs.Procs, query)
+    println(result.dumpToString())
+
+    // TODO this is not the proper acceptance test yet
   }
 
   test("should not be able to filter as part of standalone call") {
