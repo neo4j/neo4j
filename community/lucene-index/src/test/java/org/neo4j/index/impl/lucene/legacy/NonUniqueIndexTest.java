@@ -56,6 +56,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
@@ -84,6 +85,14 @@ public class NonUniqueIndexTest
         {
             node = db.createNode( label( "SomeLabel" ) );
             node.setProperty( "key", "value" );
+            tx.success();
+        }
+
+        // Await index population before shutdown, because db.shutdown won't await it. After shutdown this test verifies
+        // the index directly through the index provider so it must have been populated for that to work properly.
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, MINUTES );
             tx.success();
         }
         db.shutdown();
@@ -143,7 +152,7 @@ public class NonUniqueIndexTest
     {
         return () ->
         {
-            LockSupport.parkNanos( 100_000_000 );
+            LockSupport.parkNanos( 100_000_000L );
             target.run();
         };
     }
