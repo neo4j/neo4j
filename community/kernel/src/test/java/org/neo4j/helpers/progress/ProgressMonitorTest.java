@@ -27,9 +27,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
@@ -411,7 +408,7 @@ public class ProgressMonitorTest
                 begin.countDown();
                 try
                 {
-                    completion.await( 1, SECONDS );
+                    completion.await( 10, SECONDS );
                 }
                 catch ( Exception e )
                 {
@@ -422,7 +419,7 @@ public class ProgressMonitorTest
         }.start();
         Runnable callback = mock( Runnable.class );
         completion.notify( callback );
-        assertTrue( begin.await( 1, SECONDS ) );
+        assertTrue( begin.await( 10, SECONDS ) );
 
         // then
         verifyZeroInteractions( callback );
@@ -449,7 +446,7 @@ public class ProgressMonitorTest
         // then
         verify( callback ).run();
         completion.await( 0, TimeUnit.NANOSECONDS ); // should not have to wait
-        assertTrue( end.await( 1, SECONDS ) ); // should have been completed
+        assertTrue( end.await( 10, SECONDS ) ); // should have been completed
 
         // when
         callback = mock( Runnable.class );
