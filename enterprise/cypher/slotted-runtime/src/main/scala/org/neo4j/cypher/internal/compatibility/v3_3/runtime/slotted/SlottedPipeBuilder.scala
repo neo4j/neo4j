@@ -234,7 +234,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, source)
 
       case Sort(_, sortItems) =>
-        SortRegisterPipe(source, sortItems.map(translateColumnOrder(pipeline, _)), pipeline)(id = id)
+        SortSlottedPipe(source, sortItems.map(translateColumnOrder(pipeline, _)), pipeline)(id = id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")

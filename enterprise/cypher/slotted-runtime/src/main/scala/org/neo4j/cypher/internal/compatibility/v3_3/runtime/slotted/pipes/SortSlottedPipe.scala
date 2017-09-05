@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.values.{AnyValue, AnyValues}
 
-case class SortRegisterPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation)(val id: Id = new Id)
+case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 
