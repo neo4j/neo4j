@@ -565,14 +565,7 @@ public class Settings
         @Override
         public Duration apply( String value )
         {
-            try
-            {
-                return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
-            }
-            catch ( RuntimeException e )
-            {
-                throw new IllegalArgumentException( "Error parsing duration setting", e );
-            }
+            return Duration.ofMillis( TimeUtil.parseTimeMillis.apply( value ) );
         }
 
         @Override

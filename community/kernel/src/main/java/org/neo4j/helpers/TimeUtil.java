@@ -44,29 +44,27 @@ public final class TimeUtil
         {
             return DEFAULT_TIME_UNIT.toMillis( Integer.parseInt( timeWithOrWithoutUnit ) );
         }
-        else
+
+        String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
+        if ( unitIndex == 0 )
         {
-            int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
-            String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
-            TimeUnit timeUnit;
-            switch ( unit )
-            {
-            case "ms":
-                timeUnit = TimeUnit.MILLISECONDS;
-                break;
-            case "s":
-                timeUnit = TimeUnit.SECONDS;
-                break;
-            case "m":
-                timeUnit = TimeUnit.MINUTES;
-                break;
-            case "h":
-                timeUnit = TimeUnit.HOURS;
-                break;
-            default:
-                throw new RuntimeException( "Unrecognized unit " + unit + ". " + VALID_TIME_DESCRIPTION );
-            }
-            return timeUnit.toMillis( amount );
+            throw new IllegalArgumentException( "Missing numeric value" );
+        }
+
+        // We have digits
+        int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
+        switch ( unit )
+        {
+        case "ms":
+            return TimeUnit.MILLISECONDS.toMillis( amount );
+        case "s":
+            return TimeUnit.SECONDS.toMillis( amount );
+        case "m":
+            return TimeUnit.MINUTES.toMillis( amount );
+        case "h":
+            return TimeUnit.HOURS.toMillis( amount );
+        default:
+            throw new IllegalArgumentException( "Unrecognized unit '" + unit + "'. " + VALID_TIME_DESCRIPTION );
         }
     };
 
