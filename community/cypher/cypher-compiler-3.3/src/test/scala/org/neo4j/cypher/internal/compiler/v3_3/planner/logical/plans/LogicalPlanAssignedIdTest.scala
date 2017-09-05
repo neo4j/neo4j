@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("assignedId survives rewriting") {
@@ -48,9 +48,9 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("tree structure is assigned ids in a predictable way") {
     /*
-         6
-      2     5
-    0  1   3 4
+                ApplyAll(6)
+        ApplyA(5)         ApplyB(2)
+    SR1A(4)  SR2A(3)   SR1B(1) SR2B(0)
      */
     val sr1A = SingleRow()(solved)
     val sr2A = SingleRow()(solved)
@@ -62,13 +62,13 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
 
     applyAll.assignIds()
 
-    sr1A.assignedId.underlying should equal(0)
-    sr2A.assignedId.underlying should equal(1)
-    applyA.assignedId.underlying should equal(2)
-    sr1B.assignedId.underlying should equal(3)
-    sr2B.assignedId.underlying should equal(4)
-    applyB.assignedId.underlying should equal(5)
     applyAll.assignedId.underlying should equal(6)
+    applyA.assignedId.underlying should equal(5)
+    sr1A.assignedId.underlying should equal(4)
+    sr2A.assignedId.underlying should equal(3)
+    applyB.assignedId.underlying should equal(2)
+    sr1B.assignedId.underlying should equal(1)
+    sr2B.assignedId.underlying should equal(0)
   }
 
   test("cant assign ids twice") {

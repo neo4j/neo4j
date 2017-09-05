@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 
 /*
@@ -46,18 +46,31 @@ abstract class LogicalPlan
   def availableSymbols: Set[IdName]
 
   def assignedId: LogicalPlanId = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
-  def assignIds(): Unit = recurseAssignIds(new LogicalPlanId(0))
-
-  private var _id: Option[LogicalPlanId] = None
-
-  protected def recurseAssignIds(sofar: LogicalPlanId): LogicalPlanId = {
+  def assignIds(): Unit = {
     if(_id.nonEmpty)
       throw new InternalException("Id has already been assigned")
 
-    val sofarPrim = lhs.map(_.recurseAssignIds(sofar)).getOrElse(sofar)
-    val sofarBis = rhs.map(_.recurseAssignIds(sofarPrim)).getOrElse(sofarPrim)
-    _id = Some(sofarBis)
-    sofarBis++
+    val builder = new IdAssigner
+    builder.assignIds()
+    assignedId
+  }
+
+  private var _id: Option[LogicalPlanId] = None
+
+  private class IdAssigner extends TreeBuilder[Int] {
+    def assignIds() = create(self)
+
+    private var count = 0
+
+    override protected def build(plan: LogicalPlan) = {
+      plan._id = Some(new LogicalPlanId(count))
+      count = count + 1
+      count
+    }
+
+    override protected def build(plan: LogicalPlan, source: Int) = build(plan)
+
+    override protected def build(plan: LogicalPlan, lhs: Int, rhs: Int) = build(plan)
   }
 
   override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
