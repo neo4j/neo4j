@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeGraphReturnItems
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class normalizeGraphReturnItemsTest extends CypherFunSuite {
+class normalizeGraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   import parser.ParserFixture._
 
@@ -50,8 +51,21 @@ class normalizeGraphReturnItemsTest extends CypherFunSuite {
   }
 
   test("name load graph") {
+    // need to spell out ast here as there is no syntax for specifying generated symbols
     val original = parser.parse("FROM GRAPH AT 'url' RETURN 1")
-    val expected = parser.parse("FROM GRAPH AT 'url' AS `  FRESHID21` RETURN 1")
+    val expected = Query(None,
+      SingleQuery(List(
+        With(distinct = false,
+          ReturnItems(includeExisting = true, List())(pos),
+          GraphReturnItems(true,List(
+            NewContextGraphs(
+              GraphAtAs(
+                GraphUrl(Right(StringLiteral("url")(pos)))(pos),
+                Some(varFor("  FRESHID21")),
+                generated = true)(pos),None)(pos)))(pos),None,None,None,None)(pos),
+        Return(distinct = false,
+          ReturnItems(includeExisting = false,List(
+            UnaliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), "1")(pos)))(pos),None,None,None,None,Set())(pos)))(pos))(pos)
 
     val result = original.rewrite(normalizeGraphReturnItems)
     assert(result === expected)

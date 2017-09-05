@@ -30,6 +30,33 @@ trait Literals extends Parser
   def Variable: Rule1[ast.Variable] =
     rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
 
+  def ReservedClauseStartKeyword: Rule0 =
+    keyword("CALL") |
+    keyword("CREATE") |
+    keyword("CYPHER") |
+    keyword("DELETE") |
+    keyword("DO") |
+    keyword("DROP") |
+    keyword("EXPLAIN") |
+    keyword("FOREACH") |
+    keyword("FROM") |
+    keyword("INTO") |
+    keyword("LOAD") |
+    keyword("MATCH") |
+    keyword("MERGE") |
+    keyword("OPTIONAL") |
+    keyword("PERSIST") |
+    keyword("PROFILE") |
+    keyword("_PRAGMA") |
+    keyword("RELOCATE") |
+    keyword("RETURN") |
+    keyword("SNAPSHOT") |
+    keyword("START") |
+    keyword("UNION") |
+    keyword("USING") |
+    keyword("UNWIND") |
+    keyword("WITH")
+
   def ProcedureName: Rule1[ast.ProcedureName] =
     rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_) ) }.memoMismatches
 

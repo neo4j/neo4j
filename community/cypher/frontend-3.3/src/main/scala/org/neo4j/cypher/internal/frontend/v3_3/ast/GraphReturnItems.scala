@@ -20,35 +20,45 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
-  def graphs: Seq[SingleGraphAs]
+  def graphs: Set[SingleGraphAs]
 
   def newSource: Option[SingleGraphAs] = None
   def newTarget: Option[SingleGraphAs] = None
 
-  def declareGraphs: SemanticCheck
+  def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem]
 }
 
 final case class ReturnedGraph(item: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = Seq(item)
-  override def declareGraphs: SemanticCheck = item.declareGraph
+  override def graphs: Set[SingleGraphAs] = Set(item)
+
+  override def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem] =
+    if (pred(item)) Some(this) else None
 }
 
 final case class NewTargetGraph(target: SingleGraphAs)(val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = Seq(target)
+  override def graphs: Set[SingleGraphAs] = Set(target)
   override def newTarget = Some(target)
-  override def declareGraphs: SemanticCheck = target.declareGraph
+
+  override def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem] =
+    if (pred(target)) Some(this) else None
 }
 
 final case class NewContextGraphs(source: SingleGraphAs,
                                   override val newTarget: Option[SingleGraphAs] = None)
                                  (val position: InputPosition) extends GraphReturnItem {
-  override def graphs: Seq[SingleGraphAs] = newTarget match {
-    case Some(target) => Seq(source, target)
-    case None => Seq(source)
-  }
+
+  override def graphs: Set[SingleGraphAs] = Set(source) ++ newTarget.toSet
 
   override def newSource: Option[SingleGraphAs] = Some(source)
-  override def declareGraphs: SemanticCheck = source.declareGraph chain newTarget.foldSemanticCheck(_.declareGraph)
+
+  override def filter(pred: SingleGraphAs => Boolean): Option[GraphReturnItem] =
+    if (pred(source))
+      newTarget.map(pred(_)) match {
+        case Some(false) => Some(NewContextGraphs(source, None)(position))
+        case _ => Some(this)
+      }
+    else
+      newTarget.flatMap { target => if (pred(target)) Some(NewTargetGraph(target)(position)) else None }
 }
 
 object PassAllGraphReturnItems {
@@ -60,7 +70,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
                                  (val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
-  def isStarOnly: Boolean = includeExisting && items.isEmpty
+  def isGraphsStarOnly: Boolean = includeExisting && items.isEmpty
 
   val graphs: Seq[SingleGraphAs] = items.flatMap(_.graphs)
 
@@ -81,8 +91,9 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
       if (isReturn)
         s.removeContextGraphs()
       else {
-        val newSourceName = newSource.flatMap(_.name)
-        val newTargetName = newTarget.flatMap(_.name)
+        val previousContext = previousScope.contextGraphs
+        val newSourceName = newSource.flatMap(_.name(previousContext))
+        val newTargetName = newTarget.flatMap(_.name(previousContext))
         val optNewContextGraphs =
           previousScope.contextGraphs.map(_.updated(newSourceName, newTargetName)) orElse
           newSourceName.map(source => newTargetName.map(target => ContextGraphs(source, target)).getOrElse(ContextGraphs(source, source)))
@@ -94,7 +105,8 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
     }
     (
       when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
-      items.foldSemanticCheck(_.declareGraphs) chain
+      items.flatMap(_.graphs).foldSemanticCheck(_.declareGraph) chain
+      items.flatMap(_.graphs).foldSemanticCheck(_.implicitGraph(previousScope.contextGraphs)) chain
       updateContext
     ).ifFeatureEnabled(SemanticFeature.MultipleGraphs)
   }

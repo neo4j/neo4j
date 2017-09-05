@@ -69,17 +69,20 @@ case class expandStar(state: SemanticState) extends Rewriter {
     }
     val clausePos = clause.position
     val symbolNames = scope.selectSymbolNames(_.graph) -- excludedNames
+    val filteredListedItems = listedItems.flatMap(_.filter(!_.isUnboundContextGraph))
     val newGraphItems = symbolNames.toIndexedSeq.sorted.map { id =>
-      val idPos = scope.symbolTable(id).definition.position
+      val symbol = scope.symbolTable(id)
+      val idPos = symbol.definition.position
       val expr = Variable(id)(idPos)
       val alias = expr.copyId
       ReturnedGraph(
         GraphAs(
           expr,
-          Some(alias)
+          Some(alias),
+          symbol.generated
         )(clausePos)
       )(clausePos)
-    }.toList ++ listedItems
+    }.toList ++ filteredListedItems
     GraphReturnItems(includeExisting = false, newGraphItems)(clausePos)
   }
 

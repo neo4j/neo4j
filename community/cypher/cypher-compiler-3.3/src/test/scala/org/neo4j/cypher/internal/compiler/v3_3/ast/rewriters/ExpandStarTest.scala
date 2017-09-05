@@ -83,6 +83,34 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     )
   }
 
+  test("Rewrites unaliased SOURCE GRAPH") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN * GRAPHS *, SOURCE GRAPH",
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN a AS a GRAPH bar AS bar, GRAPH foo AS foo"
+    )
+  }
+
+  test("Does not rewrite aliased SOURCE GRAPH") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN * GRAPHS *, SOURCE GRAPH AS fizz",
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN a AS a GRAPH bar AS bar, GRAPH foo AS foo, SOURCE GRAPH AS fizz"
+    )
+  }
+
+  test("Rewrites unaliased TARGET GRAPH") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN * GRAPHS *, TARGET GRAPH",
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN a AS a GRAPH bar AS bar, GRAPH foo AS foo"
+    )
+  }
+
+  test("Does not rewrite aliased TARGET GRAPH") {
+    assertMultipleGraphsRewrite(
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN * GRAPHS *, TARGET GRAPH AS fizz",
+      "WITH 1 AS a GRAPH AT 'url' AS foo >> GRAPH AT 'url2' AS bar RETURN a AS a GRAPH bar AS bar, GRAPH foo AS foo, TARGET GRAPH AS fizz"
+    )
+  }
+
   test("expands correctly when no graphs are in scope") {
     // This invariant does not have a syntactical version, e.g. GRAPHS -
     // So we need to check the AST

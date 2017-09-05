@@ -143,7 +143,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
     recordCurrentScope
 }
 
-final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
+final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
   extends MultipleGraphClause with UpdateClause {
 
   override def name = "PERSIST"
@@ -152,7 +152,16 @@ final case class Persist(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(v
     super.semanticCheck chain graph.semanticCheck
 }
 
-final case class Relocate(snapshot: Boolean, graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
+final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
+  extends MultipleGraphClause with UpdateClause {
+
+  override def name = "SNAPSHOT"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain graph.semanticCheck
+}
+
+final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
   extends MultipleGraphClause with UpdateClause {
 
   override def name = "RELOCATE"
@@ -510,7 +519,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       graphResult.copy(errors = fixedOrderByResult.errors ++ shuffleErrors ++ graphResult.errors)
     }
     val variableStar = returnItems.isStarOnly
-    val graphsStar = graphReturnItems.forall(_.isStarOnly)
+    val graphsStar = graphReturnItems.forall(_.isGraphsStarOnly)
     declareAllTheThings
   }
 
@@ -546,7 +555,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
 object From {
   def apply(graph: SingleGraphAs)(position: InputPosition): With = {
-    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph, Some(graph))(position)))(position))(position)
+    With(ReturnItems(includeExisting = true, Seq.empty)(position), GraphReturnItems(includeExisting = true, Seq(NewContextGraphs(graph)(position)))(position))(position)
   }
 }
 

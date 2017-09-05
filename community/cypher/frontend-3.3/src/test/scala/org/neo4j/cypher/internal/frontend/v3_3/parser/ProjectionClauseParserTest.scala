@@ -173,7 +173,7 @@ class ProjectionClauseParserTest
   }
 
   test("FROM GRAPH foo AT 'url'") {
-    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(ast.NewContextGraphs(graphAt("foo", "url"), Some(graphAt("foo", "url")))(pos)))(pos)
+    val graphs: GraphReturnItems = ast.GraphReturnItems(includeExisting = true, Seq(ast.NewContextGraphs(graphAt("foo", "url"), None)(pos)))(pos)
     yields(ast.With(ast.ReturnItems(includeExisting = true, Seq.empty)(pos), graphs))
   }
 

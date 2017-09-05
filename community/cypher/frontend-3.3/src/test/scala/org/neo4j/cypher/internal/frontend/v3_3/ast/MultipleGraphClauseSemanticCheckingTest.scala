@@ -25,8 +25,8 @@ import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest
   extends ParserTest[ast.Statement, SemanticCheckResult]
-  with parser.Statement
-  with AstConstructionTestSupport {
+    with parser.Statement
+    with AstConstructionTestSupport {
 
   // INFO: Use result.dumpAndExit to debug these tests
 
@@ -35,65 +35,63 @@ class MultipleGraphClauseSemanticCheckingTest
   test("GRAPHS * keeps existing graphs in scope (1)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
-        |RETURN * GRAPHS *
-     """.stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    a: 10
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |}"""
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 2, column 1 (offset: 59))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    a: 10
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |}"""
     }
   }
 
   test("GRAPHS * keeps existing graphs in scope (2)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
-        |RETURN GRAPHS *
-      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// Return(false,DiscardCardinality(),Some(GraphReturnItems(true,List())),None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |}"""
+        |RETURN GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (Return(false,DiscardCardinality(),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 2, column 1 (offset: 59))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |}"""
     }
   }
 
@@ -101,39 +99,38 @@ class MultipleGraphClauseSemanticCheckingTest
     parsing(
       """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH 1 AS a
-        |RETURN * GRAPHS *
-      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(true,List()),None,None,None,None)
-            |source >> target
-            |// Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    GRAPH source: 11
-            |    GRAPH target: 36
-            |  }
-            |  { /* source >> target */
-            |    a: 62
-            |    GRAPH source: 11
-            |    GRAPH target: 36
-            |  }
-            |  {
-            |    a: 62
-            |    GRAPH source: 11
-            |    GRAPH target: 36
-            |  }
-            |}"""
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(true,List()),None,None,None,None),line 2, column 1 (offset: 52))
+          |source >> target
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 3, column 1 (offset: 64))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    GRAPH source: 11
+          |    GRAPH target: 36
+          |  }
+          |  { /* source >> target */
+          |    a: 62
+          |    GRAPH source: 11
+          |    GRAPH target: 36
+          |  }
+          |  {
+          |    a: 62
+          |    GRAPH source: 11
+          |    GRAPH target: 36
+          |  }
+          |}"""
     }
   }
 
@@ -141,29 +138,29 @@ class MultipleGraphClauseSemanticCheckingTest
     parsing(
       """WITH GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN GRAPH foo AT 'url', GRAPH bar AT 'url'""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(foo)))), ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar))))))),None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    GRAPH source: 11
-            |    GRAPH target: 36
-            |  }
-            |  {
-            |    GRAPH bar: 85
-            |    GRAPH foo: 65
-            |  }
-            |}"""
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(foo)),false)), ReturnedGraph(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar)),false))))),None,None,None,Set()),line 2, column 1 (offset: 52))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    GRAPH source: 11
+          |    GRAPH target: 36
+          |  }
+          |  {
+          |    GRAPH bar: 85
+          |    GRAPH foo: 65
+          |  }
+          |}"""
     }
   }
 
@@ -171,30 +168,29 @@ class MultipleGraphClauseSemanticCheckingTest
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """
-            |// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
-            |--
-            |// End
-            """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10 66
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    a: 10 66 67
-            |  }
-            |}"""
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set()),line 2, column 1 (offset: 59))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10 66
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    a: 10 66 67
+          |  }
+          |}"""
     }
   }
 
@@ -203,35 +199,35 @@ class MultipleGraphClauseSemanticCheckingTest
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |WITH a GRAPH source
         |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(source),Some(Variable(source)))))),None,None,None,None)
-            |source >> source
-            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10 64
-            |    GRAPH source: 18 72
-            |    GRAPH target: 43
-            |  }
-            |  { /* source >> source */
-            |    a: 10 64 65 86
-            |    GRAPH source: 72
-            |  }
-            |  {
-            |    a: 10 64 65 86 87
-            |  }
-            |}"""
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(source),Some(Variable(source)),false)))),None,None,None,None),line 2, column 1 (offset: 59))
+          |source >> source
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set()),line 3, column 1 (offset: 79))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10 64
+          |    GRAPH source: 18 72
+          |    GRAPH target: 43
+          |  }
+          |  { /* source >> source */
+          |    a: 10 64 65 86
+          |    GRAPH source: 72
+          |  }
+          |  {
+          |    a: 10 64 65 86 87
+          |  }
+          |}"""
     }
   }
 
@@ -241,7 +237,7 @@ class MultipleGraphClauseSemanticCheckingTest
         |WITH a GRAPH source
         |WITH a GRAPH target
         |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errorMessages should equal(Set("Variable `target` not defined"))
+      result.errorMessages should equal(Set("Variable `target` not defined"))
     }
   }
 
@@ -252,44 +248,43 @@ class MultipleGraphClauseSemanticCheckingTest
         |WITH a
         |MATCH (c)
         |RETURN a, c""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-        result.errors shouldBe empty
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """
-            |// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
-            |source >> target
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(true,List()),None,None,None,None)
-            |source >> target
-            |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(c)),List(),None)))),List(),None)
-            |source >> target
-            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)), AliasedReturnItem(Variable(c),Variable(c)))),None,None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10 74
-            |    b: 66
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  { /* source >> target */
-            |    a: 10 74 75 93
-            |    c: 83 96
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    a: 10 74 75 93 94
-            |    c: 83 96 97
-            |  }
-            |}"""
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 2, column 1 (offset: 59))
+          |source >> target
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(true,List()),None,None,None,None),line 3, column 1 (offset: 69))
+          |source >> target
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(c)),List(),None)))),List(),None),line 4, column 1 (offset: 76))
+          |source >> target
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)), AliasedReturnItem(Variable(c),Variable(c)))),None,None,None,None,Set()),line 5, column 1 (offset: 86))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10 74
+          |    b: 66
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  { /* source >> target */
+          |    a: 10 74 75 93
+          |    c: 83 96
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    a: 10 74 75 93 94
+          |    c: 83 96 97
+          |  }
+          |}"""
     }
   }
 
@@ -299,42 +294,43 @@ class MultipleGraphClauseSemanticCheckingTest
         |FROM GRAPH new AT 'new'
         |MATCH (b)
         |RETURN a GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
       verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new))))))),None,None,None,None)
-            |new >> new
-            |// Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None)
-            |new >> new
-            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),Some(GraphReturnItems(true,List())),None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  { /* new >> new */
-            |    a: 10 100
-            |    b: 90
-            |    GRAPH new: 70
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    a: 10 100 101
-            |    GRAPH new: 70
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |}"""
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new)),false),None))),None,None,None,None),line 2, column 6 (offset: 64))
+          |new >> new
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 3, column 1 (offset: 83))
+          |new >> new
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 4, column 1 (offset: 93))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  { /* new >> new */
+          |    a: 10 100
+          |    b: 90
+          |    GRAPH new: 70
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    a: 10 100 101
+          |    GRAPH new: 70
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |}"""
     }
   }
 
@@ -343,37 +339,37 @@ class MultipleGraphClauseSemanticCheckingTest
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
         |INTO GRAPH new AT 'new'
         |RETURN a""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-
-        verify(result.formattedContexts) shouldEqualFixNewlines
-          """// Start
-            |--
-            |// With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source))),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target))))))),None,None,None,None)
-            |source >> target
-            |// With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewTargetGraph(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new)))))),None,None,None,None)
-            |new >> new
-            |// Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set())
-            |--
-            |// End
-          """
-        verify(result.formattedScopes) shouldEqualFixNewlines
-          """{
-            |  {
-            |  }
-            |  { /* source >> target */
-            |    a: 10
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  { /* new >> new */
-            |    a: 10 90
-            |    GRAPH new: 70
-            |    GRAPH source: 18
-            |    GRAPH target: 43
-            |  }
-            |  {
-            |    a: 10 90 91
-            |  }
-            |}"""
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(a)))),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(src))),Some(Variable(source)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(tgt))),Some(Variable(target)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |source >> target
+          |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List(NewTargetGraph(GraphAtAs(GraphUrl(Right(StringLiteral(new))),Some(Variable(new)),false)))),None,None,None,None),line 2, column 6 (offset: 64))
+          |new >> new
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(a),Variable(a)))),None,None,None,None,Set()),line 3, column 1 (offset: 83))
+          |--
+          |// End
+        """
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |  }
+          |  { /* source >> target */
+          |    a: 10
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  { /* new >> new */
+          |    a: 10 90
+          |    GRAPH new: 70
+          |    GRAPH source: 18
+          |    GRAPH target: 43
+          |  }
+          |  {
+          |    a: 10 90 91
+          |  }
+          |}"""
     }
   }
 
@@ -381,23 +377,22 @@ class MultipleGraphClauseSemanticCheckingTest
     parsing(
       """WITH GRAPH AT 'url' AS foo >> GRAPH AT 'url' AS bar
         |WITH GRAPHS >> foo AS foo, bar AS foo
-        |RETURN 1
-      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+        |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
       result.errorMessages should equal(Set("Multiple result graphs with the same name are not supported"))
     }
   }
 
-  test("with is allowed to refer to missing graphs at the start of query") {
+  test("WITH is allowed to refer to missing graphs at the start of query") {
     parsing(
       """WITH GRAPHS foo >> bar
         |RETURN 1""".stripMargin) shouldVerify { result: SemanticCheckResult =>
-
+      result.errors shouldBe empty
       verify(result.formattedContexts) shouldEqualFixNewlines
         """// Start
           |--
-          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
           |foo >> bar
-          |// Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set())
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 2, column 1 (offset: 23))
           |--
           |// End"""
       verify(result.formattedScopes) shouldEqualFixNewlines
@@ -430,7 +425,371 @@ class MultipleGraphClauseSemanticCheckingTest
     }
   }
 
-  implicit class verify(actual: String) {
+  test("graphs are not lost across update statements") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |CREATE (a)
+        |MERGE (b {name: a.name})
+        |CREATE (b)-[:X]->(b)
+        |WITH *
+        |DELETE (a)
+        |RETURN GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (With(false,ReturnItems(true,Vector()),GraphReturnItems(true,List()),None,None,None,None),line 5, column 1 (offset: 80))
+          |foo >> bar
+          |// (Return(false,DiscardCardinality(),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 7, column 1 (offset: 98))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 31 50
+          |    b: 41 67 77
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 31 50 95
+          |    b: 41 67 77
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |}"""
+    }
+  }
+
+  test("Resolution of unaliased SOURCE GRAPH") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH baz, SOURCE GRAPH >>
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None),line 2, column 1 (offset: 28))
+          |foo >> bar
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)), NewContextGraphs(SourceGraphAs(None,false),None))),None,None,None,None),line 3, column 1 (offset: 38))
+          |foo >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 4, column 1 (offset: 72))
+          |foo >> foo
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 5, column 1 (offset: 82))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24 51
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> foo */
+          |    a: 35 43 44
+          |    b: 79
+          |    GRAPH baz: 51
+          |    GRAPH foo: 69
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 79
+          |    GRAPH baz: 51
+          |    GRAPH foo: 69
+          |  }
+          |}"""
+    }
+  }
+
+  test("Resolution of unaliased SOURCE GRAPH does not fail if graph is also passed on explicitly") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH baz, GRAPH foo, SOURCE GRAPH >>
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None),line 2, column 1 (offset: 28))
+          |foo >> bar
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)), ReturnedGraph(GraphAs(Variable(foo),Some(Variable(foo)),false)), NewContextGraphs(SourceGraphAs(None,false),None))),None,None,None,None),line 3, column 1 (offset: 38))
+          |foo >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 4, column 1 (offset: 83))
+          |foo >> foo
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 5, column 1 (offset: 93))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24 51
+          |    GRAPH foo: 12 62
+          |  }
+          |  { /* foo >> foo */
+          |    a: 35 43 44
+          |    b: 90
+          |    GRAPH baz: 51
+          |    GRAPH foo: 62 80
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 90
+          |    GRAPH baz: 51
+          |    GRAPH foo: 62 80
+          |  }
+          |}"""
+    }
+  }
+
+  test("Resolution of unaliased TARGET GRAPH does not fail if graph is also passed on explicitly") {
+    parsing(
+      """WITH GRAPHS foo >> bar, baz
+        |MATCH (a)
+        |WITH a GRAPH bar, GRAPH foo >> TARGET GRAPH
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None),line 2, column 1 (offset: 28))
+          |foo >> bar
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)))),GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar)),false)), NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(TargetGraphAs(None,false))))),None,None,None,None),line 3, column 1 (offset: 38))
+          |foo >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 4, column 1 (offset: 82))
+          |foo >> bar
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 5, column 1 (offset: 92))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43
+          |    GRAPH bar: 19 51
+          |    GRAPH baz: 24
+          |    GRAPH foo: 12 62
+          |  }
+          |  { /* foo >> bar */
+          |    a: 35 43 44
+          |    b: 89
+          |    GRAPH bar: 51
+          |    GRAPH foo: 62 82
+          |  }
+          |  {
+          |    a: 35 43 44
+          |    b: 89
+          |    GRAPH bar: 51
+          |    GRAPH foo: 62 82
+          |  }
+          |}"""
+    }
+  }
+
+  test("Track graphs with generated names") {
+    parsing(
+      """WITH GRAPH AT 'url' >> bar, GRAPH baz
+        |MATCH (a)
+        |MATCH (b)
+        |RETURN * GRAPHS *""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(  FRESHID21)),true),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))), ReturnedGraph(GraphAs(Variable(baz),Some(Variable(baz)),false)))),None,None,None,None),line 1, column 1 (offset: 0))
+          |  FRESHID21 >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(),None)))),List(),None),line 2, column 1 (offset: 38))
+          |  FRESHID21 >> bar
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(b)),List(),None)))),List(),None),line 3, column 1 (offset: 48))
+          |  FRESHID21 >> bar
+          |// (Return(false,ReturnItems(true,List()),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 4, column 1 (offset: 58))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 23
+          |    GRAPH baz: 34
+          |  }
+          |  { /*   FRESHID21 >> bar */
+          |    GRAPH   FRESHID21 (generated): 21
+          |    a: 45
+          |    b: 55
+          |    GRAPH bar: 23
+          |    GRAPH baz: 34
+          |  }
+          |  {
+          |    GRAPH   FRESHID21 (generated): 21
+          |    a: 45
+          |    b: 55
+          |    GRAPH bar: 23
+          |    GRAPH baz: 34
+          |  }
+          |}"""
+    }
+  }
+
+  test("UNION ALL handles graphs correctly") {
+    parsing(
+      """WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
+        |MATCH (a:Person)
+        |RETURN a.name GRAPHS *
+        |UNION ALL
+        |WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
+        |MATCH (a:City)
+        |RETURN a.name GRAPHS *
+        |""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(url2))),Some(Variable(foo)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |bar >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(LabelName(Person)),None)))),List(),None),line 2, column 1 (offset: 47))
+          |bar >> foo
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Property(Variable(a),PropertyKeyName(name)),Variable(a.name)))),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 3, column 1 (offset: 64))
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(url2))),Some(Variable(foo)),false))))),None,None,None,None),line 5, column 1 (offset: 97))
+          |bar >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(LabelName(City)),None)))),List(),None),line 6, column 1 (offset: 144))
+          |bar >> foo
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Property(Variable(a),PropertyKeyName(name)),Variable(a.name)))),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 7, column 1 (offset: 159))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    {
+          |    }
+          |    { /* bar >> foo */
+          |      a: 54 71
+          |      GRAPH bar: 11
+          |      GRAPH foo: 33
+          |    }
+          |    {
+          |      a.name: 74
+          |      GRAPH bar: 11
+          |      GRAPH foo: 33
+          |    }
+          |  }
+          |  {
+          |    {
+          |    }
+          |    { /* bar >> foo */
+          |      a: 151 166
+          |      GRAPH bar: 108
+          |      GRAPH foo: 130
+          |    }
+          |    {
+          |      a.name: 169
+          |      GRAPH bar: 108
+          |      GRAPH foo: 130
+          |    }
+          |  }
+          |}"""
+    }
+  }
+
+  test("UNION handles graphs correctly") {
+    parsing(
+      """WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
+        |MATCH (a:Person)
+        |RETURN a.name GRAPHS *
+        |UNION
+        |WITH GRAPH bar AT 'url' >> GRAPH foo AT 'url2'
+        |MATCH (a:City)
+        |RETURN a.name GRAPHS *
+        |""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+      result.errors shouldBe empty
+      verify(result.formattedContexts) shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(url2))),Some(Variable(foo)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |bar >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(LabelName(Person)),None)))),List(),None),line 2, column 1 (offset: 47))
+          |bar >> foo
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Property(Variable(a),PropertyKeyName(name)),Variable(a.name)))),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 3, column 1 (offset: 64))
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAtAs(GraphUrl(Right(StringLiteral(url))),Some(Variable(bar)),false),Some(GraphAtAs(GraphUrl(Right(StringLiteral(url2))),Some(Variable(foo)),false))))),None,None,None,None),line 5, column 1 (offset: 93))
+          |bar >> foo
+          |// (Match(false,Pattern(List(EveryPath(NodePattern(Some(Variable(a)),List(LabelName(City)),None)))),List(),None),line 6, column 1 (offset: 140))
+          |bar >> foo
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Property(Variable(a),PropertyKeyName(name)),Variable(a.name)))),Some(GraphReturnItems(true,List())),None,None,None,Set()),line 7, column 1 (offset: 155))
+          |--
+          |// End"""
+      verify(result.formattedScopes) shouldEqualFixNewlines
+        """{
+          |  {
+          |    {
+          |    }
+          |    { /* bar >> foo */
+          |      a: 54 71
+          |      GRAPH bar: 11
+          |      GRAPH foo: 33
+          |    }
+          |    {
+          |      a.name: 74
+          |      GRAPH bar: 11
+          |      GRAPH foo: 33
+          |    }
+          |  }
+          |  {
+          |    {
+          |    }
+          |    { /* bar >> foo */
+          |      a: 147 162
+          |      GRAPH bar: 104
+          |      GRAPH foo: 126
+          |    }
+          |    {
+          |      a.name: 165
+          |      GRAPH bar: 104
+          |      GRAPH foo: 126
+          |    }
+          |  }
+          |}"""
+    }
+  }
+
+  private implicit class verify(actual: String) {
     def shouldEqualFixNewlines(expected: String): Unit = {
       StringHelper.RichString(actual.trim.stripMargin).fixNewLines should equal(StringHelper.RichString(expected.trim.stripMargin).fixNewLines)
     }
@@ -441,9 +800,9 @@ class MultipleGraphClauseSemanticCheckingTest
   import scala.compat.Platform.EOL
 
   private def contextsByPosition(state: SemanticState): String = {
-    val astNodes = state.recordedContextGraphs.keySet ++ state.recordedScopes.keySet
-    val keys = astNodes.toSeq.sortBy(x => x.position.offset -> x.toString)
-    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast, "--")}$EOL// $ast")
+    val astNodes = state.recordedContextGraphs.keyPositionSet ++ state.recordedScopes.keyPositionSet
+    val keys = astNodes.toSeq.sortBy(x => x._2.offset -> x._1.toString)
+    val values = keys.map(ast => s"${state.recordedContextGraphs.getOrElse(ast._1, "--")}$EOL// $ast")
     val finalContext = state.currentScope.contextGraphs.map(_.toString).getOrElse("--")
     s"// Start$EOL${values.mkString(EOL)}$EOL$finalContext$EOL// End"
   }
@@ -456,10 +815,13 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit final class RichSemanticCheckResult(val result: SemanticCheckResult) {
     def state: SemanticState = result.state
+
     def errors: Seq[SemanticErrorDef] = result.errors
+
     def errorMessages: Set[String] = errors.map(_.msg).toSet
 
     def formattedContexts: String = contextsByPosition(state)
+
     def formattedScopes: String = fullScopeTree(state)
 
     // Useful for working on these tests
@@ -492,33 +854,50 @@ class MultipleGraphClauseSemanticCheckingTest
   //noinspection TypeAnnotation
   case class TestState(override val statement: ast.Statement) extends BaseState {
     override def queryText: String = statement.toString
+
     override def startPosition: None.type = None
+
     override object plannerName extends PlannerName {
       override def name: String = "Test"
+
       override def toTextOutput: String = name
     }
+
     override def maybeStatement = None
+
     override def maybeSemantics = None
+
     override def maybeExtractedParams = None
+
     override def maybeSemanticTable = None
+
     override def accumulatedConditions = Set.empty
+
     override def withStatement(s: Statement) = copy(s)
+
     override def withSemanticTable(s: SemanticTable) = ???
+
     override def withSemanticState(s: SemanticState) = ???
+
     override def withParams(p: Map[String, Any]) = ???
   }
 
   //noinspection TypeAnnotation
   object TestContext extends BaseContext {
     override def tracer = CompilationPhaseTracer.NO_TRACING
+
     override def notificationLogger = mock[InternalNotificationLogger]
+
     override object exceptionCreator extends ((String, InputPosition) => CypherException) {
       override def apply(msg: String, pos: InputPosition): CypherException = throw new CypherException() {
         override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
           mapper.internalException(msg, this)
       }
     }
+
     override def monitors = mock[Monitors]
+
     override def errorHandler = _ => ()
   }
+
 }
