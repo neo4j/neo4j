@@ -231,8 +231,7 @@ Failing when using a variable that is already bound in CREATE
 
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
-Combine MATCH, WITH and CREATE
-A bound node should be recognized after projection with WITH + MERGE node
+Create a relationship with the correct direction
 A bound node should be recognized after projection with WITH + MERGE pattern
 Delete nodes
 Detach delete node
@@ -272,7 +271,6 @@ Should be able to use properties from match in ON MATCH
 Should be able to use properties from match in ON MATCH and ON CREATE
 Should be able to set labels on match
 Should be able to set labels on match and on create
-Should support updates while merging
 Merges should not be able to match on deleted nodes
 ON CREATE on created nodes
 Creating a relationship

@@ -45,6 +45,11 @@ object Rewritable {
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
 
     def dup(children: Seq[AnyRef]): AnyRef = try { that match {
+      case a: RewritableWithMemory =>
+        val result = a.dup(children)
+        result.rememberMe(a)
+        result
+
         case a: Rewritable =>
           a.dup(children)
         case p: Product =>
@@ -76,6 +81,10 @@ object Rewritable {
   implicit class DuplicatableProduct(val product: Product) extends AnyVal {
 
     def dup(children: Seq[AnyRef]): Product = product match {
+      case a: RewritableWithMemory =>
+        val result = a.dup(children)
+        result.rememberMe(a)
+        result
       case a: Rewritable =>
         a.dup(children)
       case _ =>
@@ -100,8 +109,19 @@ object Rewritable {
   }
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
-    def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that)
+    def rewrite(rewriter: Rewriter): AnyRef = {
+      val result = rewriter.apply(that)
+      if (that.isInstanceOf[RewritableWithMemory]) {
+        val withMemory = result.asInstanceOf[RewritableWithMemory]
+        withMemory.rememberMe(that)
+      }
+      result
+    }
     def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
+  }
+
+  trait RewritableWithMemory extends Rewritable {
+    def rememberMe(old: AnyRef): Unit
   }
 }
 

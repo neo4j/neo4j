@@ -50,13 +50,14 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   implicit private val table = SemanticTable()
 
   private def build(beforeRewrite: LogicalPlan): Pipe = {
+    beforeRewrite.assignIds()
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
     when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
     val context: EnterpriseRuntimeContext = CompiledRuntimeContextHelper.create(planContext = planContext)
-    val beforePipelines: Map[LogicalPlan, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottededRewriter = new SlottededRewriter(context.planContext)
-    val (logicalPlan, pipelines) = slottededRewriter(beforeRewrite, beforePipelines)
+    val logicalPlan = slottededRewriter(beforeRewrite, pipelines)
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, SlottedExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
@@ -96,6 +97,33 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
         AllNodesScanSlottedPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))(),
         Literal(1)
       )()
+    )
+  }
+
+  test("eagerize before create node") {
+    // given
+    val label = LabelName("label")(pos)
+    val allNodeScan: AllNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val eager = Eager(allNodeScan)(solved)
+    val createNode = CreateNode(eager, z, Seq(label), None)(solved)
+
+    // when
+    val pipe = build(createNode)
+
+    // then
+    val beforeEagerPipelineInformation = PipelineInformation.empty
+      .newLong("x", false, CTNode)
+
+    val afterEagerPipelineInformation = PipelineInformation.empty
+      .newLong("x", false, CTNode)
+      .newLong("z", false, CTNode)
+
+    pipe should equal(
+      CreateNodeSlottedPipe(
+        EagerSlottedPipe(
+          AllNodesScanSlottedPipe("x", beforeEagerPipelineInformation)(),
+          afterEagerPipelineInformation)(),
+        "z", afterEagerPipelineInformation, Seq(LazyLabel(label)), None)()
     )
   }
 

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -57,10 +57,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
+      val pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
                                                               expressionConverters = converters,
-                                                              pipeBuilderFactory = EnterprisePipeBuilderFactory(
-                                                                pipelines))
+                                                              pipeBuilderFactory = pipeBuilderFactory)
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
                                                          from.plannerName)
       val pipeInfo = executionPlanBuilder
@@ -85,9 +85,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val beforePipelines: Map[LogicalPlan, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
+    beforeRewrite.assignIds()
+    val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottededRewriter(context.planContext)
-    val (logicalPlan, pipelines) = slottedRewriter(beforeRewrite, beforePipelines)
+    val logicalPlan = slottedRewriter(beforeRewrite, pipelines)
     (logicalPlan, pipelines)
   }
 
@@ -112,7 +113,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
   }
 
-  case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlan, PipelineInformation])
+  case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlanId, PipelineInformation])
     extends PipeBuilderFactory {
     def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id],
               expressionConverters: ExpressionConverters)

@@ -42,7 +42,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
                          idMap: Map[LogicalPlan, Id],
                          monitors: Monitors,
-                         pipelines: Map[LogicalPlan, PipelineInformation],
+                         pipelines: Map[LogicalPlanId, PipelineInformation],
                          readOnly: Boolean,
                          rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                         (implicit context: PipeExecutionBuilderContext, planContext: PlanContext)
@@ -55,7 +55,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipelineInformation = pipelines(plan)
+    val pipelineInformation = pipelines(plan.assignedId)
 
     plan match {
       case AllNodesScan(IdName(column), _) =>
@@ -93,7 +93,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipeline = pipelines(plan)
+    val pipeline = pipelines(plan.assignedId)
 
     plan match {
       case ProduceResult(columns, _) =>
@@ -141,7 +141,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val relOffset = pipeline.getReferenceOffsetFor(relName)
 
         // The node/edge predicates are evaluated on the incoming pipeline, not the produced one
-        val incomingPipeline = pipelines(sourcePlan)
+        val incomingPipeline = pipelines(sourcePlan.assignedId)
         val tempNodeOffset = incomingPipeline.getLongOffsetFor(tempNode)
         val tempEdgeOffset = incomingPipeline.getLongOffsetFor(tempEdge)
         val sizeOfTemporaryStorage = 2
@@ -236,6 +236,9 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Sort(_, sortItems) =>
         SortRegisterPipe(source, sortItems.map(translateColumnOrder(pipeline, _)), pipeline)(id = id)
 
+      case Eager(_) =>
+        EagerSlottedPipe(source, pipeline)(id)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
@@ -291,7 +294,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipeline = pipelines(plan)
+    val pipeline = pipelines(plan.assignedId)
 
     plan match {
       case Apply(_, _) =>
@@ -303,9 +306,8 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 
       case _: CartesianProduct =>
         val lhsPlan = plan.lhs.get
-        val lhsLongCount = pipelines(lhsPlan).numberOfLongs
-        val lhsRefCount = pipelines(lhsPlan).numberOfReferences
-        CartesianProductSlottedPipe(lhs, rhs, lhsLongCount, lhsRefCount, pipeline)(id)
+        val lhsPipeline = pipelines(lhsPlan.assignedId)
+        CartesianProductSlottedPipe(lhs, rhs, lhsPipeline.numberOfLongs, lhsPipeline.numberOfReferences, pipeline)(id)
 
       case ConditionalApply(_, _, items) =>
         val (longIds , refIds) = items.partition(idName => pipeline.get(idName.name) match {

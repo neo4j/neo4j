@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewritable}
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 
 /*
@@ -36,7 +36,7 @@ to data in the database, to the root, which is the final operator producing the 
 abstract class LogicalPlan
   extends Product
   with Strictness
-  with Rewritable {
+  with RewritableWithMemory {
 
   self =>
 
@@ -44,6 +44,36 @@ abstract class LogicalPlan
   def rhs: Option[LogicalPlan]
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
+
+  def assignedId: LogicalPlanId = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
+  def assignIds(): Unit = {
+    if(_id.nonEmpty)
+      throw new InternalException("Id has already been assigned")
+
+    val builder = new IdAssigner
+    builder.assignIds()
+    assignedId
+  }
+
+  private var _id: Option[LogicalPlanId] = None
+
+  private class IdAssigner extends TreeBuilder[Int] {
+    def assignIds() = create(self)
+
+    private var count = 0
+
+    override protected def build(plan: LogicalPlan) = {
+      plan._id = Some(new LogicalPlanId(count))
+      count = count + 1
+      count
+    }
+
+    override protected def build(plan: LogicalPlan, source: Int) = build(plan)
+
+    override protected def build(plan: LogicalPlan, lhs: Int, rhs: Int) = build(plan)
+  }
+
+  override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
 
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
@@ -176,3 +206,7 @@ final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: 
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
 final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
+
+class LogicalPlanId(val underlying: Int) extends AnyVal {
+  def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)
+}

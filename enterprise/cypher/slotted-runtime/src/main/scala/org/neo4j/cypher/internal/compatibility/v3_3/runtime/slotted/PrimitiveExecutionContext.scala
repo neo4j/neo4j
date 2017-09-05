@@ -30,8 +30,8 @@ object PrimitiveExecutionContext {
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
 
-  private val longs = new Array[Long](pipeline.numberOfLongs)
-  private val refs = new Array[AnyValue](pipeline.numberOfReferences)
+  override val longs = new Array[Long](pipeline.numberOfLongs)
+  override val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
   override def toString(): String = s"pipeLine: $pipeline, longs[${longs.length}]: $longs, refs[${refs.length}]: $refs"
 
@@ -71,11 +71,11 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
     value
   }
 
-  override def +=(kv: (String, AnyValue)) = fail()
+  override def +=(kv: (String, AnyValue)): Nothing = fail()
 
-  override def -=(key: String) = fail()
+  override def -=(key: String): Nothing = fail()
 
-  override def get(key: String) = fail()
+  override def get(key: String): Nothing = fail()
 
   override def iterator =
     // This method implementation is for debug usage only (the debugger will invoke it when stepping).

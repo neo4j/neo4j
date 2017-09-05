@@ -40,9 +40,9 @@ import scala.collection.mutable
   **/
 object SlotAllocation {
 
-  def allocateSlots(lp: LogicalPlan): Map[LogicalPlan, PipelineInformation] = {
+  def allocateSlots(lp: LogicalPlan): Map[LogicalPlanId, PipelineInformation] = {
 
-    val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
+    val result = new mutable.OpenHashMap[LogicalPlanId, PipelineInformation]()
 
     val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
     val outputStack = new mutable.Stack[PipelineInformation]()
@@ -76,13 +76,13 @@ object SlotAllocation {
         case (None, None) =>
           val argument = if (argumentStack.isEmpty) None else Some(argumentStack.top)
           val output = allocate(current, nullable, argument)
-          result += (current -> output)
+          result += (current.assignedId -> output)
           outputStack.push(output)
 
         case (Some(_), None) =>
           val incomingPipeline = outputStack.pop()
           val output = allocate(current, nullable, incomingPipeline)
-          result += (current -> output)
+          result += (current.assignedId -> output)
           outputStack.push(output)
 
         case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
@@ -99,7 +99,7 @@ object SlotAllocation {
           val rhsPipeline = outputStack.pop()
           val lhsPipeline = outputStack.pop()
           val output = allocate(current, nullable, lhsPipeline, rhsPipeline)
-          result += (current -> output)
+          result += (current.assignedId -> output)
           if (isAnApplyPlan(current))
             argumentStack.pop()
           outputStack.push(output)
@@ -236,6 +236,10 @@ object SlotAllocation {
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
 
+      case Eager(_) =>
+        val newPipeline = incomingPipeline.seedClone()
+        newPipeline
+
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
 
@@ -291,4 +295,3 @@ object SlotAllocation {
 }
 
 class SlotAllocationFailed(str: String) extends InternalException(str)
-

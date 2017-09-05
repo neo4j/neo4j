@@ -103,16 +103,52 @@ trait CypherComparisonSupport extends CypherTestSupport {
       config.scenarios.head
   }
 
+  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
+
+  protected def updateWith(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, false, params: _*)
+
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    query: String,
+                                                    params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
+
   protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
                                                     query: String,
                                                     checkPlans: Boolean,
                                                     params: (String, Any)*): InternalExecutionResult = {
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, Configs.Empty, query, checkPlans, params: _*)
+  }
+
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    ignoreScenarios: TestConfiguration,
+                                                    query: String,
+                                                    checkPlans: Boolean,
+                                                    params: (String, Any)*): InternalExecutionResult = {
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, checkPlans, () => {}, params: _*)
+  }
+
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    ignoreScenarios: TestConfiguration,
+                                                    query: String,
+                                                    checkPlans: Boolean,
+                                                    executeBefore: () => Unit,
+                                                    params: (String, Any)*): InternalExecutionResult = {
+    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
+
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
 
-    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
+    val positiveResults = (runAgainstScenarios.scenarios - firstScenario).flatMap {
       thisScenario =>
         thisScenario.prepare()
-        val tryResult = graph.rollback(Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)))
+        val tryResult: Try[InternalExecutionResult] = graph.rollback(
+          {
+            executeBefore()
+            Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
+          }
+        )
 
         val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
@@ -134,6 +170,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
 
     firstScenario.prepare()
+    executeBefore()
     val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
     firstScenario.checkStateForSuccess(query)
     firstScenario.checkResultForSuccess(query, lastResult)
@@ -149,21 +186,30 @@ trait CypherComparisonSupport extends CypherTestSupport {
     lastResult
   }
 
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
+  private def assertNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
+    val hasOverlap = expectedSuccessFrom.scenarios.exists(ignoreScenarios.scenarios.contains(_))
+    if (hasOverlap)
+      fail("Set of configurations that were expected to succeed and the set of configs that should be ignored are overlapping")
+  }
 
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
 
-  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
+  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                     query: String,
+                                                     params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
 
-  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
+  protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
+  InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, Configs.Empty, query, checkPlans, params: _*)
 
-  protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration,
-                                              query: String,
-                                              checkPlans: Boolean,
-                                              params: (String, Any)*):
+  protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
   InternalExecutionResult = {
+    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
     if (expectedSuccessFrom.scenarios.isEmpty) {
-      for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
+      for (thisScenario <- runAgainstScenarios.scenarios) {
         thisScenario.prepare()
         val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
         thisScenario.checkStateForFailure(query)
@@ -176,7 +222,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
       firstScenario.checkStateForSuccess(query)
 
-      for (thisScenario <- Configs.AbsolutelyAll.scenarios if thisScenario != firstScenario) {
+      for (thisScenario <- runAgainstScenarios.scenarios if thisScenario != firstScenario) {
         thisScenario.prepare()
         val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
 
@@ -280,6 +326,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
+
+    def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
+
+    def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
+
+    def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
+
+    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
 
     def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
 

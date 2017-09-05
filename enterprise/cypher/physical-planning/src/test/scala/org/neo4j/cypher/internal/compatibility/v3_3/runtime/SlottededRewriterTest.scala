@@ -39,22 +39,23 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), allNodes)(solved)
     val produceResult = ProduceResult(Seq("x"), selection)
+    produceResult.assignIds()
     val offset = 0
     val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      selection -> pipeline,
-      produceResult -> pipeline)
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      allNodes.assignedId -> pipeline,
+      selection.assignedId -> pipeline,
+      produceResult.assignedId -> pipeline)
     val tokenContext = mock[TokenContext]
     val tokenId = 666
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
     val rewriter = new SlottededRewriter(tokenContext)
-    val (result, newLookup) = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup)
 
     val newPredicate = GreaterThan(NodeProperty(offset, tokenId, "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
-    newLookup(result) should equal(pipeline)
+    lookup(result.assignedId) should equal(pipeline)
   }
 
   test("comparing two relationship ids simpler") {
@@ -68,6 +69,7 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
+    selection.assignIds()
     val pipelineInformation = PipelineInformation(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
@@ -76,19 +78,19 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       "r2" -> edgeAt(4, "r2")
     ), numberOfLongs = 5, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      argument -> pipelineInformation,
-      selection -> pipelineInformation
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      argument.assignedId -> pipelineInformation,
+      selection.assignedId -> pipelineInformation
     )
     val tokenContext = mock[TokenContext]
     val rewriter = new SlottededRewriter(tokenContext)
 
     // when
-    val (result, newLookup) = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup)
 
     // then
     result should equal(Selection(Seq(Not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))(pos)), argument)(solved))
-    newLookup(result) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(pipelineInformation)
   }
 
   test("return nullable node") {
@@ -98,13 +100,14 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val argument = AllNodesScan(node1, Set.empty)(solved)
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
+    selection.assignIds()
     val pipelineInformation = PipelineInformation(Map(
       "a" -> LongSlot(0, nullable = true, typ = CTNode, name = "a")
     ), numberOfLongs = 1, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      argument -> pipelineInformation,
-      selection -> pipelineInformation
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      argument.assignedId -> pipelineInformation,
+      selection.assignedId -> pipelineInformation
     )
     val tokenContext = mock[TokenContext]
     val tokenId = 666
@@ -112,12 +115,12 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val rewriter = new SlottededRewriter(tokenContext)
 
     // when
-    val (result, newLookup) = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup)
 
     // then
     val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666, "a.prop")), literalInt(42))(pos)
     result should equal(Selection(Seq(expectedPredicate), argument)(solved))
-    newLookup(result) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(pipelineInformation)
   }
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n when token is unknown") {
@@ -125,21 +128,22 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), allNodes)(solved)
     val produceResult = ProduceResult(Seq("x"), selection)
+    produceResult.assignIds()
     val offset = 0
     val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      selection -> pipeline,
-      produceResult -> pipeline)
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      allNodes.assignedId -> pipeline,
+      selection.assignedId -> pipeline,
+      produceResult.assignedId -> pipeline)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottededRewriter(tokenContext)
-    val (result, newLookup) = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup)
 
     val newPredicate = GreaterThan(NodePropertyLate(offset, "prop", "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
-    newLookup(result) should equal(pipeline)
+    lookup(result.assignedId) should equal(pipeline)
   }
 
   test("reading property key when the token does not exist at compile time") {
@@ -151,25 +155,26 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val argument = Argument(Set(node1, node2, edge))(solved)()
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
+    selection.assignIds()
     val pipelineInformation = PipelineInformation(Map(
       "a" -> nodeAt(0, "a"),
       "b" -> nodeAt(1, "b"),
       "r" -> edgeAt(2, "r")
     ), numberOfLongs = 3, numberOfReferences = 0)
 
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      argument -> pipelineInformation,
-      selection -> pipelineInformation
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      argument.assignedId -> pipelineInformation,
+      selection.assignedId -> pipelineInformation
     )
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottededRewriter(tokenContext)
 
     // when
-    val (result, newLookup) = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup)
 
     result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop", "r.prop"), literalInt(42))(pos)), argument)(solved))
-    newLookup(result) should equal(pipelineInformation)
+    lookup(result.assignedId) should equal(pipelineInformation)
   }
 
   test("projection with map lookup MATCH (n) RETURN n.prop") {
@@ -178,35 +183,36 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     val allNodes = AllNodesScan(IdName.fromVariable(node), Set.empty)(solved)
     val projection = Projection(allNodes, Map("n.prop" -> prop("n", "prop")))(solved)
     val produceResult = ProduceResult(Seq("n.prop"), projection)
+    produceResult.assignIds()
     val nodeOffset = 0
     val propOffset = 0
     val pipeline = PipelineInformation(Map(
       "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode, "n"),
       "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny, "n.prop")),
       1, 1)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      projection -> pipeline,
-      produceResult -> pipeline)
+    val lookup: Map[LogicalPlanId, PipelineInformation] = Map(
+      allNodes.assignedId -> pipeline,
+      projection.assignedId -> pipeline,
+      produceResult.assignedId -> pipeline)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottededRewriter(tokenContext)
 
     //when
-    val (result, newLookup) = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup)
 
     //then
     val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")))(solved)
     result should equal(
       ProduceResult(Seq("n.prop"), newProjection))
-    newLookup(result) should equal(pipeline)
-    newLookup(newProjection) should equal(pipeline)
+    lookup(result.assignedId) should equal(pipeline)
   }
 
   test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
     // given
     val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
+    projection.assignIds()
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -216,7 +222,7 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // when
     val rewriter = new SlottededRewriter(tokenContext)
-    val (resultPlan, newLookup) = rewriter(projection, Map(leaf -> pipeline, projection -> pipeline))
+    val resultPlan = rewriter(projection, Map(leaf.assignedId -> pipeline, projection.assignedId -> pipeline))
 
     // then
     resultPlan should equal(
@@ -231,6 +237,7 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
+    projection.assignIds()
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
@@ -240,7 +247,7 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
     // when
     val rewriter = new SlottededRewriter(tokenContext)
-    val (resultPlan, newLookup) = rewriter(projection, Map(leaf -> pipeline, projection -> pipeline))
+    val resultPlan = rewriter(projection, Map(leaf.assignedId -> pipeline, projection.assignedId -> pipeline))
 
     // then
     val nodeOffset = pipeline.getLongOffsetFor("x")
@@ -252,4 +259,39 @@ class SlottededRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     )
   }
 
+  test("singlerow on two sides of Apply") {
+    val sr1 = SingleRow()(solved)
+    val sr2 = SingleRow()(solved)
+    val pr1A = Projection(sr1, Map("x" -> literalInt(42)))(solved)
+    val pr1B = Projection(pr1A, Map("xx" -> varFor("x")))(solved)
+    val pr2 = Projection(sr2, Map("y" -> literalInt(666)))(solved)
+    val apply = Apply(pr1B, pr2)(solved)
+    apply.assignIds()
+
+    val lhsPipeline = PipelineInformation.empty.
+      newReference("x", nullable = true, CTAny).
+      newReference("xx", nullable = true, CTAny)
+
+    val rhsPipeline = PipelineInformation.empty.
+      newReference("y", nullable = true, CTAny)
+
+    // when
+    val rewriter = new SlottededRewriter(mock[TokenContext])
+    val lookup = Map(sr1.assignedId -> lhsPipeline, pr1A.assignedId -> lhsPipeline, pr1B.assignedId -> lhsPipeline,
+      sr2.assignedId -> rhsPipeline, pr2.assignedId -> rhsPipeline, apply.assignedId -> rhsPipeline)
+    val resultPlan = rewriter(apply, lookup)
+
+    // then
+
+    val pr1BafterRewrite = Projection(pr1A, Map("xx" -> ReferenceFromSlot(0)))(solved)
+    val applyAfterRewrite = Apply(pr1BafterRewrite, pr2)(solved)
+
+    resultPlan should equal(
+      applyAfterRewrite
+    )
+
+    lookup(resultPlan.assignedId) should equal(rhsPipeline)
+    lookup(sr1.assignedId) should equal(lhsPipeline)
+    lookup(sr2.assignedId) should equal(rhsPipeline)
+  }
 }

@@ -39,9 +39,11 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
+  def longs(): Array[Long]
 
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
+  def refs(): Array[AnyValue]
 
   def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
   def newWith1(key1: String, value1: AnyValue): ExecutionContext
@@ -60,6 +62,11 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
   override def getLongAt(offset: Int): Long = fail()
+  override def longs(): Array[Long] = fail()
+
+  override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
+  override def getRefAt(offset: Int): AnyValue = fail()
+  override def refs(): Array[AnyValue] = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
 
@@ -78,32 +85,32 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     m.foreach(f)
   }
 
-  override def +=(kv: (String, AnyValue)) = {
+  override def +=(kv: (String, AnyValue)): MapExecutionContext.this.type = {
     m += kv
     this
   }
 
   override def toMap[T, U](implicit ev: (String, AnyValue) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
-  def newWith(newEntries: Seq[(String, AnyValue)]) =
+  override def newWith(newEntries: Seq[(String, AnyValue)]): MapExecutionContext.this.type =
     createWithNewMap(m.clone() ++= newEntries)
 
   // This may seem silly but it has measurable impact in tight loops
 
-  override def newWith1(key1: String, value1: AnyValue) = {
+  override def newWith1(key1: String, value1: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     createWithNewMap(newMap)
   }
 
-  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue) = {
+  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
     createWithNewMap(newMap)
   }
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue) = {
+  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): MapExecutionContext.this.type = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
@@ -121,8 +128,4 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     m.remove(key)
     this
   }
-
-  override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
-
-  override def getRefAt(offset: Int): AnyValue = fail()
 }
