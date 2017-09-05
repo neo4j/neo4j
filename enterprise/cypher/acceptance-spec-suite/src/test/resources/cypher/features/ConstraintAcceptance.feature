@@ -60,7 +60,6 @@ Feature: ConstraintAcceptance
       | 11     |
     And the side effects should be:
       | +nodes      | 1 |
-      | +labels     | 1 |
       | +properties | 1 |
 
   Scenario: Merge using unique constraint should update existing node
@@ -404,7 +403,7 @@ Feature: ConstraintAcceptance
     And the side effects should be:
       | +nodes      | 1 |
       | +labels     | 1 |
-      | +properties | 3 |
+      | +properties | 2 |
 
   Scenario: Works with property in map that gets set
     Given an empty graph
@@ -426,7 +425,7 @@ Feature: ConstraintAcceptance
     And the side effects should be:
       | +nodes      | 1 |
       | +labels     | 1 |
-      | +properties | 3 |
+      | +properties | 2 |
 
   Scenario: Failing when creation would violate constraint
     Given an empty graph

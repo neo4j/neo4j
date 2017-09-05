@@ -19,6 +19,8 @@
  */
 package cypher.feature.parser
 
+import java.util.Arrays.asList
+
 import cypher.feature.parser.SideEffects.{State, Values}
 import org.scalatest.FunSuite
 
@@ -48,11 +50,41 @@ class SideEffectsTest extends ParsingTestSupport {
   }
 
   test("state prop diffs") {
-    State(props = Set((1, "foo", 1), (4, "bar", "val"))) diff State() should equal(Values(
+    State(props = Set((1, "foo", any(1)), (4, "bar", any("val")))) diff State() should equal(Values(
       propsDeleted = 2
     ))
-    State(props = Set((1, "foo", 1), (4, "bar", "val"))) diff State(props = Set(())) should equal(Values(
-      propsDeleted = 2
+    State(props = Set(
+      (1, "foo", any(1)),
+      (4, "bar", any("val")))
+    ) diff State(props = Set(
+      (1, "foo", any(2)),
+      (3, "bar", any("val")))
+    ) should equal(Values(
+      propsDeleted = 2,
+      propsCreated = 2
+    ))
+    State(props = Set(
+      (1, "foo", any(1)),
+      (4, "bar", any("val")))
+    ) diff State(props = Set(
+      (1, "foo", any(2)),
+      (3, "bar", any("val")))
+    ) should equal(Values(
+      propsDeleted = 2,
+      propsCreated = 2
     ))
   }
+
+  test("converts primitive arrays") {
+    SideEffects.convertArrays(Array(1, 2, 3)) should equal(IndexedSeq(1, 2, 3))
+    SideEffects.convertArrays(Array("1", "2")) should equal(IndexedSeq("1", "2"))
+  }
+
+  test("doesn't convert other stuff") {
+    SideEffects.convertArrays("foo") should equal("foo")
+    SideEffects.convertArrays(Vector("1", "2")) should equal(Vector("1", "2"))
+    SideEffects.convertArrays(asList("foo", 1)) should equal(asList("foo", 1))
+  }
+
+  private def any(a: Any): AnyRef = a.asInstanceOf[AnyRef]
 }

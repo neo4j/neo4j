@@ -28,7 +28,7 @@ import scala.collection.JavaConverters._
 
 object SideEffects {
 
-  def expect(expectations: DataTable): Expectations = {
+  def expect(expectations: DataTable): Values = {
     val keys = expectations.transpose().topCells().asScala
     val values = expectations.transpose().cells(1).asScala.head
 
@@ -53,7 +53,7 @@ object SideEffects {
         s"Invalid side effect: $sideEffect. Valid ones are: ${ALL.mkString(",")}")
     }
 
-    Expectations(expected)
+    expected
   }
 
   case class Values(nodesCreated: Int = 0,
@@ -108,34 +108,29 @@ object SideEffects {
     }
   }
 
+  private val prefix = "CYPHER 3.3 runtime=interpreted"
+
   private val nodesQuery =
-    """MATCH (n) RETURN id(n) AS node"""
+    s"""$prefix MATCH (n) RETURN id(n) AS node"""
 
   private val relsQuery =
-    """MATCH ()-[r]->() RETURN id(r) AS rel"""
+    s"""$prefix MATCH ()-[r]->() RETURN id(r) AS rel"""
 
   private val labelsQuery =
-    """MATCH (n)
-      |UNWIND labels(n) AS label
-      |RETURN DISTINCT label""".stripMargin
+    s"""$prefix MATCH (n)
+       |UNWIND labels(n) AS label
+       |RETURN DISTINCT label""".stripMargin
 
   private val propsQuery =
-    """MATCH (n)
-      |UNWIND keys(n) AS key
-      |WITH properties(n) AS properties, key, n
-      |RETURN id(n) AS entity, key, properties[key] AS value
-      |UNION ALL
-      |MATCH ()-[r]->()
-      |UNWIND keys(r) AS key
-      |WITH properties(r) AS properties, key, r
-      |RETURN id(r) AS entity, key, properties[key] AS value""".stripMargin
-
-  case class Expectations(v: Values) {
-    def recordState(db: GraphDatabaseService): Validator = {
-      val state = measureState(db)
-      Validator(v, state)
-    }
-  }
+    s"""$prefix MATCH (n)
+       |UNWIND keys(n) AS key
+       |WITH properties(n) AS properties, key, n
+       |RETURN id(n) AS entity, key, properties[key] AS value
+       |UNION ALL
+       |MATCH ()-[r]->()
+       |UNWIND keys(r) AS key
+       |WITH properties(r) AS properties, key, r
+       |RETURN id(r) AS entity, key, properties[key] AS value""".stripMargin
 
   def measureState(db: GraphDatabaseService): State = {
     val nodes = db.execute(nodesQuery).columnAs[Long]("node").asScala.toSet
@@ -143,7 +138,7 @@ object SideEffects {
     val labels = db.execute(labelsQuery).columnAs[String]("label").asScala.toSet
     val props = db.execute(propsQuery).asScala.foldLeft(Set.empty[(Long, String, AnyRef)]) {
       case (acc, map) =>
-        val triple = (map.get("entity").asInstanceOf[Long], map.get("key").asInstanceOf[String], map.get("value"))
+        val triple = (map.get("entity").asInstanceOf[Long], map.get("key").asInstanceOf[String], convertArrays(map.get("value")))
 
         acc + triple
     }
@@ -151,11 +146,10 @@ object SideEffects {
     State(nodes, rels, labels, props)
   }
 
-  case class Validator(expected: Values, zeroState: State) {
-    def validate(db: GraphDatabaseService): Unit = {
-      val state = measureState(db)
-
-    }
+  def convertArrays(value: AnyRef): AnyRef = {
+    if (value.getClass.isArray)
+      value.asInstanceOf[Array[_]].toIndexedSeq
+    else
+      value
   }
-
 }

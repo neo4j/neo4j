@@ -18,7 +18,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
-Feature: ConstraintAcceptance
+Feature: IndexAcceptance
 
   Scenario: Handling numerical literal on the left when using an index
     Given an empty graph
@@ -142,7 +142,7 @@ Feature: ConstraintAcceptance
     Then the result should be empty
     And the side effects should be:
       | +nodes      | 3 |
-      | +labels     | 3 |
+      | +labels     | 1 |
       | +properties | 3 |
 
   Scenario: Merge with an index must properly handle multiple labels
@@ -160,12 +160,12 @@ Feature: ConstraintAcceptance
       MERGE (test:L:B {prop: 42})
       RETURN labels(test) AS labels
       """
-    Then the result should be:
+    Then the result should be (ignoring element order for lists):
       | labels     |
       | ['L', 'B'] |
     And the side effects should be:
       | +nodes      | 1 |
-      | +labels     | 2 |
+      | +labels     | 1 |
       | +properties | 1 |
 
   Scenario: Should allow AND and OR with index and equality predicates

@@ -22,9 +22,12 @@ package cypher.feature.steps
 import java.util
 
 import cypher.cucumber.BlacklistPlugin.blacklisted
-import org.neo4j.graphdb.{QueryStatistics, Result, Transaction}
+import cypher.feature.parser.SideEffects
+import cypher.feature.parser.SideEffects.Values
+import org.neo4j.graphdb.{Result, Transaction}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.opencypher.tools.tck.InvalidFeatureFormatException
+import org.scalatest.Matchers._
 
 import scala.util.Try
 
@@ -60,8 +63,8 @@ class ScenarioExecutionBuilder {
   var expectedError: (Try[Result], Transaction) => Unit = _
   def expectError(function: (Try[Result], Transaction) => Unit) = expectedError = function
 
-  var sideEffects: (QueryStatistics) => Unit = _
-  def sideEffects(f: (QueryStatistics) => Unit): Unit = sideEffects = f
+  var sideEffects: Values = _
+  def sideEffects(v: Values): Unit = sideEffects = v
 
   def build(): ScenarioExecution = {
     if (skip) {
@@ -128,16 +131,21 @@ case class RegularScenario(name: String,
                            procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                            executions: Seq[(GraphDatabaseAPI, util.Map[String, Object]) => Result],
                            expectations: Seq[(Result) => Unit],
-                           sideEffects: (QueryStatistics) => Unit
+                           expectedSideEffects: Values
                           ) extends ScenarioExecution {
   override def run(): Unit = {
     // Sometimes the scenario just can't be run for some reason
+    // NOTE: Scenarios that are ignored like this will not signal when they start working again
     if (blacklisted && deeperProblems(name))
       return
 
     try {
-      init.foreach(f => f(db))
+      init.foreach {
+        f => f(db)
+      }
       procedureRegistration.foreach(f => f(db))
+
+      val zeroState = SideEffects.measureState(db)
 
       var seenBlackListedFail = false
       executions.zip(expectations).foreach {
@@ -147,10 +155,18 @@ case class RegularScenario(name: String,
             val result = execute(db, params)
 
             expect(result)
-            if (!blacklisted)
-              tx.success()
 
-            sideEffects(result.getQueryStatistics)
+            if (!blacklisted) {
+              tx.success()
+              tx.close()
+            }
+
+            val afterState = SideEffects.measureState(db)
+            val actual = zeroState diff afterState
+            withClue("Incorrect side effects:") {
+              actual should equal(expectedSideEffects)
+            }
+
           } catch {
             case e if !blacklisted =>
               throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
@@ -174,7 +190,7 @@ case class RegularScenario(name: String,
       throw InvalidFeatureFormatException(s"No execution specified for scenario $name")
     if (expectations.isEmpty)
       throw InvalidFeatureFormatException(s"No expectation specified for scenario $name")
-    if (sideEffects == null)
+    if (expectedSideEffects == null)
       throw InvalidFeatureFormatException(s"No side effects expectation specified for scenario $name")
     if (executions.size != expectations.size)
       throw InvalidFeatureFormatException(s"Execution and expectation mismatch; must be same amount (scenario $name)")

@@ -33,7 +33,7 @@ Feature: ForeachAcceptance
     Then the result should be empty
     And the side effects should be:
       | +nodes  | 3 |
-      | +labels | 6 |
+      | +labels | 2 |
     When executing control query:
       """
       MATCH (n)
