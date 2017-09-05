@@ -20,12 +20,10 @@
 package org.neo4j.kernel.enterprise.builtinprocs;
 
 import org.hamcrest.Matcher;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +43,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
-import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
@@ -91,9 +88,6 @@ public class ListQueriesProcedureTest
     public final RuleChain chain = RuleChain.outerRule( db ).around( threads );
 
     private static final int SECONDS_TIMEOUT = 120;
-
-    @Rule
-    public SuppressOutput suppress = SuppressOutput.suppressAll();
 
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
@@ -385,19 +379,6 @@ public class ListQueriesProcedureTest
         assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
     }
 
-    @Ignore
-    @Test
-    public void sampleOutput() throws Exception
-    {
-        String query = "MATCH (n) SET n.v = n.v + 1";
-        db.execute( query ).close(); // ensure it's cached first
-        try ( Resource<Node> test = test( db::createNode, query );
-              PrintWriter out = new PrintWriter( System.out ) )
-        {
-            db.execute( "CALL dbms.listQueries" ).writeAsStringTo( out );
-        }
-    }
-
     private void shouldListUsedIndexes( String label, String property ) throws Exception
     {
         // given
@@ -475,18 +456,21 @@ public class ListQueriesProcedureTest
     private static class Resource<T> implements AutoCloseable
     {
         private final CountDownLatch latch;
+        private final CountDownLatch finishLatch;
         private final T resource;
 
-        private Resource( CountDownLatch latch, T resource )
+        private Resource( CountDownLatch latch, CountDownLatch finishLatch, T resource )
         {
             this.latch = latch;
+            this.finishLatch = finishLatch;
             this.resource = resource;
         }
 
         @Override
-        public void close()
+        public void close() throws InterruptedException
         {
             latch.countDown();
+            finishLatch.await();
         }
 
         public T resource()
@@ -500,6 +484,7 @@ public class ListQueriesProcedureTest
     {
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatch = new CountDownLatch( 1 );
+        CountDownLatch finishQueriesLatch = new CountDownLatch( 1 );
         T resource;
         try ( Transaction tx = db.beginTx() )
         {
@@ -530,9 +515,13 @@ public class ListQueriesProcedureTest
                 t.printStackTrace();
                 throw new RuntimeException( t );
             }
+            finally
+            {
+                finishQueriesLatch.countDown();
+            }
             return null;
         }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
 
-        return new Resource<>( listQueriesLatch, resource );
+        return new Resource<>( listQueriesLatch, finishQueriesLatch, resource );
     }
 }
