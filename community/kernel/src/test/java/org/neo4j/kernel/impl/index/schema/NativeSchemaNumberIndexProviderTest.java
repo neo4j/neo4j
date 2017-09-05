@@ -127,22 +127,23 @@ public class NativeSchemaNumberIndexProviderTest
 
         // when
         IndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
+        try ( IndexAccessor accessor = provider.getOnlineAccessor( indexId, descriptor, samplingConfig() ) )
         {
-            Value value = Values.intValue( 1 );
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), value ) );
-
-            // then
-            try
+            boolean failed = false;
+            try ( IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
+                Value value = Values.intValue( 1 );
+                indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), value ) );
+
+                // then
                 indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), value ) );
-                fail( "Should have failed" );
             }
             catch ( IndexEntryConflictException e )
             {
                 // good
+                failed = true;
             }
+            assertTrue( failed );
         }
     }
 

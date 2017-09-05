@@ -91,12 +91,18 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        applyBatchedUpdates();
-        if ( manageClosingOfWriter )
+        try
         {
-            writer.close();
+            applyBatchedUpdates();
         }
-        closed = true;
+        finally
+        {
+            if ( manageClosingOfWriter )
+            {
+                writer.close();
+            }
+            closed = true;
+        }
     }
 
     private void assertOpen()
