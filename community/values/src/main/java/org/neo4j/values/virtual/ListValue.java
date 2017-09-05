@@ -264,7 +264,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public int computeHash()
         {
-            return NumberValues.hash( values );
+            return Arrays.hashCode( values );
         }
     }
 

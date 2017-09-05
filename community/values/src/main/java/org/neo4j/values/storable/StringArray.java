@@ -78,7 +78,7 @@ public abstract class StringArray extends TextArray
     @Override
     public int computeHash()
     {
-        return NumberValues.hash( value() );
+        return Arrays.hashCode( value() );
     }
 
     @Override

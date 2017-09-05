@@ -132,11 +132,6 @@ public final class NumberValues
         return result;
     }
 
-    public static int hash( Object[] values )
-    {
-        return Arrays.hashCode( values );
-    }
-
     public static int hash( float[] values )
     {
         int result = 1;
