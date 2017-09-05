@@ -37,7 +37,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FULLTEXT_HELPER_TYPE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FULLTEXT_INDEX_TYPE;
 
 public class FulltextAnalyzerTest
 {
@@ -56,7 +56,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -72,7 +72,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES ) )
             {
 
                 assertFalse( reader.query( "and" ).hasNext() );
@@ -92,7 +92,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextHelper( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
 
             long firstID;
             long secondID;
@@ -108,7 +108,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_HELPER_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES ) )
             {
                 assertEquals( firstID, reader.query( "and" ).next() );
                 assertEquals( firstID, reader.query( "in" ).next() );

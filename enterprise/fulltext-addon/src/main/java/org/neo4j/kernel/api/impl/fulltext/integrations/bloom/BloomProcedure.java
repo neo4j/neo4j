@@ -44,15 +44,15 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     private static final String[] PROCEDURE_NAMESPACE = {"db", "fulltext"};
     private final String identifier;
     private final FulltextProvider provider;
-    private FulltextProvider.FULLTEXT_HELPER_TYPE type;
+    private FulltextProvider.FULLTEXT_INDEX_TYPE type;
 
     /**
      * Creates a procedure for querying the bloom fulltext addon.
-     * @param type The type of fulltext helper to be queried.
-     * @param identifier The identifier of the fulltext helper.
-     * @param provider The provider of the fulltext helper.
+     * @param type The type of fulltext index to be queried.
+     * @param identifier The identifier of the fulltext index.
+     * @param provider The provider of the fulltext index.
      */
-    public BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE type, String identifier, FulltextProvider provider )
+    public BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE type, String identifier, FulltextProvider provider )
     {
         super( procedureSignature( new QualifiedName( PROCEDURE_NAMESPACE, PROCEDURE_NAME + type ) ).in( "terms",
                 Neo4jTypes.NTList( Neo4jTypes.NTString ) ).out( OUTPUT_NAME, Neo4jTypes.NTInteger ).description(

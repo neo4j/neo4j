@@ -105,7 +105,7 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Unable to update fulltext helper index", e );
+            throw new RuntimeException( "Unable to update fulltext index", e );
         }
     }
 

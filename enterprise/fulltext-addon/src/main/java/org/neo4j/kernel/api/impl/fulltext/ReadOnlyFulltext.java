@@ -24,7 +24,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 public interface ReadOnlyFulltext extends AutoCloseable
 {
     /**
-     * Searches the fulltext helper for any exact match of any of the given terms against any token in any of the indexed properties.
+     * Searches the fulltext index for any exact match of any of the given terms against any token in any of the indexed properties.
      *
      * @param terms The terms to query for.
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
@@ -32,7 +32,7 @@ public interface ReadOnlyFulltext extends AutoCloseable
     PrimitiveLongIterator query( String... terms );
 
     /**
-     * Searches the fulltext helper for any fuzzy match of any of the given terms against any token in any of the indexed properties.
+     * Searches the fulltext index for any fuzzy match of any of the given terms against any token in any of the indexed properties.
      *
      * @param terms The terms to query for.
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.

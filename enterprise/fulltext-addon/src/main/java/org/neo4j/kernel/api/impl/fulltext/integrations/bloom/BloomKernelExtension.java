@@ -68,12 +68,12 @@ class BloomKernelExtension extends LifecycleAdapter
         FulltextProvider provider = FulltextProvider.instance( db );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
         String bloomNodes = "bloomNodes";
-        fulltextFactory.createFulltextHelper( bloomNodes, FulltextProvider.FULLTEXT_HELPER_TYPE.NODES, properties, provider );
+        fulltextFactory.createFulltextIndex( bloomNodes, FulltextProvider.FULLTEXT_INDEX_TYPE.NODES, properties, provider );
         String bloomRelationships = "bloomRelationships";
-        fulltextFactory.createFulltextHelper( bloomRelationships, FulltextProvider.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, properties, provider );
+        fulltextFactory.createFulltextIndex( bloomRelationships, FulltextProvider.FULLTEXT_INDEX_TYPE.RELATIONSHIPS, properties, provider );
 
-        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE.NODES, bloomNodes, provider ) );
-        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_HELPER_TYPE.RELATIONSHIPS, bloomRelationships, provider ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.NODES, bloomNodes, provider ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.RELATIONSHIPS, bloomRelationships, provider ) );
     }
 
     @Override

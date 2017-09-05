@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
 
 /**
- * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
+ * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
  *
  * @see PartitionedFulltextReader
  */

@@ -62,13 +62,13 @@ public class FulltextFactory
 
     /**
      * Creates an instance of {@link LuceneFulltext} and registers it with the supplied {@link FulltextProvider}.
-     * @param identifier The identifier of the new fulltext helper
-     * @param type The type of the new fulltext helper
+     * @param identifier The identifier of the new fulltext index
+     * @param type The type of the new fulltext index
      * @param properties The properties to index
      * @param provider The provider to register with
      * @throws IOException
      */
-    public void createFulltextHelper( String identifier, FulltextProvider.FULLTEXT_HELPER_TYPE type, String[] properties, FulltextProvider provider )
+    public void createFulltextIndex( String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type, String[] properties, FulltextProvider provider )
             throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();

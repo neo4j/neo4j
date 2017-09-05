@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 
+/**
+ * Provider class that manages and provides fulltext indices. This is the main entry point for the fulltext addon.
+ */
 public class FulltextProvider implements AutoCloseable
 {
     private static FulltextProvider instance;
@@ -51,6 +54,11 @@ public class FulltextProvider implements AutoCloseable
         relationshipIndices = new HashMap<>();
     }
 
+    /**
+     * Fetch the current instance of the provider. If there is none, create one associated with the given database.
+     * @param db Database used for eventual creation of the provider.
+     * @return
+     */
     public static synchronized FulltextProvider instance( GraphDatabaseService db )
     {
         if ( instance == null || instance.closed )
@@ -60,6 +68,9 @@ public class FulltextProvider implements AutoCloseable
         return instance;
     }
 
+    /**
+     * Closes the provider and all associated resources.
+     */
     @Override
     public synchronized void close()
     {
@@ -67,22 +78,22 @@ public class FulltextProvider implements AutoCloseable
         {
             closed = true;
             db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-            nodeIndices.values().forEach( luceneFulltextHelper ->
+            nodeIndices.values().forEach( luceneFulltextIndex ->
             {
                 try
                 {
-                    luceneFulltextHelper.close();
+                    luceneFulltextIndex.close();
                 }
                 catch ( IOException e )
                 {
                     e.printStackTrace();
                 }
             } );
-            relationshipIndices.values().forEach( luceneFulltextHelper ->
+            relationshipIndices.values().forEach( luceneFulltextIndex ->
             {
                 try
                 {
-                    luceneFulltextHelper.close();
+                    luceneFulltextIndex.close();
                 }
                 catch ( IOException e )
                 {
@@ -92,18 +103,18 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    synchronized void register( LuceneFulltext fulltextHelper ) throws IOException
+    synchronized void register( LuceneFulltext fulltextIndex ) throws IOException
     {
-        fulltextHelper.open();
-        if ( fulltextHelper.getType() == FULLTEXT_HELPER_TYPE.NODES )
+        fulltextIndex.open();
+        if ( fulltextIndex.getType() == FULLTEXT_INDEX_TYPE.NODES )
         {
-            nodeIndices.put( fulltextHelper.getIdentifier(), fulltextHelper );
-            nodeProperties.addAll( fulltextHelper.getProperties() );
+            nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
+            nodeProperties.addAll( fulltextIndex.getProperties() );
         }
         else
         {
-            relationshipIndices.put( fulltextHelper.getIdentifier(), fulltextHelper );
-            relationshipProperties.addAll( fulltextHelper.getProperties() );
+            relationshipIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
+            relationshipProperties.addAll( fulltextIndex.getProperties() );
         }
     }
 
@@ -127,9 +138,16 @@ public class FulltextProvider implements AutoCloseable
         return relationshipIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
     }
 
-    public ReadOnlyFulltext getReader( String identifier, FULLTEXT_HELPER_TYPE type ) throws IOException
+    /**
+     * Returns a reader for the specified index.
+     * @param identifier Identifier for the index.
+     * @param type Type of the index.
+     * @return A {@link ReadOnlyFulltext} for the index, or null if no such index is found.
+     * @throws IOException
+     */
+    public ReadOnlyFulltext getReader( String identifier, FULLTEXT_INDEX_TYPE type ) throws IOException
     {
-        if ( type == FULLTEXT_HELPER_TYPE.NODES )
+        if ( type == FULLTEXT_INDEX_TYPE.NODES )
         {
             return nodeIndices.get( identifier ).getIndexReader();
         }
@@ -139,7 +157,10 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
-    public enum FULLTEXT_HELPER_TYPE
+    /**
+     * Fulltext index type.
+     */
+    public enum FULLTEXT_INDEX_TYPE
     {
         NODES
                 {
