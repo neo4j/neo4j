@@ -131,15 +131,9 @@ case class RegularScenario(name: String,
                            sideEffects: (QueryStatistics) => Unit
                           ) extends ScenarioExecution {
   override def run(): Unit = {
-    if (name.equals("Many CREATE clauses") && blacklisted) {
-      // TODO: This scenario causes StackOverflowException in the compiled runtime ... not sure how to handle
+    // Sometimes the scenario just can't be run for some reason
+    if (blacklisted && deeperProblems(name))
       return
-    }
-
-    if (name.equals("Concatenating and returning the size of literal lists") && blacklisted) {
-      // TODO: There are two scenarios with this name, one that works and one that doesn't - fixed by updating TCK later
-      return
-    }
 
     try {
       init.foreach(f => f(db))
@@ -165,8 +159,6 @@ case class RegularScenario(name: String,
           } finally {
             tx.close()
           }
-          if (name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the slotted runtime, this should go away
-            return
       }
 
       if (blacklisted && !seenBlackListedFail)
@@ -187,6 +179,16 @@ case class RegularScenario(name: String,
     if (executions.size != expectations.size)
       throw InvalidFeatureFormatException(s"Execution and expectation mismatch; must be same amount (scenario $name)")
   }
+
+  private def deeperProblems(scenarioName: String) =
+    Set(
+      // TODO: This scenario causes StackOverflowException in the compiled runtime ... not sure how to handle
+      "Many CREATE clauses",
+      // TODO: There are two scenarios with this name, one that works and one that doesn't - fixed by updating TCK later
+      "Concatenating and returning the size of literal lists",
+      // TODO: Once this is supported for reals in the slotted runtime, this should go away
+      "Add labels inside FOREACH"
+    ) contains scenarioName
 }
 
 class ScenarioFailedException(message: String, cause: Throwable) extends Exception(message, cause)
