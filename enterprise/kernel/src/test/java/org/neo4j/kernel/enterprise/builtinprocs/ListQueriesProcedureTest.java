@@ -23,6 +23,7 @@ import org.hamcrest.Matcher;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.PrintWriter;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
@@ -83,10 +85,15 @@ public class ListQueriesProcedureTest
             builder.setConfig( cypher_hints_error, "true" );
         }
     }.startLazily();
+    private final ThreadingRule threads = new ThreadingRule();
+
     @Rule
-    public final ThreadingRule threads = new ThreadingRule();
+    public final RuleChain chain = RuleChain.outerRule( db ).around( threads );
 
     private static final int SECONDS_TIMEOUT = 120;
+
+    @Rule
+    public SuppressOutput suppress = SuppressOutput.suppressAll();
 
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
@@ -513,7 +520,16 @@ public class ListQueriesProcedureTest
 
         threads.executeAndAwait( parameter ->
         {
-            db.execute( query ).close();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.execute( query ).close();
+                tx.success();
+            }
+            catch ( Throwable t )
+            {
+                t.printStackTrace();
+                throw new RuntimeException( t );
+            }
             return null;
         }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), SECONDS_TIMEOUT, SECONDS );
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.test.rule.concurrent;
 
+import org.junit.rules.ExternalResource;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,8 +32,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-
-import org.junit.rules.ExternalResource;
 
 import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
@@ -187,15 +187,14 @@ public class ThreadingRule extends ExternalResource
             {
                 ReflectionUtil.verifyMethodExists( owner, method );
 
-                if ( thread.getState() != Thread.State.WAITING && thread.getState() != Thread.State.TIMED_WAITING )
+                if ( thread.getState() == Thread.State.WAITING || thread.getState() == Thread.State.TIMED_WAITING )
                 {
-                    return false;
-                }
-                for ( StackTraceElement element : thread.getStackTrace() )
-                {
-                    if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                    for ( StackTraceElement element : thread.getStackTrace() )
                     {
-                        return true;
+                        if ( element.getClassName().equals( owner.getName() ) && element.getMethodName().equals( method ) )
+                        {
+                            return true;
+                        }
                     }
                 }
                 return false;
