@@ -157,7 +157,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+    public void add( List<? extends IndexEntryUpdate<?>> updates )
     {
         throw new UnsupportedOperationException( "Can't populate directly using this populator implementation. " );
     }
@@ -548,13 +548,13 @@ public class MultipleIndexPopulator implements IndexPopulator
             return batchedUpdates.size() >= BATCH_SIZE;
         }
 
-        Collection<IndexEntryUpdate<?>> takeCurrentBatch()
+        List<IndexEntryUpdate<?>> takeCurrentBatch()
         {
             if ( batchedUpdates.isEmpty() )
             {
                 return Collections.emptyList();
             }
-            Collection<IndexEntryUpdate<?>> batch = batchedUpdates;
+            List<IndexEntryUpdate<?>> batch = batchedUpdates;
             batchedUpdates = new ArrayList<>( BATCH_SIZE );
             return batch;
         }

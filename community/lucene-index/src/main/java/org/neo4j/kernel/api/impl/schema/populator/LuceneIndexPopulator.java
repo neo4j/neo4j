@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -60,7 +61,7 @@ public abstract class LuceneIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( List<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         assert updatesForCorrectIndex( updates );
         // Lucene documents stored in a ThreadLocal and reused so we can't create an eager collection of documents here

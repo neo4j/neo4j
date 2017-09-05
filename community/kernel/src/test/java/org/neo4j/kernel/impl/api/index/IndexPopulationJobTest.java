@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -159,7 +160,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
-        verify( populator, times( 2 ) ).add( any( Collection.class) );
+        verify( populator, times( 2 ) ).add( any( List.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -208,7 +209,7 @@ public class IndexPopulationJobTest
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
+        verify( populator, times( 2 ) ).add( Matchers.anyList() );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -276,7 +277,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(Collection.class) );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(List.class) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -466,7 +467,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
@@ -537,7 +538,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
         {
             for ( IndexEntryUpdate<?> update : updates )
             {

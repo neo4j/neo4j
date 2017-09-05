@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -62,7 +62,7 @@ public interface IndexPopulator
      * pass over the index in {@link #verifyDeferredConstraints(PropertyAccessor)}.
      * @throws IOException on I/O error.
      */
-    void add( Collection<? extends IndexEntryUpdate<?>> updates )
+    void add( List<? extends IndexEntryUpdate<?>> updates )
             throws IndexEntryConflictException, IOException;
 
     /**
@@ -85,7 +85,7 @@ public interface IndexPopulator
      * Simultaneously as population progresses there might be incoming updates
      * from committing transactions, which needs to be applied as well. This populator will only receive updates
      * for nodes that it already has seen. Updates coming in here must be applied idempotently as the same data
-     * may have been {@link #add(Collection) added previously}.
+     * may have been {@link #add(List) added previously}.
      * Updates can come in two different {@link IndexEntryUpdate#updateMode()} modes}.
      * <ol>
      *   <li>{@link UpdateMode#ADDED} means that there's an added property to a node already seen by this
@@ -162,7 +162,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
+        public void add( List<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException,
                 IOException
         {
         }

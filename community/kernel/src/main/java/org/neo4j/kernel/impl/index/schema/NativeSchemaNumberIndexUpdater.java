@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -27,13 +28,20 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.values.storable.ValueTuple;
 
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndex.BY_VALUE_COMPARATOR;
+
 class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexUpdater
 {
+    private static final int BATCH_SIZE = 100;
+
     private final KEY treeKey;
     private final VALUE treeValue;
     private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
+    // having this as an array we can easily sort using Arrays.sort and don't have to pay the cost of clearing after apply
+    private final IndexEntryUpdate<?>[] batchedUpdates = new IndexEntryUpdate[BATCH_SIZE];
     private Writer<KEY,VALUE> writer;
+    private int batchedUpdatesCursor;
 
     private boolean closed = true;
     private boolean manageClosingOfWriter;
@@ -62,12 +70,28 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         assertOpen();
-        processUpdate( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+        batchedUpdates[batchedUpdatesCursor++] = update;
+        if ( batchedUpdatesCursor == BATCH_SIZE )
+        {
+            applyBatchedUpdates();
+        }
+    }
+
+    private void applyBatchedUpdates() throws IOException, IndexEntryConflictException
+    {
+        Arrays.sort( batchedUpdates, 0, batchedUpdatesCursor, BY_VALUE_COMPARATOR );
+        for ( int i = 0; i < batchedUpdatesCursor; i++ )
+        {
+            processUpdate( treeKey, treeValue, batchedUpdates[i], writer, conflictDetectingValueMerger );
+        }
+        // efficient "clear"
+        batchedUpdatesCursor = 0;
     }
 
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
+        applyBatchedUpdates();
         if ( manageClosingOfWriter )
         {
             writer.close();

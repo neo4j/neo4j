@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -29,12 +30,23 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
 class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
 {
+    static final Comparator<IndexEntryUpdate<?>> BY_VALUE_COMPARATOR = ( o1, o2 ) ->
+    {
+        // At this point we know that these are single-value numeric updates, so just have this simple assertion
+        assert o1.values().length == 1;
+        assert o2.values().length == 1;
+
+        return Values.COMPARATOR.compare( o1.values()[0], o2.values()[0] );
+    };
+
     final PageCache pageCache;
     final File storeFile;
     final Layout<KEY,VALUE> layout;

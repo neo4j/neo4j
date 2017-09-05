@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -546,7 +545,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
             throws IOException, IndexEntryConflictException
     {
         boolean useUpdater = true;
-        Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
+        List<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {

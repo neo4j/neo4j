@@ -64,7 +64,7 @@ class SchemaNumberKey extends ValueWriter.Adapter<RuntimeException>
         entityIdIsSpecialTieBreaker = false;
     }
 
-    private static NumberValue assertValidSingleNumber( Value... values )
+    static NumberValue assertValidSingleNumber( Value... values )
     {
         // TODO: support multiple values, right?
         if ( values.length > 1 )

@@ -224,7 +224,7 @@ public class IndexingServiceTest
 
         CountDownLatch latch = new CountDownLatch( 1 );
         AwaitAnswer<Void> awaitAnswer = afterAwaiting( latch );
-        doAnswer( awaitAnswer ).when( populator ).add( any( Collection.class ) );
+        doAnswer( awaitAnswer ).when( populator ).add( any( List.class ) );
 
         IndexingService indexingService =
                 newIndexingServiceWithMockedDependencies( populator, accessor, withData( addNodeUpdate( 1, "value1" ) ) );
@@ -252,7 +252,7 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
+        order.verify( populator, times( 2 ) ).add( any( List.class ) );
 
         // invoked from indexAllNodes(), empty because the id we added (2) is bigger than the one we indexed (1)
         //
@@ -1084,7 +1084,7 @@ public class IndexingServiceTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
                 throws IndexEntryConflictException, IOException
         {
             latch.waitForAllToStart();
