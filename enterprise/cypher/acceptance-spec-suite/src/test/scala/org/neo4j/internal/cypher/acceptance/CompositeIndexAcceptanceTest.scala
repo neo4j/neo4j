@@ -43,7 +43,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    succeedWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
+    updateWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)", ignorePlans = Configs.AbsolutelyAll)
 
     // Then
     graph should haveIndexes(":Person(firstname)")

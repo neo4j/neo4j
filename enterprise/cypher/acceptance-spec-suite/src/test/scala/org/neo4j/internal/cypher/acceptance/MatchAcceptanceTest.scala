@@ -73,12 +73,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3,
-      """
-        |MATCH (start:Start),(end:End)
-        |OPTIONAL MATCH (start)-[rel]->(end)
-        |DELETE rel
-        |RETURN DISTINCT start""".stripMargin)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, """
+            |MATCH (start:Start),(end:End)
+            |OPTIONAL MATCH (start)-[rel]->(end)
+            |DELETE rel
+            |RETURN DISTINCT start""".stripMargin, ignorePlans = Configs.AbsolutelyAll)
 
     result.toList should equal(List(Map("start" -> start)))
   }
@@ -533,8 +532,8 @@ return p""")
                   |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll).length
+    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll).length
     val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -567,8 +566,8 @@ return p""")
 
     //WHEN
 
-    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll).length
+    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll).length
     val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN

@@ -103,52 +103,58 @@ trait CypherComparisonSupport extends CypherTestSupport {
       config.scenarios.head
   }
 
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
-
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, false, params: _*)
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    query: String,
-                                                    params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, Configs.Empty, query, checkPlans, params: _*)
+  protected def updateWith(expectedSuccessFrom: TestConfiguration,
+                           query: String,
+                           ignoreResults: TestConfiguration = Configs.Empty,
+                           ignorePlans: TestConfiguration = Configs.AllRulePlanners,
+                           executeBefore: () => Unit = () => {},
+                           params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+    succeedWithPrivate(query, expectedSuccessFrom, ignoreResults, ignorePlans, shouldRollback = true, executeBefore, params)
   }
 
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    ignoreScenarios: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, checkPlans, () => {}, params: _*)
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration,
+                            query: String,
+                            ignoreResults: TestConfiguration = Configs.Empty,
+                            ignorePlans: TestConfiguration = Configs.AllRulePlanners,
+                            params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+    succeedWithPrivate(query, expectedSuccessFrom, ignoreResults, ignorePlans, shouldRollback = false, () => {}, params)
   }
 
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    ignoreScenarios: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    executeBefore: () => Unit,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
-    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
-
+  private def succeedWithPrivate(query: String,
+                          expectedSuccessFrom: TestConfiguration,
+                          ignoreResults: TestConfiguration,
+                          ignorePlans: TestConfiguration,
+                          shouldRollback: Boolean,
+                          executeBefore: () => Unit,
+                          params: Map[String, Any]): InternalExecutionResult = {
+    val compareResults = expectedSuccessFrom -  ignoreResults
+    val comparePlans = expectedSuccessFrom - ignorePlans
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
 
-    val positiveResults = (runAgainstScenarios.scenarios - firstScenario).flatMap {
+    val planScenario: TestScenario = if (comparePlans.scenarios.isEmpty) {
+      firstScenario
+    } else {
+      extractFirstScenario(comparePlans)
+    }
+
+    val resultScenario: TestScenario = if (compareResults.scenarios.isEmpty) {
+      firstScenario
+    } else {
+      extractFirstScenario(compareResults)
+    }
+
+    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
       thisScenario =>
         thisScenario.prepare()
-        val tryResult: Try[InternalExecutionResult] = graph.rollback(
-          {
-            executeBefore()
-            Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
-          }
-        )
+        val tryResult: Try[InternalExecutionResult] = if (shouldRollback) {
+          graph.rollback(
+            {
+              executeBefore()
+              Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
+            })
+        } else {
+          Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
+        }
 
         val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
 
@@ -157,7 +163,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
             case Success(thisResult) =>
               thisScenario.checkStateForSuccess(query)
               thisScenario.checkResultForSuccess(query, thisResult)
-              Some(thisResult -> thisScenario)
+              Some(thisScenario -> thisResult)
             case Failure(e) =>
               fail(s"Expected to succeed in ${thisScenario.name} but got exception", e)
           }
@@ -166,21 +172,27 @@ trait CypherComparisonSupport extends CypherTestSupport {
           thisScenario.checkResultForFailure(query, tryResult)
           None
         }
-
     }
 
     firstScenario.prepare()
     executeBefore()
-    val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
+    val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params)
     firstScenario.checkStateForSuccess(query)
     firstScenario.checkResultForSuccess(query, lastResult)
 
-    positiveResults.foreach {
-      case (result, scenario) =>
-        if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(scenario)) {
-          assertPlansSimilar(lastResult, result, s"${scenario.name} did not equal ${firstScenario.name}")
+    val compareResult = positiveResults.toMap.getOrElse(resultScenario, lastResult)
+    val planResult = positiveResults.toMap.getOrElse(planScenario, lastResult)
+
+    (positiveResults ++ Set((firstScenario, lastResult))).foreach {
+      case (scenario, result) =>
+        if (comparePlans.scenarios.contains(scenario)) {
+          assertPlansSimilar(planResult, result, s"${scenario.name} did not equal ${planScenario.name}")
         }
-        assertResultsAreSame(result, lastResult, query, s"${scenario.name} returned different results than ${firstScenario.name}")
+        //TODO check negative
+        if (compareResults.scenarios.contains(scenario)) {
+          assertResultsAreSame(result, compareResult, query, s"${scenario.name} returned different results than ${resultScenario.name}")
+        }
+      //TODO check negative
     }
 
     lastResult
@@ -194,11 +206,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
     succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
-
-  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                     query: String,
-                                                     params: (String, Any)*): InternalExecutionResult =
-    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
 
   protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
   InternalExecutionResult =

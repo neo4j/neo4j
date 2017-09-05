@@ -31,7 +31,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = s"CREATE (a) WITH a LOAD CSV FROM '$url' AS line CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -49,7 +49,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should have bound node recognized after projection with WITH + FOREACH") {
     val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -61,7 +61,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(amount)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
 
-    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     assertStats(result, nodesCreated = 2 * amount, relationshipsCreated = amount, labelsAdded = 2 * amount)
 
@@ -82,7 +82,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(createdNumber)("(:Bar{prop: 1})").mkString(", ")
 
-    val result = updateWith(Configs.All - Configs.Compiled - Configs.Cost2_3, query)
+    val result = updateWith(Configs.All - Configs.Compiled - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     assertStats(result, nodesCreated = createdNumber, labelsAdded = createdNumber, propertiesWritten = createdNumber)
 

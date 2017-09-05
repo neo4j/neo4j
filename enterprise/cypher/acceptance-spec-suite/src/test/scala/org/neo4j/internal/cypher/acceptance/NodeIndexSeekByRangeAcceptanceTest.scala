@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Planners, Runtimes, TestScenario, Versions}
 
 /**
   * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -93,7 +94,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("NAME" -> "LONDON")))
@@ -928,9 +929,9 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= '1' AND n.prop > 10 RETURN n.prop AS prop"
 
-    an[IllegalArgumentException] should be thrownBy {
-      succeedWith(Configs.Interpreted, query).toList
-    }
+//    an[IllegalArgumentException] should be thrownBy {
+//      succeedWithREMOVE(TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted), query).toList
+//    }
 
     succeedWith(Configs.Interpreted, s"EXPLAIN $query") should use(IndexSeekByRange.name)
   }
@@ -1023,7 +1024,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
 
-    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("n.prop" -> 1), Map("n.prop" -> 5)))
