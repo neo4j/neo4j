@@ -359,7 +359,8 @@ public class CountsTrackerTest
     {
         // GIVEN
         FakeClock clock = Clocks.fakeClock();
-        CountsTracker tracker = resourceManager.managed( newTracker( clock ) );
+        CallTrackingClock callTrackingClock = new CallTrackingClock( clock );
+        CountsTracker tracker = resourceManager.managed( newTracker( callTrackingClock ) );
         int labelId = 1;
         try ( CountsAccessor.Updater tx = tracker.apply( 2 ).get() )
         {
@@ -369,10 +370,14 @@ public class CountsTrackerTest
         // WHEN
         Predicate<Thread> arrived = thread ->
             stackTraceContains( thread, all( classNameContains( "Rotation" ), methodIs( "rotate" ) ) );
-        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 100, MILLISECONDS );
+        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 1, SECONDS );
         try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
+        }
+        while ( callTrackingClock.callsToNanos() == 0 )
+        {
+            Thread.sleep( 10 );
         }
         clock.forward( Config.defaults().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
         try
