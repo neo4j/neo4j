@@ -133,7 +133,9 @@ final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def name = "SNAPSHOT"
 
   override def semanticCheck: SemanticCheck =
-    super.semanticCheck chain graph.semanticCheck
+    super.semanticCheck chain
+      graph.semanticCheck chain
+      recordCurrentScope
 }
 
 final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)

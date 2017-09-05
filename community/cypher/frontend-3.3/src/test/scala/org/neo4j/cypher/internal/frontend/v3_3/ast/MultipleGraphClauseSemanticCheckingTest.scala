@@ -958,11 +958,11 @@ class MultipleGraphClauseSemanticCheckingTest
       result.formattedContexts shouldEqualFixNewlines
         """// Start
           |--
-          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
           |foo >> bar
-          |// Persist(false,GraphAs(Variable(foo),Some(Variable(foo))),GraphUrl(Right(StringLiteral(url))))
+          |// (Persist(GraphAs(Variable(foo),Some(Variable(foo)),false),GraphUrl(Right(StringLiteral(url)))),line 2, column 22 (offset: 44))
           |foo >> bar
-          |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,Set())
+          |// (Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,Set()),line 3, column 1 (offset: 50))
           |--
           |// End"""
       result.formattedScopes shouldEqualFixNewlines
@@ -985,18 +985,18 @@ class MultipleGraphClauseSemanticCheckingTest
   test("relocate graph") {
     parsing(
       """WITH GRAPHS foo >> bar
-        |RELOCATE SNAPSHOT GRAPH foo TO 'url'
+        |RELOCATE GRAPH foo TO 'url'
         |RETURN GRAPHS bar
       """.stripMargin) shouldVerify { result: SemanticCheckResult =>
 
       result.formattedContexts shouldEqualFixNewlines
         """// Start
           |--
-          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
           |foo >> bar
-          |// Relocate(true,GraphAs(Variable(foo),Some(Variable(foo))),GraphUrl(Right(StringLiteral(url))))
+          |// (Relocate(GraphAs(Variable(foo),Some(Variable(foo)),false),GraphUrl(Right(StringLiteral(url)))),line 2, column 23 (offset: 45))
           |foo >> bar
-          |// Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,Set())
+          |// (Return(false,DiscardCardinality(),Some(GraphReturnItems(false,List(ReturnedGraph(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,Set()),line 3, column 1 (offset: 51))
           |--
           |// End"""
       result.formattedScopes shouldEqualFixNewlines
@@ -1006,11 +1006,11 @@ class MultipleGraphClauseSemanticCheckingTest
           |    GRAPH foo: 12
           |  }
           |  { /* foo >> bar */
-          |    GRAPH bar: 19 74
-          |    GRAPH foo: 12 47
+          |    GRAPH bar: 19 65
+          |    GRAPH foo: 12 38
           |  }
           |  {
-          |    GRAPH bar: 74
+          |    GRAPH bar: 65
           |  }
           |}"""
     }
@@ -1026,11 +1026,11 @@ class MultipleGraphClauseSemanticCheckingTest
       result.formattedContexts shouldEqualFixNewlines
         """// Start
           |--
-          |// With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo))),Some(GraphAs(Variable(bar),Some(Variable(bar))))))),None,None,None,None)
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
           |foo >> bar
-          |// DeleteGraphs(List(Variable(foo), Variable(bar)))
+          |// (DeleteGraphs(List(Variable(foo), Variable(bar))),line 2, column 15 (offset: 37))
           |foo >> bar
-          |// Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set())
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 3, column 1 (offset: 46))
           |--
           |// End"""
       result.formattedScopes shouldEqualFixNewlines
@@ -1045,6 +1045,40 @@ class MultipleGraphClauseSemanticCheckingTest
           |  }
           |  {
           |    1: 54
+          |  }
+          |}"""
+    }
+  }
+
+  test("snapshot graph") {
+    parsing(
+      """WITH GRAPHS foo >> bar
+        |SNAPSHOT GRAPH foo TO 'url'
+        |RETURN 1
+      """.stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (With(false,DiscardCardinality(),GraphReturnItems(false,List(NewContextGraphs(GraphAs(Variable(foo),Some(Variable(foo)),false),Some(GraphAs(Variable(bar),Some(Variable(bar)),false))))),None,None,None,None),line 1, column 1 (offset: 0))
+          |foo >> bar
+          |// (Snapshot(GraphAs(Variable(foo),Some(Variable(foo)),false),GraphUrl(Right(StringLiteral(url)))),line 2, column 23 (offset: 45))
+          |foo >> bar
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(SignedDecimalIntegerLiteral(1),Variable(1)))),None,None,None,None,Set()),line 3, column 1 (offset: 51))
+          |--
+          |// End"""
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12
+          |  }
+          |  { /* foo >> bar */
+          |    GRAPH bar: 19
+          |    GRAPH foo: 12 38
+          |  }
+          |  {
+          |    1: 59
           |  }
           |}"""
     }
