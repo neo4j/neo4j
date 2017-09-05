@@ -19,6 +19,11 @@
  */
 package org.neo4j.test.rule;
 
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
+import java.io.File;
+
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.logging.LogProvider;
@@ -32,6 +37,8 @@ public class ImpermanentDatabaseRule extends DatabaseRule
     private final LogProvider userLogProvider;
     private final LogProvider internalLogProvider;
 
+    private final TestDirectory testDirectory;
+
     public ImpermanentDatabaseRule()
     {
         this( null );
@@ -39,6 +46,7 @@ public class ImpermanentDatabaseRule extends DatabaseRule
 
     public ImpermanentDatabaseRule( LogProvider logProvider )
     {
+        testDirectory = TestDirectory.testDirectory();
         this.userLogProvider = logProvider;
         this.internalLogProvider = logProvider;
     }
@@ -58,7 +66,25 @@ public class ImpermanentDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder();
+        return ((TestGraphDatabaseFactory) factory).newImpermanentDatabaseBuilder( testDirectory.graphDbDir() );
+    }
+
+    @Override
+    public File getStoreDir()
+    {
+        return testDirectory.graphDbDir();
+    }
+
+    @Override
+    public String getStoreDirAbsolutePath()
+    {
+        return testDirectory.graphDbDir().getAbsolutePath();
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        return testDirectory.apply( super.apply( base, description ), description );
     }
 
     protected final TestGraphDatabaseFactory maybeSetUserLogProvider( TestGraphDatabaseFactory factory )
