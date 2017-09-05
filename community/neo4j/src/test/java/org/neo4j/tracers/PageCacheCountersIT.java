@@ -49,7 +49,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertThat;
 
@@ -77,7 +76,7 @@ public class PageCacheCountersIT
         db.shutdown();
     }
 
-    @Test
+    @Test( timeout = 60_000 )
     @RepeatRule.Repeat( times = 5 )
     public void pageCacheCountersAreSumOfPageCursorCounters() throws Exception
     {
@@ -95,12 +94,11 @@ public class PageCacheCountersIT
         long initialFlushes = pageCacheTracer.flushes();
 
         startNodeCreators( nodeCreators, nodeCreatorFutures );
-        TimeUnit.MILLISECONDS.sleep( 500 );
+        while ( pageCacheTracer.pins() == 0 || pageCacheTracer.faults() == 0 || pageCacheTracer.unpins() == 0 )
+        {
+            TimeUnit.MILLISECONDS.sleep( 10 );
+        }
         stopNodeCreators( nodeCreators, nodeCreatorFutures );
-
-        assertThat( pageCacheTracer.pins(), greaterThan( 0L ) );
-        assertThat( pageCacheTracer.faults(), greaterThan( 0L ) );
-        assertThat( pageCacheTracer.pins(), greaterThan( 0L ) );
 
         assertThat( "Number of pins events in page cache tracer should equal to the sum of pin events in " +
                         "page cursor tracers.",
@@ -165,7 +163,7 @@ public class PageCacheCountersIT
     {
         private volatile boolean canceled;
 
-        private GraphDatabaseService db;
+        private final GraphDatabaseService db;
         private long pins;
         private long unpins;
         private long hits;
