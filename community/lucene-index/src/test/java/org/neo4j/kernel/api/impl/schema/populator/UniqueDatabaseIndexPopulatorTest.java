@@ -513,7 +513,7 @@ public class UniqueDatabaseIndexPopulatorTest
     {
         LabelSchemaDescriptor schemaDescriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
         populator = newPopulator();
-        List<IndexEntryUpdate> updates = Arrays.asList(
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, schemaDescriptor, "foo" ),
                 add( 2, schemaDescriptor, "bar" ),
                 add( 3, schemaDescriptor, "baz" ),

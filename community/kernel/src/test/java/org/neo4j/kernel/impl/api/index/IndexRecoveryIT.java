@@ -178,7 +178,7 @@ public class IndexRecoveryIT
         // rotate logs
         rotateLogsAndCheckPoint();
         // make updates
-        Set<IndexEntryUpdate> expectedUpdates = createSomeBananas( myLabel );
+        Set<IndexEntryUpdate<?>> expectedUpdates = createSomeBananas( myLabel );
 
         // And Given
         killDb();
@@ -254,7 +254,6 @@ public class IndexRecoveryIT
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
     }
 
-    @SuppressWarnings( "deprecation" )
     private void startDb()
     {
         if ( db != null )
@@ -329,9 +328,9 @@ public class IndexRecoveryIT
         }
     }
 
-    private Set<IndexEntryUpdate> createSomeBananas( Label label )
+    private Set<IndexEntryUpdate<?>> createSomeBananas( Label label )
     {
-        Set<IndexEntryUpdate> updates = new HashSet<>();
+        Set<IndexEntryUpdate<?>> updates = new HashSet<>();
         try ( Transaction tx = db.beginTx() )
         {
             ThreadToStatementContextBridge ctxSupplier = db.getDependencyResolver().resolveDependency(
@@ -355,8 +354,8 @@ public class IndexRecoveryIT
 
     public static class GatheringIndexWriter extends IndexAccessor.Adapter
     {
-        private final Set<IndexEntryUpdate> regularUpdates = new HashSet<>();
-        private final Set<IndexEntryUpdate> batchedUpdates = new HashSet<>();
+        private final Set<IndexEntryUpdate<?>> regularUpdates = new HashSet<>();
+        private final Set<IndexEntryUpdate<?>> batchedUpdates = new HashSet<>();
 
         @Override
         public IndexUpdater newUpdater( final IndexUpdateMode mode )

@@ -26,10 +26,10 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 
 public abstract class CollectingIndexUpdater implements IndexUpdater
 {
-    protected final ArrayList<IndexEntryUpdate> updates = new ArrayList<>();
+    protected final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     @Override
-    public void process( IndexEntryUpdate update )
+    public void process( IndexEntryUpdate<?> update )
     {
         if ( null != update )
         {

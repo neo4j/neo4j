@@ -576,7 +576,7 @@ public class FullCheckIntegrationTest
                 for ( long nodeId : indexedNodes )
                 {
                     NodeUpdates updates = storeView.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate update : updates.forIndexKeys( asList( descriptor ) ) )
+                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( descriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, descriptor, update.values() ) );
                     }

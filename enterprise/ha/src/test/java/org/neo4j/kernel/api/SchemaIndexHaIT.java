@@ -473,7 +473,7 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public void includeSample( IndexEntryUpdate update )
+        public void includeSample( IndexEntryUpdate<?> update )
         {
             delegate.includeSample( update );
         }

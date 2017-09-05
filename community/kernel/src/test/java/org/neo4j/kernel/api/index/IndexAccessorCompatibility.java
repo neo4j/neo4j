@@ -86,12 +86,12 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         PrimitiveLongIterator results( IndexReader reader ) throws Exception;
     }
 
-    void updateAndCommit( List<IndexEntryUpdate> updates )
+    void updateAndCommit( List<IndexEntryUpdate<?>> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( IndexEntryUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 updater.process( update );
             }

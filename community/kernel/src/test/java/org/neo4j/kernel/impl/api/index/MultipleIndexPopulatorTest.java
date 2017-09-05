@@ -210,7 +210,7 @@ public class MultipleIndexPopulatorTest
 
     @Test
     public void closeMultipleIndexPopulator()
-            throws IOException, IndexEntryConflictException
+            throws IOException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
         IndexPopulator indexPopulator2 = createIndexPopulator();
@@ -316,7 +316,7 @@ public class MultipleIndexPopulatorTest
 
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
-        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         checkPopulatorFailure( indexPopulator2 );
@@ -335,7 +335,7 @@ public class MultipleIndexPopulatorTest
         IndexUpdater multipleIndexUpdater =
                 multipleIndexPopulator.newPopulatingUpdater( mock( PropertyAccessor.class ) );
 
-        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         multipleIndexUpdater.process( propertyUpdate );
 
         verifyZeroInteractions( indexUpdater1 );
@@ -345,7 +345,7 @@ public class MultipleIndexPopulatorTest
     public void testPropertyUpdateFailure()
             throws IOException, IndexEntryConflictException
     {
-        IndexEntryUpdate propertyUpdate = createIndexEntryUpdate( index1 );
+        IndexEntryUpdate<?> propertyUpdate = createIndexEntryUpdate( index1 );
         IndexUpdater indexUpdater1 = mock( IndexUpdater.class );
         IndexPopulator indexPopulator1 = createIndexPopulator( indexUpdater1 );
 
@@ -367,8 +367,8 @@ public class MultipleIndexPopulatorTest
             throws IOException, IndexEntryConflictException
     {
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        IndexEntryUpdate update1 = add( 1, index1, "foo" );
-        IndexEntryUpdate update2 = add( 2, index1, "bar" );
+        IndexEntryUpdate<?> update1 = add( 1, index1, "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index1, "bar" );
         IndexUpdater updater = mock( IndexUpdater.class );
         IndexPopulator populator = createIndexPopulator( updater );
 
@@ -387,7 +387,7 @@ public class MultipleIndexPopulatorTest
         checkPopulatorFailure( populator );
     }
 
-    private IndexEntryUpdate createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
+    private IndexEntryUpdate<?> createIndexEntryUpdate( LabelSchemaDescriptor schemaDescriptor )
     {
         return add( 1, schemaDescriptor, "theValue" );
     }

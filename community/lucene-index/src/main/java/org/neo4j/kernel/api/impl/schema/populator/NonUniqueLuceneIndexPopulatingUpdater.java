@@ -38,14 +38,14 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     }
 
     @Override
-    protected void added( IndexEntryUpdate update )
+    protected void added( IndexEntryUpdate<?> update )
     {
         String encodedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.include( encodedValue );
     }
 
     @Override
-    protected void changed( IndexEntryUpdate update )
+    protected void changed( IndexEntryUpdate<?> update )
     {
         String encodedValueBefore = LuceneDocumentStructure.encodedStringValuesForSampling( update.beforeValues() );
         sampler.exclude( encodedValueBefore );
@@ -55,7 +55,7 @@ public class NonUniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulating
     }
 
     @Override
-    protected void removed( IndexEntryUpdate update )
+    protected void removed( IndexEntryUpdate<?> update )
     {
         String removedValue = LuceneDocumentStructure.encodedStringValuesForSampling( update.values() );
         sampler.exclude( removedValue );

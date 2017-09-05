@@ -46,7 +46,7 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         long nodeId = update.getEntityId();
 
@@ -76,19 +76,19 @@ public abstract class LuceneIndexPopulatingUpdater implements IndexUpdater
      *
      * @param update the update being processed.
      */
-    protected abstract void added( IndexEntryUpdate update );
+    protected abstract void added( IndexEntryUpdate<?> update );
 
     /**
      * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#CHANGED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void changed( IndexEntryUpdate update );
+    protected abstract void changed( IndexEntryUpdate<?> update );
 
     /**
      * Method is invoked when {@link IndexEntryUpdate} with {@link UpdateMode#REMOVED} is processed.
      *
      * @param update the update being processed.
      */
-    protected abstract void removed( IndexEntryUpdate update );
+    protected abstract void removed( IndexEntryUpdate<?> update );
 }

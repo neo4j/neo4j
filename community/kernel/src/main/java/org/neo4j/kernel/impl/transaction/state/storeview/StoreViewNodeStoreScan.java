@@ -144,7 +144,7 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
     }
 
     @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
             long currentlyIndexedNodeId )
     {
         if ( update.getEntityId() <= currentlyIndexedNodeId )

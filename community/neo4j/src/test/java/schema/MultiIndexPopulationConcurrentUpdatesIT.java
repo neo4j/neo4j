@@ -428,22 +428,22 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
                     labelUpdateVisitor, forceStoreScan );
-            return new LabelScanViewNodeStoreWrapper( nodeStore, locks, propertyStore, getLabelScanStore(),
+            return new LabelScanViewNodeStoreWrapper<>( nodeStore, locks, propertyStore, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
-                    (LabelScanViewNodeStoreScan) storeScan, updates );
+                    (LabelScanViewNodeStoreScan<FAILURE>) storeScan, updates );
         }
     }
 
-    private class LabelScanViewNodeStoreWrapper extends LabelScanViewNodeStoreScan
+    private class LabelScanViewNodeStoreWrapper<FAILURE extends Exception> extends LabelScanViewNodeStoreScan<FAILURE>
     {
-        private final LabelScanViewNodeStoreScan delegate;
+        private final LabelScanViewNodeStoreScan<FAILURE> delegate;
         private final List<NodeUpdates> updates;
 
         LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
                 PropertyStore propertyStore,
-                LabelScanStore labelScanStore, Visitor labelUpdateVisitor,
-                Visitor propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
-                LabelScanViewNodeStoreScan delegate,
+                LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
+                Visitor<NodeUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
+                LabelScanViewNodeStoreScan<FAILURE> delegate,
                 List<NodeUpdates> updates )
         {
             super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
@@ -453,7 +453,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                 long currentlyIndexedNodeId )
         {
             delegate.acceptUpdate( updater, update, currentlyIndexedNodeId );
@@ -501,7 +501,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         for ( int labelId : labelsNameIdMap.values() )
                         {
                             LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyId );
-                            for ( IndexEntryUpdate indexUpdate :
+                            for ( IndexEntryUpdate<?> indexUpdate :
                                     update.forIndexKeys( Collections.singleton( schema ) ) )
                             {
                                 switch ( indexUpdate.updateMode() )
