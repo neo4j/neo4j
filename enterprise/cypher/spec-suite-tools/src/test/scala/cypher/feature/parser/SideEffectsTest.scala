@@ -22,7 +22,9 @@ package cypher.feature.parser
 import java.util.Arrays.asList
 
 import cypher.feature.parser.SideEffects.{State, Values}
-import org.scalatest.FunSuite
+import org.neo4j.graphdb.Entity
+
+import scala.language.implicitConversions
 
 class SideEffectsTest extends ParsingTestSupport {
 
@@ -87,4 +89,7 @@ class SideEffectsTest extends ParsingTestSupport {
   }
 
   private def any(a: Any): AnyRef = a.asInstanceOf[AnyRef]
+
+  implicit def asEntity(id: Int): Entity = entity(id.toLong)
+
 }

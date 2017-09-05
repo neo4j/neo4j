@@ -20,7 +20,7 @@
 package cypher.feature.parser
 
 import cucumber.api.DataTable
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{Entity, GraphDatabaseService}
 import org.opencypher.tools.tck.InvalidFeatureFormatException
 import org.opencypher.tools.tck.constants.TCKSideEffects._
 
@@ -80,7 +80,7 @@ object SideEffects {
   case class State(nodes: Set[Long] = Set.empty,
                    rels: Set[Long] = Set.empty,
                    labels: Set[String] = Set.empty,
-                   props: Set[(Long, String, AnyRef)] = Set.empty) {
+                   props: Set[(Entity, String, AnyRef)] = Set.empty) {
 
     /**
       * Computes the difference in between this state and a later state (the argument).
@@ -125,20 +125,20 @@ object SideEffects {
     s"""$prefix MATCH (n)
        |UNWIND keys(n) AS key
        |WITH properties(n) AS properties, key, n
-       |RETURN id(n) AS entity, key, properties[key] AS value
+       |RETURN n AS entity, key, properties[key] AS value
        |UNION ALL
        |MATCH ()-[r]->()
        |UNWIND keys(r) AS key
        |WITH properties(r) AS properties, key, r
-       |RETURN id(r) AS entity, key, properties[key] AS value""".stripMargin
+       |RETURN r AS entity, key, properties[key] AS value""".stripMargin
 
   def measureState(db: GraphDatabaseService): State = {
     val nodes = db.execute(nodesQuery).columnAs[Long]("node").asScala.toSet
     val rels = db.execute(relsQuery).columnAs[Long]("rel").asScala.toSet
     val labels = db.execute(labelsQuery).columnAs[String]("label").asScala.toSet
-    val props = db.execute(propsQuery).asScala.foldLeft(Set.empty[(Long, String, AnyRef)]) {
+    val props = db.execute(propsQuery).asScala.foldLeft(Set.empty[(Entity, String, AnyRef)]) {
       case (acc, map) =>
-        val triple = (map.get("entity").asInstanceOf[Long], map.get("key").asInstanceOf[String], convertArrays(map.get("value")))
+        val triple = (map.get("entity").asInstanceOf[Entity], map.get("key").asInstanceOf[String], convertArrays(map.get("value")))
 
         acc + triple
     }

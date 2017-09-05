@@ -186,14 +186,16 @@ case class RegularScenario(name: String,
   }
 
   override def validate() = {
-    if (executions.isEmpty)
-      throw InvalidFeatureFormatException(s"No execution specified for scenario $name")
-    if (expectations.isEmpty)
-      throw InvalidFeatureFormatException(s"No expectation specified for scenario $name")
-    if (expectedSideEffects == null)
-      throw InvalidFeatureFormatException(s"No side effects expectation specified for scenario $name")
-    if (executions.size != expectations.size)
-      throw InvalidFeatureFormatException(s"Execution and expectation mismatch; must be same amount (scenario $name)")
+    if (!blacklisted) {
+      if (executions.isEmpty)
+        throw InvalidFeatureFormatException(s"No execution specified for scenario $name")
+      if (expectations.isEmpty)
+        throw InvalidFeatureFormatException(s"No expectation specified for scenario $name")
+      if (expectedSideEffects == null)
+        throw InvalidFeatureFormatException(s"No side effects expectation specified for scenario $name")
+      if (executions.size != expectations.size)
+        throw InvalidFeatureFormatException(s"Execution and expectation mismatch; must be same amount (scenario $name)")
+    }
   }
 
   private def deeperProblems(scenarioName: String) =
