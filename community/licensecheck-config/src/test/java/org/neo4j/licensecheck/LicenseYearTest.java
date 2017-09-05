@@ -70,7 +70,7 @@ public class LicenseYearTest
             scanner.nextLine(); // skip first line
             String yearLine = scanner.nextLine();
 
-            Pattern p = Pattern.compile( "Copyright © 2002-(\\d\\d\\d\\d) Network Engine for Objects in Lund AB" );
+            Pattern p = Pattern.compile( "Copyright \u00c2??© 2002-(\\d\\d\\d\\d) Network Engine for Objects in Lund AB" );
 
             Matcher m = p.matcher( yearLine );
             if ( m.find() )
