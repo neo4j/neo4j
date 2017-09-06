@@ -234,7 +234,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, source)
 
       case Sort(_, sortItems) =>
-        SortRegisterPipe(source, sortItems.map(translateColumnOrder(pipeline, _)), pipeline)(id = id)
+        SortSlottedPipe(source, sortItems.map(translateColumnOrder(pipeline, _)), pipeline)(id = id)
 
       case Eager(_) =>
         EagerSlottedPipe(source, pipeline)(id)

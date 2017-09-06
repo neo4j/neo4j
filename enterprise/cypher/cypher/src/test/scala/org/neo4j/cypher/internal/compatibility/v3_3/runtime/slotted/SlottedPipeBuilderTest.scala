@@ -656,7 +656,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     ))
 
     pipe should equal(
-      SortRegisterPipe(orderBy = Seq(slottedPipes.Ascending(0)), pipelineInformation = expectedPipeline2,
+      SortSlottedPipe(orderBy = Seq(slottedPipes.Ascending(0)), pipelineInformation = expectedPipeline2,
         source = UnwindSlottedPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
           source = SingleRowSlottedPipe(expectedPipeline1)()
         )()
