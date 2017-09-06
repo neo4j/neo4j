@@ -72,7 +72,7 @@ public class CompositeIndexingIT
     public final TestName testName = new TestName();
 
     @Rule
-    public Timeout globalTimeout = Timeout.seconds( 2 );
+    public Timeout globalTimeout = Timeout.seconds( 200 );
 
     private final IndexDescriptor index;
     private GraphDatabaseAPI graphDatabaseAPI;
