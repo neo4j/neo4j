@@ -22,15 +22,28 @@ package cypher.cucumber
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.util
 
 import gherkin.formatter.model.{Match, Result}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.io.Source
 
 object BlacklistPlugin {
+  private var _uri:URI = null
   private var _blacklist: Set[String] = null
+  private val _usedScenarios: mutable.Set[String] = mutable.Set()
 
-  def blacklisted(name: String) = blacklist().contains(normalizedScenarioName(name))
+  def blacklisted(name: String) = {
+    val newName = normalizedScenarioName(name)
+    _usedScenarios.add(newName)
+    blacklist().contains(newName)
+  }
+
+  def getDiffBetweenBlacklistAndUsedScenarios(): util.Set[String] = {
+    blacklist().diff(_usedScenarios).asJava
+  }
 
   def normalizedScenarioName(name: String) = {
     val builder = new StringBuilder
@@ -61,13 +74,18 @@ object BlacklistPlugin {
 class BlacklistPlugin(blacklistFile: URI) extends CucumberAdapter {
 
   override def before(`match`: Match, result: Result): Unit = {
-    val url = getClass.getResource(blacklistFile.getPath)
-    if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
-    val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
-    BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
-      case (set, scenarioName) =>
-        val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
-        if (normalizedName.isEmpty || normalizedName.startsWith("//")) set else set + normalizedName
+    if (!blacklistFile.equals(BlacklistPlugin._uri) ) {
+      // only do this the first time for each new URI
+      BlacklistPlugin._usedScenarios.clear()
+      BlacklistPlugin._uri = blacklistFile
+      val url = getClass.getResource(blacklistFile.getPath)
+      if (url == null) throw new FileNotFoundException(s"blacklist file not found at: $blacklistFile")
+      val itr = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
+      BlacklistPlugin._blacklist = itr.foldLeft(Set.empty[String]) {
+        case (set, scenarioName) =>
+          val normalizedName = BlacklistPlugin.normalizedScenarioName(scenarioName)
+          if (normalizedName.isEmpty || normalizedName.startsWith("//")) set else set + normalizedName
+      }
     }
   }
 }

@@ -1,10 +1,8 @@
-Combining string operators' was blacklisted, but succeeded
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
 Get rows in the middle by param
 Get rows in the middle
 
-handling long chanins of operators
 Handle ORDER BY with LIMIT 1
 Keeping used expression 1
 Matching and returning ordered results, with LIMIT
@@ -49,7 +47,6 @@ IS NOT NULL with literal maps
 `percentileDisc()` failing on bad arguments
 `percentileDisc()` failing in more involved query
 `type()` failing on invalid arguments
-`labels()` in return clauses
 Find friends of others
 Should only join when matching
 Adding a single label
@@ -73,8 +70,6 @@ Return relationships by fetching them from the path
 Return a var length path
 Return a var length path of length zero
 Return a named var length path of length zero
-Fail when comparing strings and integers using > in an AND'd predicate
-Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
 Variable length relationship without lower bound
 Variable length relationship without bounds
@@ -207,7 +202,6 @@ Handling mixed relationship patterns and directions 2
 Handling mixed relationship patterns 1
 Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
-Fail when trying to compare strings and numbers
 A simple pattern with one bound endpoint
 Nested maps
 Connected components succeeding WITH
