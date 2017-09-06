@@ -55,61 +55,6 @@ abstract class TopSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   }
 }
 
-case class TopNSlottedPipeOld(source: Pipe, orderBy: Seq[ColumnOrder], countExpression: Expression)
-                             (val id: Id = new Id) extends TopSlottedPipe(source, orderBy) {
-
-  countExpression.registerOwningPipe(this)
-
-  protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
-    if (input.isEmpty)
-      Iterator.empty
-    else if (orderBy.isEmpty)
-      input
-    else {
-
-      val first = input.next()
-      val count = countExpression(first).asInstanceOf[NumberValue].longValue().toInt
-
-      if (count <= 0) {
-        Iterator.empty
-      } else {
-
-        var result = new Array[ExecutionContext](count)
-        result(0) = first
-        var last : Int = 0
-
-        while ( last < count - 1 && input.hasNext ) {
-          last += 1
-          result(last) = input.next()
-        }
-
-        if (input.isEmpty) {
-          val newResult = result.take(last + 1)
-          java.util.Arrays.sort(newResult, comparator)
-          newResult.toIterator
-        } else {
-          java.util.Arrays.sort(result, comparator)
-
-          val search = binarySearch(result, comparator) _
-          input.foreach {
-            ctx =>
-              if (comparator.compare(ctx, result(last)) < 0) {
-                val idx = search(ctx)
-                val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
-                if (insertPosition >= 0 && insertPosition < count) {
-                  Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
-                  result(insertPosition) = ctx
-                }
-              }
-          }
-          result.toIterator
-        }
-      }
-    }
-  }
-}
-
 case class TopNSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], countExpression: Expression)
                            (val id: Id = new Id) extends TopSlottedPipe(source, orderBy) {
 
