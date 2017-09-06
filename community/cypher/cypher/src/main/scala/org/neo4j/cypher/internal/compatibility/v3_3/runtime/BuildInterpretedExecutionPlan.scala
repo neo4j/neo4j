@@ -37,9 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionE
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
 import org.neo4j.values.virtual.MapValue
 
-object
-
-BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
+object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
