@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 
-case class OptionalSlottededPipe(source: Pipe, nullableOffsets: Seq[Int],
-                                 pipelineInformation: PipelineInformation)
-                                (val id: Id = new Id)
+case class OptionalSlottedPipe(source: Pipe, nullableOffsets: Seq[Int],
+                               pipelineInformation: PipelineInformation)
+                              (val id: Id = new Id)
   extends PipeWithSource(source) with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {

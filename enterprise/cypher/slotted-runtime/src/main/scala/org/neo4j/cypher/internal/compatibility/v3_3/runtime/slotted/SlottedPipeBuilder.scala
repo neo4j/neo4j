@@ -156,7 +156,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
-        OptionalSlottededPipe(source, nullableOffsets.toSeq, pipeline)(id)
+        OptionalSlottedPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case Projection(_, expressions) =>
         val expressionsWithSlots = expressions map {

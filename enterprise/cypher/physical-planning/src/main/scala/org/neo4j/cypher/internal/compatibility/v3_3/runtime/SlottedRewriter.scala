@@ -36,7 +36,7 @@ import scala.collection.mutable
 This class takes a logical plan and pipeline information, and rewrites it so it uses slotted expressions instead of
 using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
  */
-class SlottededRewriter(tokenContext: TokenContext) {
+class SlottedRewriter(tokenContext: TokenContext) {
 
   private def rewriteUsingIncoming(oldPlan: LogicalPlan): Boolean = oldPlan match {
     case _: Aggregation | _: Distinct => true
@@ -81,7 +81,7 @@ class SlottededRewriter(tokenContext: TokenContext) {
         )(oldPlan.solved)
 
         /*
-        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        Since the logical plan PipeInformation is about the output rows we still need to remember the
         outgoing pipeline info here
          */
         val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
@@ -96,7 +96,7 @@ class SlottededRewriter(tokenContext: TokenContext) {
         val newPlan = oldPlan.endoRewrite(rewriter)
 
         /*
-        Since the logical plan pipeinformation is about the output rows we still need to remember the
+        Since the logical plan PipeInformation is about the output rows we still need to remember the
         outgoing pipeline info here
          */
         val outgoingPipeline = pipelineInformation(oldPlan.assignedId)
@@ -121,29 +121,28 @@ class SlottededRewriter(tokenContext: TokenContext) {
     resultPlan
   }
 
-  private def createRewriterFrom(rewrites: Map[LogicalPlan, LogicalPlan]) = topDown(Rewriter.lift {
-    case x: LogicalPlan if rewrites.contains(x) =>
-      rewrites(x)
-  })
-
   private def rewriteCreator(pipelineInformation: PipelineInformation, thisPlan: LogicalPlan): Rewriter = {
     val innerRewriter = Rewriter.lift {
-      case Property(Variable(key), PropertyKeyName(propKey)) =>
-        val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
+      case prop@Property(Variable(key), PropertyKeyName(propKey)) =>
 
-        val slot = pipelineInformation(key)
-        val propExpression = (slot, maybeToken) match {
-          case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTNode => NodeProperty(offset, token, s"$name.$propKey")
-          case (LongSlot(offset, _, typ, name), None) if typ == CTNode => NodePropertyLate(offset, propKey, s"$name.$propKey")
-          case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token, s"$name.$propKey")
-          case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
-          case _ => throw new CantCompileQueryException(s"Expressions on object other then nodes and relationships are not yet supported")
+        pipelineInformation(key) match {
+          case LongSlot(offset, nullable, typ, name) =>
+            val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
+
+            val propExpression = (typ, maybeToken) match {
+              case (CTNode, Some(token)) => NodeProperty(offset, token, s"$name.$propKey")
+              case (CTNode, None) => NodePropertyLate(offset, propKey, s"$name.$propKey")
+              case (CTRelationship, Some(token)) => RelationshipProperty(offset, token, s"$name.$propKey")
+              case (CTRelationship, None) => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
+              case _ => throw new InternalException(s"Expressions on object other then nodes and relationships are not yet supported")
+            }
+            if (nullable)
+              NullCheck(offset, propExpression)
+            else
+              propExpression
+
+          case RefSlot(offset, _, _, _) => prop.copy(map = ReferenceFromSlot(offset))(prop.position)
         }
-
-        if (slot.nullable)
-          NullCheck(slot.offset, propExpression)
-        else
-          propExpression
 
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
@@ -185,14 +184,14 @@ class SlottededRewriter(tokenContext: TokenContext) {
               case LongSlot(offset, false, _, _) => IdFromSlot(offset)
               case _ => idFunction // Don't know how to specialize this
             }
-          case e => idFunction // Don't know how to specialize this
+          case _ => idFunction // Don't know how to specialize this
         }
 
       case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Exists =>
         idFunction.args.head match {
           case Property(Variable(key), PropertyKeyName(propKey)) =>
             checkIfPropertyExists(pipelineInformation, key, propKey)
-          case e => idFunction // Don't know how to specialize this
+          case _ => idFunction // Don't know how to specialize this
         }
 
       case e@IsNull(Property(Variable(key), PropertyKeyName(propKey))) =>
