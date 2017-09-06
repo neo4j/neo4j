@@ -36,7 +36,7 @@ import scala.collection.mutable
 This class takes a logical plan and pipeline information, and rewrites it so it uses slotted expressions instead of
 using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
  */
-class SlottededRewriter(tokenContext: TokenContext) {
+class SlottedRewriter(tokenContext: TokenContext) {
 
   private def rewriteUsingIncoming(oldPlan: LogicalPlan): Boolean = oldPlan match {
     case _: Aggregation | _: Distinct => true
