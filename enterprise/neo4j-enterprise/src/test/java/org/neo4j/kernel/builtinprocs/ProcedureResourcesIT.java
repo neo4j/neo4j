@@ -235,96 +235,96 @@ public class ProcedureResourcesIT
         case "dbms.listActiveLocks":
             proc.withParam( "'query-1234'" );
             break;
-        case "db.index.manual.seek.nodes":
+        case "db.index.explicit.seekNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.index.manual.nodes":
+        case "db.index.explicit.searchNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.index.manual.relationships":
+        case "db.index.explicit.searchRelationships":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.index.manual.in":
+        case "db.index.explicit.searchRelationshipsIn":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'noKey:foo*'" );
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
             break;
-        case "db.index.manual.out":
+        case "db.index.explicit.searchRelationshipsOut":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'noKey:foo*'" );
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
             break;
-        case "db.index.manual.between":
+        case "db.index.explicit.searchRelationshipsBetween":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "n" );
             proc.withParam( "'noKey:foo*'" );
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD relationship AS r RETURN r" );
             break;
-        case "db.index.manual.seek.relationships":
+        case "db.index.explicit.seekRelationships":
             proc.withParam( "'" + relLegacyIndexName + "'" );
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.index.auto.seek.nodes":
+        case "db.index.explicit.auto.seekNodes":
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.index.auto.nodes":
+        case "db.index.explicit.auto.searchNodes":
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.index.auto.relationships":
+        case "db.index.explicit.auto.searchRelationships":
             proc.withParam( "'noKey:foo*'" );
             break;
-        case "db.index.auto.seek.relationships":
+        case "db.index.explicit.auto.seekRelationships":
             proc.withParam( "'noKey'" );
             proc.withParam( "'noValue'" );
             break;
-        case "db.index.manual.exists.forNodes":
+        case "db.index.explicit.existsForNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.index.manual.exists.forRelationships":
+        case "db.index.explicit.existsForRelationships":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.index.manual.forNodes":
+        case "db.index.explicit.forNodes":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.index.manual.forRelationships":
+        case "db.index.explicit.forRelationships":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
-        case "db.index.manual.add.node":
+        case "db.index.explicit.addNode":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'prop'" );
             proc.withParam( "'value'");
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.index.manual.add.relationship":
+        case "db.index.explicit.addRelationship":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "r" );
             proc.withParam( "'prop'" );
             proc.withParam( "'value'");
             proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.index.manual.remove.node":
+        case "db.index.explicit.removeNode":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "n" );
             proc.withParam( "'prop'" );
             proc.withSetup( "OPTIONAL MATCH (n) WITH n LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.index.manual.remove.relationship":
+        case "db.index.explicit.removeRelationship":
             proc.withParam( "'" + legacyIndexName + "'" );
             proc.withParam( "r" );
             proc.withParam( "'prop'" );
             proc.withSetup( "OPTIONAL MATCH ()-[r]->() WITH r LIMIT 1", "YIELD success RETURN success" );
             break;
-        case "db.index.manual.drop":
+        case "db.index.explicit.drop":
             proc.withParam( "'" + legacyIndexName + "'" );
             break;
         case "dbms.setConfigValue":
