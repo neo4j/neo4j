@@ -123,12 +123,6 @@ public final class ArrayEncoder
         }
 
         @Override
-        public void writeUTF8( byte[] bytes, int offset, int length ) throws RuntimeException
-        {
-            writeString( UTF8.decode( bytes, offset, length ) );
-        }
-
-        @Override
         public void writeString( char value )
         {
             builder.append( base64Encoder.encodeToString( UTF8.encode( Character.toString( value ) ) ) );
