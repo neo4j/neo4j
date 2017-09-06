@@ -26,6 +26,8 @@ public final class TimeUtil
 {
     public static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
+    public static final String VALID_TIME_DESCRIPTION = "Valid units are: 'ms', 's', 'm' and 'h'; default unit is 's'";
+
     public static final Function<String,Long> parseTimeMillis = timeWithOrWithoutUnit ->
     {
         int unitIndex = -1;
@@ -42,36 +44,32 @@ public final class TimeUtil
         {
             return DEFAULT_TIME_UNIT.toMillis( Integer.parseInt( timeWithOrWithoutUnit ) );
         }
-        else
+
+        String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
+        if ( unitIndex == 0 )
         {
-            int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
-            String unit = timeWithOrWithoutUnit.substring( unitIndex ).toLowerCase();
-            TimeUnit timeUnit;
-            if ( unit.equals( "ms" ) )
-            {
-                timeUnit = TimeUnit.MILLISECONDS;
-            }
-            else if ( unit.equals( "s" ) )
-            {
-                timeUnit = TimeUnit.SECONDS;
-            }
-            else if ( unit.equals( "m" ) )
-            {
-                timeUnit = TimeUnit.MINUTES;
-            }
-            else if ( unit.equals( "h" ) )
-            {
-                timeUnit = TimeUnit.HOURS;
-            }
-            else
-            {
-                throw new RuntimeException( "Unrecognized unit " + unit );
-            }
-            return timeUnit.toMillis( amount );
+            throw new IllegalArgumentException( "Missing numeric value" );
+        }
+
+        // We have digits
+        int amount = Integer.parseInt( timeWithOrWithoutUnit.substring( 0, unitIndex ) );
+        switch ( unit )
+        {
+        case "ms":
+            return TimeUnit.MILLISECONDS.toMillis( amount );
+        case "s":
+            return TimeUnit.SECONDS.toMillis( amount );
+        case "m":
+            return TimeUnit.MINUTES.toMillis( amount );
+        case "h":
+            return TimeUnit.HOURS.toMillis( amount );
+        default:
+            throw new IllegalArgumentException( "Unrecognized unit '" + unit + "'. " + VALID_TIME_DESCRIPTION );
         }
     };
 
     private TimeUtil()
     {
+        throw new AssertionError(); // no instances
     }
 }

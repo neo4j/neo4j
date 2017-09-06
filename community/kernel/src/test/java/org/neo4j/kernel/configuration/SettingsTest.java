@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.net.URI;
@@ -62,6 +64,9 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class SettingsTest
 {
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
+
     @Test
     public void parsesAbsolutePaths()
     {
@@ -75,15 +80,9 @@ public class SettingsTest
     public void doesntAllowRelativePaths()
     {
         File relativePath = new File( "some/path" );
-        try
-        {
-            Settings.PATH.apply( relativePath.toString() );
-            fail( "Expected an exception" );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+
+        expect.expect( IllegalArgumentException.class );
+        Settings.PATH.apply( relativePath.toString() );
     }
 
     @Test
@@ -116,15 +115,8 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "bar" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "bar" ) ) );
     }
 
     @Test
@@ -168,15 +160,8 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "1" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "1" ) ) );
     }
 
     @Test
@@ -188,15 +173,8 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "7" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "7" ) ) );
     }
 
     @Test
@@ -238,29 +216,24 @@ public class SettingsTest
         assertThat( setting.apply( map( stringMap( "foo", "aaabbbccc" ) ) ), equalTo( "aaabbbccc" ) );
 
         // Bad
-        try
-        {
-            setting.apply( map( stringMap( "foo", "cba" ) ) );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            // Ok
-        }
+        expect.expect( InvalidSettingException.class );
+        setting.apply( map( stringMap( "foo", "cba" ) ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        expect.expect( InvalidSettingException.class );
         setting.apply( map( stringMap() ) );
     }
 
-    @Test( expected = InvalidSettingException.class )
+    @Test
     public void testDurationWithValueNotWithinConstraint()
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        expect.expect( InvalidSettingException.class );
         setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
     }
 
@@ -269,6 +242,24 @@ public class SettingsTest
     {
         Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
         assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
+    }
+
+    @Test
+    public void badDurationMissingNumber() throws Exception
+    {
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
+        expect.expect( InvalidSettingException.class );
+        expect.expectMessage( "Missing numeric value" );
+        setting.apply( map( stringMap( "foo.bar", "ms" ) ) );
+    }
+
+    @Test
+    public void badDurationInvalidUnit() throws Exception
+    {
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION ).build();
+        expect.expect( InvalidSettingException.class );
+        expect.expectMessage( "Unrecognized unit 'gigaseconds'" );
+        setting.apply( map( stringMap( "foo.bar", "2gigaseconds" ) ) );
     }
 
     @Test
@@ -350,15 +341,8 @@ public class SettingsTest
     {
         Setting<String> a = setting( "A", STRING, "A" );
         Setting<String> b = setting( "B", STRING, "B" );
-        try
-        {
-            Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
-            fail();
-        }
-        catch ( AssertionError e )
-        {
-            // Expected
-        }
+        expect.expect( AssertionError.class );
+        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
     }
 
     public static <From, To> Function<From,To> map( final Map<From,To> map )
