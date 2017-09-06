@@ -26,6 +26,7 @@ import java.util.Map;
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.MapValue;
 
 class QueryLogFormatter
@@ -85,12 +86,19 @@ class QueryLogFormatter
                 }
                 else
                 {
-                    formatValue( result, entry.getValue() );
+                    result.append( formatAnyValue( entry.getValue() ));
                 }
                 sep = ", ";
             }
         }
         result.append( "}" );
+    }
+
+    static String formatAnyValue( AnyValue value )
+    {
+        PrettyPrinter printer = new PrettyPrinter( "'" );
+        value.writeTo( printer );
+        return printer.value();
     }
 
     static void formatMap( StringBuilder result, Map<String,Object> params )

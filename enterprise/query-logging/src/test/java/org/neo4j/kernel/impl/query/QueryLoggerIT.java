@@ -228,7 +228,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
-                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}}"
+                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: ['Jake', 'Eddie', 'Susannah']}}"
                         + " - {}",
                 clientConnectionInfo(),
                 query ) ) );

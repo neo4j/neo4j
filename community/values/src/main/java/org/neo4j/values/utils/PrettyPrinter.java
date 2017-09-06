@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.values.utils;
 
 import java.util.ArrayDeque;
@@ -15,154 +34,33 @@ import static java.lang.String.format;
 
 /**
  * Pretty printer for AnyValues.
- *
- * Used to nicely format any given AnyValue.
+ * <p>
+ * Used to format AnyValue as a json-like string, as following:
+ * <ul>
+ * <li>nodes: <code>(id=42 :LABEL {prop1: ["a", 13]})</code></li>
+ * <li>edges: <code>-[id=42 :TYPE {prop1: ["a", 13]}]-</code></li>
+ * <li>paths: <code>(id=1 :L)-[id=42 :T {k: "v"}]->(id=2)-...</code></li>
+ * <li>points are serialized to geojson</li>
+ * <li>maps: <code>{foo: 42, bar: "baz"}</code></li>
+ * <li>lists and arrays: <code>["aa", "bb", "cc"]</code></li>
+ * <li>Numbers: <code>2.7182818285</code></li>
+ * <li>Strings: <code>"this is a string"</code></li>
+ * </ul>
  */
 public class PrettyPrinter implements AnyValueWriter<RuntimeException>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
+    private final String quoteMark;
 
-    PrettyPrinter()
+    public PrettyPrinter()
     {
+        this( "\"" );
+    }
+
+    public PrettyPrinter( String quoteMark )
+    {
+        this.quoteMark = quoteMark;
         stack.push( new ValueWriter() );
-    }
-
-    interface Writer
-    {
-        void write( String value );
-
-        String done();
-
-        default String quote( String in )
-        {
-            return "'" + in + "'";
-        }
-    }
-
-    static class ValueWriter implements Writer
-    {
-        private final StringBuilder builder = new StringBuilder();
-
-        @Override
-        public void write( String value )
-        {
-            builder.append( value );
-        }
-
-        @Override
-        public String done()
-        {
-            return builder.toString();
-        }
-    }
-
-    static class MapWriter implements Writer
-    {
-        private boolean writeKey = true;
-        private String sep = "";
-        private final StringBuilder builder;
-
-        MapWriter()
-        {
-            this.builder = new StringBuilder( "{" );
-        }
-
-        @Override
-        public void write( String value )
-        {
-            if ( writeKey )
-            {
-                builder.append( sep ).append( value ).append( ": " );
-            }
-            else
-            {
-                builder.append( value );
-            }
-            writeKey = !writeKey;
-            sep = ", ";
-        }
-
-        @Override
-        public String done()
-        {
-            return builder.append( "}" ).toString();
-        }
-
-        @Override
-        public String quote( String in )
-        {
-            return writeKey ? in : "'" + in + "'";
-        }
-    }
-
-    static class ListWriter implements Writer
-    {
-        private final StringBuilder builder;
-        private String sep = "";
-
-        ListWriter()
-        {
-            this.builder = new StringBuilder( "[" );
-        }
-
-        @Override
-        public void write( String value )
-        {
-            builder.append( sep ).append( value );
-            sep = ", ";
-        }
-
-        @Override
-        public String done()
-        {
-            return builder.append( "]" ).toString();
-        }
-    }
-
-    static class PointWriter implements Writer
-    {
-        private int i = 0;
-        private String[] coordinates = new String[2];
-        private final CoordinateReferenceSystem crs;
-
-        PointWriter( CoordinateReferenceSystem crs )
-        {
-            this.crs = crs;
-        }
-
-        @Override
-        public void write( String value )
-        {
-            coordinates[i++] = value;
-        }
-
-        @Override
-        public String done()
-        {
-            return format(
-                    "{geometry: " +
-                    "{type: 'Point', coordinates: [%s, %s], crs: " +
-                    "{type: link, " +
-                    "properties: {href: '%s', code: %d}" +
-                    "}" +
-                    "}" +
-                    "}",
-                    coordinates[0], coordinates[1], crs.href(), crs.code() );
-        }
-    }
-
-    private void append( String value )
-    {
-        assert !stack.isEmpty();
-        Writer head = stack.peek();
-        head.write( value );
-    }
-
-    private String quote( String value )
-    {
-        assert !stack.isEmpty();
-        Writer head = stack.peek();
-        return head.quote( value );
     }
 
     @Override
@@ -363,5 +261,149 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException>
     {
         assert stack.size() == 1;
         return stack.getLast().done();
+    }
+
+    private void append( String value )
+    {
+        assert !stack.isEmpty();
+        Writer head = stack.peek();
+        head.append( value );
+    }
+
+    private String quote( String value )
+    {
+        assert !stack.isEmpty();
+        Writer head = stack.peek();
+        return head.quote( value );
+    }
+
+    private interface Writer
+    {
+        void append( String value );
+
+        String done();
+
+        String quote( String in );
+    }
+
+    private abstract class BaseWriter implements Writer
+    {
+        protected final StringBuilder builder = new StringBuilder();
+
+        @Override
+        public String done()
+        {
+            return builder.toString();
+        }
+
+        @Override
+        public String quote( String in )
+        {
+            return quoteMark + in + quoteMark;
+        }
+    }
+
+    private class ValueWriter extends BaseWriter
+    {
+        @Override
+        public void append( String value )
+        {
+            builder.append( value );
+        }
+    }
+
+    private class MapWriter extends BaseWriter
+    {
+        private boolean writeKey = true;
+        private String sep = "";
+
+        MapWriter()
+        {
+            super();
+            builder.append( "{" );
+        }
+
+        @Override
+        public void append( String value )
+        {
+            if ( writeKey )
+            {
+                builder.append( sep ).append( value ).append( ": " );
+            }
+            else
+            {
+                builder.append( value );
+            }
+            writeKey = !writeKey;
+            sep = ", ";
+        }
+
+        @Override
+        public String done()
+        {
+            return builder.append( "}" ).toString();
+        }
+
+        @Override
+        public String quote( String in )
+        {
+            return writeKey ? in : super.quote( in );
+        }
+    }
+
+    private class ListWriter extends BaseWriter
+    {
+        private String sep = "";
+
+        ListWriter()
+        {
+            super();
+            builder.append( "[" );
+        }
+
+        @Override
+        public void append( String value )
+        {
+            builder.append( sep ).append( value );
+            sep = ", ";
+        }
+
+        @Override
+        public String done()
+        {
+            return builder.append( "]" ).toString();
+        }
+    }
+
+    private class PointWriter extends BaseWriter
+    {
+        private int index;
+        private String[] coordinates = new String[2];
+        private final CoordinateReferenceSystem crs;
+
+        PointWriter( CoordinateReferenceSystem crs )
+        {
+            this.crs = crs;
+        }
+
+        @Override
+        public void append( String value )
+        {
+            coordinates[index++] = value;
+        }
+
+        @Override
+        public String done()
+        {
+            return format(
+                    "{geometry: " +
+                    "{type: \"Point\", coordinates: [%s, %s], crs: " +
+                    "{type: link, " +
+                    "properties: {href: \"%s\", code: %d}" +
+                    "}" +
+                    "}" +
+                    "}",
+                    coordinates[0], coordinates[1], crs.href(), crs.code() );
+        }
     }
 }

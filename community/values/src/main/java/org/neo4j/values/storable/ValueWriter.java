@@ -66,7 +66,7 @@ public interface ValueWriter<E extends Exception>
 
     default void writeUTF8( byte[] bytes, int offset, int length ) throws E
     {
-        writeString( new String(bytes, offset, length, StandardCharsets.UTF_8) );
+        writeString( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
     }
 
     default void writeString( char[] value ) throws E

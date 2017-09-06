@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.values.utils;
 
 import org.junit.Test;
@@ -6,6 +25,7 @@ import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.EdgeReference;
@@ -54,7 +74,7 @@ public class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42 :L1:L2:L3 {bar: [1337, 'baz'], foo: 42})" ) );
+        assertThat( printer.value(), equalTo( "(id=42 :L1:L2:L3 {bar: [1337, \"baz\"], foo: 42})" ) );
     }
 
     @Test
@@ -69,7 +89,7 @@ public class PrettyPrinterTest
         node.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "(id=42 {bar: [1337, 'baz'], foo: 42})" ) );
+        assertThat( printer.value(), equalTo( "(id=42 {bar: [1337, \"baz\"], foo: 42})" ) );
     }
 
     @Test
@@ -128,7 +148,7 @@ public class PrettyPrinterTest
         edge.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "-[id=42 :R {bar: [1337, 'baz'], foo: 42}]-" ) );
+        assertThat( printer.value(), equalTo( "-[id=42 :R {bar: [1337, \"baz\"], foo: 42}]-" ) );
     }
 
     @Test
@@ -202,7 +222,7 @@ public class PrettyPrinterTest
         list.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "['foo', 42]" ) );
+        assertThat( printer.value(), equalTo( "[\"foo\", 42]" ) );
     }
 
     @Test
@@ -216,7 +236,7 @@ public class PrettyPrinterTest
         array.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "['a', 'b', 'c']" ) );
+        assertThat( printer.value(), equalTo( "[\"a\", \"b\", \"c\"]" ) );
     }
 
     @Test
@@ -271,9 +291,24 @@ public class PrettyPrinterTest
         pointValue.writeTo( printer );
 
         // Then
-        assertThat( printer.value(), equalTo( "{geometry: {type: 'Point', coordinates: [11.0, 12.0], " +
+        assertThat( printer.value(), equalTo( "{geometry: {type: \"Point\", coordinates: [11.0, 12.0], " +
                                               "crs: {type: link, properties: " +
-                                              "{href: 'http://spatialreference.org/ref/sr-org/7203/', code: 7203}}}}" ) );
+                                              "{href: \"http://spatialreference.org/ref/sr-org/7203/\", code: " +
+                                              "7203}}}}" ) );
+    }
+
+    @Test
+    public void shouldBeAbleToUseAnyQuoteMark()
+    {
+        // Given
+        TextValue hello = stringValue( "(ツ)" );
+        PrettyPrinter printer = new PrettyPrinter( "__" );
+
+        // When
+        hello.writeTo( printer );
+
+        // Then
+        assertThat( printer.value(), equalTo( "__(ツ)__" ) );
     }
 
     private MapValue props( Object... keyValue )
@@ -293,6 +328,4 @@ public class PrettyPrinterTest
         }
         return VirtualValues.map( map );
     }
-
-
 }

@@ -20,6 +20,10 @@
 
 package org.neo4j.bolt.logging;
 
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import org.codehaus.jackson.map.ObjectMapper;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -27,11 +31,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
-import org.codehaus.jackson.map.ObjectMapper;
-
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.PrettyPrinter;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 
@@ -107,9 +110,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier )
+    public void logRun( String statement, Supplier<MapValue> parametersSupplier )
     {
-        clientEvent( "RUN", () -> format( "%s %s", json(statement), json( parametersSupplier.get() ) ) );
+        clientEvent( "RUN", () -> format( "%s %s", json( statement ), formatAnyValue( parametersSupplier.get() ) ) );
     }
 
     @Override
@@ -137,9 +140,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logSuccess( Supplier<String> metadataSupplier )
+    public void logSuccess( Supplier<MapValue> metadataSupplier )
     {
-        serverEvent( "SUCCESS", () -> json( metadataSupplier.get() ) );
+        serverEvent( "SUCCESS", () -> formatAnyValue( metadataSupplier.get() ) );
     }
 
     @Override
@@ -206,4 +209,10 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
         }
     }
 
+    private static String formatAnyValue( AnyValue mapValue )
+    {
+        PrettyPrinter printer = new PrettyPrinter();
+        mapValue.writeTo( printer );
+        return printer.value();
+    }
 }
