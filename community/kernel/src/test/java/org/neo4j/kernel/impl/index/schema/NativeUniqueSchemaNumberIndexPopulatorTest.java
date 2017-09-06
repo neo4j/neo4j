@@ -26,6 +26,7 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -43,10 +44,10 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
 {
     @Override
     NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator(
-            PageCache pageCache, File indexFile,
+            PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout );
     }
 
     @Override

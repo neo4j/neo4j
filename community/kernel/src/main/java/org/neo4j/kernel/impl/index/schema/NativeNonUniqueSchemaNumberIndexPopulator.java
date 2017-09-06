@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
@@ -41,10 +42,10 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
     private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
-    NativeNonUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
+    NativeNonUniqueSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
             IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, storeFile, layout );
+        super( pageCache, fs, storeFile, layout );
         this.samplingConfig = samplingConfig;
     }
 

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -385,17 +386,22 @@ public class NativeSchemaNumberIndexProviderTest
 
     private NativeSchemaNumberIndexProvider newProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, false );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, false );
     }
 
     private NativeSchemaNumberIndexProvider newReadOnlyProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, true );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, true );
     }
 
     private PageCache pageCache()
     {
         return rules.pageCache();
+    }
+
+    private FileSystemAbstraction fs()
+    {
+        return rules.fileSystem();
     }
 
     private File baseDir()
