@@ -359,16 +359,18 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     protected void flushAll()
     {
-        for ( IndexPopulation population : populations )
+        populations.forEach( this::flush );
+    }
+
+    protected void flush( IndexPopulation population )
+    {
+        try
         {
-            try
-            {
-                population.populator.add( population.takeCurrentBatch() );
-            }
-            catch ( Throwable failure )
-            {
-                fail( population, failure );
-            }
+            population.populator.add( population.takeCurrentBatch() );
+        }
+        catch ( Throwable failure )
+        {
+            fail( population, failure );
         }
     }
 
@@ -509,12 +511,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         }
 
         private void onUpdate( IndexEntryUpdate update )
-                throws IndexEntryConflictException, IOException
         {
             populator.includeSample( update );
             if ( batch( update ) )
             {
-                populator.add( takeCurrentBatch() );
+                flush( this );
             }
         }
 
@@ -574,14 +575,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             // NodeUpdates object. Therefore no additional properties need to be loaded.
             for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
             {
-                try
-                {
-                    indexUpdate.indexKey().onUpdate( indexUpdate );
-                }
-                catch ( Throwable failure )
-                {
-                    fail( indexUpdate.indexKey(), failure );
-                }
+                indexUpdate.indexKey().onUpdate( indexUpdate );
             }
         }
     }

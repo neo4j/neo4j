@@ -52,6 +52,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -295,6 +296,29 @@ public class BatchingMultipleIndexPopulatorTest
         verify( populator ).add( forUpdates( index1, update3, update4 ) );
         verify( populator ).markAsFailed( failure( batchFlushError ).asString() );
         verify( populator, never() ).add( forUpdates( index1, update5 ) );
+    }
+
+    @Test
+    public void shouldApplyBatchesInParallel() throws Exception
+    {
+        // given
+        setProperty( BATCH_SIZE_NAME, 2 );
+        NodeUpdates[] updates = new NodeUpdates[9];
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            updates[i] = nodeUpdates( i, propertyId, String.valueOf( i ), labelId );
+        }
+        IndexStoreView storeView = newStoreView( updates );
+        ExecutorService executor = sameThreadExecutor();
+        BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator( storeView,
+                executor, NullLogProvider.getInstance() );
+        addPopulator( batchingPopulator, index1 );
+
+        // when
+        batchingPopulator.indexAllNodes().run();
+
+        // then
+        verify( executor, atLeast( 5 ) ).execute( any( Runnable.class ) );
     }
 
     private List<IndexEntryUpdate<IndexDescriptor>> forUpdates( IndexDescriptor index, NodeUpdates... updates )
