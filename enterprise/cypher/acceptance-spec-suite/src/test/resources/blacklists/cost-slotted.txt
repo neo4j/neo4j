@@ -107,8 +107,6 @@ Should allow OR with index and regex predicates
 //SkipLimitAcceptance.feature
 Using a optional match after aggregation and before an aggregation
 
-ORDER BY two node properties with LIMIT
-
 //VarLengthAcceptance.feature
 Handles checking properties on nodes in multistep path - using ALL() function on path node properties
 Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties

@@ -1,12 +1,7 @@
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
 
-Handle ORDER BY with LIMIT 1
 Keeping used expression 1
-Matching and returning ordered results, with LIMIT
-ORDER BY and LIMIT can be used
-ORDER BY with LIMIT 0 should not generate errors
-ORDER BY with negative parameter for LIMIT should not generate errors
 Simple counting of nodes
 Support column renaming for aggregates as well
 Support multiple divisions in aggregate function
@@ -70,7 +65,6 @@ Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
 Variable length relationship in OPTIONAL MATCH
-ORDER BY with LIMIT
 Handling direction of named paths
 Zero-length named path
 Variable-length named path
