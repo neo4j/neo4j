@@ -20,7 +20,6 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -32,11 +31,13 @@ import io.netty.handler.ssl.SslHandler;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.bolt.transport.ProtocolChooser.BOLT_MAGIC_PREAMBLE;
+import static org.neo4j.bolt.transport.BoltHandshakeProtocolHandler.BOLT_MAGIC_PREAMBLE;
 
 public class TransportSelectionHandler extends ByteToMessageDecoder
 {
@@ -47,15 +48,18 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
     private final LogProvider logging;
-    private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
+    private final BoltMessageLogging boltLogging;
+    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
 
     TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
-                               Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
+                               Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions,
+                               BoltMessageLogging boltLogging )
     {
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
         this.logging = logging;
+        this.boltLogging = boltLogging;
         this.protocolVersions = protocolVersions;
     }
 
@@ -114,15 +118,15 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     {
         ChannelPipeline p = ctx.pipeline();
         p.addLast( sslCtx.newHandler( ctx.alloc() ) );
-        p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging, protocolVersions ) );
+        p.addLast( new TransportSelectionHandler( null, encryptionRequired, true, logging,
+                protocolVersions, boltLogging ) );
         p.remove( this );
     }
 
     private void switchToSocket( ChannelHandlerContext ctx )
     {
         ChannelPipeline p = ctx.pipeline();
-        p.addLast( new SocketTransportHandler(
-                new ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
+        p.addLast( newSocketTransportHandler() );
         p.remove( this );
     }
 
@@ -134,8 +138,14 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
                 new HttpObjectAggregator( MAX_WEBSOCKET_HANDSHAKE_SIZE ),
                 new WebSocketServerProtocolHandler( "/" ),
                 new WebSocketFrameTranslator(),
-                new SocketTransportHandler(
-                        new ProtocolChooser( protocolVersions, encryptionRequired, isEncrypted ), logging ) );
+                newSocketTransportHandler() );
         p.remove( this );
+    }
+
+    private SocketTransportHandler newSocketTransportHandler()
+    {
+        BoltHandshakeProtocolHandler protocolHandler = new BoltHandshakeProtocolHandler( protocolVersions,
+                encryptionRequired, isEncrypted );
+        return new SocketTransportHandler( protocolHandler, logging, boltLogging );
     }
 }

@@ -25,6 +25,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -58,7 +60,7 @@ import static org.neo4j.values.storable.Values.stringArray;
 public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 {
     private final String id = UUID.randomUUID().toString();
-    private final Runnable onClose;
+    private final BoltChannel boltChannel;
     private final Clock clock;
 
     State state = State.CONNECTED;
@@ -66,11 +68,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     final SPI spi;
     final MutableConnectionState ctx;
 
-    public BoltStateMachine( SPI spi, Runnable onClose, Clock clock )
+    public BoltStateMachine( SPI spi, BoltChannel boltChannel, Clock clock )
     {
         this.spi = spi;
         this.ctx = new MutableConnectionState( spi, clock );
-        this.onClose = onClose;
+        this.boltChannel = boltChannel;
         this.clock = clock;
     }
 
@@ -287,11 +289,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     {
         try
         {
-            //Only run onClose, once
-            if ( !ctx.closed && onClose != null )
-            {
-                onClose.run();
-            }
+            boltChannel.close();
         }
         finally
         {

@@ -32,8 +32,8 @@ import org.junit.Test;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.driver.v1.Config;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -62,7 +62,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -102,7 +101,7 @@ public class BoltFailuresIT
     public void throwsWhenWorkerCreationFails()
     {
         WorkerFactory workerFactory = mock( WorkerFactory.class );
-        when( workerFactory.newWorker( anyObject(), any() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
+        when( workerFactory.newWorker( anyObject() ) ).thenThrow( new IllegalStateException( "Oh!" ) );
 
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 
@@ -207,7 +206,7 @@ public class BoltFailuresIT
         awaitNumberOfActiveQueriesToBe( 0 );
 
         // verify that closing of the driver resulted in transaction termination on the server and correct log message
-        internalLogProvider.assertAtLeastOnce( inLog( BoltProtocolV1.class ).warn(
+        internalLogProvider.assertAtLeastOnce( inLog( BoltMessagingProtocolV1Handler.class ).warn(
                 startsWith( "Unable to send error back to the client" ),
                 instanceOf( TransactionTerminatedException.class ) ) );
     }

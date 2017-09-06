@@ -21,7 +21,7 @@ package org.neo4j.bolt.v1.runtime.concurrent;
 
 import java.time.Clock;
 
-import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
@@ -60,9 +60,9 @@ public class ThreadedWorkerFactory implements WorkerFactory
     }
 
     @Override
-    public BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose )
+    public BoltWorker newWorker( BoltChannel boltChannel )
     {
-        BoltStateMachine machine = connector.newMachine( connectionDescriptor, onClose, clock );
+        BoltStateMachine machine = connector.newMachine( boltChannel, clock );
         RunnableBoltWorker worker = new RunnableBoltWorker( machine, logging );
 
         scheduler.schedule( sessionWorker, worker, stringMap( THREAD_ID, machine.key() ) );

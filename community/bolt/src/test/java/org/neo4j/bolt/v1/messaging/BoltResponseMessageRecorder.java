@@ -49,9 +49,9 @@ public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage
     }
 
     @Override
-    public void onFailure( Status status, String message )
+    public void onFailure( Status status, String errorMessage )
     {
-        messages.add( new FailureMessage( status, message ) );
+        messages.add( new FailureMessage( status, errorMessage ) );
     }
 
 }

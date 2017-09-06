@@ -120,6 +120,11 @@ public interface JobScheduler extends Lifecycle
         public static final Group queryLogRotation = new Group( "queryLogRotation" );
 
         /**
+         * Rotates bolt message logs
+         */
+        public static final Group boltLogRotation = new Group( "BoltLogRotation" );
+
+        /**
          * Checkpoint and store flush
          */
         public static final Group checkPoint = new Group( "CheckPoint" );

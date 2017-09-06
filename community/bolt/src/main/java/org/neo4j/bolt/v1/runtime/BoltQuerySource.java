@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.BoltConnectionDescriptor;
+
 class BoltQuerySource
 {
     final String principalName;

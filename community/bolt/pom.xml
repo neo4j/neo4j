@@ -72,6 +72,11 @@
       <artifactId>netty-all</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.codehaus.jackson</groupId>
+      <artifactId>jackson-mapper-asl</artifactId>
+    </dependency>
+
     <!--Test dependencies-->
     <dependency>
       <groupId>junit</groupId>

@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -229,7 +230,8 @@ public class BoltResponseMessageTest
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
                 new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK,
+                NullBoltMessageLogger.getInstance() );
 
         msg.dispatch( writer );
         writer.flush();

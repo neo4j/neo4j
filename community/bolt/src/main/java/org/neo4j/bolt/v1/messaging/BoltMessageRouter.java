@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -35,6 +36,8 @@ import org.neo4j.values.AnyValue;
  */
 public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeException>
 {
+    private final BoltMessageLogger messageLogger;
+
     // Note that these callbacks can be used for multiple in-flight requests simultaneously, you cannot reset them
     // while there are in-flight requests.
     private final MessageProcessingHandler initHandler;
@@ -44,13 +47,16 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
 
     private BoltWorker worker;
 
-    public BoltMessageRouter( Log log, BoltWorker worker, BoltResponseMessageHandler<IOException> output,
-            Runnable onEachCompletedRequest )
+    public BoltMessageRouter( Log internalLog, BoltMessageLogger messageLogger,
+                              BoltWorker worker, BoltResponseMessageHandler<IOException> output,
+                              Runnable onEachCompletedRequest )
     {
-        this.initHandler = new InitHandler( output, onEachCompletedRequest, worker, log );
-        this.runHandler = new RunHandler( output, onEachCompletedRequest, worker, log );
-        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, worker, log );
-        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, worker, log );
+        this.messageLogger = messageLogger;
+
+        this.initHandler = new InitHandler( output, onEachCompletedRequest, worker, internalLog );
+        this.runHandler = new RunHandler( output, onEachCompletedRequest, worker, internalLog );
+        this.resultHandler = new ResultHandler( output, onEachCompletedRequest, worker, internalLog );
+        this.defaultHandler = new MessageProcessingHandler( output, onEachCompletedRequest, worker, internalLog );
 
         this.worker = worker;
     }
@@ -59,18 +65,22 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
     {
         // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
+        messageLogger.logInit(userAgent, authToken);
         worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
     @Override
     public void onAckFailure() throws RuntimeException
     {
+        messageLogger.logAckFailure();
         worker.enqueue( session -> session.ackFailure( defaultHandler ) );
     }
 
     @Override
     public void onReset() throws RuntimeException
     {
+        messageLogger.clientEvent("INTERRUPT");
+        messageLogger.logReset();
         worker.interrupt();
         worker.enqueue( session -> session.reset( defaultHandler ) );
     }
@@ -78,24 +88,28 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onRun( String statement, Map<String,Object> params )
     {
+        messageLogger.logRun( statement, () -> params );
         worker.enqueue( session -> session.run( statement, params, runHandler ) );
     }
 
     @Override
     public void onExternalError( Neo4jError error )
     {
+        messageLogger.clientEvent( "ERROR", error::message );
         worker.enqueue( session -> session.externalError( error, defaultHandler ) );
     }
 
     @Override
     public void onDiscardAll()
     {
+        messageLogger.logDiscardAll();
         worker.enqueue( session -> session.discardAll( resultHandler ) );
     }
 
     @Override
     public void onPullAll()
     {
+        messageLogger.logPullAll();
         worker.enqueue( session -> session.pullAll( resultHandler ) );
     }
 

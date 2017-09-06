@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
@@ -315,7 +316,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltResponseMessageWriter packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK, NullBoltMessageLogger.getInstance() );
 
         for ( ResponseMessage message : messages )
         {

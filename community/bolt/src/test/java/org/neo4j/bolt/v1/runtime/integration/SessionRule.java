@@ -32,9 +32,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
+import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.concurrent.Runnables;
@@ -112,18 +113,18 @@ class SessionRule implements TestRule
         return new BasicAuthentication( authManager, userManagerSupplier );
     }
 
-    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor )
+    BoltStateMachine newMachine( BoltChannel boltChannel )
     {
-        return newMachine( connectionDescriptor, Clock.systemUTC() );
+        return newMachine( boltChannel, Clock.systemUTC() );
     }
 
-    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Clock clock )
+    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
     {
         if ( boltFactory == null )
         {
             throw new IllegalStateException( "Cannot access test environment before test is running." );
         }
-        BoltStateMachine connection = boltFactory.newMachine( connectionDescriptor, Runnables.EMPTY_RUNNABLE, clock );
+        BoltStateMachine connection = boltFactory.newMachine( boltChannel, clock );
         runningMachines.add( connection );
         return connection;
     }

@@ -19,16 +19,17 @@
  */
 package org.neo4j.logging;
 
-import org.junit.Test;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Date;
 import java.util.IllegalFormatException;
 
+import org.junit.Test;
+
 import org.neo4j.function.Suppliers;
 
 import static java.lang.String.format;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
@@ -192,7 +193,7 @@ public class FormattedLogTest
     {
         return new FormattedLog(
                 Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                FormattedLog.UTC, null, "test", level, true );
+                FormattedLog.UTC, FormattedLog.SIMPLE_DATE_FORMAT, null, "test", level, true );
     }
 
     private static Throwable newThrowable( final String message, final String stackTrace )

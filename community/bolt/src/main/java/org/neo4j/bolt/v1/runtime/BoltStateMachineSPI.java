@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.util.Map;
 
+import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
