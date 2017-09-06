@@ -33,6 +33,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -66,9 +67,9 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     private byte[] failureBytes;
     private boolean dropped;
 
-    NativeSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout )
+    NativeSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout )
     {
-        super( pageCache, storeFile, layout );
+        super( pageCache, fs, storeFile, layout );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();
@@ -78,7 +79,6 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
-        pageCache.getCachedFileSystem().mkdirs( storeFile.getParentFile() );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
         workSync = new WorkSync<>( new IndexUpdateApply<>( treeKey, treeValue, singleTreeWriter, conflictDetectingValueMerger ) );

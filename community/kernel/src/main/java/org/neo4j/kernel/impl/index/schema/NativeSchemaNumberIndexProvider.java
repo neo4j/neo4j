@@ -49,16 +49,18 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private final PageCache pageCache;
+    private final FileSystemAbstraction fs;
     private final File nativeSchemaIndexBaseDir;
     private final Log log;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NativeSchemaNumberIndexProvider( PageCache pageCache, File storeDir, LogProvider logging,
+    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File storeDir, LogProvider logging,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0 );
         this.pageCache = pageCache;
+        this.fs = fs;
         this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( storeDir );
         this.log = logging.getLog( getClass() );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
@@ -77,9 +79,9 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, storeFile, new NonUniqueNumberLayout(), samplingConfig );
+            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig );
         case UNIQUE:
-            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, storeFile, new UniqueNumberLayout() );
+            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout() );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
@@ -102,7 +104,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NativeSchemaNumberIndexAccessor<>( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
+        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector );
     }
 
     @Override

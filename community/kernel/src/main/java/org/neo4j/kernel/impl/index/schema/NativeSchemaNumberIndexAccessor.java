@@ -27,6 +27,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -46,10 +47,10 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
 {
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
 
-    NativeSchemaNumberIndexAccessor( PageCache pageCache, File storeFile,
+    NativeSchemaNumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile,
             Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
     {
-        super( pageCache, storeFile, layout );
+        super( pageCache, fs, storeFile, layout );
         singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
     }

@@ -38,6 +38,7 @@ import java.util.Random;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -76,10 +76,10 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     public void setupPopulator()
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        populator = createPopulator( pageCache, indexFile, layout, samplingConfig );
+        populator = createPopulator( pageCache, fs, indexFile, layout, samplingConfig );
     }
 
-    abstract NativeSchemaNumberIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, File indexFile,
+    abstract NativeSchemaNumberIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig );
 
     @Test
@@ -504,7 +504,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
                     }
                 }
             }
-            populator.add( asList( updates.next() ) );
+            populator.add( Collections.singletonList( updates.next() ) );
             count++;
         }
         return count;

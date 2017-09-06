@@ -76,7 +76,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     {
         boolean readOnly = isReadOnly( config, operationalMode );
         NativeSchemaNumberIndexProvider nativeProvider =
-                new NativeSchemaNumberIndexProvider( pageCache, storeDir, logProvider, recoveryCleanupWorkCollector, readOnly );
+                new NativeSchemaNumberIndexProvider( pageCache, fs, storeDir, logProvider, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );

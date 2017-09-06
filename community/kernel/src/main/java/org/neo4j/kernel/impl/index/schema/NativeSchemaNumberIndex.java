@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -38,12 +39,14 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
     final PageCache pageCache;
     final File storeFile;
     final Layout<KEY,VALUE> layout;
+    final FileSystemAbstraction fs;
 
     GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaNumberIndex( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout )
+    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout )
     {
         this.pageCache = pageCache;
+        this.fs = fs;
         this.storeFile = storeFile;
         this.layout = layout;
     }
@@ -58,7 +61,9 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
 
     private void ensureDirectoryExist() throws IOException
     {
-        pageCache.getCachedFileSystem().mkdirs( storeFile.getParentFile() );
+        // This will create the directory on the "normal" file system.
+        // When native index is put on blockdevice, page cache file system should be used instead.
+        fs.mkdirs( storeFile.getParentFile() );
     }
 
     void closeTree() throws IOException
