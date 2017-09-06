@@ -19,14 +19,15 @@
  */
 package org.neo4j.bolt;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Paths;
 
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -49,7 +50,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_log_filename;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;
@@ -130,11 +130,10 @@ public class BoltMessageLoggingIT
     @Test
     public void shouldWriteToCustomFileWhenConfigured() throws IOException
     {
-        String customBoltLogFileName = "/tmp/my_bolt.log";
-        File customBoltLogFile = new File( customBoltLogFileName );
+        File customBoltLogFile = customBoltLogFile();
 
         db.setConfig( bolt_logging_enabled, TRUE );
-        db.setConfig( bolt_log_filename, customBoltLogFileName );
+        db.setConfig( bolt_log_filename, customBoltLogFile.toString() );
         db.ensureStarted();
         driver = newDriver();
 
@@ -144,11 +143,10 @@ public class BoltMessageLoggingIT
     @Test
     public void shouldWriteErrorsToCustomFileWhenConfigured() throws IOException
     {
-        String customBoltLogFileName = "/tmp/my_bolt.log";
-        File customBoltLogFile = new File( customBoltLogFileName );
+        File customBoltLogFile = customBoltLogFile();
 
         db.setConfig( bolt_logging_enabled, TRUE );
-        db.setConfig( bolt_log_filename, customBoltLogFileName );
+        db.setConfig( bolt_log_filename, customBoltLogFile.toString() );
         db.ensureStarted();
         driver = newDriver();
 
@@ -213,5 +211,10 @@ public class BoltMessageLoggingIT
     private GraphDatabaseAPI graphDbApi()
     {
         return db.getGraphDatabaseAPI();
+    }
+
+    private static File customBoltLogFile()
+    {
+        return Paths.get( "tmp", "my_bolt.log" ).toAbsolutePath().toFile();
     }
 }
