@@ -163,7 +163,8 @@ object SlotAllocation {
            _: Selection |
            _: Limit |
            _: Skip |
-           _: Sort
+           _: Sort |
+           _: Top
       =>
         incomingPipeline
 
