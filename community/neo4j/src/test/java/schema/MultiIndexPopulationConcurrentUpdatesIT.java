@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -71,7 +70,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -245,7 +243,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( updates, neoStores, labelScanStore );
 
-            SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( getSchemaIndexProvider() );
+            SchemaIndexProviderMap providerMap = getSchemaIndexProvider();
             JobScheduler scheduler = getJobScheduler();
             StatementTokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
 
@@ -398,9 +396,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return embeddedDatabase.resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    private SchemaIndexProvider getSchemaIndexProvider()
+    private SchemaIndexProviderMap getSchemaIndexProvider()
     {
-        return embeddedDatabase.resolveDependency( SchemaIndexProvider.class );
+        return embeddedDatabase.resolveDependency( SchemaIndexProviderMap.class );
     }
 
     private JobScheduler getJobScheduler()

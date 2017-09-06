@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -46,6 +47,7 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
         for ( SchemaIndexProvider provider : additionalIndexProviders )
         {
             Descriptor providerDescriptor = provider.getProviderDescriptor();
+            Objects.requireNonNull( providerDescriptor );
             SchemaIndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
             if ( existing != null )
             {

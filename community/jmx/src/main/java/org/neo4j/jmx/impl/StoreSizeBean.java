@@ -19,6 +19,8 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.apache.commons.lang3.mutable.MutableLong;
+
 import java.io.File;
 import java.io.IOException;
 import javax.management.NotCompliantMBeanException;
@@ -28,9 +30,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -82,7 +84,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
 
         private PhysicalLogFiles physicalLogFiles;
         private LegacyIndexProviderLookup legacyIndexProviderLookup;
-        private SchemaIndexProvider schemaIndexProvider;
+        private SchemaIndexProviderMap schemaIndexProviderMap;
         private LabelScanStore labelScanStore;
 
         StoreSizeImpl( ManagementData management, boolean isMXBean ) throws NotCompliantMBeanException
@@ -100,7 +102,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 {
                     physicalLogFiles = resolveDependency( ds, PhysicalLogFiles.class );
                     legacyIndexProviderLookup = resolveDependency( ds, LegacyIndexProviderLookup.class );
-                    schemaIndexProvider = resolveDependency( ds, SchemaIndexProvider.class );
+                    schemaIndexProviderMap = resolveDependency( ds, SchemaIndexProviderMap.class );
                     labelScanStore = resolveDependency( ds, LabelScanStore.class );
                 }
 
@@ -114,7 +116,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 {
                     physicalLogFiles = null;
                     legacyIndexProviderLookup = null;
-                    schemaIndexProvider = null;
+                    schemaIndexProviderMap = null;
                     labelScanStore = null;
                 }
             } );
@@ -191,7 +193,10 @@ public final class StoreSizeBean extends ManagementBeanProvider
             }
 
             // Add schema index
-            size += FileUtils.size( fs, schemaIndexProvider.getSchemaIndexStoreDirectory( storePath ) );
+            MutableLong schemaSize = new MutableLong();
+            schemaIndexProviderMap.accept( provider ->
+                    schemaSize.add( FileUtils.size( fs, provider.getSchemaIndexStoreDirectory( storePath ) ) ) );
+            size += schemaSize.longValue();
 
             // Add label index
             size += FileUtils.size( fs, labelScanStore.getLabelScanStoreFile() );

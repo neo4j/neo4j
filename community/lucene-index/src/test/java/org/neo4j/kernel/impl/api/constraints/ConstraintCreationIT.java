@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -81,7 +82,7 @@ public class ConstraintCreationIT
         }
 
         SchemaIndexProvider schemaIndexProvider =
-                db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
+                db.getDependencyResolver().resolveDependency( SchemaIndexProviderMap.class ).getDefaultProvider();
         File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( db.getStoreDir() );
 
         assertFalse( new IndexFolderLayout( schemaStoreDir, INDEX_IDENTIFIER ).getIndexFolder().exists() );

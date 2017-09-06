@@ -29,7 +29,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -68,7 +67,6 @@ public class HighLimitStoreMigrationTest
     {
         FileSystemAbstraction fileSystem = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
 
         StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
 
@@ -104,5 +102,4 @@ public class HighLimitStoreMigrationTest
         fileSystem.create( neoStoreFile ).close();
         return neoStoreFile;
     }
-
 }
