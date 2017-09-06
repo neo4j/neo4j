@@ -52,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 
 public class LuceneIndexRecoveryIT
 {
@@ -320,8 +321,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(),directoryFactory, context
-                        .storeDir(), dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
+                return new LuceneSchemaIndexProvider( fs.get(),directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
                         context.databaseInfo().operationalMode )
                 {
                     @Override
@@ -345,7 +346,7 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, context.storeDir(),
+                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
                         dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
                         context.databaseInfo().operationalMode )
                 {

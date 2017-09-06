@@ -58,13 +58,6 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     private final FileSystemAbstraction fileSystem;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            File storeDir, LogProvider logging, Config config,
-            OperationalMode operationalMode )
-    {
-        this( fileSystem, directoryFactory, IndexDirectoryStructure.directoriesByProviderKey( storeDir ), logging, config, operationalMode );
-    }
-
-    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory, LogProvider logging, Config config,
             OperationalMode operationalMode )
     {
@@ -74,6 +67,11 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         this.config = config;
         this.operationalMode = operationalMode;
         this.log = logging.getLog( getClass() );
+    }
+
+    public static IndexDirectoryStructure.Factory defaultDirectoryStructure( File storeDir )
+    {
+        return IndexDirectoryStructure.directoriesByProviderKey( storeDir );
     }
 
     /**

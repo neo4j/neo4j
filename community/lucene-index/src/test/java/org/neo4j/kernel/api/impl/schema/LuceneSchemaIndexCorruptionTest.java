@@ -53,6 +53,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class LuceneSchemaIndexCorruptionTest
@@ -122,7 +123,7 @@ public class LuceneSchemaIndexCorruptionTest
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.graphDbDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, indexRootFolder, logProvider,
+        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), logProvider,
                 Config.defaults(), OperationalMode.single )
         {
             @Override

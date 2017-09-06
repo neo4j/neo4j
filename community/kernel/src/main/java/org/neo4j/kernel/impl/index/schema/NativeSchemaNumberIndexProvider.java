@@ -57,13 +57,6 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File storeDir, LogProvider logging,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
-    {
-        this( pageCache, fs, IndexDirectoryStructure.directoriesByProvider( storeDir ), logging,
-                recoveryCleanupWorkCollector, readOnly );
-    }
-
     public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
             LogProvider logging, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {

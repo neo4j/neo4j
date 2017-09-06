@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -51,6 +50,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
 public class NativeSchemaNumberIndexProviderTest
 {
@@ -385,12 +387,12 @@ public class NativeSchemaNumberIndexProviderTest
 
     private NativeSchemaNumberIndexProvider newProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, false );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), logging, IMMEDIATE, false );
     }
 
     private NativeSchemaNumberIndexProvider newReadOnlyProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, true );
+        return new NativeSchemaNumberIndexProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), logging, IMMEDIATE, true );
     }
 
     private PageCache pageCache()
