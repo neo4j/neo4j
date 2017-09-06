@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
-import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
+import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates._
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
@@ -287,20 +287,22 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   }
 
-  override def visitorAccept() = tryCatch(generator) { onSuccess =>
-    using(
-      onSuccess.ifStatement(
-        not(invoke(onSuccess.load("visitor"),
-               visit, onSuccess.load("row"))))) { body =>
-      // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
-      //close all outstanding events
-      for (event <- events) {
-        body.expression(invoke(generator.load(event),
-                               method[QueryExecutionEvent, Unit]("close")))
+  override def visitorAccept() = tryCatch(generator) { onSuccess => {
+    using(onSuccess.ifStatement(not(Expression.get(onSuccess.self(), fields.skip)))) { inner =>
+      using(inner.ifStatement(not(invoke(onSuccess.load("visitor"),
+                                         visit, onSuccess.load("row"))))) { body =>
+        // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
+        //close all outstanding events
+        for (event <- events) {
+          body.expression(invoke(generator.load(event),
+                                 method[QueryExecutionEvent, Unit]("close")))
+        }
+        _finalizers.foreach(block => block(true)(body))
+        body.returns()
       }
-      _finalizers.foreach(block => block(true)(body))
-      body.returns()
     }
+    onSuccess.put(onSuccess.self(), fields.skip, constant(false))
+  }
   }(exception = param[Throwable]("e")) { onError =>
     for (event <- events) {
       onError.expression(
@@ -470,9 +472,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirection, forceLong(nodeVar, nodeVarType),
                                 dir(direction)))
+    }{ fail =>
+      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
     }
   }
 
@@ -480,31 +484,37 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                                                          direction: SemanticDirection,
                                                          typeVars: Seq[String]) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local, invoke(readOperations, Methods.nodeGetRelationshipsWithDirectionAndTypes,
                                 forceLong(nodeVar, nodeVarType), dir(direction),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
 
+    }{ fail =>
+      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
     }
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        toNode: String, toNodeType: CodeGenType) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local, invoke(Methods.allConnectingRelationships,
                                 readOperations, forceLong(fromNode, fromNodeType), dir(direction),
                                forceLong(toNode, toNodeType)))
+    }{ fail =>
+      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
     }
   }
 
   override def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, direction: SemanticDirection,
                                        typeVars: Seq[String], toNode: String, toNodeType: CodeGenType) = {
     val local = generator.declare(typeRef[RelationshipIterator], iterVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local, invoke(Methods.connectingRelationships, readOperations, forceLong(fromNode, fromNodeType), dir(direction),
                                 forceLong(toNode, toNodeType),
                                 newArray(typeRef[Int], typeVars.map(body.load): _*)))
+    }{ fail =>
+      fail.assign(local, Expression.getStatic(staticField[RelationshipIterator, RelationshipIterator]("EMPTY")))
     }
   }
 
@@ -1314,9 +1324,12 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) = {
     val local = locals(predVar)
 
-    handleKernelExceptions(generator, fields.ro, _finalizers) { inner =>
+    handleEntityNotFound(generator, fields, _finalizers) { inner =>
       val invoke = Expression.invoke(readOperations, nodeHasLabel, inner.load(nodeVar), inner.load(labelVar))
       inner.assign(local, invoke)
+      generator.load(predVar)
+    } { fail =>
+      fail.assign(local, constant(false))
       generator.load(predVar)
     }
   }
@@ -1324,7 +1337,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def relType(relVar: String, typeVar: String) = {
     val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relExtractor(relVar)), typeOf)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { inner =>
+    handleKernelExceptions(generator, fields, _finalizers) { inner =>
       val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)
       generator.load(variable.name())
@@ -1352,23 +1365,27 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
                     invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), body.load(propIdVar))
                   ))
+    } { fail =>
+      fail.assign(local, constant(null))
     }
   }
 
   override def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
                     invoke(readOperations, nodeGetProperty, forceLong(nodeVar, nodeVarType), constant(propId))
                   ))
+    }{ fail =>
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1391,23 +1408,27 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationshipGetPropertyForVar(relIdVar: String, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
                     invoke(readOperations, relationshipGetProperty, body.load(relIdVar), body.load(propIdVar))
                   ))
+    }{ fail =>
+      fail.assign(local, constant(null))
     }
   }
 
   override def relationshipGetPropertyById(relIdVar: String, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers) { body =>
       body.assign(local,
                   invoke(
                     reboxValue,
                     invoke(readOperations, relationshipGetProperty, body.load(relIdVar), constant(propId))
                   ))
+    }{ fail =>
+      fail.assign(local, constant(null))
     }
   }
 
@@ -1427,7 +1448,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value)
       else invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]), value)
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
+    handleKernelExceptions(generator, fields, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
       val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))

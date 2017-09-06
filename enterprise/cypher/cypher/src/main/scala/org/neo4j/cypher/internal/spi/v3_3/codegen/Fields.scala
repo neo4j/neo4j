@@ -29,4 +29,5 @@ case class Fields(closer: FieldReference,
                   tracer: FieldReference,
                   params: FieldReference,
                   closeable: FieldReference,
-                  queryContext: FieldReference)
+                  queryContext: FieldReference,
+                  skip: FieldReference)
