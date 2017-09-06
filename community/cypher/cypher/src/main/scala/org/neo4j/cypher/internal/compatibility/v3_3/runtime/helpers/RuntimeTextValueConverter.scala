@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.graphdb.{Entity, Node, Path, Relationship}
 
 import scala.collection.Map
 
@@ -34,7 +34,7 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
   def asTextValue(a: Any): String = {
     val scalaValue = scalaValues.asShallowScalaValue(a)
     scalaValue match {
-      case node: Node => s"$node${props(node)}"
+      case node: Node => s"Node[${node.getId}]${props(node)}"
       case relationship: Relationship => s":${relationship.getType.name()}[${relationship.getId}]${props(relationship)}"
       case path: Path => path.toString
       case map: Map[_, _] => makeString(map)
@@ -52,15 +52,17 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
 
   private def props(n: Node): String = {
     val ops = context.nodeOps
-    val properties = ops.propertyKeyIds(n.getId)
+    val properties = if (isVirtualEntityHack(n)) Iterator.empty else ops.propertyKeyIds(n.getId)
     val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId).asObject())}")
     keyValStrings.mkString("{", ",", "}")
   }
 
   private def props(r: Relationship): String = {
     val ops = context.relationshipOps
-    val properties = ops.propertyKeyIds(r.getId)
+    val properties = if (isVirtualEntityHack(r)) Iterator.empty else ops.propertyKeyIds(r.getId)
     val keyValStrings = properties.map(pkId => s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId).asObject())}")
     keyValStrings.mkString("{", ",", "}")
   }
+
+  private def isVirtualEntityHack(entity:Entity): Boolean = entity.getId < 0
 }
