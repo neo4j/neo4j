@@ -31,17 +31,6 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
     }
 
     /**
-     * Return the class that contains GraphDatabaseSetting fields that define
-     * the properties needed by this extension.
-     *
-     * @return a class or null if no settings are needed
-     */
-    public Class<?> getSettingsClass()
-    {
-        return null;
-    }
-
-    /**
      * Create a new instance of this kernel extension.
      *
      * @param context the context the extension should be created for

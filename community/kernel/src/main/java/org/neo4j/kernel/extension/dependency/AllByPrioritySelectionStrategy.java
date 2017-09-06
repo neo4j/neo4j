@@ -41,7 +41,7 @@ public class AllByPrioritySelectionStrategy<T extends Comparable<T>> implements 
 
     @SuppressWarnings( "unchecked" )
     @Override
-    public <R> R select( Class<R> type, Iterable<R> candidates ) throws IllegalArgumentException
+    public <R> R select( Class<R> type, Iterable<? extends R> candidates ) throws IllegalArgumentException
     {
         List<T> all = (List<T>) Iterables.asList( candidates );
         if ( all.isEmpty() )
@@ -49,7 +49,7 @@ public class AllByPrioritySelectionStrategy<T extends Comparable<T>> implements 
             throw new IllegalArgumentException( "Could not resolve dependency of type: " +
                                                 type.getName() + ". " + servicesClassPathEntryInformation() );
         }
-        Collections.sort( all, Collections.reverseOrder() );
+        all.sort( Collections.reverseOrder() );
         R highest = (R) all.remove( 0 );
         lowerPrioritizedCandidates = all;
         return highest;

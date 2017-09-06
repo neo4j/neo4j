@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 
-@SuppressWarnings( "rawtypes" )
+@SuppressWarnings( "unchecked" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
     private final Supplier<DependencyResolver> parent;
@@ -87,7 +87,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     public <T> T satisfyDependency( T dependency )
     {
         // File this object under all its possible types
-        Class type = dependency.getClass();
+        Class<?> type = dependency.getClass();
         do
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
@@ -99,7 +99,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
             deps.add( dependency );
 
             // Add as all interfaces
-            Class[] interfaces = type.getInterfaces();
+            Class<?>[] interfaces = type.getInterfaces();
             addInterfaces(interfaces, dependency);
 
             type = type.getSuperclass();
@@ -117,9 +117,9 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         }
     }
 
-    private <T> void addInterfaces( Class[] interfaces, T dependency )
+    private <T> void addInterfaces( Class<?>[] interfaces, T dependency )
     {
-        for ( Class type : interfaces )
+        for ( Class<?> type : interfaces )
         {
             List<Object> deps = (List<Object>) typeDependencies.get( type );
             if ( deps == null )

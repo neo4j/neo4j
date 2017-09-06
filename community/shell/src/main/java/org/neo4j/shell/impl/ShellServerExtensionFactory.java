@@ -25,7 +25,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.shell.ShellSettings;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public final class ShellServerExtensionFactory extends KernelExtensionFactory<ShellServerExtensionFactory.Dependencies>
@@ -42,12 +41,6 @@ public final class ShellServerExtensionFactory extends KernelExtensionFactory<Sh
     public ShellServerExtensionFactory()
     {
         super( KEY );
-    }
-
-    @Override
-    public Class<ShellSettings> getSettingsClass()
-    {
-        return ShellSettings.class;
     }
 
     @Override

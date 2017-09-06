@@ -76,12 +76,6 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
     }
 
     @Override
-    public Class<OnlineBackupSettings> getSettingsClass()
-    {
-        return OnlineBackupSettings.class;
-    }
-
-    @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new OnlineBackupKernelExtension( dependencies.getConfig(), dependencies.getGraphDatabaseAPI(),

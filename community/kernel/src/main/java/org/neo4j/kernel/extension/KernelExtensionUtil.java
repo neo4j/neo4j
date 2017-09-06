@@ -34,7 +34,8 @@ import static java.lang.System.getProperty;
 public abstract class KernelExtensionUtil
 {
     private KernelExtensionUtil()
-    {   // No instances allowed
+    {
+        throw new AssertionError(); // no instances
     }
 
     public static String servicesClassPathEntryInformation()
@@ -52,13 +53,18 @@ public abstract class KernelExtensionUtil
                 File servicesDir = new File( new File( entryFile, "META-INF" ), "services" );
                 if ( servicesDir.exists() )
                 {
-                    result.append( separator ).append(
-                            "Listing service files and kernel extensions where possible in " + servicesDir + ":" );
-                    for ( File serviceFile : servicesDir.listFiles() )
+                    result.append( separator )
+                            .append( "Listing service files and kernel extensions where possible in " )
+                            .append( servicesDir ).append( ":" );
+                    File[] files = servicesDir.listFiles();
+                    if ( files != null )
                     {
-                        if ( serviceFile.isFile() )
+                        for ( File serviceFile : files )
                         {
-                            result.append( separator ).append( "  " ).append( serviceFile.getName() );
+                            if ( serviceFile.isFile() )
+                            {
+                                result.append( separator ).append( "  " ).append( serviceFile.getName() );
+                            }
                         }
                     }
 
@@ -78,16 +84,16 @@ public abstract class KernelExtensionUtil
     {
         try ( BufferedReader reader = new BufferedReader( new FileReader( file ) ) )
         {
-            String line = null;
+            String line;
             while ( (line = reader.readLine()) != null )
             {
                 boolean exists = tryLoadClass( line );
-                to.append( separator ).append( line ).append( " (" + (exists ? "exists" : "DOES NOT exist") + ")" );
+                to.append( separator ).append( line ).append( " (" ).append( exists ? "exists" : "DOES NOT exist" ).append( ")" );
             }
         }
         catch ( IOException e )
         {
-            to.append( "Couldn't read due to " + e.getMessage() );
+            to.append( "Couldn't read due to " ).append( e.getMessage() );
         }
     }
 

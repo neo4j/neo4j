@@ -72,7 +72,7 @@ public interface DependencyResolver
          * @return a suitable candidate among all available.
          * @throws IllegalArgumentException if no suitable candidate was found.
          */
-        <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException;
+        <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException;
     }
 
     /**
@@ -84,9 +84,9 @@ public interface DependencyResolver
         private static final SelectionStrategy FIRST = new SelectionStrategy()
         {
             @Override
-            public <T> T select( Class<T> type, Iterable<T> candidates ) throws IllegalArgumentException
+            public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
             {
-                Iterator<T> iterator = candidates.iterator();
+                Iterator<? extends T> iterator = candidates.iterator();
                 if ( !iterator.hasNext() )
                 {
                     throw new IllegalArgumentException( "Could not resolve dependency of type:" + type.getName() );

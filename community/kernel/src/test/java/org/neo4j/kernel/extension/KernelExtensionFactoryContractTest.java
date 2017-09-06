@@ -43,7 +43,7 @@ import static org.junit.Assert.fail;
  */
 public abstract class KernelExtensionFactoryContractTest
 {
-    protected final Class<? extends KernelExtensionFactory<?>> extClass;
+    private final Class<? extends KernelExtensionFactory<?>> extClass;
     private final String key;
 
     @Rule
@@ -78,7 +78,7 @@ public abstract class KernelExtensionFactoryContractTest
         return MapUtil.stringMap();
     }
 
-    static KernelExtensions getExtensions( GraphDatabaseService graphdb )
+    private static KernelExtensions getExtensions( GraphDatabaseService graphdb )
     {
         return ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( KernelExtensions.class );
     }
@@ -163,7 +163,7 @@ public abstract class KernelExtensionFactoryContractTest
         }
     }
 
-    protected final KernelExtensionFactory<?> loadInstance()
+    private KernelExtensionFactory<?> loadInstance()
     {
         return extClass.cast( Service.load( KernelExtensionFactory.class, key ) );
     }

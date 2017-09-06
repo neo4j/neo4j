@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -61,12 +60,6 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     public UdcKernelExtensionFactory()
     {
         super( KEY );
-    }
-
-    @Override
-    public Class<UdcSettings> getSettingsClass()
-    {
-        return UdcSettings.class;
     }
 
     @Override
