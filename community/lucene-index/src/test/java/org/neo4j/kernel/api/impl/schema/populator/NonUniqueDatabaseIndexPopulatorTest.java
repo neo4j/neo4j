@@ -69,8 +69,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     public void setUp() throws Exception
     {
         File folder = testDir.directory( "folder" );
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder,
-                "testIndex", false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder, false );
 
         index = LuceneSchemaIndexBuilder.create( IndexDescriptorFactory.forSchema( labelSchemaDescriptor ) )
                 .withIndexStorage( indexStorage )

@@ -41,6 +41,8 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
 
 public class ConstraintIndexFailureIT
 {
@@ -108,11 +110,12 @@ public class ConstraintIndexFailureIT
 
     private void storeIndexFailure( String failure ) throws IOException
     {
-        File luceneRootDirectory = new File( storeDir.directory(), "schema/index/lucene" );
+        File luceneIndexDirectory = subProviderDirectoryStructure( storeDir.directory() )
+                .forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
         PartitionedIndexStorage indexStorage = LuceneIndexStorageBuilder.create()
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( luceneRootDirectory )
-                .withIndexIdentifier( "1" ).build();
+                .withIndexFolder( luceneIndexDirectory )
+                .build();
         indexStorage.storeIndexFailure( failure );
     }
 }

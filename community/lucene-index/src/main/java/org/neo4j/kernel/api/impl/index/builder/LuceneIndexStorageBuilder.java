@@ -36,7 +36,6 @@ public class LuceneIndexStorageBuilder
     private DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
     private FileSystemAbstraction fileSystem;
     private File indexRootFolder;
-    private String indexIdentifier;
     private PartitionedIndexStorage indexStorage;
     private boolean archiveFailed;
 
@@ -66,23 +65,9 @@ public class LuceneIndexStorageBuilder
             Objects.requireNonNull( directoryFactory );
             Objects.requireNonNull( fileSystem );
             Objects.requireNonNull( indexRootFolder );
-            Objects.requireNonNull( indexIdentifier );
-            indexStorage =
-                    new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, indexIdentifier, archiveFailed );
+            indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystem, indexRootFolder, archiveFailed );
         }
         return indexStorage;
-    }
-
-    /**
-     * Specify index identifier
-     *
-     * @param indexIdentifier identifier
-     * @return index storage builder
-     */
-    public LuceneIndexStorageBuilder withIndexIdentifier( String indexIdentifier )
-    {
-        this.indexIdentifier = indexIdentifier;
-        return this;
     }
 
     /**
@@ -115,7 +100,7 @@ public class LuceneIndexStorageBuilder
      * @param indexRootFolder root folder
      * @return index storage builder
      */
-    public LuceneIndexStorageBuilder withIndexRootFolder( File indexRootFolder )
+    public LuceneIndexStorageBuilder withIndexFolder( File indexRootFolder )
     {
         this.indexRootFolder = indexRootFolder;
         return this;

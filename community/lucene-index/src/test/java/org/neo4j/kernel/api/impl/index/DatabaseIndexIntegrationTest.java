@@ -139,8 +139,8 @@ public class DatabaseIndexIntegrationTest
 
     private WritableTestDatabaseIndex createTestLuceneIndex( DirectoryFactory dirFactory, File folder ) throws IOException
     {
-        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage( dirFactory, fileSystemRule.get(), folder,
-                "test", false );
+        PartitionedIndexStorage indexStorage = new PartitionedIndexStorage(
+                dirFactory, fileSystemRule.get(), folder, false );
         WritableTestDatabaseIndex index = new WritableTestDatabaseIndex( indexStorage );
         index.create();
         index.open();

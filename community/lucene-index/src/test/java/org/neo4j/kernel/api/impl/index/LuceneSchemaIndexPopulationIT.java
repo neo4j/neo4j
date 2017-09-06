@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -91,8 +92,7 @@ public class LuceneSchemaIndexPopulationIT
     {
         try ( SchemaIndex uniqueIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( testDir.directory( "partitionIndex" + affectedNodes ) )
-                .withIndexIdentifier( "uniqueIndex" + affectedNodes )
+                .withIndexRootFolder( new File( testDir.directory( "partitionIndex" + affectedNodes ), "uniqueIndex" + affectedNodes ) )
                 .build() )
         {
             uniqueIndex.open();

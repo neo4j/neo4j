@@ -60,11 +60,11 @@ public class PartitionedIndexStorage
     private final FailureStorage failureStorage;
 
     public PartitionedIndexStorage( DirectoryFactory directoryFactory, FileSystemAbstraction fileSystem,
-                                    File rootFolder, String identifier, boolean archiveFailed )
+            File rootFolder, boolean archiveFailed )
     {
         this.fileSystem = fileSystem;
         this.archiveFailed = archiveFailed;
-        this.folderLayout = new IndexFolderLayout( rootFolder, identifier );
+        this.folderLayout = new IndexFolderLayout( rootFolder );
         this.directoryFactory = directoryFactory;
         this.failureStorage = new FailureStorage( fileSystem, folderLayout );
     }

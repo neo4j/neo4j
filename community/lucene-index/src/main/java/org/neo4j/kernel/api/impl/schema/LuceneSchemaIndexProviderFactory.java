@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -34,6 +35,7 @@ import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneSchemaIndexProviderFactory extends
@@ -73,8 +75,15 @@ public class LuceneSchemaIndexProviderFactory extends
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
             LogProvider logProvider, Config config, OperationalMode operationalMode )
     {
+        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), logProvider, config, operationalMode );
+    }
+
+    public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
+            IndexDirectoryStructure.Factory directoryStructure, LogProvider logProvider, Config config, OperationalMode operationalMode )
+    {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, storeDir, logProvider, config, operationalMode );
+        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure,
+                logProvider, config, operationalMode );
     }
 }

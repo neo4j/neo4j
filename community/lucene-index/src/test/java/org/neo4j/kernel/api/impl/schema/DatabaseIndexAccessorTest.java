@@ -98,8 +98,7 @@ public class DatabaseIndexAccessorTest
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( GENERAL_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( dir )
-                            .withIndexIdentifier( "1" )
+                            .withIndexRootFolder( new File( dir, "1" ) )
                             .build();
 
                     index.create();
@@ -111,8 +110,7 @@ public class DatabaseIndexAccessorTest
                     SchemaIndex index = LuceneSchemaIndexBuilder.create( UNIQUE_INDEX )
                             .withFileSystem( fileSystemRule.get() )
                             .withDirectoryFactory( dirFactory1 )
-                            .withIndexRootFolder( dir )
-                            .withIndexIdentifier( "testIndex" )
+                            .withIndexRootFolder( new File( dir, "testIndex" ) )
                             .build();
 
                     index.create();

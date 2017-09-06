@@ -28,6 +28,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -48,9 +49,10 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    private static final String INDEX_FILE_NAME = "index";
+
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
-    private final File nativeSchemaIndexBaseDir;
     private final Log log;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
@@ -58,10 +60,16 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File storeDir, LogProvider logging,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( NATIVE_PROVIDER_DESCRIPTOR, 0 );
+        this( pageCache, fs, IndexDirectoryStructure.directoriesByProvider( storeDir ), logging,
+                recoveryCleanupWorkCollector, readOnly );
+    }
+
+    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
+            LogProvider logging, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    {
+        super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
         this.fs = fs;
-        this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( storeDir );
         this.log = logging.getLog( getClass() );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
@@ -170,7 +178,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
     private File nativeIndexFileFromIndexId( long indexId )
     {
-        return new File( nativeSchemaIndexBaseDir, Long.toString( indexId ) );
+        return new File( directoryStructure().directoryForIndex( indexId ), INDEX_FILE_NAME );
     }
 
     private class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout

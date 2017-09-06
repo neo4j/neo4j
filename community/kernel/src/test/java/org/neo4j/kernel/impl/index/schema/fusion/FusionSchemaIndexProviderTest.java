@@ -43,6 +43,7 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.NONE;
 
 public class FusionSchemaIndexProviderTest
 {
@@ -249,7 +250,7 @@ public class FusionSchemaIndexProviderTest
 
     private FusionSchemaIndexProvider fusionProvider()
     {
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
+        return new FusionSchemaIndexProvider( NONE, nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
     }
 
     private void setInitialState( SchemaIndexProvider mockedProvider, InternalIndexState state )

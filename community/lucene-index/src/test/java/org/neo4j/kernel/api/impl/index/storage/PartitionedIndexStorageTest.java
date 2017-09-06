@@ -56,8 +56,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class PartitionedIndexStorageTest
 {
-    private static final String INDEX_ID = "testIndex";
-
     @Rule
     public final DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
     @Rule
@@ -70,7 +68,7 @@ public class PartitionedIndexStorageTest
     public void createIndexStorage() throws Exception
     {
         fs = fsRule.get();
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), INDEX_ID, false );
+        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.graphDbDir(), false );
     }
 
     @Test
@@ -184,7 +182,7 @@ public class PartitionedIndexStorageTest
                 } )
         {
             PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
-                    scramblingFs, testDir.graphDbDir(), INDEX_ID, false );
+                    scramblingFs, testDir.graphDbDir(), false );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
             for ( int i = 0; i < directoryCount; i++ )

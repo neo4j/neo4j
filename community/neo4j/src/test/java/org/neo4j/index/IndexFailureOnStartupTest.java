@@ -45,12 +45,13 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.graphdb.schema.Schema.IndexState.ONLINE;
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
 
 public class IndexFailureOnStartupTest
 {
-    private static final Label PERSON = label( "Person" );
+    private static final Label PERSON = Label.label( "Person" );
     @Rule
     public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
@@ -126,7 +127,7 @@ public class IndexFailureOnStartupTest
     {
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File indexDir = soleIndexDir( fs, db.getStoreDir() );
+            File indexDir = soleIndexDir( db.getStoreDir() );
             File[] files = indexDir.getParentFile()
                     .listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
             if ( files == null || files.length == 0 )
@@ -190,17 +191,14 @@ public class IndexFailureOnStartupTest
         @Override
         public void run( FileSystemAbstraction fs, File base ) throws IOException
         {
-            File indexRootDirectory = new File( soleIndexDir( fs, base ), "1" );
+            File indexRootDirectory = new File( soleIndexDir( base ), "1" /*the partition*/ );
             File[] files = fs.listFiles( indexRootDirectory, ( dir, name ) -> name.startsWith( prefix ) );
-            Stream.of(files).forEach( fs::deleteFile );
+            Stream.of( files ).forEach( fs::deleteFile );
         }
     }
 
-    private static File soleIndexDir( FileSystemAbstraction fs, File base )
+    private static File soleIndexDir( File base )
     {
-        File[] indexes = fs.listFiles( new File( base, "schema/index/lucene" ),
-                ( dir, name ) -> fs.isDirectory( new File( dir, name ) ) );
-        assert indexes.length == 1 : "expecting only a single index directory";
-        return indexes[0];
+        return subProviderDirectoryStructure( base ).forProvider( PROVIDER_DESCRIPTOR ).directoryForIndex( 1 );
     }
 }

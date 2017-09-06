@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.populator.NonUniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.impl.schema.populator.UniqueLuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -52,17 +53,23 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
 
     private final IndexStorageFactory indexStorageFactory;
     private final Log log;
-    private Config config;
-    private OperationalMode operationalMode;
-    private FileSystemAbstraction fileSystem;
+    private final Config config;
+    private final OperationalMode operationalMode;
+    private final FileSystemAbstraction fileSystem;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-                                      File storeDir, LogProvider logging, Config config,
-                                      OperationalMode operationalMode )
+            File storeDir, LogProvider logging, Config config,
+            OperationalMode operationalMode )
     {
-        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY );
-        File schemaIndexStoreFolder = getSchemaIndexStoreDirectory( storeDir );
-        this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory, schemaIndexStoreFolder );
+        this( fileSystem, directoryFactory, IndexDirectoryStructure.directoriesByProviderKey( storeDir ), logging, config, operationalMode );
+    }
+
+    public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
+            IndexDirectoryStructure.Factory directoryStructureFactory, LogProvider logging, Config config,
+            OperationalMode operationalMode )
+    {
+        super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY, directoryStructureFactory );
+        this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.operationalMode = operationalMode;
@@ -72,11 +79,9 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     /**
      * Visible <b>only</b> for testing.
      */
-    protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem,
-                                                            DirectoryFactory directoryFactory,
-                                                            File schemaIndexStoreFolder )
+    protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
     {
-        return new IndexStorageFactory( directoryFactory, fileSystem, schemaIndexStoreFolder );
+        return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
     }
 
     @Override

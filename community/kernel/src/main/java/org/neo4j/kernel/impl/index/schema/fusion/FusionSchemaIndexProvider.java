@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -49,10 +50,11 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
+    public FusionSchemaIndexProvider( IndexDirectoryStructure.Factory directoryStructure,
+            SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
             SchemaIndexProvider.Descriptor descriptor, int priority )
     {
-        super( descriptor, priority );
+        super( descriptor, priority, directoryStructure );
         this.nativeProvider = nativeProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;

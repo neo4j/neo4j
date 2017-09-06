@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -138,10 +139,9 @@ public class LuceneSchemaIndexTest
     {
         LuceneSchemaIndexBuilder builder = LuceneSchemaIndexBuilder.create( descriptor );
         return builder
-                .withIndexRootFolder( testDir.directory( "index" ) )
+                .withIndexRootFolder( new File( testDir.directory( "index" ), "testIndex" ) )
                 .withDirectoryFactory( dirFactory )
                 .withFileSystem( fs.get() )
-                .withIndexIdentifier( "testIndex" )
                 .build();
     }
 

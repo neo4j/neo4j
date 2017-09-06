@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
@@ -47,6 +48,10 @@ public class SchemaIndexMigratorTest
     @Test
     public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
     {
+        IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
+        File indexProviderRootDirectory = new File( storeDir, "just-some-directory" );
+        when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
+        when( schemaIndexProvider.directoryStructure() ).thenReturn( directoryStructure );
         when( schemaIndexProvider.getProviderDescriptor() )
                 .thenReturn( new SchemaIndexProvider.Descriptor( "key", "version" ) );
 
@@ -55,6 +60,6 @@ public class SchemaIndexMigratorTest
 
         migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
-        verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }
 }

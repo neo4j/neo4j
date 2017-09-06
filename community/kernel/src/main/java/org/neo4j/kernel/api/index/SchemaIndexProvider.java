@@ -93,7 +93,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =
-            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1 )
+            new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {
                 private final IndexAccessor singleWriter = new IndexAccessor.Adapter();
                 private final IndexPopulator singlePopulator = new IndexPopulator.Adapter();
@@ -134,17 +134,22 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     protected final int priority;
     private final Descriptor providerDescriptor;
+    private final IndexDirectoryStructure.Factory directoryStructureFactory;
+    private final IndexDirectoryStructure directoryStructure;
 
     protected SchemaIndexProvider( SchemaIndexProvider copySource )
     {
-        this( copySource.providerDescriptor, copySource.priority );
+        this( copySource.providerDescriptor, copySource.priority, copySource.directoryStructureFactory );
     }
 
-    protected SchemaIndexProvider( Descriptor descriptor, int priority )
+    protected SchemaIndexProvider( Descriptor descriptor, int priority,
+            IndexDirectoryStructure.Factory directoryStructureFactory )
     {
+        this.directoryStructureFactory = directoryStructureFactory;
         assert descriptor != null;
         this.priority = priority;
         this.providerDescriptor = descriptor;
+        this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
     }
 
     /**
@@ -215,18 +220,12 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     }
 
     /**
-     * Get schema index store root directory in specified store.
-     * @param storeDir store root directory
-     * @return schema index store root directory
+     * @return {@link IndexDirectoryStructure} for this schema index provider. From it can be retrieved directories
+     * for individual indexes.
      */
-    public File getSchemaIndexStoreDirectory( File storeDir )
+    public IndexDirectoryStructure directoryStructure()
     {
-        return getSchemaIndexStoreDirectory( storeDir, getProviderDescriptor() );
-    }
-
-    public static File getSchemaIndexStoreDirectory( File storeDir, Descriptor descriptor )
-    {
-        return new File( new File( new File( storeDir, "schema" ), "index" ), descriptor.getKey() );
+        return directoryStructure;
     }
 
     public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
@@ -234,7 +233,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.
      *
-     * @return {@link ResourceIterator<File>} over all meta files for this index provider.
+     * @return {@link ResourceIterator} over all meta files for this index provider.
      */
     public ResourceIterator<File> snapshotMetaFiles()
     {

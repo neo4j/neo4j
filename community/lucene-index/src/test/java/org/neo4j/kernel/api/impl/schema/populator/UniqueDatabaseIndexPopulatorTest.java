@@ -81,7 +81,6 @@ public class UniqueDatabaseIndexPopulatorTest
 
     private static final int LABEL_ID = 1;
     private static final int PROPERTY_KEY_ID = 2;
-    private static final String INDEX_IDENTIFIER = "42";
 
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private static final IndexDescriptor descriptor = IndexDescriptorFactory
@@ -98,8 +97,7 @@ public class UniqueDatabaseIndexPopulatorTest
     public void setUp() throws Exception
     {
         File folder = testDir.directory( "folder" );
-        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(),
-                                                    folder, INDEX_IDENTIFIER, false );
+        indexStorage = new PartitionedIndexStorage( directoryFactory, fileSystemRule.get(), folder, false );
         index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withIndexStorage( indexStorage )
                 .build();

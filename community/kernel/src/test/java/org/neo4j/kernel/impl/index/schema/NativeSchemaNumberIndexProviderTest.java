@@ -66,8 +66,7 @@ public class NativeSchemaNumberIndexProviderTest
     @Before
     public void setup() throws IOException
     {
-        File baseDir = rules.directory().absolutePath();
-        File nativeSchemaIndexStoreDirectory = newProvider().getSchemaIndexStoreDirectory( baseDir );
+        File nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
         rules.fileSystem().mkdirs( nativeSchemaIndexStoreDirectory );
     }
 

@@ -42,6 +42,10 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
+
 import static org.junit.Assert.assertEquals;
 
 public class AccessUniqueDatabaseIndexTest
@@ -49,7 +53,7 @@ public class AccessUniqueDatabaseIndexTest
     @Rule
     public final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private final DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-    private final File indexDirectory = new File( "index1" );
+    private final File storeDirectory = new File( "db" );
     private final IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( 1000, 100 );
 
     @Test
@@ -144,8 +148,8 @@ public class AccessUniqueDatabaseIndexTest
 
     private PartitionedIndexStorage getIndexStorage()
     {
-        IndexStorageFactory storageFactory =
-                new IndexStorageFactory( directoryFactory, fileSystemRule.get(), indexDirectory );
+        IndexStorageFactory storageFactory = new IndexStorageFactory( directoryFactory, fileSystemRule.get(),
+                directoriesByProviderKey( storeDirectory ).forProvider( PROVIDER_DESCRIPTOR ) );
         return storageFactory.indexStorageOf( 1, false );
     }
 
