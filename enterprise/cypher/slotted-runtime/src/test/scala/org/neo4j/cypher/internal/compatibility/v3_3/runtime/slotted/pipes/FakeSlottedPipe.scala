@@ -19,42 +19,36 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.scalatest.mock.MockitoSugar
 
-import scala.collection.Map
+case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineInformation)
+  extends Pipe with MockitoSugar {
 
-class FakeSlottedPipeFromVariables(val data: Iterator[Map[String, Any]],
-                                   newVariables: (String, CypherType)*) extends Pipe with MockitoSugar {
+  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    data.map { values =>
+      val result = PrimitiveExecutionContext(pipeline)
 
-  val pipeline: PipelineInformation = slotAllocation(newVariables)
+      values foreach {
+        case (key, value) =>
+          pipeline(key) match {
+            case LongSlot(offset, _, _, _) if value == null =>
+              result.setLongAt(offset, -1)
 
-  def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = {
-    this(data.toIterator, variables: _*)
-  }
+            case LongSlot(offset, _, _, _) =>
+              result.setLongAt(offset, value.asInstanceOf[Number].longValue())
 
-  def slotAllocation(vars: Seq[(String, CypherType)]): PipelineInformation = {
-    val pipeInfo = PipelineInformation.empty
-    vars.foreach {
-      case (name, typ) => pipeInfo.newReference(name, true, typ)
-    }
-    pipeInfo
-  }
-
-  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    data.map(m => {
-      val newContext = PrimitiveExecutionContext(pipeline)
-      m.mapValues(ValueUtils.of).foreach {
-        case (k, v) =>
-          newContext.setRefAt(pipeline.getReferenceOffsetFor(k), v)
+            case RefSlot(offset, _, _, _) =>
+              result.setRefAt(offset, asValue(value))
+          }
       }
-      newContext
-    })
+      result
+    }
+  }
 
   var id = new Id
 }

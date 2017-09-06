@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.ValueUtils
@@ -29,191 +31,224 @@ import scala.util.Random
 
 class TopSlottedPipeTest extends CypherFunSuite {
 
-  test("returning top 10 from 5 possible should return all") {
-    val input = createFakePipeWith(5)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(10))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
+  private sealed trait _ColumnOrder
+  private case object _Ascending extends _ColumnOrder
+  private case object _Descending extends _ColumnOrder
 
+  test("returning top 10 from 5 possible should return all") {
+    val input = randomlyShuffledIntDataFromZeroUntil(5)
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 10
+    )
     result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 10 descending from 3 possible should return all") {
-    val input = createFakePipeWith(3)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Descending(slot)), Literal(10))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(3), orderBy = _Descending, limit = 10
+    )
     result should equal(list(2, 1, 0))
   }
 
   test("returning top 5 from 20 possible should return 5 with lowest value") {
-    val input = createFakePipeWith(20)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(20), orderBy = _Ascending, limit = 5
+    )
     result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 3 descending from 10 possible values should return three highest values") {
-    val input = createFakePipeWith(10)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Descending(slot)), Literal(3))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(10), orderBy = _Descending, limit = 3
+    )
     result should equal(list(9, 8, 7))
   }
 
   test("returning top 5 from a reversed pipe should work correctly") {
-    val in = (0 until 100).map(i => Map("a" -> i)).reverse
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = (0 until 100).reverse
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 5
+    )
     result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("duplicates should be sorted correctly") {
-    val in = ((0 until 5) ++ (0 until 5)).map(i => Map("a" -> i)).reverse
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Descending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = ((0 until 5) ++ (0 until 5)).reverse
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Descending, limit = 5
+    )
     result should equal(list(4, 4, 3, 3, 2))
   }
 
   test("duplicates should be sorted correctly for small lists") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Descending(slot)), Literal(2))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = List(0, 1, 1)
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Descending, limit = 2
+    )
     result should equal(list(1,1))
   }
 
   test("should handle empty input") {
-    val input = new FakeSlottedPipeFromVariables(Iterator.empty, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = Seq.empty
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 5
+    )
     result should equal(List.empty)
   }
 
   test("should handle null input") {
-    val input = new FakeSlottedPipeFromVariables(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
-    result should equal(list(10,null))
+    val input = Seq(10, null)
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 5
+    )
+    result should equal(list(10, null))
   }
 
   test("returning top 1 from 5 possible should return lowest") {
-    val input = createFakePipeWith(5)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Ascending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(5), orderBy = _Ascending, limit = 1
+    )
     result should equal(list(0))
   }
 
   test("returning top 1 descending from 3 possible should return all") {
-    val input = createFakePipeWith(3)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Descending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(3), orderBy = _Descending, limit = 1
+    )
     result should equal(list(2))
   }
 
   test("returning top 1 from 20 possible should return 5 with lowest value") {
-    val input = createFakePipeWith(20)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Ascending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(20), orderBy = _Ascending, limit = 1
+    )
     result should equal(list(0))
   }
 
   test("returning top 1 descending from 10 possible values should return three highest values") {
-    val input = createFakePipeWith(10)
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Descending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      randomlyShuffledIntDataFromZeroUntil(10), orderBy = _Descending, limit = 1
+    )
     result should equal(list(9))
   }
 
   test("returning top 1 from a reversed pipe should work correctly") {
-    val in = (0 until 100).map(i => Map("a" -> i)).reverse
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Ascending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = (0 until 100).reverse
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 1
+    )
     result should equal(list(0))
   }
 
   test("duplicates should be sorted correctly with top 1") {
-    val in = ((0 until 5) ++ (0 until 5)).map(i => Map("a" -> i)).reverse
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Descending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = ((0 until 5) ++ (0 until 5)).reverse
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Descending, limit = 1
+    )
     result should equal(list(4))
   }
 
   test("duplicates should be sorted correctly for small lists with top 1") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
-    val input = new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Descending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val input = Seq(0, 1, 1)
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Descending, limit = 1
+    )
     result should equal(list(1))
   }
 
   test("top 1 should handle empty input with") {
-    val input = new FakeSlottedPipeFromVariables(Iterator.empty, "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = Top1SlottedPipe(input, List(Ascending(slot)))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
+    val result = singleColumnTopWithInput(
+      Seq.empty, orderBy = _Descending, limit = 1
+    )
     result should equal(List.empty)
   }
 
   test("top 1 should handle null input") {
-    val input = new FakeSlottedPipeFromVariables(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
-
-    val slot = input.pipeline.getReferenceOffsetFor("a")
-    val pipe = TopNSlottedPipe(input, List(Ascending(slot)), Literal(5))()
-    val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getRefAt(slot)).toList
-
-    result should equal(list(10,null))
+    val input = Seq(10, null)
+    val result = singleColumnTopWithInput(
+      input, orderBy = _Ascending, limit = 1
+    )
+    result should equal(list(10))
   }
 
-  private def list(a: Any*) = a.map(ValueUtils.of).toList
+  test("top 5 from multi column values") {
+    val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
+    val result = twoColumnTopWithInput(
+      input, orderBy = (_Ascending, _Descending), limit = 5
+    )
+    result should equal(list((0, 5), (0, 4), (0, 2), (1, 2), (1, 2)))
+  }
 
-  private def createFakePipeWith(count: Int): FakeSlottedPipeFromVariables = {
+  test("top 1 from multi column values") {
+    val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
+    val result = twoColumnTopWithInput(
+      input, orderBy = (_Ascending, _Descending), limit = 1
+    )
+    result should equal(list((0, 5)))
+  }
 
+  private def list(a: Any*) = a.map {
+    case (x: Number, y: Number) => (ValueUtils.of(x.longValue()), ValueUtils.of(y.longValue()))
+    case x: Number => ValueUtils.of(x.longValue())
+    case x => ValueUtils.of(x)
+  }.toList
+
+  private def randomlyShuffledIntDataFromZeroUntil(count: Int): Seq[Int] = {
     val r = new Random(1337)
+    val data = (0 until count).sortBy( x => 50 - r.nextInt(100))
+    data
+  }
 
-    val in = (0 until count).map(i => Map("a" -> i)).sortBy( x => 50 - r.nextInt(100))
-    new FakeSlottedPipeFromVariables(in, "a" -> CTInteger)
+  private def singleColumnTopWithInput(data: Traversable[Any], orderBy: _ColumnOrder, limit: Int) = {
+    val pipeline = PipelineInformation.empty
+      .newReference("a", nullable = true, CTAny)
+
+    val slotOffset = pipeline.getReferenceOffsetFor("a")
+
+    val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, pipeline)
+
+    val topOrderBy = orderBy match {
+      case `_Ascending` => List(Ascending(slotOffset))
+      case `_Descending` => List(Descending(slotOffset))
+    }
+
+    val topPipe =
+      if (limit == 1)
+        Top1SlottedPipe(source, topOrderBy)()
+      else
+        TopNSlottedPipe(source, topOrderBy, Literal(limit))()
+
+    val results = topPipe.createResults(QueryStateHelper.empty)
+    results.map {
+      case c: PrimitiveExecutionContext =>
+        c.getRefAt(slotOffset)
+    }.toList
+  }
+
+  private def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: (_ColumnOrder, _ColumnOrder), limit: Int) = {
+    val pipeline = PipelineInformation.empty
+      .newReference("a", nullable = true, CTAny)
+      .newReference("b", nullable = true, CTAny)
+
+    val slotOffset1 = pipeline.getReferenceOffsetFor("a")
+    val slotOffset2 = pipeline.getReferenceOffsetFor("b")
+
+    val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, pipeline)
+
+    val topOrderBy = List((orderBy._1, slotOffset1), (orderBy._2, slotOffset2)).map {
+      case (`_Ascending`, offset) => Ascending(offset)
+      case (`_Descending`, offset) => Descending(offset)
+    }
+
+    val topPipe =
+      if (limit == 1)
+        Top1SlottedPipe(source, topOrderBy)()
+      else
+        TopNSlottedPipe(source, topOrderBy, Literal(limit))()
+
+    topPipe.createResults(QueryStateHelper.empty).map {
+      case c: PrimitiveExecutionContext =>
+        (c.getRefAt(slotOffset1), c.getRefAt(slotOffset2))
+    }.toList
   }
 }

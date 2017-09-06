@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
-import org.neo4j.cypher.ValueComparisonHelper
+import org.neo4j.cypher.{InternalException, ValueComparisonHelper}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.values.AnyValue
@@ -33,6 +33,7 @@ object SlottedValueComparisonHelper extends ValueComparisonHelper {
         matches = left.indices.forall(i =>
             left(i).asInstanceOf[PrimitiveExecutionContext].pipeline.forallSlot {
               case (k, RefSlot(offset, _, _, name)) => check(left(i).getRefAt(offset), result(i)(name))
+              case _ => throw new InternalException("Slot type comparison not yet supported by test framework")
             }),
         rawFailureMessage = s"$left != $result",
         rawNegatedFailureMessage = s"$left == $result")

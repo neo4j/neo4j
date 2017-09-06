@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.ReferenceFromSlot
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
-import org.scalatest.mock.MockitoSugar
 
 import scala.collection.JavaConverters._
 
@@ -84,31 +81,4 @@ class UnwindSlottedPipeTest extends CypherFunSuite {
         Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> listValue),
         Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> listValue)))
   }
-}
-
-case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineInformation)
-  extends Pipe with MockitoSugar {
-
-  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val result = PrimitiveExecutionContext(pipeline)
-
-    data.map { values =>
-      values foreach {
-        case (key, value) =>
-          pipeline(key) match {
-            case LongSlot(offset, _, _, _) if value == null =>
-              result.setLongAt(offset, -1)
-
-            case LongSlot(offset, _, _, _) =>
-              result.setLongAt(offset, value.asInstanceOf[Number].longValue())
-
-            case RefSlot(offset, _, _, _) =>
-              result.setRefAt(offset, asValue(value))
-          }
-      }
-      result
-    }
-  }
-
-  var id = new Id
 }

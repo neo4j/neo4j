@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes.SlottedValueComparisonHelper._
 
-class Top1WithTiesRegisterPipeTest extends CypherFunSuite {
+class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
     val source = new FakeSlottedPipeFromVariables(List(), "x" -> CTAny)
