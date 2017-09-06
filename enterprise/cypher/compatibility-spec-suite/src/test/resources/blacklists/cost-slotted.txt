@@ -1,8 +1,6 @@
 Combining string operators' was blacklisted, but succeeded
 Directed match of a simple relationship, count
 Directed match on self-relationship graph, count
-Get rows in the middle by param
-Get rows in the middle
 
 handling long chanins of operators
 Handle ORDER BY with LIMIT 1
@@ -11,13 +9,8 @@ Matching and returning ordered results, with LIMIT
 ORDER BY and LIMIT can be used
 ORDER BY with LIMIT 0 should not generate errors
 ORDER BY with negative parameter for LIMIT should not generate errors
-Returned columns do not change from using ORDER BY
 Simple counting of nodes
-Start the result from the second row by param
-Start the result from the second row
 Support column renaming for aggregates as well
-Support ordering by a property after being distinct-ified
-Support sort and distinct
 Support multiple divisions in aggregate function
 Handle aggregation on functions
 Aggregates in aggregates
@@ -167,8 +160,6 @@ Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
-Multiple aliasing and backreferencing
-Reusing variable names
 Failing when performing property access on a non-map 1
 Failing when performing property access on a non-map 2
 Bad arguments for `range()`
@@ -190,7 +181,6 @@ Two elements, both unique, not distinct
 Two elements, both unique, distinct
 Three elements, two unique, distinct
 Three elements, two unique, not distinct
-Unwinding a collected expression
 Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
 Fail when asterisk operator is missing
@@ -209,9 +199,7 @@ Handling mixed relationship patterns 2
 Handling relationships that are already bound in variable length paths
 Fail when trying to compare strings and numbers
 A simple pattern with one bound endpoint
-Nested maps
 Connected components succeeding WITH
-Multiple WITHs using a predicate and aggregation
 Fail at compile time when attempting to index with a non-integer into a list
 `properties()` failing on an integer literal
 `properties()` failing on a string literal
