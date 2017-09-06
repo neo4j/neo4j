@@ -19,12 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class LogEntryVersionTest
 {
+    @Rule
+    public ExpectedException expect = ExpectedException.none();
+
     @Test
     public void shouldBeAbleToSelectAnyVersion() throws Exception
     {
@@ -39,5 +46,29 @@ public class LogEntryVersionTest
             // THEN
             assertEquals( version, selectedVersion );
         }
+    }
+
+    @Test
+    public void shouldWarnAboutOldLogVersion() throws Exception
+    {
+        expect.expect( IllegalArgumentException.class );
+        LogEntryVersion.byVersion( (byte)-4 );
+    }
+
+    @Test
+    public void shouldWarnAboutNewerLogVersion() throws Exception
+    {
+        expect.expect( IllegalArgumentException.class );
+        LogEntryVersion.byVersion( (byte)-42 ); // unused for now
+    }
+
+    @Test
+    public void moreRecent() throws Exception
+    {
+        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V2_3 ) );
+        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0 ) );
+        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V2_3_5 ) );
+        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_2 ) );
+        assertFalse( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_10 ) );
     }
 }

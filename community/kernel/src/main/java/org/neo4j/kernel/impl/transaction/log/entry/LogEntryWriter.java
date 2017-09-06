@@ -39,6 +39,10 @@ public class LogEntryWriter
     private final FlushableChannel channel;
     private final Visitor<StorageCommand,IOException> serializer;
 
+    /**
+     * Create a writer that uses {@link LogEntryVersion#CURRENT} for versioning.
+     * @param channel underlying channel
+     */
     public LogEntryWriter( FlushableChannel channel )
     {
         this.channel = channel;

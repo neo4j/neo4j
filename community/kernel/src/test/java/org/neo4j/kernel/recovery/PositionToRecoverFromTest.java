@@ -23,31 +23,35 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint.NO_TRANSACTION_ID;
 
 public class PositionToRecoverFromTest
 {
+    private final long currentLogVersion = 2L;
     private final long logVersion = 2L;
-    private final LatestCheckPointFinder finder = mock( LatestCheckPointFinder.class );
+    private final LogTailScanner tailScanner = mock( LogTailScanner.class );
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
     public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, NO_TRANSACTION_ID, logVersion ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( null, false, NO_TRANSACTION_ID, logVersion,
+                currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).noCommitsAfterLastCheckPoint( null );
@@ -59,11 +63,12 @@ public class PositionToRecoverFromTest
     {
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
-        when( finder.find( logVersion ) )
-                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion ) );
+        when( tailScanner.getTailInformation() )
+                .thenReturn( new LogTailInformation( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion,
+                        currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).commitsAfterLastCheckPoint( checkPointLogPosition, 10L );
@@ -74,10 +79,11 @@ public class PositionToRecoverFromTest
     public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, INITIAL_LOG_VERSION ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( null, true, 10L, INITIAL_LOG_VERSION,
+                currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
+        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).noCheckPointFound();
@@ -89,12 +95,13 @@ public class PositionToRecoverFromTest
     {
         // given
         long oldestLogVersionFound = 1L;
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, oldestLogVersionFound ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( null, true, 10L, oldestLogVersionFound,
+                currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
         try
         {
-            new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
+            new PositionToRecoverFrom( tailScanner, monitor ).get();
         }
         catch ( UnderlyingStorageException ex )
         {

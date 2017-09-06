@@ -52,6 +52,9 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -106,8 +109,7 @@ public class StoreUpgraderInterruptionTestIT
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDirectory, prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, Standard.LATEST_RECORD_FORMATS );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
@@ -147,6 +149,13 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDirectory );
     }
 
+    private UpgradableDatabase getUpgradableDatabase( StoreVersionCheck check )
+    {
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+        return new UpgradableDatabase( check, Standard.LATEST_RECORD_FORMATS, tailScanner );
+    }
+
     private SchemaIndexMigrator createIndexMigrator()
     {
         return new SchemaIndexMigrator( fs, schemaIndexProvider );
@@ -161,8 +170,7 @@ public class StoreUpgraderInterruptionTestIT
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDirectory, prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, check, Standard.LATEST_RECORD_FORMATS );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         LogService logService = NullLogService.getInstance();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService )
@@ -217,7 +225,9 @@ public class StoreUpgraderInterruptionTestIT
 
     private void startStopDatabase( File workingDirectory )
     {
-        GraphDatabaseService databaseService = new TestGraphDatabaseFactory().newEmbeddedDatabase( workingDirectory );
+        GraphDatabaseService databaseService =
+                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDirectory )
+                        .setConfig( GraphDatabaseSettings.allow_upgrade, "true" ).newGraphDatabase();
         databaseService.shutdown();
     }
 }

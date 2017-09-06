@@ -71,23 +71,24 @@ public enum LogEntryVersion
     V2_3( -5, LogEntryParsersV2_3.class ),
     V3_0( -6, LogEntryParsersV2_3.class ),
     // as of 2016-05-30: neo4j 2.3.5 legacy index IndexDefineCommand maps write size as short instead of byte
-    // See comment for V2.2.10 for version number explanation
     // log entry layout hasn't changed since 2_3 so just use that one
     V2_3_5( -8, LogEntryParsersV2_3.class ),
     // as of 2016-05-30: neo4j 3.0.2 legacy index IndexDefineCommand maps write size as short instead of byte
-    // See comment for V2.2.10 for version number explanation
     // log entry layout hasn't changed since 2_3 so just use that one
     V3_0_2( -9, LogEntryParsersV2_3.class ),
     // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
     // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
     // log version to prevent mixed-version clusters from forming.
     V3_0_10( -10, LogEntryParsersV2_3.class );
+    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -11
 
     public static final LogEntryVersion CURRENT = V3_0_10;
+    private static final byte LOWEST_VERSION = (byte)-V2_3.byteCode();
     private static final LogEntryVersion[] ALL = values();
-    private static final LogEntryVersion[] LOOKUP_BY_VERSION = new LogEntryVersion[11]; // pessimistic size
+    private static final LogEntryVersion[] LOOKUP_BY_VERSION;
     static
     {
+        LOOKUP_BY_VERSION = new LogEntryVersion[(-CURRENT.byteCode()) + 1]; // pessimistic size
         for ( LogEntryVersion version : ALL )
         {
             put( LOOKUP_BY_VERSION, -version.byteCode(), version );
@@ -132,6 +133,17 @@ public enum LogEntryVersion
     }
 
     /**
+     * Check if a more recent version of the log entry format exists and can be handled.
+     *
+     * @param version to compare against latest version
+     * @return {@code true} if a more recent log entry version exists
+     */
+    public static boolean moreRecentVersionExists( LogEntryVersion version )
+    {
+        return version.version > CURRENT.version; // reverted do to negative version numbers
+    }
+
+    /**
      * Return the correct {@link LogEntryVersion} for the given {@code version} code read from e.g. a log entry.
      * Lookup is fast and can be made inside critical paths, no need for externally caching the returned
      * {@link LogEntryVersion} instance per the input arguments.
@@ -140,13 +152,25 @@ public enum LogEntryVersion
      */
     public static LogEntryVersion byVersion( byte version )
     {
-        byte flattenedVersion = (byte) -version;
+        byte positiveVersion = (byte) -version;
 
-        if ( flattenedVersion >= 0 && flattenedVersion < LOOKUP_BY_VERSION.length )
+        if ( positiveVersion >= LOWEST_VERSION && positiveVersion < LOOKUP_BY_VERSION.length )
         {
-            return LOOKUP_BY_VERSION[flattenedVersion];
+            return LOOKUP_BY_VERSION[positiveVersion];
         }
-        throw new IllegalArgumentException( "Unrecognized log entry version " + version );
+        byte positiveCurrentVersion = (byte) -CURRENT.byteCode();
+        if ( positiveVersion > positiveCurrentVersion )
+        {
+            throw new IllegalArgumentException( String.format(
+                    "Transaction logs contains entries with prefix %d, and the highest supported prefix is %d. This " +
+                            "indicates that the log files originates from a newer version of neo4j.",
+                    positiveVersion, positiveCurrentVersion ) );
+        }
+        throw new IllegalArgumentException( String.format(
+                "Transaction logs contains entries with prefix %d, and the lowest supported prefix is %d. This " +
+                        "indicates that the log files originates from an older version of neo4j, which we don't support " +
+                        "migrations from.",
+                positiveVersion, LOWEST_VERSION ) );
     }
 
     private static void put( LogEntryVersion[] array, int index, LogEntryVersion version )

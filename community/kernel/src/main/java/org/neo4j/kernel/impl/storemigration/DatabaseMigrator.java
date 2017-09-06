@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 
@@ -53,12 +54,13 @@ public class DatabaseMigrator
     private final Map<String,IndexImplementation> indexProviders;
     private final PageCache pageCache;
     private final RecordFormats format;
+    private final LogTailScanner tailScanner;
 
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
             Config config, LogService logService, SchemaIndexProviderMap schemaIndexProviderMap,
             Map<String,IndexImplementation> indexProviders, PageCache pageCache,
-            RecordFormats format )
+            RecordFormats format, LogTailScanner tailScanner )
     {
         this.progressMonitor = progressMonitor;
         this.fs = fs;
@@ -68,6 +70,7 @@ public class DatabaseMigrator
         this.indexProviders = indexProviders;
         this.pageCache = pageCache;
         this.format = format;
+        this.tailScanner = tailScanner;
     }
 
     /**
@@ -79,8 +82,7 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                        format );
+                new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 

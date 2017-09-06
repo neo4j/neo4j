@@ -17,35 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
-public class LatestCheckPointFinder
+/**
+ * This class collects information about the latest entries in the transaction log. Since the only way we have to collect
+ * said information is to scan the transaction log from beginning to end, which is costly, we do this once and save the
+ * result for others to consume.
+ * <p>
+ * Due to the nature of transaction logs and log rotation, a single transaction log file has to be scanned forward, and
+ * if the required data is not found we search backwards through log file versions.
+ */
+public class LogTailScanner
 {
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private LogTailInformation logTailInformation;
 
-    public LatestCheckPointFinder( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
+    public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
     {
         this.logFiles = logFiles;
@@ -53,13 +56,16 @@ public class LatestCheckPointFinder
         this.logEntryReader = logEntryReader;
     }
 
-    public LatestCheckPoint find( long fromVersionBackwards ) throws IOException
+    private LogTailInformation update() throws IOException
     {
+        final long fromVersionBackwards = logFiles.getHighestLogVersion();
         long version = fromVersionBackwards;
         long versionToSearchForCommits = fromVersionBackwards;
         LogEntryStart latestStartEntry = null;
         LogEntryStart oldestStartEntry = null;
         long oldestVersionFound = -1;
+        LogEntryVersion latestLogEntryVersion = null;
+
         while ( version >= INITIAL_LOG_VERSION )
         {
             LogVersionedStoreChannel channel =
@@ -82,10 +88,14 @@ public class LatestCheckPointFinder
                 while ( cursor.next() )
                 {
                     entry = cursor.get();
+
+                    // Collect data about latest checkpoint
                     if ( entry instanceof CheckPoint )
                     {
                         latestCheckPoint = entry.as();
                     }
+
+                    // Collect data about latest commits
                     if ( entry instanceof LogEntryStart )
                     {
                         LogEntryStart startEntry = entry.as();
@@ -102,13 +112,19 @@ public class LatestCheckPointFinder
                             firstStartEntry = false;
                         }
                     }
+
+                    // Collect data about latest entry version, only in first log file
+                    if ( version == versionToSearchForCommits || latestLogEntryVersion == null )
+                    {
+                        latestLogEntryVersion = entry.getVersion();
+                    }
                 }
             }
 
             if ( latestCheckPoint != null )
             {
                 return latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
-                        latestCheckPoint );
+                        latestCheckPoint, latestLogEntryVersion );
             }
 
             version--;
@@ -123,14 +139,15 @@ public class LatestCheckPointFinder
         boolean commitsAfterCheckPoint = oldestStartEntry != null;
         long firstTxAfterPosition = commitsAfterCheckPoint
                 ? extractFirstTxIdAfterPosition( oldestStartEntry.getStartPosition(), fromVersionBackwards )
-                : LatestCheckPoint.NO_TRANSACTION_ID;
+                : LogTailInformation.NO_TRANSACTION_ID;
 
-        return new LatestCheckPoint( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound );
+        return new LogTailInformation( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound,
+                fromVersionBackwards, latestLogEntryVersion );
     }
 
-    protected LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version, LogEntryStart
-            latestStartEntry,
-            long oldestVersionFound, CheckPoint latestCheckPoint ) throws IOException
+    protected LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
+            LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint,
+            LogEntryVersion latestLogEntryVersion ) throws IOException
     {
         // Is the latest start entry in this log file version later than what the latest check point targets?
         LogPosition target = latestCheckPoint.getLogPosition();
@@ -143,7 +160,7 @@ public class LatestCheckPointFinder
                 // This check point entry targets a previous log file.
                 // Go there and see if there's a transaction. Reader is capped to that log version.
                 startEntryAfterCheckPoint = extractFirstTxIdAfterPosition( target, version ) !=
-                        LatestCheckPoint.NO_TRANSACTION_ID;
+                        LogTailInformation.NO_TRANSACTION_ID;
             }
         }
 
@@ -151,9 +168,9 @@ public class LatestCheckPointFinder
         // Reader may continue into log files after the initial version.
         long firstTxIdAfterCheckPoint = startEntryAfterCheckPoint
                 ? extractFirstTxIdAfterPosition( target, fromVersionBackwards )
-                : LatestCheckPoint.NO_TRANSACTION_ID;
-        return new LatestCheckPoint( latestCheckPoint, startEntryAfterCheckPoint,
-                firstTxIdAfterCheckPoint, oldestVersionFound );
+                : LogTailInformation.NO_TRANSACTION_ID;
+        return new LogTailInformation( latestCheckPoint, startEntryAfterCheckPoint,
+                firstTxIdAfterCheckPoint, oldestVersionFound, fromVersionBackwards, latestLogEntryVersion );
     }
 
     /**
@@ -163,7 +180,7 @@ public class LatestCheckPointFinder
      *
      * @param initialPosition {@link LogPosition} to start scan from.
      * @param maxLogVersion max log version to scan.
-     * @return txId of closes commit entry to {@code initialPosition}, or {@link LatestCheckPoint#NO_TRANSACTION_ID}
+     * @return txId of closes commit entry to {@code initialPosition}, or {@link LogTailInformation#NO_TRANSACTION_ID}
      * if not found.
      * @throws IOException on I/O error.
      */
@@ -200,69 +217,57 @@ public class LatestCheckPointFinder
 
             currentPosition = LogPosition.start( currentPosition.getLogVersion() + 1 );
         }
-        return LatestCheckPoint.NO_TRANSACTION_ID;
+        return LogTailInformation.NO_TRANSACTION_ID;
     }
 
-    public static class LatestCheckPoint
+    /**
+     * Collects information about the tail of the transaction log, i.e. last checkpoint, last entry etc.
+     * Since this is an expensive task we do it once and reuse the result. This method is thus lazy and the first one
+     * calling it will take the hit.
+     * <p>
+     * This is only intended to be used during startup. If you need to track the state of the tail, that can be done more
+     * efficiently at runtime, and this method should then only be used to restore said state.
+     *
+     * @return snapshot of the state of the transaction logs tail at startup.
+     * @throws UnderlyingStorageException if any errors occurs while parsing the transaction logs
+     */
+    public LogTailInformation getTailInformation() throws UnderlyingStorageException
+    {
+        if ( logTailInformation == null )
+        {
+            try
+            {
+                logTailInformation = update();
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( "Error encountered while parsing transaction logs", e );
+            }
+        }
+
+        return logTailInformation;
+    }
+
+    public static class LogTailInformation
     {
         public static long NO_TRANSACTION_ID = -1;
 
-        public final CheckPoint checkPoint;
-        public final boolean commitsAfterCheckPoint;
+        public final CheckPoint lastCheckPoint;
+        public final boolean commitsAfterLastCheckPoint;
         public final long firstTxIdAfterLastCheckPoint;
         public final long oldestLogVersionFound;
+        public final long currentLogVersion;
+        public final LogEntryVersion latestLogEntryVersion;
 
-        public LatestCheckPoint( CheckPoint checkPoint, boolean commitsAfterCheckPoint,
-                long firstTxIdAfterLastCheckPoint, long oldestLogVersionFound )
+        public LogTailInformation( CheckPoint lastCheckPoint, boolean commitsAfterLastCheckPoint,
+                long firstTxIdAfterLastCheckPoint, long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion )
         {
-            this.checkPoint = checkPoint;
-            this.commitsAfterCheckPoint = commitsAfterCheckPoint;
+            this.lastCheckPoint = lastCheckPoint;
+            this.commitsAfterLastCheckPoint = commitsAfterLastCheckPoint;
             this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
             this.oldestLogVersionFound = oldestLogVersionFound;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            LatestCheckPoint that = (LatestCheckPoint) o;
-
-            return commitsAfterCheckPoint == that.commitsAfterCheckPoint &&
-                   firstTxIdAfterLastCheckPoint == that.firstTxIdAfterLastCheckPoint &&
-                   oldestLogVersionFound == that.oldestLogVersionFound &&
-                   (checkPoint == null ? that.checkPoint == null : checkPoint.equals( that.checkPoint ));
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = checkPoint != null ? checkPoint.hashCode() : 0;
-            result = 31 * result + (commitsAfterCheckPoint ? 1 : 0);
-            if ( commitsAfterCheckPoint )
-            {
-                result = 31 * result + Long.hashCode( firstTxIdAfterLastCheckPoint );
-            }
-            result = 31 * result + Long.hashCode( oldestLogVersionFound );
-            return result;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "LatestCheckPoint{" +
-                   "checkPoint=" + checkPoint +
-                   ", commitsAfterCheckPoint=" + commitsAfterCheckPoint +
-                   (commitsAfterCheckPoint ? ", firstTxIdAfterLastCheckPoint=" + firstTxIdAfterLastCheckPoint : "") +
-                   ", oldestLogVersionFound=" + oldestLogVersionFound +
-                   '}';
+            this.currentLogVersion = currentLogVersion;
+            this.latestLogEntryVersion = latestLogEntryVersion;
         }
     }
 }

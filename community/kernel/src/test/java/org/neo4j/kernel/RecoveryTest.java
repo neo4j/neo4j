@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -57,7 +58,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -138,17 +138,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 private int nr;
 
@@ -241,17 +241,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
@@ -379,17 +379,17 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystemRule.get(), reader );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
-                    () -> transactionIdStore.getLastCommittedTransactionId(), logVersionRepository,
+                    transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader );
 
             life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    logVersionRepository, finder, transactionIdStore, txStore, NO_MONITOR )
+                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()

@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -34,12 +32,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFil
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -47,16 +40,16 @@ import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
  */
 public class UpgradableDatabase
 {
-    private final FileSystemAbstraction fs;
     private final StoreVersionCheck storeVersionCheck;
     private final RecordFormats format;
+    private final LogTailScanner tailScanner;
 
-    public UpgradableDatabase( FileSystemAbstraction fs,
-            StoreVersionCheck storeVersionCheck, RecordFormats format )
+    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, RecordFormats format,
+            LogTailScanner tailScanner )
     {
-        this.fs = fs;
         this.storeVersionCheck = storeVersionCheck;
         this.format = format;
+        this.tailScanner = tailScanner;
     }
 
     /**
@@ -104,7 +97,7 @@ public class UpgradableDatabase
             }
             else
             {
-                result = checkCleanShutDownByCheckPoint( storeDirectory );
+                result = checkCleanShutDownByCheckPoint();
                 if ( result.outcome.isSuccessful() )
                 {
                     return fromFormat;
@@ -134,22 +127,17 @@ public class UpgradableDatabase
         }
     }
 
-    private Result checkCleanShutDownByCheckPoint( File storeDirectory )
+    private Result checkCleanShutDownByCheckPoint()
     {
         // check version
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LatestCheckPointFinder latestCheckPointFinder =
-                new LatestCheckPointFinder( logFiles, fs, logEntryReader );
         try
         {
-            LatestCheckPoint latestCheckPoint = latestCheckPointFinder.find( logFiles.getHighestLogVersion() );
-            if ( !latestCheckPoint.commitsAfterCheckPoint )
+            if ( !tailScanner.getTailInformation().commitsAfterLastCheckPoint )
             {
                 return new Result( Result.Outcome.ok, null, null );
             }
         }
-        catch ( IOException e )
+        catch ( Throwable throwable )
         {
             // ignore exception and return db not cleanly shutdown
         }

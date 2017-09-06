@@ -61,11 +61,6 @@ class NeoStoreTransactionLogModule
         return logicalTransactionStore;
     }
 
-    public PhysicalLogFiles logFiles()
-    {
-        return logFiles;
-    }
-
     CheckPointer checkPointing()
     {
         return checkPointer;

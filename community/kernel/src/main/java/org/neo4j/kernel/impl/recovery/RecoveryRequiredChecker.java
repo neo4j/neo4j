@@ -27,11 +27,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 
 import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
@@ -62,12 +62,11 @@ public class RecoveryRequiredChecker
             return false;
         }
 
-        long logVersion = MetaDataStore.getRecord( pageCache, neoStore, MetaDataStore.Position.LOG_VERSION );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
 
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fs, reader );
-        return new PositionToRecoverFrom( finder, NO_MONITOR ).apply( logVersion ) != LogPosition.UNSPECIFIED;
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader );
+        return new PositionToRecoverFrom( tailScanner, NO_MONITOR ).get() != LogPosition.UNSPECIFIED;
     }
 }
