@@ -30,18 +30,20 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 
+  private val comparator = orderBy
+    .map(new ExecutionContextOrdering(_))
+    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
+
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val orderings = orderBy.map(new ExecutionContextOrdering(_)(state))
-    val comparator = orderings.reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
     val array = input.toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
   }
 }
 
-private class ExecutionContextOrdering(order: ColumnOrder)(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
+private class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
+  val columnSlot: Int = order.slot
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-    val columnSlot = order.slot
     val aVal = a.getRefAt(columnSlot)
     val bVal = b.getRefAt(columnSlot)
     order.compareValues(aVal, bVal)
@@ -51,13 +53,13 @@ private class ExecutionContextOrdering(order: ColumnOrder)(implicit qtx: QuerySt
 sealed trait ColumnOrder {
   def slot: Int
 
-  def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
+  def compareValues(a: AnyValue, b: AnyValue): Int
 }
 
 case class Ascending(slot: Int) extends ColumnOrder {
-  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
 case class Descending(slot: Int) extends ColumnOrder {
-  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(b, a)
 }
