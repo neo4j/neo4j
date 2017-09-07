@@ -40,7 +40,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A")))
   }
 
-  test("three ties for the first place are all returned") {
+  test("two ties for the first place are all returned") {
     val input = List(
       Map("x" -> 1, "y" -> 1),
       Map("x" -> 1, "y" -> 2),

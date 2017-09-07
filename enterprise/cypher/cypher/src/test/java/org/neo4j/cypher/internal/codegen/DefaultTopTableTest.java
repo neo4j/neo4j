@@ -31,19 +31,15 @@ import static org.junit.Assert.assertTrue;
 
 public class DefaultTopTableTest
 {
-    private static Long[] testValues = new Long[] {
-        7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L
-    };
+    private static Long[] testValues = new Long[]{7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L};
 
-    private static long[] expectedValues = new long[] {
-        0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L
-    };
+    private static long[] expectedValues = new long[]{0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L};
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleAddingMoreValuesThenCapacity()
+    public void shouldHandleAddingMoreValuesThanCapacity()
     {
         DefaultTopTable table = new DefaultTopTable( 7 );
         for ( Long i : testValues )

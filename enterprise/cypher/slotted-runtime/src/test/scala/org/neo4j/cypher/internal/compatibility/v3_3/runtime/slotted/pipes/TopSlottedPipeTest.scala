@@ -32,35 +32,35 @@ import scala.util.Random
 
 class TopSlottedPipeTest extends CypherFunSuite {
 
-  private sealed trait _ColumnOrder
-  private case object _Ascending extends _ColumnOrder
-  private case object _Descending extends _ColumnOrder
+  private sealed trait TestColumnOrder
+  private case object AscendingOrder extends TestColumnOrder
+  private case object DescendingOrder extends TestColumnOrder
 
   test("returning top 10 from 5 possible should return all") {
     val input = randomlyShuffledIntDataFromZeroUntil(5)
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 10
+      input, orderBy = AscendingOrder, limit = 10
     )
     result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 10 descending from 3 possible should return all") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(3), orderBy = _Descending, limit = 10
+      randomlyShuffledIntDataFromZeroUntil(3), orderBy = DescendingOrder, limit = 10
     )
     result should equal(list(2, 1, 0))
   }
 
   test("returning top 5 from 20 possible should return 5 with lowest value") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(20), orderBy = _Ascending, limit = 5
+      randomlyShuffledIntDataFromZeroUntil(20), orderBy = AscendingOrder, limit = 5
     )
     result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 3 descending from 10 possible values should return three highest values") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(10), orderBy = _Descending, limit = 3
+      randomlyShuffledIntDataFromZeroUntil(10), orderBy = DescendingOrder, limit = 3
     )
     result should equal(list(9, 8, 7))
   }
@@ -68,7 +68,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("returning top 5 from a reversed pipe should work correctly") {
     val input = (0 until 100).reverse
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 5
+      input, orderBy = AscendingOrder, limit = 5
     )
     result should equal(list(0, 1, 2, 3, 4))
   }
@@ -76,7 +76,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("duplicates should be sorted correctly") {
     val input = ((0 until 5) ++ (0 until 5)).reverse
     val result = singleColumnTopWithInput(
-      input, orderBy = _Descending, limit = 5
+      input, orderBy = DescendingOrder, limit = 5
     )
     result should equal(list(4, 4, 3, 3, 2))
   }
@@ -84,7 +84,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("duplicates should be sorted correctly for small lists") {
     val input = List(0, 1, 1)
     val result = singleColumnTopWithInput(
-      input, orderBy = _Descending, limit = 2
+      input, orderBy = DescendingOrder, limit = 2
     )
     result should equal(list(1,1))
   }
@@ -92,7 +92,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("should handle empty input") {
     val input = Seq.empty
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 5
+      input, orderBy = AscendingOrder, limit = 5
     )
     result should equal(List.empty)
   }
@@ -100,35 +100,35 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("should handle null input") {
     val input = Seq(10, null)
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 5
+      input, orderBy = AscendingOrder, limit = 5
     )
     result should equal(list(10, null))
   }
 
   test("returning top 1 from 5 possible should return lowest") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(5), orderBy = _Ascending, limit = 1
+      randomlyShuffledIntDataFromZeroUntil(5), orderBy = AscendingOrder, limit = 1
     )
     result should equal(list(0))
   }
 
   test("returning top 1 descending from 3 possible should return all") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(3), orderBy = _Descending, limit = 1
+      randomlyShuffledIntDataFromZeroUntil(3), orderBy = DescendingOrder, limit = 1
     )
     result should equal(list(2))
   }
 
   test("returning top 1 from 20 possible should return 5 with lowest value") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(20), orderBy = _Ascending, limit = 1
+      randomlyShuffledIntDataFromZeroUntil(20), orderBy = AscendingOrder, limit = 1
     )
     result should equal(list(0))
   }
 
   test("returning top 1 descending from 10 possible values should return three highest values") {
     val result = singleColumnTopWithInput(
-      randomlyShuffledIntDataFromZeroUntil(10), orderBy = _Descending, limit = 1
+      randomlyShuffledIntDataFromZeroUntil(10), orderBy = DescendingOrder, limit = 1
     )
     result should equal(list(9))
   }
@@ -136,7 +136,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("returning top 1 from a reversed pipe should work correctly") {
     val input = (0 until 100).reverse
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 1
+      input, orderBy = AscendingOrder, limit = 1
     )
     result should equal(list(0))
   }
@@ -144,7 +144,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("duplicates should be sorted correctly with top 1") {
     val input = ((0 until 5) ++ (0 until 5)).reverse
     val result = singleColumnTopWithInput(
-      input, orderBy = _Descending, limit = 1
+      input, orderBy = DescendingOrder, limit = 1
     )
     result should equal(list(4))
   }
@@ -152,14 +152,14 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("duplicates should be sorted correctly for small lists with top 1") {
     val input = Seq(0, 1, 1)
     val result = singleColumnTopWithInput(
-      input, orderBy = _Descending, limit = 1
+      input, orderBy = DescendingOrder, limit = 1
     )
     result should equal(list(1))
   }
 
   test("top 1 should handle empty input with") {
     val result = singleColumnTopWithInput(
-      Seq.empty, orderBy = _Descending, limit = 1
+      Seq.empty, orderBy = DescendingOrder, limit = 1
     )
     result should equal(List.empty)
   }
@@ -167,7 +167,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("top 1 should handle null input") {
     val input = Seq(10, null)
     val result = singleColumnTopWithInput(
-      input, orderBy = _Ascending, limit = 1
+      input, orderBy = AscendingOrder, limit = 1
     )
     result should equal(list(10))
   }
@@ -175,7 +175,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("top 5 from multi column values") {
     val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
     val result = twoColumnTopWithInput(
-      input, orderBy = (_Ascending, _Descending), limit = 5
+      input, orderBy = (AscendingOrder, DescendingOrder), limit = 5
     )
     result should equal(list((0, 5), (0, 4), (0, 2), (1, 2), (1, 2)))
   }
@@ -183,7 +183,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("top 1 from multi column values") {
     val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
     val result = twoColumnTopWithInput(
-      input, orderBy = (_Ascending, _Descending), limit = 1
+      input, orderBy = (AscendingOrder, DescendingOrder), limit = 1
     )
     result should equal(list((0, 5)))
   }
@@ -199,7 +199,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
     data
   }
 
-  private def singleColumnTopWithInput(data: Traversable[Any], orderBy: _ColumnOrder, limit: Int) = {
+  private def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int) = {
     val pipeline = PipelineInformation.empty
       .newReference("a", nullable = true, CTAny)
 
@@ -208,8 +208,8 @@ class TopSlottedPipeTest extends CypherFunSuite {
     val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, pipeline)
 
     val topOrderBy = orderBy match {
-      case `_Ascending` => List(Ascending(slot))
-      case `_Descending` => List(Descending(slot))
+      case AscendingOrder => List(Ascending(slot))
+      case DescendingOrder => List(Descending(slot))
     }
 
     val topPipe =
@@ -230,7 +230,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
     }.toList
   }
 
-  private def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: (_ColumnOrder, _ColumnOrder), limit: Int) = {
+  private def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: (TestColumnOrder, TestColumnOrder), limit: Int) = {
     val pipeline = PipelineInformation.empty
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
@@ -241,8 +241,8 @@ class TopSlottedPipeTest extends CypherFunSuite {
     val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, pipeline)
 
     val topOrderBy = List((orderBy._1, slot1), (orderBy._2, slot2)).map {
-      case (`_Ascending`, slot) => Ascending(slot)
-      case (`_Descending`, slot) => Descending(slot)
+      case (AscendingOrder, slot) => Ascending(slot)
+      case (DescendingOrder, slot) => Descending(slot)
     }
 
     val topPipe =

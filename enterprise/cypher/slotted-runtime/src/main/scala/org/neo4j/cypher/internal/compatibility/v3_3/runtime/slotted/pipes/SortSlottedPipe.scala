@@ -31,7 +31,7 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   assert(orderBy.nonEmpty)
 
   private val comparator = orderBy
-    .map(ExecutionContextOrdering(_).comparator)
+    .map(ExecutionContextOrdering.comparator(_))
     .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -41,8 +41,8 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   }
 }
 
-case class ExecutionContextOrdering(order: ColumnOrder) {
-  val comparator: scala.Ordering[ExecutionContext] = order.slot match {
+object ExecutionContextOrdering {
+  def comparator(order: ColumnOrder): scala.Ordering[ExecutionContext] = order.slot match {
     case LongSlot(offset, _, _, _) =>
       new scala.Ordering[ExecutionContext] {
         override def compare(a: ExecutionContext, b: ExecutionContext): Int = {

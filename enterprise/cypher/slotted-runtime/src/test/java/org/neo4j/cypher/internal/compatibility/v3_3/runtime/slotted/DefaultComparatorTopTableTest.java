@@ -32,13 +32,9 @@ import static org.junit.Assert.assertTrue;
 
 public class DefaultComparatorTopTableTest
 {
-    private static Long[] testValues = new Long[] {
-        7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L
-    };
+    private static Long[] testValues = new Long[]{7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L};
 
-    private static long[] expectedValues = new long[] {
-        0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L
-    };
+    private static long[] expectedValues = new long[]{0L, 1L, 2L, 3L, 4L, 4L, 5L, 6L, 7L, 8L, 9L};
 
     private static Comparator<Long> comparator = new Comparator<Long>()
     {
@@ -53,9 +49,9 @@ public class DefaultComparatorTopTableTest
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
-    public void shouldHandleAddingMoreValuesThenCapacity()
+    public void shouldHandleAddingMoreValuesThanCapacity()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator,7 );
+        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 7 );
         for ( Long i : testValues )
         {
             table.add( i );
@@ -77,7 +73,7 @@ public class DefaultComparatorTopTableTest
     @Test
     public void shouldHandleWhenNotCompletelyFilledToCapacity()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator,20 );
+        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 20 );
         for ( Long i : testValues )
         {
             table.add( i );
@@ -112,20 +108,20 @@ public class DefaultComparatorTopTableTest
     public void shouldThrowOnInitializeToZeroCapacity()
     {
         exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable( comparator,0 );
+        new DefaultComparatorTopTable( comparator, 0 );
     }
 
     @Test
     public void shouldThrowOnInitializeToNegativeCapacity()
     {
         exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable( comparator,-1 );
+        new DefaultComparatorTopTable( comparator, -1 );
     }
 
     @Test
     public void shouldThrowOnSortNotCalledBeforeIterator()
     {
-        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator,5 );
+        DefaultComparatorTopTable table = new DefaultComparatorTopTable( comparator, 5 );
         for ( Long i : testValues )
         {
             table.add( i );

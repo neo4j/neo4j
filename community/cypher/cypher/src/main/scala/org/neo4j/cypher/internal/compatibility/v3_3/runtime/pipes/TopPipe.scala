@@ -179,7 +179,8 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[ColumnOrder])
           val comparison = lessThan.compare(next, best)
           if (comparison < 0) { // Found a new best
             best = next
-            matchingRows = init(next)
+            matchingRows.clear()
+            matchingRows += next._2
           }
 
           if (comparison == 0) {  // Found a tie

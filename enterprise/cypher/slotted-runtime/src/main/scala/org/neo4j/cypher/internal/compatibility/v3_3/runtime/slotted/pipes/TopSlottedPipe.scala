@@ -38,12 +38,8 @@ abstract class TopSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   extends PipeWithSource(source)  {
 
   protected val comparator = orderBy
-    .map(ExecutionContextOrdering(_).comparator)
+    .map(ExecutionContextOrdering.comparator(_))
     .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
-
-  def binarySearch(array: Array[ExecutionContext], comparator: Comparator[ExecutionContext])(key: ExecutionContext) = {
-    java.util.Arrays.binarySearch(array.asInstanceOf[Array[ExecutionContext]], key, comparator)
-  }
 }
 
 case class TopNSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], countExpression: Expression)
@@ -128,7 +124,8 @@ case class Top1WithTiesSlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
           val comparison = comparator.compare(ctx, best)
           if (comparison < 0) { // Found a new best
             best = ctx
-            matchingRows = init(ctx)
+            matchingRows.clear()
+            matchingRows += ctx
           }
 
           if (comparison == 0) { // Found a tie
