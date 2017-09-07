@@ -24,8 +24,6 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.logging.Log;
 import org.neo4j.server.ServerStartupException;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
-
 public class UpgradeDisallowedStartupException extends ServerStartupException
 {
     public UpgradeDisallowedStartupException( UpgradeNotAllowedException cause )
@@ -36,11 +34,10 @@ public class UpgradeDisallowedStartupException extends ServerStartupException
     @Override
     public void describeTo( Log log )
     {
-        if ( getCause() instanceof UpgradeNotAllowedByConfigurationException )
+        Throwable cause = getCause();
+        if ( cause instanceof UpgradeNotAllowedByConfigurationException )
         {
-            log.error( "Neo4j cannot be started, because the database files require upgrading and upgrades are " +
-                       "disabled in configuration. Please set '%s' to 'true' in your configuration file and try again.",
-                    allow_upgrade.name() );
+            log.error( cause.getMessage() );
         }
         else
         {

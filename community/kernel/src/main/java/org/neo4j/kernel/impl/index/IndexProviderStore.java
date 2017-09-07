@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
@@ -135,10 +134,7 @@ public class IndexProviderStore
         int wholeRecordsRead = bytesRead / RECORD_SIZE;
         if ( wholeRecordsRead < RECORD_COUNT && !allowUpgrade )
         {
-            throw new UpgradeNotAllowedByConfigurationException(
-                    "Index version (managed by " + file + ") has changed " + "and cannot be upgraded unless " +
-                            GraphDatabaseSettings.allow_upgrade.name() +
-                            "=true is supplied in the configuration" );
+            throw new UpgradeNotAllowedByConfigurationException( "Index version (managed by " + file + ") has changed and needs to be upgraded" );
         }
 
         buf.flip();
