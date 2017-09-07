@@ -575,17 +575,29 @@
         <scope>compile</scope>
         <exclusions>
           <exclusion>
-            <artifactId>commons-digester</artifactId>
-            <groupId>commons-digester</groupId>
+            <artifactId>commons-digester3</artifactId>
+            <groupId>commons-digester3</groupId>
           </exclusion>
         </exclusions>
       </dependency>
       <!-- Added (directly) to avoid version clash in commons-configuration. -->
       <dependency>
-        <groupId>commons-digester</groupId>
-        <artifactId>commons-digester</artifactId>
-        <version>2.1</version>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-digester3</artifactId>
+        <version>3.2</version>
         <type>jar</type>
+        <scope>compile</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>commons-beanutils</groupId>
+        <artifactId>commons-beanutils</artifactId>
+        <version>1.9.3</version>
         <scope>compile</scope>
       </dependency>
       <dependency>

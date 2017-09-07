@@ -3,6 +3,8 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Configuration
   Apache Commons Lang
@@ -18,8 +20,6 @@ Apache Software License, Version 2.0
   Apache Shiro :: Lang
   Caffeine cache
   ColorBrewer
-  Commons BeanUtils
-  Commons Digester
   Commons IO
   Commons Lang
   Commons Logging
