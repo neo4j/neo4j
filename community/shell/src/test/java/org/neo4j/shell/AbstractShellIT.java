@@ -230,15 +230,14 @@ public abstract class AbstractShellIT
         try
         {
             shellClient.evaluate( command, output );
-            fail( "Was expecting an exception" );
+            fail( "Was expecting an exception but got output: '" + output.asString() + "'" );
         }
         catch ( ShellException e )
         {
-            String errorMessage = e.getMessage();
-            if ( !errorMessage.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
+            String message = e.getMessage();
+            if ( !message.toLowerCase().contains( errorMessageShouldContain.toLowerCase() ) )
             {
-                fail( "Error message '" + errorMessage + "' should have contained '" + errorMessageShouldContain +
-                        "'" );
+                fail( "Error message '" + message + "' should have contained '" + errorMessageShouldContain + "'" );
             }
         }
     }
