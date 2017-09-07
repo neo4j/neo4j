@@ -36,9 +36,9 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionStateImpl;
+import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -79,7 +79,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Procedures procedures;
     private final TransactionIdStore transactionIdStore;
     private final AccessCapability accessCapability;
-    private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
+    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
     private final Clock clock;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
 
@@ -118,7 +118,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                                TransactionHeaderInformationFactory txHeaderFactory,
                                TransactionCommitProcess transactionCommitProcess,
                                IndexConfigStore indexConfigStore,
-                               LegacyIndexProviderLookup legacyIndexProviderLookup,
+                               ExplicitIndexProviderLookup explicitIndexProviderLookup,
                                TransactionHooks hooks,
                                TransactionMonitor transactionMonitor,
                                AvailabilityGuard availabilityGuard,
@@ -142,8 +142,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.procedures = procedures;
         this.transactionIdStore = transactionIdStore;
         this.accessCapability = accessCapability;
-        this.legacyIndexTxStateSupplier = () -> new CachingLegacyIndexTransactionState(
-                new LegacyIndexTransactionStateImpl( indexConfigStore, legacyIndexProviderLookup ) );
+        this.explicitIndexTxStateSupplier = () -> new CachingExplicitIndexTransactionState(
+                new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
         this.clock = clock;
         blockNewTransactions();
     }
@@ -325,7 +325,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
-                            transactionCommitProcess, transactionMonitor, legacyIndexTxStateSupplier, localTxPool,
+                            transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, tracers.transactionTracer, tracers.lockTracer, tracers.pageCursorTracerSupplier,
                             storageEngine, accessCapability );
             this.transactions.add( tx );

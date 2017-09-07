@@ -150,7 +150,7 @@ public class DatabaseContentVerifier
         }
     }
 
-    public void verifyLegacyIndex()
+    public void verifyExplicitIndex()
     {
         try ( Transaction tx = database.beginTx() )
         {

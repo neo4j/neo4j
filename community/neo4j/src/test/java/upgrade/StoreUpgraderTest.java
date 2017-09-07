@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
@@ -85,7 +86,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.GraphDatabaseInternalLogIT.INTERNAL_LOG_FILE;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
@@ -328,7 +328,7 @@ public class StoreUpgraderTest
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, File dbDirectory,
             File databaseDirectory ) throws IOException
     {
-        prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, databaseDirectory );
+        MigrationTestUtils.prepareSampleLegacyDatabase( version, fileSystem, dbDirectory, databaseDirectory );
     }
 
     private UpgradableDatabase getUpgradableDatabase( PageCache pageCache )

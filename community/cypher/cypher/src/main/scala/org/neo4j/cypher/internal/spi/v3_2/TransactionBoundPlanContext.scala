@@ -103,13 +103,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String) {
-    if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }

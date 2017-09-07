@@ -22,7 +22,7 @@
 
     <packaging>jar</packaging>
     <name>Neo4j - Lucene Index Upgrade</name>
-    <description>Neo4j Lucene Index Upgrade for legacy index migrations</description>
+    <description>Neo4j Lucene Index Upgrade for explicit index migrations</description>
 
     <licenses>
         <license>

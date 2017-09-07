@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.AccessMode;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -176,9 +176,9 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
     }
 
     @Override
-    public LegacyIndexTransactionState legacyIndexTxState()
+    public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return txStateHolder.legacyIndexTxState();
+        return txStateHolder.explicitIndexTxState();
     }
 
     @Override

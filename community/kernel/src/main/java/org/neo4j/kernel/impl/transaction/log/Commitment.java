@@ -50,7 +50,7 @@ public interface Commitment
         }
 
         @Override
-        public boolean hasLegacyIndexChanges()
+        public boolean hasExplicitIndexChanges()
         {
             return false;
         }
@@ -72,7 +72,7 @@ public interface Commitment
     boolean markedAsCommitted();
 
     /**
-     * @return whether or not this transaction contains legacy index changes.
+     * @return whether or not this transaction contains explicit index changes.
      */
-    boolean hasLegacyIndexChanges();
+    boolean hasExplicitIndexChanges();
 }

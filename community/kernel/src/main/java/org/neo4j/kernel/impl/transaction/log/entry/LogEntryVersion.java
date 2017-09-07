@@ -70,10 +70,10 @@ public enum LogEntryVersion
 {
     V2_3( -5, LogEntryParsersV2_3.class ),
     V3_0( -6, LogEntryParsersV2_3.class ),
-    // as of 2016-05-30: neo4j 2.3.5 legacy index IndexDefineCommand maps write size as short instead of byte
+    // as of 2016-05-30: neo4j 2.3.5 explicit index IndexDefineCommand maps write size as short instead of byte
     // log entry layout hasn't changed since 2_3 so just use that one
     V2_3_5( -8, LogEntryParsersV2_3.class ),
-    // as of 2016-05-30: neo4j 3.0.2 legacy index IndexDefineCommand maps write size as short instead of byte
+    // as of 2016-05-30: neo4j 3.0.2 explicit index IndexDefineCommand maps write size as short instead of byte
     // log entry layout hasn't changed since 2_3 so just use that one
     V3_0_2( -9, LogEntryParsersV2_3.class ),
     // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised

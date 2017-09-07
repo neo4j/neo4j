@@ -31,13 +31,13 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
@@ -49,18 +49,18 @@ public class NeoStoreFileListing
     private final File storeDir;
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
-    private final LegacyIndexProviderLookup legacyIndexProviders;
+    private final ExplicitIndexProviderLookup explicitIndexProviders;
     private final StorageEngine storageEngine;
     private final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
 
     public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore, IndexingService indexingService,
-            LegacyIndexProviderLookup legacyIndexProviders, StorageEngine storageEngine )
+            ExplicitIndexProviderLookup explicitIndexProviders, StorageEngine storageEngine )
     {
         this.storeDir = storeDir;
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
-        this.legacyIndexProviders = legacyIndexProviders;
+        this.explicitIndexProviders = explicitIndexProviders;
         this.storageEngine = storageEngine;
     }
 
@@ -71,12 +71,12 @@ public class NeoStoreFileListing
         gatherNeoStoreFiles( files );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
-        Resource legacyIndexSnapshots = gatherLegacyIndexFiles( files );
+        Resource explicitIndexSnapshots = gatherExplicitIndexFiles( files );
 
         placeMetaDataStoreLast( files );
 
         return resourceIterator( files.iterator(),
-                new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, legacyIndexSnapshots ) ) );
+                new MultiResource( asList( labelScanStoreSnapshot, schemaIndexSnapshots, explicitIndexSnapshots ) ) );
     }
 
     private void placeMetaDataStoreLast( List<StoreFileMetadata> files )
@@ -118,10 +118,10 @@ public class NeoStoreFileListing
         }
     }
 
-    private Resource gatherLegacyIndexFiles( Collection<StoreFileMetadata> files ) throws IOException
+    private Resource gatherExplicitIndexFiles( Collection<StoreFileMetadata> files ) throws IOException
     {
         final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexImplementation indexProvider : legacyIndexProviders.all() )
+        for ( IndexImplementation indexProvider : explicitIndexProviders.all() )
         {
             ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
             snapshots.add( snapshot );

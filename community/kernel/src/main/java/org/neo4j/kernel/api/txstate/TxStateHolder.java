@@ -22,6 +22,6 @@ package org.neo4j.kernel.api.txstate;
 public interface TxStateHolder
 {
     TransactionState txState();
-    LegacyIndexTransactionState legacyIndexTxState();
+    ExplicitIndexTransactionState explicitIndexTxState();
     boolean hasTxStateWithChanges();
 }

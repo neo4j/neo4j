@@ -61,8 +61,8 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
-import org.neo4j.kernel.spi.legacyindex.IndexProviders;
+import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
+import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -117,13 +117,13 @@ public class StoreMigration
         life.add( logService );
 
         // Add participants from kernel extensions...
-        LegacyIndexProvider legacyIndexProvider = new LegacyIndexProvider();
+        ExplicitIndexProvider explicitIndexProvider = new ExplicitIndexProvider();
 
         Log log = userLogProvider.getLog( StoreMigration.class );
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fs, config, legacyIndexProvider, pageCache, logService, new Monitors(),
+            deps.satisfyDependencies( fs, config, explicitIndexProvider, pageCache, logService, new Monitors(),
                     RecoveryCleanupWorkCollector.IMMEDIATE );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
@@ -145,7 +145,7 @@ public class StoreMigration
 
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
-                    schemaIndexProviderMap, legacyIndexProvider.getIndexProviders(),
+                    schemaIndexProviderMap, explicitIndexProvider.getIndexProviders(),
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ), tailScanner );
             migrator.migrate( storeDirectory );
 
@@ -185,7 +185,7 @@ public class StoreMigration
         }
     }
 
-    private class LegacyIndexProvider implements IndexProviders
+    private class ExplicitIndexProvider implements IndexProviders
     {
         private final Map<String,IndexImplementation> indexProviders = new HashMap<>();
 

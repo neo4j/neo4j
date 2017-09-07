@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.spi.v3_3.{TransactionalContextWrapper => Transa
 import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.KernelAPI
-import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
+import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -146,8 +146,8 @@ trait Compatibility[C <: CompilerContext] {
         case SchemaIndexScanUsage(identifier, label, propertyKey) =>
           val labelId = transactionalContext.readOperations.labelGetForName(label)
           schemaIndexUsage(identifier, labelId, label, propertyKey)
-        case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
-        case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
+        case LegacyNodeIndexUsage(identifier, index) => explicitIndexUsage(identifier, "NODE", index)
+        case LegacyRelationshipIndexUsage(identifier, index) => explicitIndexUsage(identifier, "RELATIONSHIP", index)
       }.asJava)
     }
 

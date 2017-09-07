@@ -35,8 +35,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ExecutionStatisticsOperations;
+import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ProcedureCallOperations;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.ReadOperations;
@@ -50,10 +50,10 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -88,10 +88,10 @@ import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -155,14 +155,14 @@ public class OperationsFacade
         return operations.entityWriteOperations();
     }
 
-    final LegacyIndexWriteOperations legacyIndexWrite()
+    final ExplicitIndexWriteOperations explicitIndexWrite()
     {
-        return operations.legacyIndexWriteOperations();
+        return operations.explicitIndexWriteOperations();
     }
 
-    final LegacyIndexReadOperations legacyIndexRead()
+    final ExplicitIndexReadOperations explicitIndexRead()
     {
-        return operations.legacyIndexReadOperations();
+        return operations.explicitIndexReadOperations();
     }
 
     final SchemaReadOperations schemaRead()
@@ -1017,240 +1017,240 @@ public class OperationsFacade
     }
     // </Locking>
 
-    // <Legacy index>
+    // <Explicit index>
     @Override
-    public boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexExists( statement, indexName, customConfiguration );
+        return explicitIndexRead().nodeExplicitIndexExists( statement, indexName, customConfiguration );
     }
 
     @Override
-    public boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexExists( statement, indexName, customConfiguration );
+        return explicitIndexRead().relationshipExplicitIndexExists( statement, indexName, customConfiguration );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexGet( String indexName, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexGet( statement, indexName, key, value );
+        return explicitIndexRead().nodeExplicitIndexGet( statement, indexName, key, value );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, key, queryOrQueryObject );
+        return explicitIndexRead().nodeExplicitIndexQuery( statement, indexName, key, queryOrQueryObject );
     }
 
     @Override
-    public LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits nodeExplicitIndexQuery( String indexName, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexQuery( statement, indexName, queryOrQueryObject );
+        return explicitIndexRead().nodeExplicitIndexQuery( statement, indexName, queryOrQueryObject );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexGet( String indexName, String key, Object value,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexGet( String indexName, String key, Object value,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexGet( statement, indexName, key, value, startNode, endNode );
+        return explicitIndexRead().relationshipExplicitIndexGet( statement, indexName, key, value, startNode, endNode );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexQuery( statement, indexName, key, queryOrQueryObject,
+        return explicitIndexRead().relationshipExplicitIndexQuery( statement, indexName, key, queryOrQueryObject,
                 startNode, endNode );
     }
 
     @Override
-    public LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject,
-            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
+    public ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, Object queryOrQueryObject,
+            long startNode, long endNode ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexQuery( statement, indexName, queryOrQueryObject,
+        return explicitIndexRead().relationshipExplicitIndexQuery( statement, indexName, queryOrQueryObject,
                 startNode, endNode );
     }
 
     @Override
-    public void nodeLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    public void nodeExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeLegacyIndexCreateLazily( statement, indexName, customConfig );
+        explicitIndexWrite().nodeExplicitIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void nodeLegacyIndexCreate( String indexName, Map<String,String> customConfig )
+    public void nodeExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
-        legacyIndexWrite().nodeLegacyIndexCreate( statement, indexName, customConfig );
+        explicitIndexWrite().nodeExplicitIndexCreate( statement, indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreateLazily( String indexName, Map<String,String> customConfig )
+    public void relationshipExplicitIndexCreateLazily( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipLegacyIndexCreateLazily( statement, indexName, customConfig );
+        explicitIndexWrite().relationshipExplicitIndexCreateLazily( statement, indexName, customConfig );
     }
 
     @Override
-    public void relationshipLegacyIndexCreate( String indexName, Map<String,String> customConfig )
+    public void relationshipExplicitIndexCreate( String indexName, Map<String,String> customConfig )
     {
         statement.assertOpen();
 
-        legacyIndexWrite().relationshipLegacyIndexCreate( statement, indexName, customConfig );
+        explicitIndexWrite().relationshipExplicitIndexCreate( statement, indexName, customConfig );
     }
 
     @Override
-    public void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeAddToLegacyIndex( statement, indexName, node, key, value );
+        explicitIndexWrite().nodeAddToExplicitIndex( statement, indexName, node, key, value );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value )
-            throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node, key, value );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node, key, value );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node, String key )
-            throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node, key );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node, key );
     }
 
     @Override
-    public void nodeRemoveFromLegacyIndex( String indexName, long node ) throws LegacyIndexNotFoundKernelException
+    public void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeRemoveFromLegacyIndex( statement, indexName, node );
+        explicitIndexWrite().nodeRemoveFromExplicitIndex( statement, indexName, node );
     }
 
     @Override
-    public void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipAddToLegacyIndex( statement, indexName, relationship, key, value );
+        explicitIndexWrite().relationshipAddToExplicitIndex( statement, indexName, relationship, key, value );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship, key, value );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key, value );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship, key );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship, key );
     }
 
     @Override
-    public void relationshipRemoveFromLegacyIndex( String indexName, long relationship )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException
+    public void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipRemoveFromLegacyIndex( statement, indexName, relationship );
+        explicitIndexWrite().relationshipRemoveFromExplicitIndex( statement, indexName, relationship );
     }
 
     @Override
-    public void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException
+    public void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().nodeLegacyIndexDrop( statement, indexName );
+        explicitIndexWrite().nodeExplicitIndexDrop( statement, indexName );
     }
 
     @Override
-    public void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException
+    public void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipLegacyIndexDrop( statement, indexName );
+        explicitIndexWrite().relationshipExplicitIndexDrop( statement, indexName );
     }
 
     @Override
-    public Map<String,String> nodeLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException
+    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexGetConfiguration( statement, indexName );
+        return explicitIndexRead().nodeExplicitIndexGetConfiguration( statement, indexName );
     }
 
     @Override
-    public Map<String,String> relationshipLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException
+    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexGetConfiguration( statement, indexName );
+        return explicitIndexRead().relationshipExplicitIndexGetConfiguration( statement, indexName );
     }
 
     @Override
-    public String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException
+    public String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().nodeLegacyIndexSetConfiguration( statement, indexName, key, value );
+        return explicitIndexWrite().nodeExplicitIndexSetConfiguration( statement, indexName, key, value );
     }
 
     @Override
-    public String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException
+    public String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().relationshipLegacyIndexSetConfiguration( statement, indexName, key, value );
+        return explicitIndexWrite().relationshipExplicitIndexSetConfiguration( statement, indexName, key, value );
     }
 
     @Override
-    public String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException
+    public String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().nodeLegacyIndexRemoveConfiguration( statement, indexName, key );
+        return explicitIndexWrite().nodeExplicitIndexRemoveConfiguration( statement, indexName, key );
     }
 
     @Override
-    public String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException
+    public String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException
     {
         statement.assertOpen();
-        return legacyIndexWrite().relationshipLegacyIndexRemoveConfiguration( statement, indexName, key );
+        return explicitIndexWrite().relationshipExplicitIndexRemoveConfiguration( statement, indexName, key );
     }
 
     @Override
-    public String[] nodeLegacyIndexesGetAll()
+    public String[] nodeExplicitIndexesGetAll()
     {
         statement.assertOpen();
-        return legacyIndexRead().nodeLegacyIndexesGetAll( statement );
+        return explicitIndexRead().nodeExplicitIndexesGetAll( statement );
     }
 
     @Override
-    public String[] relationshipLegacyIndexesGetAll()
+    public String[] relationshipExplicitIndexesGetAll()
     {
         statement.assertOpen();
-        return legacyIndexRead().relationshipLegacyIndexesGetAll( statement );
+        return explicitIndexRead().relationshipExplicitIndexesGetAll( statement );
     }
-    // </Legacy index>
+    // </Explicit index>
 
     // <Counts>
 

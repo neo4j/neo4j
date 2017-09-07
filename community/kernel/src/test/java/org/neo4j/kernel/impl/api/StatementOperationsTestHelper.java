@@ -30,10 +30,10 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -61,8 +61,8 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaStateOperations.class ),
             mock( LockOperations.class ),
             mock( CountsOperations.class ),
-            mock( LegacyIndexReadOperations.class ),
-            mock( LegacyIndexWriteOperations.class ),
+            mock( ExplicitIndexReadOperations.class ),
+            mock( ExplicitIndexWriteOperations.class ),
             mock( QueryRegistrationOperations.class ) );
     }
 

@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -103,8 +103,8 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
-        when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
+        ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
+        when( explicitIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
         Config config = Config.defaults();
@@ -116,8 +116,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
-                schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
-                legacyIndexProviderLookup, indexConfigStore,
+                schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
@@ -200,8 +199,8 @@ public class RecordStorageEngineRule extends ExternalResource
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, SchemaIndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                LegacyIndexProviderLookup legacyIndexProviderLookup,
-                IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
+                ExplicitIndexProviderLookup explicitIndexProviderLookup,
+                IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
@@ -209,8 +208,7 @@ public class RecordStorageEngineRule extends ExternalResource
             super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
                     lockService, new DefaultSchemaIndexProviderMap( indexProvider ),
-                    indexingServiceMonitor, databaseHealth,
-                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering, idGeneratorFactory,
+                    indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
                     idController, monitors, recoveryCleanupWorkCollector, operationalMode );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }

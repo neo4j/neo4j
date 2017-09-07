@@ -1056,7 +1056,7 @@ public class TestTransactionEvents
             dbRule.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
             tx.success();
         }
-        // ... or even a legacy index
+        // ... or even a explicit index
         try ( Transaction tx = dbRule.beginTx() )
         {
             dbRule.index().forNodes( "some index", stringMap( PROVIDER, IDENTIFIER ) );

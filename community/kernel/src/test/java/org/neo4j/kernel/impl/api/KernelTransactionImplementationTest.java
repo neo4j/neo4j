@@ -364,7 +364,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.millis();
-        when( legacyIndexState.hasChanges() ).thenReturn( true );
+        when( explicitIndexState.hasChanges() ).thenReturn( true );
         doAnswer( invocation ->
         {
             @SuppressWarnings( "unchecked" )
@@ -385,7 +385,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                     AUTH_DISABLED, 0L );
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
-                statement.legacyIndexTxState(); // which will pull it from the supplier and the mocking above
+                statement.explicitIndexTxState(); // which will pull it from the supplier and the mocking above
                 // will have it say that it has changes.
             }
             // WHEN committing it at a later point

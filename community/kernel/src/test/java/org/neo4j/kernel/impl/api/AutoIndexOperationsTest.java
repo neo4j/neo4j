@@ -23,8 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
+import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.Token;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
+import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 
 public class AutoIndexOperationsTest
 {
@@ -89,7 +89,7 @@ public class AutoIndexOperationsTest
         index.propertyRemoved( ops, nodeId, indexedProperty );
 
         // Then
-        verify( ops ).nodeRemoveFromLegacyIndex( NODE_AUTO_INDEX, nodeId, indexedPropertyName );
+        verify( ops ).nodeRemoveFromExplicitIndex( NODE_AUTO_INDEX, nodeId, indexedPropertyName );
     }
 
     @Test

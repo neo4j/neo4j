@@ -206,7 +206,7 @@ public class RebuildFromLogsTest
                         }
                     }
                 },
-        LEGACY_INDEX_NODE( CREATE_NODE )
+        EXPLICIT_INDEX_NODE( CREATE_NODE )
                 {
                     @Override
                     void applyTx( GraphDatabaseService graphDb )

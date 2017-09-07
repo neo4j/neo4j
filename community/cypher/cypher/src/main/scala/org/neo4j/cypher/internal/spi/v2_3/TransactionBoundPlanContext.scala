@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.exceptions.KernelException
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor
@@ -87,13 +86,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   }
 
   def checkNodeIndex(idxName: String) {
-    if (!tc.statement.readOperations().nodeLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().nodeExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }
 
   def checkRelIndex(idxName: String)  {
-    if (!tc.statement.readOperations().relationshipLegacyIndexesGetAll().contains(idxName)) {
+    if (!tc.statement.readOperations().relationshipExplicitIndexesGetAll().contains(idxName)) {
       throw new MissingIndexException(idxName)
     }
   }

@@ -87,7 +87,7 @@ public class IndexProviderShellApp extends TransactionProvidingApp
     @Override
     public String getDescription()
     {
-        return "Access the legacy indexes for your Neo4j graph database. " +
+        return "Access the explicit indexes for your Neo4j graph database. " +
         "Use -g for getting nodes, -i and -r to manipulate.\nExamples:\n" +
         "$ index -i persons name  (will index property 'name' with its value for current node in the 'persons' index)\n" +
         "$ index -g persons name \"Thomas A. Anderson\"  (will get nodes matching that name from the 'persons' index)\n" +

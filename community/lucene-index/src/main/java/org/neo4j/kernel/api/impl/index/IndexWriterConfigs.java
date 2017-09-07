@@ -28,7 +28,7 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.PooledConcurrentMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
-import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**

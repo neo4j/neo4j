@@ -40,7 +40,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.index.impl.lucene.legacy.LuceneDataSource;
+import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
@@ -132,9 +132,9 @@ public class FileWatchIT
     }
 
     @Test( timeout = TEST_TIMEOUT )
-    public void notifyAboutLegacyIndexFolderRemoval() throws InterruptedException, IOException
+    public void notifyAboutExplicitIndexFolderRemoval() throws InterruptedException, IOException
     {
-        String monitoredDirectory = getLegacyIndexDirectory( storeDir );
+        String monitoredDirectory = getExplicitIndexDirectory( storeDir );
 
         FileWatcher fileWatcher = getFileWatcher( database );
         CheckPointer checkPointer = getCheckpointer( database );
@@ -302,7 +302,7 @@ public class FileWatchIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForceCheckPoint" ) );
     }
 
-    private String getLegacyIndexDirectory( File storeDir )
+    private String getExplicitIndexDirectory( File storeDir )
     {
         File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( storeDir );
         Path relativeIndexPath = storeDir.toPath().relativize( schemaIndexDirectory.toPath() );

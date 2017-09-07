@@ -234,7 +234,7 @@ public class RecordStorageEngineTest
         long txId = ThreadLocalRandom.current().nextLong( 0, 1000 );
         TransactionToApply txToApply = new TransactionToApply( transaction );
         FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
-        commitment.setHasLegacyIndexChanges( false );
+        commitment.setHasExplicitIndexChanges( false );
         txToApply.commitment( commitment, txId );
         return txToApply;
     }

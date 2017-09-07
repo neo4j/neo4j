@@ -33,6 +33,7 @@ import java.util.Collections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -41,7 +42,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 
 @RunWith( Parameterized.class )
 public class PlatformConstraintStoreUpgradeTest
@@ -78,7 +78,7 @@ public class PlatformConstraintStoreUpgradeTest
 
     private void checkForStoreVersion( String storeVersion ) throws IOException
     {
-        prepareSampleLegacyDatabase( storeVersion, fileSystemRule.get(), workingDir, prepareDir );
+        MigrationTestUtils.prepareSampleLegacyDatabase( storeVersion, fileSystemRule.get(), workingDir, prepareDir );
         try
         {
             createGraphDatabaseService();

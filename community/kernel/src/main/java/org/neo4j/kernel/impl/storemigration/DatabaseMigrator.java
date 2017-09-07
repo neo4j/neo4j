@@ -30,11 +30,11 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
-import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
+import org.neo4j.kernel.impl.storemigration.participant.ExplicitIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -86,14 +86,14 @@ public class DatabaseMigrator
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 
-        LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
+        ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         schemaIndexProviderMap.accept(
                 provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
-        storeUpgrader.addParticipant( legacyIndexMigrator );
+        storeUpgrader.addParticipant( explicitIndexMigrator );
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
         storeUpgrader.addParticipant( countsMigrator );

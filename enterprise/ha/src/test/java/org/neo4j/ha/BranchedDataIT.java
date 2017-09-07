@@ -185,7 +185,7 @@ public class BranchedDataIT
             char fixedPrefix = prefix;
             retryOnTransactionFailure( odin, db ->
                     createNodes( odin, String.valueOf( fixedPrefix ), 10_000, andIndexInto( indexName ) ) );
-            cluster.force(); // Force will most likely cause lucene legacy indexes to commit and change file structure
+            cluster.force(); // Force will most likely cause lucene explicit indexes to commit and change file structure
         }
         // so anyways, when thor comes back into the cluster
         cluster.info( format( "%n   ==== REPAIRING CABLES ====%n" ) );

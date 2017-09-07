@@ -38,9 +38,9 @@ import static org.neo4j.helpers.collection.Iterables.single;
 public class TestTransactionEventsWithIndexes extends TestTransactionEvents
 {
     @Test
-    public void nodeCanBeLegacyIndexedInBeforeCommit() throws Exception
+    public void nodeCanBeExplicitIndexedInBeforeCommit() throws Exception
     {
-        // Given we have a legacy index...
+        // Given we have a explicit index...
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         final Index<Node> index;
         try ( Transaction tx = db.beginTx() )

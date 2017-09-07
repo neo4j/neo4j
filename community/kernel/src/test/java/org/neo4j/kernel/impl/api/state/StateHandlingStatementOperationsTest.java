@@ -32,8 +32,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
-import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -46,8 +46,8 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.util.diffsets.DiffSets;
 import org.neo4j.storageengine.api.NodeItem;
@@ -74,7 +74,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterators.asIterable;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -127,7 +126,7 @@ public class StateHandlingStatementOperationsTest
         // given
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForSchema( descriptor );
         TransactionState txState = mock( TransactionState.class );
-        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<Long>() );
+        when( txState.nodesWithLabelChanged( anyInt() ) ).thenReturn( new DiffSets<>() );
         when( txState.hasChanges() ).thenReturn( true );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForSchema( any() ) ).thenReturn( iterator( constraint ) );
@@ -657,7 +656,7 @@ public class StateHandlingStatementOperationsTest
     {
         return new StateHandlingStatementOperations( delegate,
                 autoIndexing, mock( ConstraintIndexCreator.class ),
-                mock( LegacyIndexStore.class ) );
+                mock( ExplicitIndexStore.class ) );
     }
 
     private IndexReader addMockedIndexReader( KernelStatement kernelStatement ) throws IndexNotFoundKernelException

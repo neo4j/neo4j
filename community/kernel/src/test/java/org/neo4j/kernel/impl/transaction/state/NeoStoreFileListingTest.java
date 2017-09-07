@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
@@ -128,13 +128,13 @@ public class NeoStoreFileListingTest
         // Given
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
-        LegacyIndexProviderLookup legacyIndexes = mock( LegacyIndexProviderLookup.class );
-        when( legacyIndexes.all() ).thenReturn( Collections.emptyList() );
+        ExplicitIndexProviderLookup explicitIndexes = mock( ExplicitIndexProviderLookup.class );
+        when( explicitIndexes.all() ).thenReturn( Collections.emptyList() );
         File storeDir = mock( File.class );
         filesInStoreDirAre( storeDir, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         NeoStoreFileListing fileListing = new NeoStoreFileListing(
-                storeDir, labelScanStore, indexingService, legacyIndexes, storageEngine );
+                storeDir, labelScanStore, indexingService, explicitIndexes, storageEngine );
 
         ResourceIterator<File> scanSnapshot = scanStoreFilesAre( labelScanStore,
                 new String[]{"blah/scan.store", "scan.more"} );

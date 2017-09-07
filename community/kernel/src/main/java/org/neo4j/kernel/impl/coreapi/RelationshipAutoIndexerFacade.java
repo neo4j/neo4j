@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
-import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
+import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
 
 public class RelationshipAutoIndexerFacade extends AutoIndexerFacade<Relationship> implements RelationshipAutoIndexer
 {

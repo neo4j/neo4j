@@ -39,12 +39,12 @@ class NeoStoreTransactionLogModule
     private final LogRotation logRotation;
     private final CheckPointerImpl checkPointer;
     private final TransactionAppender appender;
-    private final SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering;
+    private final SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering;
 
     NeoStoreTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
             LogFileInformation logFileInformation, PhysicalLogFiles logFiles, LogFile logFile, LogRotation logRotation,
             CheckPointerImpl checkPointer, TransactionAppender appender,
-            SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.logFileInformation = logFileInformation;
@@ -53,7 +53,7 @@ class NeoStoreTransactionLogModule
         this.logRotation = logRotation;
         this.checkPointer = checkPointer;
         this.appender = appender;
-        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
     }
 
     public LogicalTransactionStore logicalTransactionStore()
@@ -76,8 +76,7 @@ class NeoStoreTransactionLogModule
         dependencies.satisfyDependencies( checkPointer,
                                           logFile,
                                           logFileInformation,
-                                          logFiles,
-                                          legacyIndexTransactionOrdering,
+                                          logFiles, explicitIndexTransactionOrdering,
                                           logicalTransactionStore,
                                           logRotation,
                                           appender );

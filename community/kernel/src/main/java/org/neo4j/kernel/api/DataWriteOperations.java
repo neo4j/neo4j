@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
 
@@ -91,58 +91,59 @@ public interface DataWriteOperations
     Value graphRemoveProperty( int propertyKeyId );
 
     /**
-     * Creates a legacy index in a separate transaction if not yet available.
+     * Creates a explicit index in a separate transaction if not yet available.
      */
-    void nodeLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
+    void nodeExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
-    void nodeLegacyIndexCreate( String indexName, Map<String, String> customConfig );
+    void nodeExplicitIndexCreate( String indexName, Map<String, String> customConfig );
 
     //===========================================
-    //== LEGACY INDEX OPERATIONS ================
+    //== EXPLICIT INDEX OPERATIONS ================
     //===========================================
 
     /**
-     * Creates a legacy index in a separate transaction if not yet available.
+     * Creates a explicit index in a separate transaction if not yet available.
      */
-    void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
+    void relationshipExplicitIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
-    void relationshipLegacyIndexCreate( String indexName, Map<String, String> customConfig );
+    void relationshipExplicitIndexCreate( String indexName, Map<String, String> customConfig );
 
-    String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException;
+    String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
 
-    String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
-            throws LegacyIndexNotFoundKernelException;
+    String relationshipExplicitIndexSetConfiguration( String indexName, String key, String value )
+            throws ExplicitIndexNotFoundKernelException;
 
-    String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException;
+    String nodeExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
 
-    String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
-            throws LegacyIndexNotFoundKernelException;
+    String relationshipExplicitIndexRemoveConfiguration( String indexName, String key )
+            throws ExplicitIndexNotFoundKernelException;
 
-    void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
+    void nodeAddToExplicitIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value )
-            throws LegacyIndexNotFoundKernelException;
+    void nodeRemoveFromExplicitIndex( String indexName, long node, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node, String key ) throws LegacyIndexNotFoundKernelException;
+    void nodeRemoveFromExplicitIndex( String indexName, long node, String key ) throws
+            ExplicitIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node ) throws LegacyIndexNotFoundKernelException;
+    void nodeRemoveFromExplicitIndex( String indexName, long node ) throws ExplicitIndexNotFoundKernelException;
 
-    void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
+    void relationshipAddToExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException, ExplicitIndexNotFoundKernelException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship, String key )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship )
-            throws LegacyIndexNotFoundKernelException, EntityNotFoundException;
+    void relationshipRemoveFromExplicitIndex( String indexName, long relationship )
+            throws ExplicitIndexNotFoundKernelException, EntityNotFoundException;
 
-    void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
+    void nodeExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
-    void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
+    void relationshipExplicitIndexDrop( String indexName ) throws ExplicitIndexNotFoundKernelException;
 }
