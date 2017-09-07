@@ -21,7 +21,7 @@ package org.neo4j.kernel.extension.dependency;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -47,7 +47,10 @@ public class HighestSelectionStrategy implements DependencyResolver.SelectionStr
     @Override
     public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
     {
-        List<T> sorted = (List<T>)Stream.of( candidates ).map( ts -> (Comparable<T>) ts ).sorted().collect( Collectors.toList() );
+        List<T> sorted = (List<T>) StreamSupport.stream( candidates.spliterator(), false )
+                .map( ts -> (Comparable<T>) ts )
+                .sorted()
+                .collect( Collectors.toList() );
 
         if ( sorted.isEmpty() )
         {
