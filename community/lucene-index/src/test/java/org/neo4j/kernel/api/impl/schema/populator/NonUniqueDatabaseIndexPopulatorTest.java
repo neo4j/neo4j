@@ -63,7 +63,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
 
     private SchemaIndex index;
     private NonUniqueLuceneIndexPopulator populator;
-    private LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
+    private final LabelSchemaDescriptor labelSchemaDescriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
 
     @Before
     public void setUp() throws Exception
@@ -102,7 +102,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate> updates = Arrays.asList(
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, labelSchemaDescriptor, "aaa" ),
                 add( 2, labelSchemaDescriptor, "bbb" ),
                 add( 3, labelSchemaDescriptor, "ccc" ) );
@@ -119,7 +119,7 @@ public class NonUniqueDatabaseIndexPopulatorTest
     {
         populator = newPopulator();
 
-        List<IndexEntryUpdate> updates = Arrays.asList(
+        List<IndexEntryUpdate<?>> updates = Arrays.asList(
                 add( 1, labelSchemaDescriptor, "foo" ),
                 add( 2, labelSchemaDescriptor, "bar" ),
                 add( 3, labelSchemaDescriptor, "foo" ) );

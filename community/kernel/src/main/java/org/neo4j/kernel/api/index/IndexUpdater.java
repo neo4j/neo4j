@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
  */
 public interface IndexUpdater extends AutoCloseable
 {
-    void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException;
+    void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException;
 
     @Override
     void close() throws IOException, IndexEntryConflictException;

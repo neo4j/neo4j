@@ -30,7 +30,7 @@ public final class SwallowingIndexUpdater implements IndexUpdater
     public static final IndexUpdater INSTANCE = new SwallowingIndexUpdater();
 
     @Override
-    public void process( IndexEntryUpdate update )
+    public void process( IndexEntryUpdate<?> update )
     {
         // intentionally swallow this update
     }

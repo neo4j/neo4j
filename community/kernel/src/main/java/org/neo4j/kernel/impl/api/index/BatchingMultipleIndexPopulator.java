@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -158,7 +158,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     protected void flush( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
-        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
+        List<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
 
         executor.execute( () ->
         {

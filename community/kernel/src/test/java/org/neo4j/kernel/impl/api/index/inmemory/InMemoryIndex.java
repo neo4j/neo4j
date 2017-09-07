@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -115,10 +115,10 @@ class InMemoryIndex
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
                 throws IndexEntryConflictException, IOException
         {
-            for ( IndexEntryUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 InMemoryIndex.this.add( update.getEntityId(), update.values(), false );
             }
@@ -159,7 +159,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void includeSample( IndexEntryUpdate update )
+        public void includeSample( IndexEntryUpdate<?> update )
         {
         }
 
@@ -252,7 +252,7 @@ class InMemoryIndex
         }
 
         @Override
-        public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+        public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
         {
             switch ( update.updateMode() )
             {

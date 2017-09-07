@@ -142,24 +142,24 @@ public class AccessUniqueDatabaseIndexTest
         return new LuceneIndexAccessor( luceneIndex, index );
     }
 
-    private PartitionedIndexStorage getIndexStorage() throws IOException
+    private PartitionedIndexStorage getIndexStorage()
     {
         IndexStorageFactory storageFactory =
                 new IndexStorageFactory( directoryFactory, fileSystemRule.get(), indexDirectory );
         return storageFactory.indexStorageOf( 1, false );
     }
 
-    private IndexEntryUpdate add( long nodeId, Object propertyValue )
+    private IndexEntryUpdate<?> add( long nodeId, Object propertyValue )
     {
         return IndexQueryHelper.add( nodeId, index.schema(), propertyValue );
     }
 
-    private IndexEntryUpdate change( long nodeId, Object oldValue, Object newValue )
+    private IndexEntryUpdate<?> change( long nodeId, Object oldValue, Object newValue )
     {
         return IndexQueryHelper.change( nodeId, index.schema(), oldValue, newValue );
     }
 
-    private IndexEntryUpdate remove( long nodeId, Object oldValue )
+    private IndexEntryUpdate<?> remove( long nodeId, Object oldValue )
     {
         return IndexQueryHelper.remove( nodeId, index.schema(), oldValue );
     }
@@ -170,12 +170,12 @@ public class AccessUniqueDatabaseIndexTest
                 Values.stringValue( propertyValue ) );
     }
 
-    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate> updates )
+    private void updateAndCommit( IndexAccessor accessor, Iterable<IndexEntryUpdate<?>> updates )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
         {
-            for ( IndexEntryUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 updater.process( update );
             }

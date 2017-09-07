@@ -267,7 +267,6 @@ public class RecoveryIT
         }
     }
 
-    @SuppressWarnings( "rawtypes" )
     @Test
     public void shouldSeeSameIndexUpdatesDuringRecoveryAsFromNormalIndexApplication() throws Exception
     {
@@ -307,7 +306,7 @@ public class RecoveryIT
         produceRandomNodePropertyAndLabelUpdates( db, random.intBetween( 20, 40 ), label, key1, key2 );
         checkPoint( db );
         InMemoryIndexProvider indexStateAtLastCheckPoint = indexProvider.snapshot();
-        Map<Long,Collection<IndexEntryUpdate>> updatesAtLastCheckPoint = updateCapturingIndexProvider.snapshot();
+        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtLastCheckPoint = updateCapturingIndexProvider.snapshot();
 
         // when
         produceRandomNodePropertyAndLabelUpdates( db, random.intBetween( 40, 100 ), label, key1, key2 );
@@ -316,7 +315,7 @@ public class RecoveryIT
         flush( db );
         EphemeralFileSystemAbstraction crashedFs = fs.snapshot();
         InMemoryIndexProvider indexStateAtCrash = indexProvider.snapshot();
-        Map<Long,Collection<IndexEntryUpdate>> updatesAtCrash = updateCapturingIndexProvider.snapshot();
+        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash = updateCapturingIndexProvider.snapshot();
 
         // Crash and start anew
         UpdateCapturingIndexProvider recoveredUpdateCapturingIndexProvider =
@@ -329,7 +328,7 @@ public class RecoveryIT
                 .setKernelExtensions( asList( new InMemoryIndexProviderFactory( recoveredUpdateCapturingIndexProvider ) ) )
                 .newImpermanentDatabase( storeDir );
         long lastCommittedTxIdAfterRecovered = lastCommittedTxId( db );
-        Map<Long,Collection<IndexEntryUpdate>> updatesAfterRecovery = recoveredUpdateCapturingIndexProvider.snapshot();
+        Map<Long,Collection<IndexEntryUpdate<?>>> updatesAfterRecovery = recoveredUpdateCapturingIndexProvider.snapshot();
 
         // then
         assertEquals( lastCommittedTxIdBeforeRecovered, lastCommittedTxIdAfterRecovered );
@@ -610,8 +609,8 @@ public class RecoveryIT
         return Label.label( random.among( TOKENS ) );
     }
 
-    private void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate>> updatesAtCrash,
-            Map<Long,Collection<IndexEntryUpdate>> recoveredUpdatesSnapshot )
+    private void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash,
+            Map<Long,Collection<IndexEntryUpdate<?>>> recoveredUpdatesSnapshot )
     {
         // The UpdateCapturingIndexProvider just captures updates made to indexes. The order in this test
         // should be the same during online transaction application and during recovery since everything
@@ -620,21 +619,21 @@ public class RecoveryIT
         // that updates for a particular transaction are the same during normal application and recovery,
         // regardless of ordering differences within the transaction.
 
-        Map<Long,Map<Long,Collection<IndexEntryUpdate>>> crashUpdatesPerNode = splitPerNode( updatesAtCrash );
-        Map<Long,Map<Long,Collection<IndexEntryUpdate>>> recoveredUpdatesPerNode = splitPerNode( recoveredUpdatesSnapshot );
+        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> crashUpdatesPerNode = splitPerNode( updatesAtCrash );
+        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> recoveredUpdatesPerNode = splitPerNode( recoveredUpdatesSnapshot );
         assertEquals( crashUpdatesPerNode, recoveredUpdatesPerNode );
     }
 
-    private Map<Long,Map<Long,Collection<IndexEntryUpdate>>> splitPerNode( Map<Long,Collection<IndexEntryUpdate>> updates )
+    private Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> splitPerNode( Map<Long,Collection<IndexEntryUpdate<?>>> updates )
     {
-        Map<Long,Map<Long,Collection<IndexEntryUpdate>>> result = new HashMap<>();
+        Map<Long,Map<Long,Collection<IndexEntryUpdate<?>>>> result = new HashMap<>();
         updates.forEach( ( indexId, indexUpdates ) -> result.put( indexId, splitPerNode( indexUpdates ) ) );
         return result;
     }
 
-    private Map<Long,Collection<IndexEntryUpdate>> splitPerNode( Collection<IndexEntryUpdate> updates )
+    private Map<Long,Collection<IndexEntryUpdate<?>>> splitPerNode( Collection<IndexEntryUpdate<?>> updates )
     {
-        Map<Long,Collection<IndexEntryUpdate>> perNode = new HashMap<>();
+        Map<Long,Collection<IndexEntryUpdate<?>>> perNode = new HashMap<>();
         updates.forEach( update -> perNode.computeIfAbsent( update.getEntityId(), nodeId -> new ArrayList<>() ).add( update ) );
         return perNode;
     }

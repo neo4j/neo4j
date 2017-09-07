@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -58,11 +59,11 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
@@ -115,8 +116,6 @@ public class IndexPopulationJobTest
     private KernelAPI kernel;
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
-    private final InternalSchemaActions actions = mock( InternalSchemaActions.class );
-
     private int labelId;
 
     @Before
@@ -156,12 +155,12 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
 
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
-        verify( populator, times( 2 ) ).add( any( Collection.class) );
+        verify( populator, times( 2 ) ).add( any( List.class) );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -203,14 +202,14 @@ public class IndexPopulationJobTest
         job.run();
 
         // THEN
-        IndexEntryUpdate update1 = add( node1, descriptor, Values.of( value ) );
-        IndexEntryUpdate update2 = add( node4, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update1 = add( node1, descriptor, Values.of( value ) );
+        IndexEntryUpdate<?> update2 = add( node4, descriptor, Values.of( value ) );
 
         verify( populator ).create();
         verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
+        verify( populator, times( 2 ) ).add( Matchers.anyList() );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -278,7 +277,7 @@ public class IndexPopulationJobTest
     {
         // GIVEN
         IndexPopulator failingPopulator = mock( IndexPopulator.class );
-        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(Collection.class) );
+        doThrow( new RuntimeException( "BORK BORK" ) ).when( failingPopulator ).add( any(List.class) );
 
         FlippableIndexProxy index = new FlippableIndexProxy();
 
@@ -431,7 +430,7 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                 long currentlyIndexedNodeId )
         {
             // no-op
@@ -468,9 +467,9 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
         {
-            for ( IndexEntryUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 add( update );
             }
@@ -491,7 +490,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
                 {
                     switch ( update.updateMode() )
                     {
@@ -539,9 +538,9 @@ public class IndexPopulationJobTest
         }
 
         @Override
-        public void add( Collection<? extends IndexEntryUpdate<?>> updates )
+        public void add( List<? extends IndexEntryUpdate<?>> updates )
         {
-            for ( IndexEntryUpdate update : updates )
+            for ( IndexEntryUpdate<?> update : updates )
             {
                 add( update );
             }
@@ -562,7 +561,7 @@ public class IndexPopulationJobTest
             return new IndexUpdater()
             {
                 @Override
-                public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+                public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
                 {
                     switch ( update.updateMode() )
                     {
@@ -632,7 +631,7 @@ public class IndexPopulationJobTest
     private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.AUTH_DISABLED );
+        try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
               Statement statement = tx.acquireStatement() )
         {
             int labelId = statement.tokenWriteOperations().labelGetOrCreateForName( label.name() );

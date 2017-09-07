@@ -94,8 +94,8 @@ public class BatchingMultipleIndexPopulatorTest
         IndexUpdater updater = mock( IndexUpdater.class );
         when( populator.newPopulatingUpdater( any() ) ).thenReturn( updater );
 
-        IndexEntryUpdate update1 = add( 1, index1.schema(), "foo" );
-        IndexEntryUpdate update2 = add( 2, index1.schema(), "bar" );
+        IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index1.schema(), "bar" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
 
@@ -128,9 +128,9 @@ public class BatchingMultipleIndexPopulatorTest
         when( populator2.newPopulatingUpdater( any() ) ).thenReturn( updater2 );
 
         batchingPopulator.indexAllNodes();
-        IndexEntryUpdate update1 = add( 1, index1.schema(), "foo" );
-        IndexEntryUpdate update2 = add( 2, index42.schema(), "bar" );
-        IndexEntryUpdate update3 = add( 3, index1.schema(), "baz" );
+        IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
+        IndexEntryUpdate<?> update2 = add( 2, index42.schema(), "bar" );
+        IndexEntryUpdate<?> update3 = add( 3, index1.schema(), "baz" );
         batchingPopulator.queue( update1 );
         batchingPopulator.queue( update2 );
         batchingPopulator.queue( update3 );
@@ -437,10 +437,9 @@ public class BatchingMultipleIndexPopulatorTest
         }
 
         @Override
-        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+        public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                 long currentlyIndexedNodeId )
         {
-
         }
 
         @Override
@@ -452,7 +451,6 @@ public class BatchingMultipleIndexPopulatorTest
         @Override
         public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
         {
-
         }
     }
 }

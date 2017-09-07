@@ -70,7 +70,7 @@ public class NonUniqueLuceneIndexPopulator extends LuceneIndexPopulator
     }
 
     @Override
-    public void includeSample( IndexEntryUpdate update )
+    public void includeSample( IndexEntryUpdate<?> update )
     {
         if ( updateSampling )
         {

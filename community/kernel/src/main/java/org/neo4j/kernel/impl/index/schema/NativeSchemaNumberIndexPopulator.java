@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.concurrent.Work;
@@ -106,7 +106,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     }
 
     @Override
-    public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
+    public void add( List<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException, IOException
     {
         applyWithWorkSync( updates );
     }
@@ -124,10 +124,10 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         return new IndexUpdater()
         {
             private boolean closed;
-            private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            private final List<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
-            public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
             {
                 assertOpen();
                 updates.add( update );
@@ -179,7 +179,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         }
     }
 
-    private void applyWithWorkSync( Collection<? extends IndexEntryUpdate<?>> updates ) throws IOException
+    private void applyWithWorkSync( List<? extends IndexEntryUpdate<?>> updates ) throws IOException
     {
         try
         {
@@ -256,7 +256,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             this.conflictDetectingValueMerger = conflictDetectingValueMerger;
         }
 
-        public void process( IndexEntryUpdate indexEntryUpdate ) throws Exception
+        public void process( IndexEntryUpdate<?> indexEntryUpdate ) throws Exception
         {
             NativeSchemaNumberIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
         }
@@ -265,9 +265,9 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     private static class IndexUpdateWork<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
             implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
     {
-        private final Collection<? extends IndexEntryUpdate<?>> updates;
+        private final List<? extends IndexEntryUpdate<?>> updates;
 
-        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates )
+        IndexUpdateWork( List<? extends IndexEntryUpdate<?>> updates )
         {
             this.updates = updates;
         }
@@ -275,7 +275,8 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         @Override
         public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork<KEY,VALUE> work )
         {
-            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
+            List<IndexEntryUpdate<?>> combined = new ArrayList<>( updates.size() + work.updates.size() );
+            combined.addAll( updates );
             combined.addAll( work.updates );
             return new IndexUpdateWork<>( combined );
         }
@@ -283,6 +284,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
         @Override
         public void apply( IndexUpdateApply<KEY,VALUE> indexUpdateApply ) throws Exception
         {
+            updates.sort( BY_VALUE_COMPARATOR );
             for ( IndexEntryUpdate<?> indexEntryUpdate : updates )
             {
                 indexUpdateApply.process( indexEntryUpdate );

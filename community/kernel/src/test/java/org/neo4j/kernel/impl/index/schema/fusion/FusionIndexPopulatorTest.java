@@ -23,7 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -181,7 +181,7 @@ public class FusionIndexPopulatorTest
     private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, IndexPopulator wrongPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
-        Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = asList( add( numberValues ) );
+        List<IndexEntryUpdate<LabelSchemaDescriptor>> update = asList( add( numberValues ) );
         fusionIndexPopulator.add( update );
         verify( correctPopulator, times( 1 ) ).add( update );
         verify( wrongPopulator, times( 0 ) ).add( update );

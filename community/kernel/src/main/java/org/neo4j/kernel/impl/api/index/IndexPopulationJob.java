@@ -162,7 +162,7 @@ public class IndexPopulationJob implements Runnable
      *
      * @param update {@link IndexEntryUpdate} to queue.
      */
-    public void update( IndexEntryUpdate update )
+    public void update( IndexEntryUpdate<?> update )
     {
         multiPopulator.queue( update );
     }

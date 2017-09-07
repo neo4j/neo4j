@@ -35,7 +35,7 @@ public abstract class DelegatingIndexUpdater implements IndexUpdater
     }
 
     @Override
-    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         delegate.process( update );
     }

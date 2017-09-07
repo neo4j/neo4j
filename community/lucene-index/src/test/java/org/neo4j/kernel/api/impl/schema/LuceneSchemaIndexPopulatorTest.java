@@ -256,17 +256,17 @@ public class LuceneSchemaIndexPopulatorTest
         }
     }
 
-    private IndexEntryUpdate add( long nodeId, Object value )
+    private IndexEntryUpdate<?> add( long nodeId, Object value )
     {
         return IndexQueryHelper.add( nodeId, index.schema(), value );
     }
 
-    private IndexEntryUpdate change( long nodeId, Object valueBefore, Object valueAfter )
+    private IndexEntryUpdate<?> change( long nodeId, Object valueBefore, Object valueAfter )
     {
         return IndexQueryHelper.change( nodeId, index.schema(), valueBefore, valueAfter );
     }
 
-    private IndexEntryUpdate remove( long nodeId, Object removedValue )
+    private IndexEntryUpdate<?> remove( long nodeId, Object removedValue )
     {
         return IndexQueryHelper.remove( nodeId, index.schema(), removedValue );
     }
@@ -305,13 +305,13 @@ public class LuceneSchemaIndexPopulatorTest
 
     private static void updatePopulator(
             IndexPopulator populator,
-            Iterable<IndexEntryUpdate> updates,
+            Iterable<IndexEntryUpdate<?>> updates,
             PropertyAccessor accessor )
             throws IOException, IndexEntryConflictException
     {
         try ( IndexUpdater updater = populator.newPopulatingUpdater( accessor ) )
         {
-            for ( IndexEntryUpdate update :  updates )
+            for ( IndexEntryUpdate<?> update :  updates )
             {
                 updater.process( update );
             }

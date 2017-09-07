@@ -37,9 +37,9 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 public class UpdateCapturingIndexAccessor implements IndexAccessor
 {
     private final IndexAccessor actual;
-    private final Collection<IndexEntryUpdate> updates = new ArrayList<>();
+    private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
-    public UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate> initialUpdates )
+    public UpdateCapturingIndexAccessor( IndexAccessor actual, Collection<IndexEntryUpdate<?>> initialUpdates )
     {
         this.actual = actual;
         if ( initialUpdates != null )
@@ -101,7 +101,7 @@ public class UpdateCapturingIndexAccessor implements IndexAccessor
         actual.verifyDeferredConstraints( propertyAccessor );
     }
 
-    public Collection<IndexEntryUpdate> snapshot()
+    public Collection<IndexEntryUpdate<?>> snapshot()
     {
         return new ArrayList<>( updates );
     }
