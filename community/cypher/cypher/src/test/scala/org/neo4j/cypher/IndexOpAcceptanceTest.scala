@@ -28,6 +28,8 @@ import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
@@ -111,8 +113,9 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     } finally {
       tx.close()
     }
-    val indexDirectory = graph.getDependencyResolver.resolveDependency( classOf[SchemaIndexProviderMap] )
-            .getDefaultProvider.directoryStructure.directoryForIndex( 1 )
+    
+    val indexDirectory = NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure( storeDir )
+        .forProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ).directoryForIndex( 1 )
     graph.shutdown()
 
     val stream = new FileOutputStream( new File( indexDirectory, "failure-message" ) )
