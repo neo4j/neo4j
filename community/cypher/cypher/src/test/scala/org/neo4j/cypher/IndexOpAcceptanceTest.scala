@@ -26,6 +26,7 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
@@ -110,9 +111,11 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     } finally {
       tx.close()
     }
+    val indexDirectory = graph.getDependencyResolver.resolveDependency( classOf[SchemaIndexProviderMap] )
+            .getDefaultProvider.directoryStructure.directoryForIndex( 1 )
     graph.shutdown()
 
-    val stream = new FileOutputStream("target/test-data/test-impermanent-db/schema/index/lucene/1/failure-message")
+    val stream = new FileOutputStream( new File( indexDirectory, "failure-message" ) )
     stream.write(65)
     stream.close()
 
