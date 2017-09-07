@@ -61,35 +61,46 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new FusionIndexPopulator(
-                nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector );
+        if ( useFusionIndex( descriptor ) )
+        {
+            return new FusionIndexPopulator(
+                    nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                    luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector );
+        }
+        return luceneProvider.getPopulator( indexId, descriptor, samplingConfig );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
+        if ( useFusionIndex( descriptor ) )
+        {
         return new FusionIndexAccessor(
                 nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
                 luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector );
+        }
+        return luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig );
     }
 
     @Override
-    public String getPopulationFailure( long indexId ) throws IllegalStateException
+    public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
     {
         String nativeFailure = null;
-        try
+        if ( useFusionIndex( descriptor ) )
         {
-            nativeFailure = nativeProvider.getPopulationFailure( indexId );
-        }
-        catch ( IllegalStateException e )
-        {   // Just catch
+            try
+            {
+                nativeFailure = nativeProvider.getPopulationFailure( indexId, descriptor );
+            }
+            catch ( IllegalStateException e )
+            {   // Just catch
+            }
         }
         String luceneFailure = null;
         try
         {
-            luceneFailure = luceneProvider.getPopulationFailure( indexId );
+            luceneFailure = luceneProvider.getPopulationFailure( indexId, descriptor );
         }
         catch ( IllegalStateException e )
         {   // Just catch
@@ -105,20 +116,24 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
-        InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
-        InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
-        if ( nativeState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
+        if ( useFusionIndex( descriptor ) )
         {
-            // One of the state is FAILED, the whole state must be considered FAILED
-            return InternalIndexState.FAILED;
+            InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
+            InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
+            if ( nativeState == InternalIndexState.FAILED || luceneState == InternalIndexState.FAILED )
+            {
+                // One of the state is FAILED, the whole state must be considered FAILED
+                return InternalIndexState.FAILED;
+            }
+            if ( nativeState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
+            {
+                // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
+                return InternalIndexState.POPULATING;
+            }
+            // This means that both states are ONLINE
+            return nativeState;
         }
-        if ( nativeState == InternalIndexState.POPULATING || luceneState == InternalIndexState.POPULATING )
-        {
-            // No state is FAILED and one of the state is POPULATING, the whole state must be considered POPULATING
-            return InternalIndexState.POPULATING;
-        }
-        // This means that both states are ONLINE
-        return nativeState;
+        return luceneProvider.getInitialState( indexId, descriptor );
     }
 
     @Override
@@ -134,5 +149,10 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
                 first.indexSize() + other.indexSize(),
                 first.uniqueValues() + other.uniqueValues(),
                 first.sampleSize() + other.sampleSize() );
+    }
+
+    private boolean useFusionIndex( IndexDescriptor descriptor )
+    {
+        return descriptor.schema().getPropertyIds().length == 1;
     }
 }

@@ -533,9 +533,9 @@ public class SchemaIndexHaIT
         }
 
         @Override
-        public String getPopulationFailure( long indexId ) throws IllegalStateException
+        public String getPopulationFailure( long indexId, IndexDescriptor descriptor ) throws IllegalStateException
         {
-            return delegate.getPopulationFailure( indexId );
+            return delegate.getPopulationFailure( indexId, descriptor );
         }
     }
 

@@ -402,7 +402,7 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        verify( provider ).getPopulationFailure( 3 );
+        verify( provider ).getPopulationFailure( 3, failedIndex.getIndexDescriptor() );
         logProvider.assertAtLeastOnce(
                 logMatch.debug( "IndexingService.start: index 1 on :LabelOne(propertyOne) is ONLINE" ),
                 logMatch.debug( "IndexingService.start: index 2 on :LabelOne(propertyTwo) is POPULATING" ),
@@ -418,9 +418,7 @@ public class IndexingServiceTest
         SchemaIndexProvider.Descriptor otherDescriptor = new SchemaIndexProvider.Descriptor(
                 otherProviderKey, "no-version" );
         IndexRule rule = indexRule( 1, 2, 3, otherDescriptor );
-        IndexingService indexing = newIndexingServiceWithMockedDependencies(
-                mock( IndexPopulator.class ), mock( IndexAccessor.class ),
-                new DataUpdates(), rule );
+        newIndexingServiceWithMockedDependencies( mock( IndexPopulator.class ), mock( IndexAccessor.class ), new DataUpdates(), rule );
 
         // WHEN trying to start up and initialize it with an index from provider Y
         try
