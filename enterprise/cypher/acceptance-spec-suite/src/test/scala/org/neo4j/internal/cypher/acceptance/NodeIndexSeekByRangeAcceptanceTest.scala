@@ -38,8 +38,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     graph.createIndex("Person", "age")
 
     // When
-    val result = succeedWith(Configs.Interpreted,
-      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486378 RETURN p")
+    val result = executeWith(Configs.Interpreted, "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486378 RETURN p")
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -54,8 +53,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     graph.createIndex("Person", "age")
 
     // When
-    val result = succeedWith(Configs.Interpreted,
-      "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486379 RETURN p")
+    val result = executeWith(Configs.Interpreted, "MATCH (p:Person) USING INDEX p:Person(age) WHERE p.age > 5987523281782486379 RETURN p")
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -77,7 +75,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (l:Location) WHERE l.name STARTS WITH 'Lon' RETURN l"
 
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
@@ -94,7 +92,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |CREATE (L:Location {name: toUpper(l.name)})
         |RETURN L.name AS NAME""".stripMargin
 
-    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("NAME" -> "LONDON")))
@@ -120,7 +118,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (l:Location) WHERE l.name STARTS WITH 'Lon' RETURN l"
 
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("l" -> london)))
@@ -144,12 +142,11 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     graph.createIndex("Address", "prop")
 
     // Add an uninteresting predicate using a parameter to stop autoparameterization from happening
-    val result = succeedWith(Configs.Interpreted,
-      """MATCH (a:Address)
-        |WHERE 43 = {apa}
-        |  AND a.prop STARTS WITH 'w'
-        |  AND a.prop STARTS WITH 'www'
-        |RETURN a""".stripMargin, "apa" -> 43)
+    val result = executeWith(Configs.Interpreted, """MATCH (a:Address)
+            |WHERE 43 = {apa}
+            |  AND a.prop STARTS WITH 'w'
+            |  AND a.prop STARTS WITH 'www'
+            |RETURN a""".stripMargin, params = Map("apa" -> 43))
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -172,7 +169,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     graph.createIndex("Address", "prop")
 
-    val result = succeedWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
+    val result = executeWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -195,7 +192,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     graph.createConstraint("Address", "prop")
 
-    val result = succeedWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
+    val result = executeWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should use(UniqueIndexSeekByRange.name)
     result.toList should equal(List(Map("a" -> a1), Map("a" -> a2)))
@@ -224,7 +221,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop < 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -259,7 +256,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE NOT n.prop >= 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -296,7 +293,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop <= 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -335,7 +332,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE NOT n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -373,7 +370,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop > 5 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -407,7 +404,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE NOT n.prop <= 5 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -441,7 +438,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= 5 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -475,7 +472,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE NOT n.prop < 5 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     val values = result.columnAs[Number]("prop").toSeq
@@ -507,7 +504,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop < '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(Seq("", "-5", "0", "10", "14whatever"))
@@ -536,7 +533,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop <= '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.columnAs[String]("prop").toSet should equal(Set("", "-5", "0", "10", "15", "14whatever"))
@@ -567,7 +564,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop > '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(Seq(smallValue, "5", "5"))
@@ -598,7 +595,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(Seq("15", smallValue, "5", "5"))
@@ -628,7 +625,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= '15' AND n.prop2 > 5 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
 
@@ -653,7 +650,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop <= 10 AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -677,7 +674,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop <= null RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -707,7 +704,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >=5 AND n.prop < 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -743,7 +740,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= 0 AND n.prop >=5 AND n.prop < 10 AND n.prop < 100 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -776,7 +773,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop < '15' AND n.prop >= '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -804,7 +801,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop < null RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -834,7 +831,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= '10' AND n.prop < '15' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -868,7 +865,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop >= '10' AND n.prop < '15' AND n.prop <= '14whatever' RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should use(IndexSeekByRange.name)
@@ -891,7 +888,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result should (use(IndexSeekByRange.name) and be(empty))
@@ -910,7 +907,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop > '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     // When
-    val result = succeedWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.columnAs[String]("prop").toList should equal(List.empty)
@@ -929,19 +926,14 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= '1' AND n.prop > 10 RETURN n.prop AS prop"
 
-//    an[IllegalArgumentException] should be thrownBy {
-//      succeedWithREMOVE(TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted), query).toList
-//    }
-
-    succeedWith(Configs.Interpreted, s"EXPLAIN $query") should use(IndexSeekByRange.name)
+    executeWith(Configs.Interpreted, s"EXPLAIN $query") should use(IndexSeekByRange.name)
   }
 
   test("should refuse to execute index seeks using inequalities over incomparable types (detected at compile time)") {
     // Given
     val query = "MATCH (n:Label) WHERE n.prop >= [1, 2, 3] RETURN n.prop AS prop"
-
     a [SyntaxException] should be thrownBy {
-      succeedWith(Configs.Interpreted, query).toList
+      executeWith(Configs.AbsolutelyAll, query).toList
     }
   }
 
@@ -955,10 +947,12 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
     an[IllegalArgumentException] should be thrownBy {
-      succeedWith(Configs.Interpreted, query, "param" -> Array[Int](1, 2, 3)).toList
+      executeWith(Configs.AbsolutelyAll, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
     }
 
-    succeedWith(Configs.Interpreted, s"EXPLAIN $query") should use(IndexSeekByRange.name)
+    val result = executeWith(Configs.Interpreted, s"EXPLAIN $query")
+    result should use(IndexSeekByRange.name)
+    result.toList should be(empty)
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {
@@ -970,7 +964,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} AND n.prop < null RETURN n.prop AS prop"
 
-    succeedWith(Configs.Interpreted, query, "param" -> Array[Int](1, 2, 3)) should (use(IndexSeekByRange.name) and be(empty))
+    executeWith(Configs.Interpreted, query, params = Map("param" -> Array[Int](1, 2, 3))) should (use(IndexSeekByRange.name) and be(empty))
   }
 
   test("should plan range index seeks matching characters against properties (coerced to string wrt the inequality)") {
@@ -988,7 +982,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = succeedWith(Configs.Interpreted, query, "param" -> matchingChar)
+    val result = executeWith(Configs.Interpreted, query, params = Map("param" -> matchingChar))
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
@@ -1009,7 +1003,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = succeedWith(Configs.Interpreted, query, "param" -> matchingChar.toString)
+    val result = executeWith(Configs.Interpreted, query, params = Map("param" -> matchingChar.toString))
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
@@ -1024,7 +1018,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop < 10 CREATE () RETURN n.prop"
 
-    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query, ignorePlans = Configs.AbsolutelyAll)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     result should use(IndexSeekByRange.name)
     result.toList should equal(List(Map("n.prop" -> 1), Map("n.prop" -> 5)))
@@ -1036,7 +1030,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     // Then
     result.toList should equal(List(Map("c" -> size / 2)))
@@ -1049,7 +1043,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     // Then
     result.toList should equal(List(Map("c" -> size / 2)))
@@ -1062,7 +1056,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     // Then
     result.toList should equal(List(Map("c" -> size)))
@@ -1075,7 +1069,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     // Then
     assert(size > 20)
@@ -1089,7 +1083,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query)
 
     // Then
     assert(size > 20)

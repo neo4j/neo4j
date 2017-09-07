@@ -132,10 +132,9 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
 
     // Then
-    a[CypherExecutionException] should be thrownBy {
-      succeedWith(Configs.AbsolutelyAll,
-        "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
-    }
+    val query = "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY"
+    val errorMessage = "Both Node(0) and Node(2) have the label `User` and properties `firstname` = 'Joe', `lastname` = 'Soap'"
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3, query, errorMessage)
   }
 
   test("trying to add duplicate node when node key constraint exists") {
@@ -288,8 +287,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val config = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    succeedWith(config,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
+    executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines,
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     graph.inTx {
@@ -306,15 +305,15 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    succeedWith(configWhen,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
+    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines,
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-    succeedWith(configThen,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
+    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
   }
 
   test("Should be able to remove label when node key constraint") {
@@ -326,14 +325,14 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    succeedWith(configWhen,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
+    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines,
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-    succeedWith(configThen,
-      "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines) shouldBe empty
+    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
   }
 }
