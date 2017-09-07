@@ -62,10 +62,14 @@ public class Monitors
     // while look-ups and reads are performed concurrently. The methodMonitorListerners lists (the map values) are
     // read concurrently by the proxies, while changing the listener set always produce new lists that atomically
     // replace the ones already in the methodMonitorListeners map.
+
     /** Monitor interface method -> Listeners */
     private final Map<Method, List<MonitorListenerInvocationHandler>> methodMonitorListeners = new ConcurrentHashMap<>();
 
-    /** Monitor interface -> Has Listeners? */
+    /**
+     * Monitor interface -> Has Listeners?
+     * Used to determine if recalculation of listeners is needed
+     */
     private final Map<Class<?>,AtomicBoolean> monitoredInterfaces = new ConcurrentHashMap<>();
 
     /**
@@ -73,10 +77,6 @@ public class Monitors
      * Used to add listeners to monitors that are added after the listener
      */
     private final Map<Predicate<Method>, MonitorListenerInvocationHandler> monitorListeners = new ConcurrentHashMap<>();
-
-    public Monitors()
-    {
-    }
 
     public synchronized <T> T newMonitor( Class<T> monitorClass, Class<?> owningClass, String... tags )
     {
@@ -203,6 +203,11 @@ public class Monitors
         }
     }
 
+    private interface MonitorListenerInvocationHandler
+    {
+        void invoke( Object proxy, Method method, Object[] args, String... tags ) throws Throwable;
+    }
+
     private static class UntaggedMonitorListenerInvocationHandler implements MonitorListenerInvocationHandler
     {
         private final Object monitorListener;
@@ -284,7 +289,7 @@ public class Monitors
                     }
                     catch ( Throwable e )
                     {
-                        // TODO: something?! Ingore, rethrow etc.
+                        // TODO: something?! Ignore, rethrow etc.
                     }
                 }
             }
