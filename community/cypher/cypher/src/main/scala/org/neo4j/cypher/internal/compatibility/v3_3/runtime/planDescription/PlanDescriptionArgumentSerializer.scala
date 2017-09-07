@@ -41,7 +41,7 @@ object PlanDescriptionArgumentSerializer {
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
       case LegacyIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
-      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${p.asCanonicalStringVal})"
+      case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${if (p == null) "null" else p.asCanonicalStringVal})"
       case InequalityIndex(label, property, bounds) => s":$label($property) ${bounds.mkString(", ")}"
       case LabelName(label) => s":$label"
       case KeyNames(keys) => keys.map(removeGeneratedNames).mkString(SEPARATOR)
