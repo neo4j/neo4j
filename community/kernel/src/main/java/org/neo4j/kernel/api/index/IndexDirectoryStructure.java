@@ -32,7 +32,7 @@ import static org.neo4j.io.fs.FileUtils.path;
  * {@link #directoryForIndex(long)} method.
  *
  * These instances are created from a {@link Factory} which typically gets passed into a {@link SchemaIndexProvider} constructor,
- * which then a {@link IndexDirectoryStructure} given its {@link Descriptor}.
+ * which then creates a {@link IndexDirectoryStructure} given its {@link Descriptor}.
  */
 public abstract class IndexDirectoryStructure
 {
@@ -76,7 +76,7 @@ public abstract class IndexDirectoryStructure
      * @param databaseStoreDir database store directory, i.e. {@code db} in the example above, where e.g. {@code nodestore} lives.
      * @return the base directory of schema indexing.
      */
-    static final File baseSchemaIndexFolder( File databaseStoreDir )
+    static File baseSchemaIndexFolder( File databaseStoreDir )
     {
         return path( databaseStoreDir, "schema", "index" );
     }
@@ -184,7 +184,7 @@ public abstract class IndexDirectoryStructure
     public static final Factory NONE = descriptor -> NO_DIRECTORY_STRUCTURE;
 
     /**
-     * Returns root directory. Must be above all sub-directories returned from {@link #directoryForIndex(long)}.
+     * Returns root directory. Must be parent (one or more steps) to all sub-directories returned from {@link #directoryForIndex(long)}.
      * Returns something equivalent to:
      *
      * <pre>

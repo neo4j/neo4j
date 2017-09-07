@@ -250,7 +250,7 @@ public class FusionSchemaIndexProviderTest
 
     private FusionSchemaIndexProvider fusionProvider()
     {
-        return new FusionSchemaIndexProvider( NONE, nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10, NONE );
     }
 
     private void setInitialState( SchemaIndexProvider mockedProvider, InternalIndexState state )

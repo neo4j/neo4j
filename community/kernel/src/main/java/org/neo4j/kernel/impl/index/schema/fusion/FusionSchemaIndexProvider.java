@@ -50,9 +50,9 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
 
-    public FusionSchemaIndexProvider( IndexDirectoryStructure.Factory directoryStructure,
-            SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
-            SchemaIndexProvider.Descriptor descriptor, int priority )
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider,
+            SchemaIndexProvider luceneProvider, Selector selector, SchemaIndexProvider.Descriptor descriptor,
+            int priority, IndexDirectoryStructure.Factory directoryStructure )
     {
         super( descriptor, priority, directoryStructure );
         this.nativeProvider = nativeProvider;

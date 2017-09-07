@@ -49,7 +49,6 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
     public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
-    private static final String INDEX_FILE_NAME = "index";
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
@@ -171,7 +170,12 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
     private File nativeIndexFileFromIndexId( long indexId )
     {
-        return new File( directoryStructure().directoryForIndex( indexId ), INDEX_FILE_NAME );
+        return new File( directoryStructure().directoryForIndex( indexId ), indexFileName( indexId ) );
+    }
+
+    private static String indexFileName( long indexId )
+    {
+        return "index-" + indexId;
     }
 
     private class ReadOnlyMetaNumberLayout extends Layout.ReadOnlyMetaLayout
