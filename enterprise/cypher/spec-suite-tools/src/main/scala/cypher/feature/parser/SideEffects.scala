@@ -49,7 +49,7 @@ object SideEffects {
         v.copy(propsCreated = values.get(index).toInt)
       case (v, (DELETED_PROPERTIES, index)) =>
         v.copy(propsDeleted = values.get(index).toInt)
-      case (sideEffect, _) => throw InvalidFeatureFormatException(
+      case (_, (sideEffect, _)) => throw InvalidFeatureFormatException(
         s"Invalid side effect: $sideEffect. Valid ones are: ${ALL.mkString(",")}")
     }
 
