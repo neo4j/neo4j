@@ -75,6 +75,12 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         super( KEY );
     }
 
+    @Deprecated
+    public Class<OnlineBackupSettings> getSettingsClass()
+    {
+        throw new AssertionError();
+    }
+
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
