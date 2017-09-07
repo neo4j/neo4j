@@ -59,6 +59,7 @@ import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_
 import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.disable_middleware_logging;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_advertised_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
@@ -216,6 +217,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         configureSsl( networkConfig, sslPolicy, logProvider );
 
+        networkConfig.setPublicAddress( config.get( discovery_advertised_address ).toString() );
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
