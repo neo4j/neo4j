@@ -19,20 +19,19 @@
  */
 package org.neo4j.bolt;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.HostnamePort;
@@ -50,6 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_log_filename;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;
@@ -148,7 +148,16 @@ public class BoltMessageLoggingIT
         db.setConfig( bolt_logging_enabled, TRUE );
         db.setConfig( bolt_log_filename, customBoltLogFile.toString() );
         db.ensureStarted();
-        driver = newDriver();
+        try
+        {
+            driver = newDriver();
+        }
+        catch ( Exception e )
+        {
+            String contents = readFile( customBoltLogFile );
+            System.out.println( contents );
+            assertThat( contents, containsString( "S: FAILURE" ) );
+        }
 
         assertTrue( fs.fileExists( customBoltLogFile ) );
 
@@ -158,7 +167,7 @@ public class BoltMessageLoggingIT
             session.run( query ).consume();
             fail( "Should have failed" );
         }
-        catch ( ClientException e )
+        catch ( Exception e )
         {
             String contents = readFile( customBoltLogFile );
             assertThat( contents, containsString( "S: FAILURE" ) );

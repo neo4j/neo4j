@@ -22,8 +22,7 @@ package org.neo4j.bolt.logging;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -47,8 +46,8 @@ public class BoltMessageLog extends LifecycleAdapter
     {
         RotatingFileOutputStreamSupplier outputStreamSupplier = new RotatingFileOutputStreamSupplier( fileSystem,
                 logFile, ROTATION_THRESHOLD_BYTES, ROTATION_DELAY_MS, MAX_ARCHIVES, executor );
-        DateFormat iso8601DateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" );
-        FormattedLog formattedLog = FormattedLog.withUTCTimeZone().withDateFormat( iso8601DateFormat )
+        DateTimeFormatter isoDateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
+        FormattedLog formattedLog = FormattedLog.withUTCTimeZone().withDateTimeFormatter( isoDateTimeFormatter )
                 .toOutputStream( outputStreamSupplier );
         formattedLog.setLevel( Level.DEBUG );
 

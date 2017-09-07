@@ -32,17 +32,13 @@ import org.neo4j.function.Suppliers;
 
 import static java.lang.String.format;
 
-import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-import static org.neo4j.logging.FormattedLog.SIMPLE_DATE_FORMAT;
-
 public class FormattedLogProviderTest
 {
-    private static final Date FIXED_DATE = new Date( 467612604343L );
-
     @Test
     public void shouldReturnSameLoggerForSameClass()
     {
@@ -77,7 +73,7 @@ public class FormattedLogProviderTest
         log.info( "Terminator 2" );
 
         // Then
-        assertThat( writer.toString(), equalTo( format( "1984-10-26 04:23:24.343+0000 INFO [j.i.StringWriter] Terminator 2%n" ) ) );
+        assertThat( writer.toString(), endsWith( format( "INFO [j.i.StringWriter] Terminator 2%n" ) ) );
     }
 
     @Test
@@ -134,8 +130,7 @@ public class FormattedLogProviderTest
 
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer, Map<String, Level> levels )
     {
-        return new FormattedLogProvider(
-                Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                FormattedLog.UTC, SIMPLE_DATE_FORMAT, true, levels, Level.INFO, true );
+        return new FormattedLogProvider( Suppliers.singleton( new PrintWriter( writer ) ),
+                FormattedLogger.UTC, true, levels, Level.INFO, true );
     }
 }

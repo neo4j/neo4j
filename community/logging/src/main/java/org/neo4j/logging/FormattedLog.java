@@ -24,9 +24,8 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -41,23 +40,21 @@ import org.neo4j.function.Suppliers;
  */
 public class FormattedLog extends AbstractLog
 {
-    static final Supplier<Date> DEFAULT_CURRENT_DATE_SUPPLIER = Date::new;
     static final Function<OutputStream, PrintWriter> OUTPUT_STREAM_CONVERTER =
             outputStream -> new PrintWriter( new OutputStreamWriter( outputStream, StandardCharsets.UTF_8 ) );
-    static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
-    public static final DateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSSZ" );
 
     /**
      * A Builder for a {@link FormattedLog}
      */
     public static class Builder
     {
-        private TimeZone timezone = UTC;
+        private TimeZone timezone = FormattedLogger.UTC;
         private Object lock = this;
         private String category;
         private Level level = Level.INFO;
         private boolean autoFlush = true;
-        private DateFormat dateFormat = SIMPLE_DATE_FORMAT;
+        private Function<TimeZone, ZonedDateTime> dateTimeFunction = FormattedLogger.DEFAULT_CURRENT_DATE_TIME;
+        private DateTimeFormatter dateTimeFormatter = FormattedLogger.DATE_TIME_FORMATTER;
 
         private Builder()
         {
@@ -70,7 +67,7 @@ public class FormattedLog extends AbstractLog
          */
         public Builder withUTCTimeZone()
         {
-            return withTimeZone( UTC );
+            return withTimeZone( FormattedLogger.UTC );
         }
 
         /**
@@ -88,12 +85,12 @@ public class FormattedLog extends AbstractLog
         /**
          * Set the dateFormat for datestamps in the log
          *
-         * @param dateFormat the dateFormat to use for datestamps
+         * @param dateTimeFormatter the dateFormat to use for datestamps
          * @return this builder
          */
-        public Builder withDateFormat( DateFormat dateFormat )
+        public Builder withDateTimeFormatter( DateTimeFormatter dateTimeFormatter )
         {
-            this.dateFormat = dateFormat;
+            this.dateTimeFormatter = dateTimeFormatter;
             return this;
         }
 
@@ -130,6 +127,18 @@ public class FormattedLog extends AbstractLog
         public Builder withLogLevel( Level level )
         {
             this.level = level;
+            return this;
+        }
+
+        /**
+         * Use the specified function
+         *
+         * @param dateTimeFunction the log level to use as a default
+         * @return this builder
+         */
+        public Builder withDateTimeFormatterFunction( Function<TimeZone, ZonedDateTime> dateTimeFunction )
+        {
+            this.dateTimeFunction = dateTimeFunction;
             return this;
         }
 
@@ -198,19 +207,17 @@ public class FormattedLog extends AbstractLog
          */
         public FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLog( DEFAULT_CURRENT_DATE_SUPPLIER, writerSupplier,
-                    timezone, dateFormat, lock, category, level, autoFlush );
+            return new FormattedLog( writerSupplier, timezone, lock, category, level, autoFlush,
+                    dateTimeFormatter, dateTimeFunction );
         }
     }
 
-    private final Supplier<Date> currentDateSupplier;
     private final Supplier<PrintWriter> writerSupplier;
-    private final TimeZone timezone;
-    private final DateFormat dateFormat;
-    private final Object lock;
+    final TimeZone timezone;
+    final Object lock;
     private final String category;
     private final AtomicReference<Level> levelRef;
-    private final boolean autoFlush;
+    final boolean autoFlush;
     private final Logger debugLogger;
     private final Logger infoLogger;
     private final Logger warnLogger;
@@ -341,19 +348,28 @@ public class FormattedLog extends AbstractLog
     }
 
     protected FormattedLog(
-            Supplier<Date> currentDateSupplier,
             Supplier<PrintWriter> writerSupplier,
             TimeZone timezone,
-            DateFormat dateFormat,
             Object maybeLock,
             String category,
             Level level,
             boolean autoFlush )
     {
-        this.currentDateSupplier = currentDateSupplier;
+        this( writerSupplier, timezone, maybeLock, category, level, autoFlush,
+                FormattedLogger.DATE_TIME_FORMATTER, FormattedLogger.DEFAULT_CURRENT_DATE_TIME );
+    }
+
+    protected FormattedLog(
+            Supplier<PrintWriter> writerSupplier,
+            TimeZone timezone,
+            Object maybeLock,
+            String category,
+            Level level,
+            boolean autoFlush,
+            DateTimeFormatter dateTimeFormatter, Function<TimeZone, ZonedDateTime> zoneIdZonedDateTimeFunction )
+    {
         this.writerSupplier = writerSupplier;
         this.timezone = timezone;
-        this.dateFormat = dateFormat;
         this.lock = ( maybeLock != null ) ? maybeLock : this;
         this.category = category;
         this.levelRef = new AtomicReference<>( level );
@@ -364,10 +380,14 @@ public class FormattedLog extends AbstractLog
         String warnPrefix = ( category != null && !category.isEmpty() ) ? "WARN [" + category + "]" : "WARN ";
         String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + "]" : "ERROR";
 
-        this.debugLogger = new FormattedLogger( writerSupplier, debugPrefix, dateFormat );
-        this.infoLogger = new FormattedLogger( writerSupplier, infoPrefix, dateFormat );
-        this.warnLogger = new FormattedLogger( writerSupplier, warnPrefix, dateFormat );
-        this.errorLogger = new FormattedLogger( writerSupplier, errorPrefix, dateFormat );
+        this.debugLogger = new FormattedLogger( this, writerSupplier, debugPrefix, dateTimeFormatter,
+                zoneIdZonedDateTimeFunction );
+        this.infoLogger = new FormattedLogger( this, writerSupplier, infoPrefix, dateTimeFormatter,
+                zoneIdZonedDateTimeFunction );
+        this.warnLogger = new FormattedLogger( this, writerSupplier, warnPrefix, dateTimeFormatter,
+                zoneIdZonedDateTimeFunction );
+        this.errorLogger = new FormattedLogger( this, writerSupplier, errorPrefix, dateTimeFormatter,
+                zoneIdZonedDateTimeFunction );
     }
 
     /**
@@ -456,8 +476,8 @@ public class FormattedLog extends AbstractLog
         synchronized ( lock )
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( currentDateSupplier, Suppliers.singleton( writer ), timezone,
-                    dateFormat, lock, category, levelRef.get(), false ) );
+            consumer.accept( new FormattedLog( Suppliers.singleton( writer ), timezone,
+                    lock, category, levelRef.get(), false ) );
         }
         if ( autoFlush )
         {
@@ -465,58 +485,4 @@ public class FormattedLog extends AbstractLog
         }
     }
 
-    private class FormattedLogger extends AbstractPrintWriterLogger
-    {
-        private final String prefix;
-        private final DateFormat dateFormat;
-
-        FormattedLogger( @Nonnull Supplier<PrintWriter> writerSupplier, @Nonnull String prefix, DateFormat dateFormat )
-        {
-            super( writerSupplier, lock, autoFlush );
-            this.prefix = prefix;
-            this.dateFormat = dateFormat;
-            this.dateFormat.setTimeZone( timezone );
-        }
-
-        @Override
-        protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message )
-        {
-            lineStart( out );
-            out.write( message );
-            out.println();
-        }
-
-        @Override
-        protected void writeLog( @Nonnull PrintWriter out, @Nonnull String message, @Nonnull Throwable throwable )
-        {
-            lineStart( out );
-            out.write( message );
-            if ( throwable.getMessage() != null )
-            {
-                out.write( ' ' );
-                out.write( throwable.getMessage() );
-            }
-            out.println();
-            throwable.printStackTrace( out );
-        }
-
-        @Override
-        protected Logger getBulkLogger( @Nonnull PrintWriter out, @Nonnull Object lock )
-        {
-            return new FormattedLogger( Suppliers.singleton( out ), prefix, SIMPLE_DATE_FORMAT );
-        }
-
-        private void lineStart( PrintWriter out )
-        {
-            out.write( time() );
-            out.write( ' ' );
-            out.write( prefix );
-            out.write( ' ' );
-        }
-
-        private String time()
-        {
-            return dateFormat.format( currentDateSupplier.get() );
-        }
-    }
 }

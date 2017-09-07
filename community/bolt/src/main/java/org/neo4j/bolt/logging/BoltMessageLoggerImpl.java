@@ -67,13 +67,13 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void clientEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLogger().accept( format( "C: %s", eventName ), detailsSupplier.get() );
+        infoLogger().accept( format( "C %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
     public void clientError( String eventName, String errorMessage, Supplier<String> detailsSupplier )
     {
-        errorLoggerWithArgs( errorMessage ).accept( format( "C: <%s>", eventName ), detailsSupplier.get() );
+        errorLoggerWithArgs( errorMessage ).accept( format( "C %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
@@ -85,13 +85,13 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void serverEvent( String eventName, Supplier<String> detailsSupplier )
     {
-        infoLogger().accept( format( "S: %s", eventName ), detailsSupplier.get() );
+        infoLogger().accept( format( "S %s", eventName ), detailsSupplier.get() );
     }
 
     @Override
     public void serverError( String eventName, String errorMessage )
     {
-        errorLogger( errorMessage ).accept( format( "S: <%s>", eventName ) );
+        errorLogger( errorMessage ).accept( format( "S %s", eventName ) );
     }
 
     @Override
