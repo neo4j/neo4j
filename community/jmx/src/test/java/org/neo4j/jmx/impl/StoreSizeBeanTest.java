@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,11 +36,14 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -72,12 +76,13 @@ import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
 
 public class StoreSizeBeanTest
 {
-    private FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-    private File storeDir = new File( "" );
-    private PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( storeDir, fs );
-    private LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
-    private SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
-    private LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private final File storeDir = new File( "" );
+    private final PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( storeDir, fs );
+    private final LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
+    private final SchemaIndexProvider schemaIndexProvider = mockedSchemaIndexProvider( "providah1" );
+    private final SchemaIndexProvider schemaIndexProvider2 = mockedSchemaIndexProvider( "providah" );
+    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
 
@@ -87,6 +92,8 @@ public class StoreSizeBeanTest
         DataSourceManager dataSourceManager = new DataSourceManager();
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( schemaIndexProvider,
+                Collections.singleton( schemaIndexProvider2 ) );
 
         // Setup all dependencies
         Dependencies dependencies = new Dependencies();
@@ -94,7 +101,7 @@ public class StoreSizeBeanTest
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( physicalLogFiles );
         dependencies.satisfyDependency( legacyIndexProviderLookup );
-        dependencies.satisfyDependency( schemaIndexProvider );
+        dependencies.satisfyDependency( schemaIndexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
@@ -107,6 +114,13 @@ public class StoreSizeBeanTest
         KernelData kernelData = new DefaultKernelData( fs, mock( PageCache.class ), storeDir, Config.defaults(), db );
         ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
+    }
+
+    private SchemaIndexProvider mockedSchemaIndexProvider( String name )
+    {
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( new Descriptor( name, "1" ) );
+        return provider;
     }
 
     private void createFakeStoreDirectory() throws IOException
@@ -235,10 +249,17 @@ public class StoreSizeBeanTest
         when( indexImplementation.getIndexImplementationDirectory( any() ) ).thenReturn( legacyIndex );
         when( legacyIndexProviderLookup.all() ).thenReturn( iterable( indexImplementation ) );
 
-        // Legacy index file
-        File schemaIndex = new File( storeDir, "schemaIndex" );
-        createFileOfSize( schemaIndex, 2 );
-        when( schemaIndexProvider.getSchemaIndexStoreDirectory( any() ) ).thenReturn( schemaIndex );
+        // Schema index files
+        {
+            File schemaIndex = new File( storeDir, "schemaIndex" );
+            createFileOfSize( schemaIndex, 2 );
+            when( schemaIndexProvider.getSchemaIndexStoreDirectory( any() ) ).thenReturn( schemaIndex );
+        }
+        {
+            File schemaIndex = new File( storeDir, "schemaIndex2" );
+            createFileOfSize( schemaIndex, 3 );
+            when( schemaIndexProvider2.getSchemaIndexStoreDirectory( any() ) ).thenReturn( schemaIndex );
+        }
 
         // Label scan store
         File labelScan = new File( storeDir, "labelScanStore" );
@@ -246,7 +267,7 @@ public class StoreSizeBeanTest
         when( labelScanStore.getLabelScanStoreFile() ).thenReturn( labelScan );
 
         // Count all files
-        assertEquals( 7, storeSizeBean.getIndexStoreSize() );
+        assertEquals( 10, storeSizeBean.getIndexStoreSize() );
     }
 
     private void createFileOfSize( File file, int size ) throws IOException
