@@ -19,21 +19,23 @@
  */
 package org.neo4j.bolt;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
+
 import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.driver.v1.Config;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -57,7 +59,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -66,7 +67,6 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
@@ -78,14 +78,13 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class BoltFailuresIT
 {
-    private static final int TEST_TIMEOUT = 20_000;
+    private final TestDirectory dir = TestDirectory.testDirectory();
 
     @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 120 ) ).around( dir );
 
     private GraphDatabaseService db;
     private Driver driver;
-    private Session session;
 
     @After
     public void shutdownDb()
@@ -94,10 +93,10 @@ public class BoltFailuresIT
         {
             db.shutdown();
         }
-        IOUtils.closeAllSilently( session, driver );
+        IOUtils.closeAllSilently( driver );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenWorkerCreationFails()
     {
         WorkerFactory workerFactory = mock( WorkerFactory.class );
@@ -119,7 +118,7 @@ public class BoltFailuresIT
         }
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenMonitoredWorkerCreationFails()
     {
         ThrowingSessionMonitor sessionMonitor = new ThrowingSessionMonitor();
@@ -139,37 +138,37 @@ public class BoltFailuresIT
         }
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenInitMessageReceiveFails()
     {
         throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInMessageReceived, false );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenInitMessageProcessingFailsToStart()
     {
         throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInProcessingStarted, false );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenInitMessageProcessingFailsToComplete()
     {
         throwsWhenInitMessageFails( ThrowingSessionMonitor::throwInProcessingDone, true );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenRunMessageReceiveFails()
     {
         throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInMessageReceived );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenRunMessageProcessingFailsToStart()
     {
         throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInProcessingStarted );
     }
 
-    @Test( timeout = TEST_TIMEOUT )
+    @Test
     public void throwsWhenRunMessageProcessingFailsToComplete()
     {
         throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInProcessingDone );
