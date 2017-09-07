@@ -17,49 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index;
+package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 
 import static org.neo4j.function.Predicates.alwaysTrue;
 
 /**
- * Utilities for common operations around a {@link GBPTree}.
+ * Use {@link PageCache} to handle file operations on GBPTree file.
  */
-public class GBPTreeUtil
+public class GBPTreePageCacheFileUtil implements GBPTreeFileUtil
 {
-    /**
-     * Deletes store file backing a {@link GBPTree}.
-     *
-     * @param pageCache {@link PageCache} which manages the file.
-     * @param storeFile the {@link File} to delete.
-     * @throws NoSuchFileException if the {@code storeFile} doesn't exist according to the {@code pageCache}.
-     * @throws IOException on failure to delete existing {@code storeFile}.
-     */
-    public static void delete( PageCache pageCache, File storeFile ) throws IOException
+    private final PageCache pageCache;
+
+    public GBPTreePageCacheFileUtil( PageCache pageCache )
+    {
+        this.pageCache = pageCache;
+    }
+
+    public void deleteFile( File storeFile ) throws IOException
     {
         FileHandle fileHandle = storeFileHandle( pageCache, storeFile );
         fileHandle.delete();
     }
 
-    /**
-     * Deletes store file backing a {@link GBPTree}, if it exists according to the {@code pageCache}.
-     *
-     * @param pageCache {@link PageCache} which manages the file.
-     * @param storeFile the {@link File} to delete.
-     * @throws IOException on failure to delete existing {@code storeFile}.
-     */
-    public static void deleteIfPresent( PageCache pageCache, File storeFile ) throws IOException
+    public void deleteFileIfPresent( File storeFile ) throws IOException
     {
         try
         {
-            delete( pageCache, storeFile );
+            deleteFile( storeFile );
         }
         catch ( NoSuchFileException e )
         {
@@ -67,14 +59,7 @@ public class GBPTreeUtil
         }
     }
 
-    /**
-     * Checks whether or not {@code storeFile} exists according to {@code pageCache}.
-     *
-     * @param pageCache {@link PageCache} which manages the file.
-     * @param storeFile the {@link File} to check for existence.
-     * @return {@code true} if {@code storeFile} exists according to {@code pageCache}, otherwise {@code false}.
-     */
-    public static boolean storeFileExists( PageCache pageCache, File storeFile )
+    public boolean storeFileExists( File storeFile )
     {
         try
         {
@@ -84,6 +69,12 @@ public class GBPTreeUtil
         {
             return false;
         }
+    }
+
+    @Override
+    public void mkdirs( File dir ) throws IOException
+    {
+        pageCache.getCachedFileSystem().mkdirs( dir );
     }
 
     private static FileHandle storeFileHandle( PageCache pageCache, File storeFile ) throws IOException

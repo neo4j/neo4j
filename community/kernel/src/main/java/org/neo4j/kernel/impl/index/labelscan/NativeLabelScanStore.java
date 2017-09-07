@@ -43,7 +43,7 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.index.GBPTreeUtil;
+import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -131,6 +131,11 @@ public class NativeLabelScanStore implements LabelScanStore
     private final int pageSize;
 
     /**
+     * Used for all file operations on the gbpTree file.
+     */
+    private final GBPTreeFileUtil gbpTreeUtil;
+
+    /**
      * The index which backs this label scan store. Instantiated in {@link #init()} and considered
      * started after call to {@link #start()}.
      */
@@ -186,6 +191,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+        this.gbpTreeUtil = new GBPTreePageCacheFileUtil( pageCache );
     }
 
     /**
@@ -342,7 +348,7 @@ public class NativeLabelScanStore implements LabelScanStore
     @Override
     public boolean hasStore() throws IOException
     {
-        return GBPTreeUtil.storeFileExists( pageCache, storeFile );
+        return gbpTreeUtil.storeFileExists( storeFile );
     }
 
     @Override
@@ -402,7 +408,7 @@ public class NativeLabelScanStore implements LabelScanStore
             index.close();
             index = null;
         }
-        GBPTreeUtil.delete( pageCache, storeFile );
+        gbpTreeUtil.deleteFile( storeFile );
     }
 
     /**
