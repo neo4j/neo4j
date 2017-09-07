@@ -28,7 +28,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
@@ -49,14 +48,18 @@ import org.neo4j.shell.impl.SameJvmClient;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
@@ -1170,17 +1173,15 @@ public class AppsIT extends AbstractShellIT
         TransactionStats txStats = db.getDependencyResolver().resolveDependency( TransactionStats.class );
         assertEquals( 0, txStats.getNumberOfActiveTransactions() );
 
+        createNodeAndLockItInDifferentThread( "Person", "id", 42 );
+
         Serializable clientId = shellClient.getId();
-        Future<?> result = ForkJoinPool.commonPool().submit( () ->
+        Future<?> result = runAsync( () ->
         {
             try
             {
-                while ( txStats.getNumberOfActiveTransactions() == 0 )
-                {
-                    Thread.sleep( 10 );
-                }
-                assertEquals( 1, txStats.getNumberOfActiveTransactions() );
-
+                // await 2 active transactions: one that locked node and one that wants to update property via cypher
+                await( () -> txStats.getNumberOfActiveTransactions() == 2, 1, MINUTES );
                 shellServer.terminate( clientId );
             }
             catch ( Exception e )
@@ -1189,8 +1190,7 @@ public class AppsIT extends AbstractShellIT
             }
         } );
 
-        executeCommandExpectingException( "FOREACH(i IN range(0, " + Integer.MAX_VALUE + ") | CREATE ());",
-                "has been terminated" );
+        executeCommandExpectingException( "MATCH (p:Person {id: 42}) SET p.id = 24 RETURN p;", "has been terminated" );
         assertNull( result.get() );
     }
 
@@ -1310,4 +1310,22 @@ public class AppsIT extends AbstractShellIT
         }
         return tmpFile.toURI().toURL().toExternalForm();
     }
+
+    private void createNodeAndLockItInDifferentThread( String label, String property, Object value ) throws Exception
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label( label ) ).setProperty( property, value );
+            tx.success();
+        }
+
+        runAsync( () ->
+        {
+            Transaction tx = db.beginTx();
+            Node node = db.findNode( label( "Person" ), "id", 42L );
+            assertNotNull( node );
+            tx.acquireWriteLock( node );
+        } ).get( 1, MINUTES );
+    }
+
 }
