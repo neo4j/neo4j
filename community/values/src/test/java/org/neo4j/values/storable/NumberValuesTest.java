@@ -21,13 +21,11 @@ package org.neo4j.values.storable;
 
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.values.storable.NumberValues.MAX_LENGTH;
 import static org.neo4j.values.storable.NumberValues.hash;
 
 public class NumberValuesTest
@@ -36,14 +34,14 @@ public class NumberValuesTest
     @Test
     public void shouldHashNaN()
     {
-        assertThat( hash( Double.NaN ), equalTo( Double.hashCode( Double.NaN ) ) );
+        assertThat( hash( Double.NaN ), equalTo( hash( Float.NaN ) ) );
     }
 
     @Test
     public void shouldHashInfinite()
     {
-        assertThat( hash( Double.NEGATIVE_INFINITY ), equalTo( Double.hashCode( Double.NEGATIVE_INFINITY ) ) );
-        assertThat( hash( Double.POSITIVE_INFINITY ), equalTo( Double.hashCode( Double.POSITIVE_INFINITY ) ) );
+        assertThat( hash( Double.NEGATIVE_INFINITY ), equalTo( hash( Float.NEGATIVE_INFINITY ) ) );
+        assertThat( hash( Double.POSITIVE_INFINITY ), equalTo( hash( Float.POSITIVE_INFINITY ) ) );
     }
 
     @Test
@@ -53,98 +51,36 @@ public class NumberValuesTest
     }
 
     @Test
-    public void shouldGiveSameResultsAsBuiltInHashForInts()
+    public void shouldGiveSameResultEvenWhenArraysContainDifferentTypes()
     {
         int[] ints = new int[32];
+        long[] longs = new long[32];
+
         Random r = ThreadLocalRandom.current();
         for ( int i = 0; i < 32; i++ )
         {
-            ints[i] = r.nextInt();
+            int nextInt = r.nextInt();
+            ints[i] = nextInt;
+            longs[i] = nextInt;
         }
 
-        assertThat(hash(ints), equalTo(Arrays.hashCode( ints )));
+        assertThat( hash( ints ), equalTo( hash( longs ) ) );
     }
 
     @Test
-    public void shouldGiveSameResultsAsBuiltInHashForBytes()
+    public void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2()
     {
         byte[] bytes = new byte[32];
-        Random r = ThreadLocalRandom.current();
-        for ( int i = 0; i < 32; i++ )
-        {
-            bytes[i] = (byte)r.nextInt();
-        }
-
-        assertThat(hash(bytes), equalTo(Arrays.hashCode( bytes )));
-    }
-
-    @Test
-    public void shouldGiveSameResultsAsBuiltInHashForShorts()
-    {
         short[] shorts = new short[32];
+
         Random r = ThreadLocalRandom.current();
         for ( int i = 0; i < 32; i++ )
         {
-            shorts[i] = (short)r.nextInt();
+            byte nextByte = ((Number)(r.nextInt())).byteValue();
+            bytes[i] = nextByte;
+            shorts[i] = nextByte;
         }
 
-        assertThat(hash(shorts), equalTo(Arrays.hashCode( shorts )));
-    }
-
-    @Test
-    public void shouldGiveSameResultsAsBuiltInHashForLongs()
-    {
-        long[] longs = new long[32];
-        Random r = ThreadLocalRandom.current();
-        for ( int i = 0; i < 32; i++ )
-        {
-            longs[i] = (long)r.nextInt();
-        }
-
-        assertThat(hash(longs), equalTo(Arrays.hashCode( longs )));
-    }
-
-    @Test
-    public void shouldHandleBigIntArrays()
-    {
-        int[] big = new int[NumberValues.MAX_LENGTH + 1];
-        int[] slightlySmaller = new int[MAX_LENGTH];
-        Arrays.fill( big, 1337 );
-        Arrays.fill( slightlySmaller, 1337 );
-
-        assertThat( hash( big ), equalTo( hash( slightlySmaller ) ) );
-    }
-
-    @Test
-    public void shouldHandleBigByteArrays()
-    {
-        byte[] big = new byte[NumberValues.MAX_LENGTH + 1];
-        byte[] slightlySmaller = new byte[MAX_LENGTH];
-        Arrays.fill( big, (byte) 1337 );
-        Arrays.fill( slightlySmaller, (byte) 1337 );
-
-        assertThat( hash( big ), equalTo( hash( slightlySmaller ) ) );
-    }
-
-    @Test
-    public void shouldHandleBigShortArrays()
-    {
-        short[] big = new short[NumberValues.MAX_LENGTH + 1];
-        short[] slightlySmaller = new short[MAX_LENGTH];
-        Arrays.fill( big, (short) 1337 );
-        Arrays.fill( slightlySmaller, (short) 1337 );
-
-        assertThat( hash( big ), equalTo( hash( slightlySmaller ) ) );
-    }
-
-    @Test
-    public void shouldHandleBigLongArrays()
-    {
-        long[] big = new long[NumberValues.MAX_LENGTH + 1];
-        long[] slightlySmaller = new long[MAX_LENGTH];
-        Arrays.fill( big, 1337L );
-        Arrays.fill( slightlySmaller, 1337L );
-
-        assertThat( hash( big ), equalTo( hash( slightlySmaller ) ) );
+        assertThat( hash( bytes ), equalTo( hash( shorts ) ) );
     }
 }
