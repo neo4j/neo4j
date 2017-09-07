@@ -22,9 +22,7 @@ package cypher.feature.parser
 import java.util
 
 import cucumber.api.DataTable
-import cypher.feature.parser.matchers.{QueryStatisticsMatcher, ResultMatcher, RowMatcher, ValueMatcher}
-import org.opencypher.tools.tck.InvalidFeatureFormatException
-import org.opencypher.tools.tck.constants.TCKSideEffects._
+import cypher.feature.parser.matchers.{ResultMatcher, RowMatcher, ValueMatcher}
 
 import scala.collection.JavaConverters._
 
@@ -105,34 +103,5 @@ object paramsParser extends (String => AnyRef) {
 
   def apply(input: String): AnyRef = {
     parser.parseParameter(input, listener)
-  }
-}
-
-/**
-  * Parses the expected side effects of a Cucumber feature scenario, constructing
-  * a matcher that will match a {@link org.neo4j.graphdb.QueryStatistics QueryStatistics} object.
-  */
-object statisticsParser extends (DataTable => QueryStatisticsMatcher) {
-
-  override def apply(expectations: DataTable): QueryStatisticsMatcher = {
-    val keys = expectations.transpose().topCells().asScala
-    val values = expectations.transpose().cells(1).asScala.head
-
-    val matcher = new QueryStatisticsMatcher
-
-    keys.zipWithIndex.foreach {
-      case (ADDED_NODES, index) => matcher.setNodesCreated(Integer.valueOf(values.get(index)))
-      case (DELETED_NODES, index) => matcher.setNodesDeleted(Integer.valueOf(values.get(index)))
-      case (ADDED_RELATIONSHIPS, index) => matcher.setRelationshipsCreated(Integer.valueOf(values.get(index)))
-      case (DELETED_RELATIONSHIPS, index) => matcher.setRelationshipsDeleted(Integer.valueOf(values.get(index)))
-      case (ADDED_LABELS, index) => matcher.setLabelsCreated(Integer.valueOf(values.get(index)))
-      case (DELETED_LABELS, index) => matcher.setLabelsDeleted(Integer.valueOf(values.get(index)))
-      case (ADDED_PROPERTIES, index) => matcher.setPropertiesCreated(Integer.valueOf(values.get(index)))
-      case (DELETED_PROPERTIES, index) => matcher.setPropertiesDeleted(Integer.valueOf(values.get(index)))
-      case (sideEffect, _) => throw new InvalidFeatureFormatException(
-        s"Invalid side effect: $sideEffect. Valid ones are: ${ALL.mkString(",")}")
-    }
-
-    matcher
   }
 }

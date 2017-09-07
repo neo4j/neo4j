@@ -10,3 +10,37 @@ In-query call to procedure with explicit arguments that drops all result fields
 // procedure call bugs
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
 In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
+
+// TCK side effects are incorrectly specified -- need update
+In-query call to procedure with explicit arguments
+Standalone call to procedure with explicit arguments
+Detach deleting connected nodes and relationships
+Detach deleting paths
+Create and delete in same query
+Delete nodes from a map
+Delete paths from nested map/list
+Delete relationship with bidirectional matching
+Generate the movie graph correctly
+Many CREATE clauses
+Copying properties from literal map with ON MATCH
+Merge node should create when it doesn't match, properties and label
+Should work when finding multiple elements
+Should be able to use properties from match in ON MATCH and ON CREATE
+Should support updates while merging
+Merge must properly handle multiple labels
+UNWIND with multiple merges
+Do not match on deleted entities
+Do not match on deleted relationships
+In-query call to procedure with explicit arguments
+In-query call to procedure with explicit arguments that drops all result fields
+Standalone call to procedure with explicit arguments
+Set a property
+Set a property to an expression
+Concatenate elements onto a list property
+Concatenate elements in reverse onto a list property
+Overwrite values when using +=
+Non-existent values in a property map are removed with SET =
+Creating nodes from an unwound parameter list
+Unwind with merge
+Should be able to merge using property from match
+Merges should not be able to match on deleted nodes

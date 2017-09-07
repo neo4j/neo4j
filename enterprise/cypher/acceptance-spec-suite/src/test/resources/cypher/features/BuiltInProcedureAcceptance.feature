@@ -39,5 +39,4 @@ Feature: BuiltInProcedureAcceptance
       | 'A'   |
       | 'B'   |
       | 'C'   |
-
-
+    And no side effects

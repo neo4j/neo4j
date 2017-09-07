@@ -56,3 +56,6 @@ Ordering for lists, descending
 
 //SkipLimitAcceptance.feature - Unsupported limit syntax
 Negative parameter for LIMIT should not generate errors
+
+// ReturnAcceptance.feature
+LIMIT 0 should stop side effects

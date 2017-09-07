@@ -96,7 +96,7 @@ Feature: MergeLegacyAcceptance
     And the side effects should be:
       | +nodes         | 2 |
       | +relationships | 2 |
-      | +labels        | 2 |
+      | +labels        | 1 |
 
   Scenario: Introduce named paths
     Given an empty graph

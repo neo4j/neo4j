@@ -39,6 +39,12 @@ import scala.runtime.ScalaNumberProxy
 @RunWith(classOf[JUnitRunner])
 abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAsJava with MatcherMatchingSupport {
 
+  def entity(id: Long): Entity = {
+    val e = mock(classOf[Entity])
+    when(e.getId).thenReturn(id)
+    e
+  }
+
   def node(labels: Seq[String] = Seq.empty, properties: Map[String, AnyRef] = Map.empty): Node = {
     val node = mock(classOf[Node])
     when(node.getLabels).thenReturn(labels.map(Label.label).toIterable.asJava)

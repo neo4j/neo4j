@@ -1,1 +1,1 @@
-//if this file in not empty it means we have failed
+//if this file is not empty it means we have failed

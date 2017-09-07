@@ -159,6 +159,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | city     | country_code |
       | 'Berlin' | 49           |
+    And no side effects
 
   Scenario: Standalone call to procedure with explicit arguments
     And there exists a procedure test.my.proc(name :: STRING?, id :: INTEGER?) :: (city :: STRING?, country_code :: INTEGER?):
@@ -176,6 +177,7 @@ Feature: ProcedureCallAcceptance
     Then the result should be, in order:
       | city     | country_code |
       | 'Berlin' | 49           |
+    And no side effects
 
   @pending
   Scenario: Standalone call to procedure with implicit arguments

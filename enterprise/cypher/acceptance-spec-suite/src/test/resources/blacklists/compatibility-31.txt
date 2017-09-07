@@ -5,3 +5,6 @@ Ordering is well defined across all types, ascending
 Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
+
+// ReturnAcceptance.feature
+LIMIT 0 should stop side effects

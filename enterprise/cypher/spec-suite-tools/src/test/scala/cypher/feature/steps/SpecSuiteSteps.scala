@@ -27,6 +27,7 @@ import cypher.SpecSuiteResources
 import cypher.cucumber.CypherOptionPlugin
 import cypher.cucumber.db.DatabaseConfigProvider._
 import cypher.cucumber.db.{GraphArchive, GraphArchiveImporter, GraphArchiveLibrary, GraphFileRepository}
+import cypher.feature.parser.SideEffects.Values
 import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
@@ -69,8 +70,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   After() { _ =>
-    scenarioBuilder.build().run()
-    scenarioBuilder.db.shutdown()
+    val execution = scenarioBuilder.build()
+    try {
+      execution.validate()
+      execution.run()
+    } finally {
+      scenarioBuilder.db.shutdown()
+    }
   }
 
   Background(BACKGROUND) {
@@ -167,15 +173,11 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   And(SIDE_EFFECTS) { (expectations: DataTable) =>
-    scenarioBuilder.sideEffects { stats: QueryStatistics =>
-      statisticsParser(expectations) should accept(stats)
-    }
+    scenarioBuilder.sideEffects(SideEffects.expect(expectations))
   }
 
   And(NO_SIDE_EFFECTS) {
-    scenarioBuilder.sideEffects { stats: QueryStatistics =>
-      stats.containsUpdates() shouldBe false
-    }
+    scenarioBuilder.sideEffects(Values())
   }
 
   When(EXECUTING_CONTROL_QUERY) { (query: String) =>
