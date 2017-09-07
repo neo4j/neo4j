@@ -42,6 +42,12 @@ public class DependenciesProxy
     /**
      * Create a dynamic proxy that implements the given interface and backs invocation with lookups into the given
      * dependency resolver.
+     *
+     * @param dependencyResolver original resolver to proxy
+     * @param dependenciesInterface interface to proxy
+     * @param <T> type of the interface
+     * @return a proxied {@link DependencyResolver} that will lookup dependencies in {@code dependencyResolver} based
+     * on method names in the provided {@code dependenciesInterface}
      */
     public static <T> T dependencies( DependencyResolver dependencyResolver, Class<T> dependenciesInterface )
     {
