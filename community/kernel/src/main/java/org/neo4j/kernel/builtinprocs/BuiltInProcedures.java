@@ -375,7 +375,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Get node from exlicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
+    @Description( "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekNodes", mode = READ )
     public Stream<NodeResult> nodeAutoIndexSeek( @Name( "key" ) String key, @Name( "value" ) Object value )
             throws ProcedureException
@@ -393,7 +393,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search nodes from exlicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
+    @Description( "Search nodes from explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchNodes", mode = READ )
     public Stream<WeightedNodeResult> nodeAutoIndexSearch( @Name( "query" ) Object query ) throws ProcedureException
     {
@@ -410,7 +410,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Get relationship from exlicit automatic index. Replaces `START r=relationship:relationship_auto_index(key " +
+    @Description( "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key " +
                   "= 'A')`" )
     @Procedure( name = "db.index.explicit.auto.seekRelationships", mode = READ )
     public Stream<RelationshipResult> relationshipAutoIndexSeek( @Name( "key" ) String key,
@@ -430,7 +430,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Search relationship from exlicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
+    @Description( "Search relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index" +
                   "('key:foo*')`" )
     @Procedure( name = "db.index.explicit.auto.searchRelationships", mode = READ )
     public Stream<WeightedRelationshipResult> relationshipAutoIndexSearch( @Name( "query" ) Object query )

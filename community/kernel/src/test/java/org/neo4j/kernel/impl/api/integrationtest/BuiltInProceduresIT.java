@@ -166,86 +166,86 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchNodes",
                         "db.index.explicit.searchNodes(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
-                        "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`"
+                        "Search nodes from explicit index. Replaces `START n=node:nodes('key:foo*')`"
                 } ),
                 equalTo( new Object[]{"db.index.explicit.seekNodes",
                         "db.index.explicit.seekNodes(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +
                         "NODE?)",
-                        "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`"
+                        "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`"
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchRelationships",
                         "db.index.explicit.searchRelationships(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
                         "RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`"
+                        "Search relationship from explicit index. Replaces `START r=relationship:relIndex('key:foo*')`"
                 } ),
                 equalTo( new Object[]{ "db.index.explicit.auto.searchNodes",
                         "db.index.explicit.auto.searchNodes(query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
-                        "Search nodes from automatic index. Replaces `START n=node:node_auto_index('key:foo*')`"} ),
+                        "Search nodes from explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`"} ),
                 equalTo( new Object[]{ "db.index.explicit.auto.seekNodes",
                         "db.index.explicit.auto.seekNodes(key :: STRING?, value :: ANY?) :: (node :: NODE?)",
-                        "Get node from automatic index. Replaces `START n=node:node_auto_index(key = 'A')`"} ),
+                        "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`"} ),
                 equalTo( new Object[]{ "db.index.explicit.auto.searchRelationships",
                         "db.index.explicit.auto.searchRelationships(query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship from automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`"} ),
+                        "Search relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`"} ),
                 equalTo( new Object[]{ "db.index.explicit.auto.seekRelationships",
                         "db.index.explicit.auto.seekRelationships(key :: STRING?, value :: ANY?) :: " +
                         "(relationship :: RELATIONSHIP?)",
-                        "Get relationship from automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`"} ),
+                        "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`"} ),
                 equalTo( new Object[]{ "db.index.explicit.addNode",
                         "db.index.explicit.addNode(indexName :: STRING?, node :: NODE?, key :: STRING?, value :: ANY?) :: (success :: BOOLEAN?)",
-                        "Add a node to a manual index based on a specified key and value"} ),
+                        "Add a node to a explicit index based on a specified key and value"} ),
                 equalTo( new Object[]{ "db.index.explicit.addRelationship",
                         "db.index.explicit.addRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?, value :: ANY?) :: " +
                         "(success :: BOOLEAN?)",
-                        "Add a relationship to a manual index based on a specified key and value"} ),
+                        "Add a relationship to a explicit index based on a specified key and value"} ),
                 equalTo( new Object[]{ "db.index.explicit.removeNode",
                         "db.index.explicit.removeNode(indexName :: STRING?, node :: NODE?, key :: STRING?) :: (success :: BOOLEAN?)",
-                        "Remove a node from a manual index with an optional key"} ),
+                        "Remove a node from a explicit index with an optional key"} ),
                 equalTo( new Object[]{ "db.index.explicit.removeRelationship",
                         "db.index.explicit.removeRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?) :: " +
                         "(success :: BOOLEAN?)",
-                        "Remove a relationship from a manual index with an optional key"} ),
+                        "Remove a relationship from a explicit index with an optional key"} ),
                 equalTo( new Object[]{ "db.index.explicit.drop",
                         "db.index.explicit.drop(indexName :: STRING?) :: " +
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Remove a manual index - YIELD type,name,config"} ),
+                        "Remove a explicit index - YIELD type,name,config"} ),
                 equalTo( new Object[]{ "db.index.explicit.forNodes",
                         "db.index.explicit.forNodes(indexName :: STRING?) :: " +
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Get or create a node manual index - YIELD type,name,config"} ),
+                        "Get or create a node explicit index - YIELD type,name,config"} ),
                 equalTo( new Object[]{ "db.index.explicit.forRelationships",
                         "db.index.explicit.forRelationships(indexName :: STRING?) :: " +
                         "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Get or create a relationship manual index - YIELD type,name,config"} ),
+                        "Get or create a relationship explicit index - YIELD type,name,config"} ),
                 equalTo( new Object[]{ "db.index.explicit.existsForNodes",
                         "db.index.explicit.existsForNodes(indexName :: STRING?) :: (success :: BOOLEAN?)",
-                        "Check if a node manual index exists"} ),
+                        "Check if a node explicit index exists"} ),
                 equalTo( new Object[]{ "db.index.explicit.existsForRelationships",
                         "db.index.explicit.existsForRelationships(indexName :: STRING?) :: (success :: BOOLEAN?)",
-                        "Check if a relationship manual index exists"} ),
+                        "Check if a relationship explicit index exists"} ),
                 equalTo( new Object[]{ "db.index.explicit.list",
                         "db.index.explicit.list() :: (type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "List all manual indexes - YIELD type,name,config"} ),
+                        "List all explicit indexes - YIELD type,name,config"} ),
 
                 equalTo( new Object[]{"db.index.explicit.seekRelationships",
                         "db.index.explicit.seekRelationships(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
                         "(relationship :: RELATIONSHIP?)",
-                        "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`"
+                        "Get relationship from explicit index. Replaces `START r=relationship:relIndex(key = 'A')`"
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchRelationshipsBetween",
                         "db.index.explicit.searchRelationshipsBetween(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: " +
                                 "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship from manual index, starting at the node 'in' and ending at 'out'."
+                        "Search relationship from explicit index, starting at the node 'in' and ending at 'out'."
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchRelationshipsIn",
                         "db.index.explicit.searchRelationshipsIn(indexName :: STRING?, in :: NODE?, query :: ANY?) :: " +
                                 "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship from manual index, starting at the node 'in'."
+                        "Search relationship from explicit index, starting at the node 'in'."
                 } ),
                 equalTo( new Object[]{"db.index.explicit.searchRelationshipsOut",
                         "db.index.explicit.searchRelationshipsOut(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
                                 "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship from manual index, ending at the node 'out'."
+                        "Search relationship from explicit index, ending at the node 'out'."
                 } )
         ) );
         commit();
