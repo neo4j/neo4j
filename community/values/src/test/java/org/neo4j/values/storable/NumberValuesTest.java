@@ -68,6 +68,17 @@ public class NumberValuesTest
     }
 
     @Test
+    public void shouldGiveSameHashForLongsAndInts()
+    {
+        Random r = ThreadLocalRandom.current();
+        for ( int i = 0; i < 1_000_000; i++ )
+        {
+            int anInt = r.nextInt();
+            assertThat( anInt, equalTo( hash( (long) anInt ) ) );
+        }
+    }
+
+    @Test
     public void shouldGiveSameResultEvenWhenArraysContainDifferentTypes2()
     {
         byte[] bytes = new byte[32];
@@ -76,7 +87,7 @@ public class NumberValuesTest
         Random r = ThreadLocalRandom.current();
         for ( int i = 0; i < 32; i++ )
         {
-            byte nextByte = ((Number)(r.nextInt())).byteValue();
+            byte nextByte = ((Number) (r.nextInt())).byteValue();
             bytes[i] = nextByte;
             shorts[i] = nextByte;
         }

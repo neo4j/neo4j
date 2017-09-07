@@ -42,6 +42,7 @@ public final class NumberValues
      */
     static final int MAX_LENGTH = 10000;
     private static final int[] COEFFICIENTS = new int[MAX_LENGTH + 1];
+    private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
 
     static
     {
@@ -54,11 +55,18 @@ public final class NumberValues
         }
     }
 
-    private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
-
+    /*
+     * For equality semantics it is important that the hashcode of a long
+     * is the same as the hashcode of an int as long as the long can fit in 32 bits.
+     */
     public static int hash( long number )
     {
-        return (int) (number ^ (number >>> 32));
+        int asInt = (int) number;
+        if ( asInt == number )
+        {
+            return asInt;
+        }
+        return Long.hashCode( number );
     }
 
     public static int hash( double number )
@@ -79,7 +87,7 @@ public final class NumberValues
      */
     public static int hash( byte[] values )
     {
-        final int max = Math.min(values.length, MAX_LENGTH);
+        final int max = Math.min( values.length, MAX_LENGTH );
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -90,7 +98,7 @@ public final class NumberValues
 
     public static int hash( short[] values )
     {
-        final int max = Math.min(values.length, MAX_LENGTH);
+        final int max = Math.min( values.length, MAX_LENGTH );
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -101,7 +109,7 @@ public final class NumberValues
 
     public static int hash( char[] values )
     {
-        final int max = Math.min(values.length, MAX_LENGTH);
+        final int max = Math.min( values.length, MAX_LENGTH );
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -112,7 +120,7 @@ public final class NumberValues
 
     public static int hash( int[] values )
     {
-        final int max = Math.min(values.length, MAX_LENGTH);
+        final int max = Math.min( values.length, MAX_LENGTH );
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
@@ -123,7 +131,7 @@ public final class NumberValues
 
     public static int hash( long[] values )
     {
-        final int max = Math.min(values.length, MAX_LENGTH);
+        final int max = Math.min( values.length, MAX_LENGTH );
         int result = COEFFICIENTS[max];
         for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
