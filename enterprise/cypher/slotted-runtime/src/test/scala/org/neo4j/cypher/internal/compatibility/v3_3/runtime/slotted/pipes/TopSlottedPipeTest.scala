@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
+import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
@@ -194,8 +195,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   }.toList
 
   private def randomlyShuffledIntDataFromZeroUntil(count: Int): Seq[Int] = {
-    val r = new Random(1337)
-    val data = (0 until count).sortBy( x => 50 - r.nextInt(100))
+    val data = Random.shuffle((0 until count).toList)
     data
   }
 
@@ -203,13 +203,13 @@ class TopSlottedPipeTest extends CypherFunSuite {
     val pipeline = PipelineInformation.empty
       .newReference("a", nullable = true, CTAny)
 
-    val slotOffset = pipeline.getReferenceOffsetFor("a")
+    val slot = pipeline("a")
 
     val source = FakeSlottedPipe(data.map(v => Map("a" -> v)).toIterator, pipeline)
 
     val topOrderBy = orderBy match {
-      case `_Ascending` => List(Ascending(slotOffset))
-      case `_Descending` => List(Descending(slotOffset))
+      case `_Ascending` => List(Ascending(slot))
+      case `_Descending` => List(Descending(slot))
     }
 
     val topPipe =
@@ -221,7 +221,12 @@ class TopSlottedPipeTest extends CypherFunSuite {
     val results = topPipe.createResults(QueryStateHelper.empty)
     results.map {
       case c: PrimitiveExecutionContext =>
-        c.getRefAt(slotOffset)
+        slot match {
+          case RefSlot(offset, _, _, _) =>
+            c.getRefAt(offset)
+          case LongSlot(offset, _, _, _) =>
+            c.getLongAt (offset)
+        }
     }.toList
   }
 
@@ -230,14 +235,14 @@ class TopSlottedPipeTest extends CypherFunSuite {
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
 
-    val slotOffset1 = pipeline.getReferenceOffsetFor("a")
-    val slotOffset2 = pipeline.getReferenceOffsetFor("b")
+    val slot1 = pipeline("a")
+    val slot2 = pipeline("b")
 
     val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, pipeline)
 
-    val topOrderBy = List((orderBy._1, slotOffset1), (orderBy._2, slotOffset2)).map {
-      case (`_Ascending`, offset) => Ascending(offset)
-      case (`_Descending`, offset) => Descending(offset)
+    val topOrderBy = List((orderBy._1, slot1), (orderBy._2, slot2)).map {
+      case (`_Ascending`, slot) => Ascending(slot)
+      case (`_Descending`, slot) => Descending(slot)
     }
 
     val topPipe =
@@ -248,7 +253,12 @@ class TopSlottedPipeTest extends CypherFunSuite {
 
     topPipe.createResults(QueryStateHelper.empty).map {
       case c: PrimitiveExecutionContext =>
-        (c.getRefAt(slotOffset1), c.getRefAt(slotOffset2))
+        (slot1, slot2) match {
+          case (RefSlot(offset1, _, _, _), RefSlot(offset2, _, _, _)) =>
+            (c.getRefAt(offset1), c.getRefAt(offset2))
+          case _ =>
+            throw new InternalException("LongSlot not yet supported in the test framework")
+        }
     }.toList
   }
 }

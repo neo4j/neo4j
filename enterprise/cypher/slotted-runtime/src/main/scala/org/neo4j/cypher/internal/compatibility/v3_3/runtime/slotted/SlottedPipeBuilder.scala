@@ -261,13 +261,13 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   private def translateColumnOrder(pipeline: PipelineInformation, s: logical.SortDescription): ColumnOrder = s match {
     case logical.Ascending(IdName(name)) => {
       pipeline.get(name) match {
-        case Some(slot) => pipes.Ascending(slot.offset)
+        case Some(slot) => pipes.Ascending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
     }
     case logical.Descending(IdName(name)) => {
       pipeline.get(name) match {
-        case Some(slot) => pipes.Descending(slot.offset)
+        case Some(slot) => pipes.Descending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
     }

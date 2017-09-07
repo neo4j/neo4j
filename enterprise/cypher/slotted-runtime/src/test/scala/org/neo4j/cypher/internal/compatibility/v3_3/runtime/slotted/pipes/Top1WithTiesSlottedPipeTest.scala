@@ -28,7 +28,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
     val source = new FakeSlottedPipeFromVariables(List(), "x" -> CTAny)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization) should be(empty)
@@ -37,7 +37,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
   test("simple sorting works as expected") {
     val list = List(Map("x" -> "B"), Map("x" -> "A")).iterator
     val source = new FakeSlottedPipeFromVariables(list, "x" -> CTString)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A")))
@@ -52,7 +52,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakeSlottedPipeFromVariables(input, "x" -> CTInteger, "y" -> CTInteger)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -67,7 +67,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakeSlottedPipeFromVariables(input, "x" -> CTInteger, "y" -> CTInteger)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -83,7 +83,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakeSlottedPipeFromVariables(input, "x" -> CTInteger, "y" -> CTInteger)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -98,7 +98,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakeSlottedPipeFromVariables(input, "x" -> CTInteger, "y" -> CTInteger)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -113,7 +113,7 @@ class Top1WithTiesSlottedPipeTest extends CypherFunSuite {
     ).iterator
 
     val source = new FakeSlottedPipeFromVariables(input, "x" -> CTInteger, "y" -> CTInteger)
-    val slot = source.pipeline.getReferenceOffsetFor("x")
+    val slot = source.pipeline("x")
     val sortPipe = Top1WithTiesSlottedPipe(source, List(Ascending(slot)))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(

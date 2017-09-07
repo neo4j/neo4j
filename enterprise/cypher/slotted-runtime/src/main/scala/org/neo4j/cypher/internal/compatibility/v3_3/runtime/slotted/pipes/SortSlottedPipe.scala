@@ -23,7 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInformation: PipelineInformation)(val id: Id = new Id)
@@ -31,7 +31,7 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   assert(orderBy.nonEmpty)
 
   private val comparator = orderBy
-    .map(new ExecutionContextOrdering(_))
+    .map(ExecutionContextOrdering(_).comparator)
     .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -41,25 +41,41 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   }
 }
 
-private class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
-  val columnSlot: Int = order.slot
-  override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-    val aVal = a.getRefAt(columnSlot)
-    val bVal = b.getRefAt(columnSlot)
-    order.compareValues(aVal, bVal)
+case class ExecutionContextOrdering(order: ColumnOrder) {
+  val comparator: scala.Ordering[ExecutionContext] = order.slot match {
+    case LongSlot(offset, _, _, _) =>
+      new scala.Ordering[ExecutionContext] {
+        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+          val aVal = a.getLongAt(offset)
+          val bVal = b.getLongAt(offset)
+          order.compareLongs(aVal, bVal)
+        }
+      }
+
+    case RefSlot(offset, _, _, _) =>
+      new scala.Ordering[ExecutionContext] {
+        override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+          val aVal = a.getRefAt(offset)
+          val bVal = b.getRefAt(offset)
+          order.compareValues(aVal, bVal)
+        }
+      }
   }
 }
 
 sealed trait ColumnOrder {
-  def slot: Int
+  def slot: Slot
 
   def compareValues(a: AnyValue, b: AnyValue): Int
+  def compareLongs(a: Long, b: Long): Int
 }
 
-case class Ascending(slot: Int) extends ColumnOrder {
+case class Ascending(slot: Slot) extends ColumnOrder {
   override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(a, b)
+  override def compareLongs(a: Long, b: Long): Int = java.lang.Long.compare(a, b)
 }
 
-case class Descending(slot: Int) extends ColumnOrder {
+case class Descending(slot: Slot) extends ColumnOrder {
   override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(b, a)
+  override def compareLongs(a: Long, b: Long): Int = java.lang.Long.compare(b, a)
 }

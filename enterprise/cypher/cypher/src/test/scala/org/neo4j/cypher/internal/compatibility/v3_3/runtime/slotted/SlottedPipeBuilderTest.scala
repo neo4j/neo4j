@@ -651,12 +651,13 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     val expectedPipeline1 = PipelineInformation(Map.empty, 0, 0)
+    val xSlot = RefSlot(0, nullable = true, CTAny, "x")
     val expectedPipeline2 = PipelineInformation(numberOfLongs = 0, numberOfReferences = 1, slots = Map(
-      "x" -> RefSlot(0, nullable = true, CTAny, "x")
+      "x" -> xSlot
     ))
 
     pipe should equal(
-      SortSlottedPipe(orderBy = Seq(slottedPipes.Ascending(0)), pipelineInformation = expectedPipeline2,
+      SortSlottedPipe(orderBy = Seq(slottedPipes.Ascending(xSlot)), pipelineInformation = expectedPipeline2,
         source = UnwindSlottedPipe(collection = commands.expressions.ListLiteral(commands.expressions.Literal(1), commands.expressions.Literal(2), commands.expressions.Literal(3)), offset = 0, pipeline = expectedPipeline2,
           source = SingleRowSlottedPipe(expectedPipeline1)()
         )()

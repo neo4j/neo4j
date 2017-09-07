@@ -38,17 +38,8 @@ abstract class TopSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   extends PipeWithSource(source)  {
 
   protected val comparator = orderBy
-    .map(new ExecutionContextOrdering(_))
+    .map(ExecutionContextOrdering(_).comparator)
     .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
-
-  private class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
-    private val columnSlot = order.slot
-    override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
-      val aVal = a.getRefAt(columnSlot)
-      val bVal = b.getRefAt(columnSlot)
-      order.compareValues(aVal, bVal)
-    }
-  }
 
   def binarySearch(array: Array[ExecutionContext], comparator: Comparator[ExecutionContext])(key: ExecutionContext) = {
     java.util.Arrays.binarySearch(array.asInstanceOf[Array[ExecutionContext]], key, comparator)

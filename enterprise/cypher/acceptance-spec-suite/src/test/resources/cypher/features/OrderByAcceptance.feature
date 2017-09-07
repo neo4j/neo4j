@@ -256,3 +256,24 @@ Feature: OrderByAcceptance
       | [[{}]]        |
       | []            |
     And no side effects
+
+  Scenario: ORDER BY node problem
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)-[:REL]->(:B)
+      CREATE (:A)-[:REL]->(:B)
+      CREATE (:A)
+      """
+    When executing query:
+      """
+      MATCH (a:A)-[r]->(b)
+      WITH a, a.prop as prop, b
+      ORDER BY b
+      RETURN b
+      """
+    Then the result should be, in order:
+      | b     |
+      | (:B)  |
+      | (:B)  |
+    And no side effects
