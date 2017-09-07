@@ -162,7 +162,6 @@ public class TestCrashWithRebuildSlow
                 if ( previous != null )
                 {
                     Relationship rel = previous.createRelationshipTo( node, MyRelTypes.TEST );
-                    System.out.println( rel );
                 }
                 previous = node;
             }

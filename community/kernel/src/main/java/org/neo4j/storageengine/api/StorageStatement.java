@@ -175,6 +175,4 @@ public interface StorageStatement extends AutoCloseable
      * @return a reserved relationship id for future use.
      */
     long reserveRelationship();
-
-    CommandCreationContext getCommandCreationContext();
 }

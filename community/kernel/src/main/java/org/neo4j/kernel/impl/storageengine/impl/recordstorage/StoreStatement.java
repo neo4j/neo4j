@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
-import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -264,8 +263,7 @@ public class StoreStatement implements StorageStatement
         return recordCursors;
     }
 
-    @Override
-    public CommandCreationContext getCommandCreationContext()
+    RecordStorageCommandCreationContext getCommandCreationContext()
     {
         return commandCreationContext;
     }

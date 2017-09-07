@@ -27,9 +27,9 @@ import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_
 
 /**
  * An {@link IdSequence} which does internal batching by using another {@link IdSequence} as source of batches.
- * Meant to be used by a single thread during its life time only.
+ * Meant to be used by a single thread at a time.
  */
-public class RenewableBatchIdSequence implements IdSequence, Resource
+class RenewableBatchIdSequence implements IdSequence, Resource
 {
     private final IdSequence source;
     private final int batchSize;
@@ -37,7 +37,7 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
     private IdSequence currentBatch;
     private boolean closed;
 
-    public RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
+    RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
     {
         this.source = source;
         this.batchSize = batchSize;
@@ -45,9 +45,8 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
     }
 
     /**
-     * It's dangerous to potentially have multiple concurrent calls to close w/ regards to freeing excessive ids.
-     * This class isn't designed for concurrent access, but close can guard for it nonetheless. Only the first call
-     * to close will perform close.
+     * Even if instances are meant to be accessed by a single thread at a time, lifecycle calls
+     * can guard for it nonetheless. Only the first call to close will perform close.
      */
     @Override
     public synchronized void close()

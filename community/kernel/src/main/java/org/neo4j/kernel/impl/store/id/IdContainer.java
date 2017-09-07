@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
@@ -245,8 +246,8 @@ public class IdContainer
             }
             tmpIdArr[count++] = id;
         }
-        long[] defragIdArr = new long[count];
-        System.arraycopy( tmpIdArr, 0, defragIdArr, 0, count );
+
+        long[] defragIdArr = count == maxSize ? tmpIdArr : Arrays.copyOfRange( tmpIdArr, 0, count );
         return new IdRange( defragIdArr, 0, 0 );
     }
 

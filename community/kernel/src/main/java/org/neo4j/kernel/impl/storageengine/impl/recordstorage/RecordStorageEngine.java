@@ -272,7 +272,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
             RecordStorageCommandCreationContext creationContext =
-                    (RecordStorageCommandCreationContext) storageStatement.getCommandCreationContext();
+                    ((StoreStatement) storageStatement).getCommandCreationContext();
             TransactionRecordState recordState =
                     creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
 

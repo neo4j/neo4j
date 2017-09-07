@@ -471,6 +471,8 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> record_id_batch_size = setting( "unsupported.dbms.record_id_batch_size", INTEGER,
             "20", range( 1, 1_000 ) );
 
+    @Description( "An identifier that uniquely identifies this graph database instance within this JVM. " +
+                  "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
     @Internal
     public static final Setting<String> forced_kernel_id = setting("unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
