@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
@@ -52,6 +53,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.AssertableLogProvider.LogMatcher;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
@@ -59,6 +61,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -78,10 +81,13 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class BoltFailuresIT
 {
+    private static final int TEST_TIMEOUT_SECONDS = 120;
+    private static final int PREDICATE_AWAIT_TIMEOUT_SECONDS = TEST_TIMEOUT_SECONDS / 2;
+
     private final TestDirectory dir = TestDirectory.testDirectory();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( 120 ) ).around( dir );
+    public final RuleChain ruleChain = RuleChain.outerRule( Timeout.seconds( TEST_TIMEOUT_SECONDS ) ).around( dir );
 
     private GraphDatabaseService db;
     private Driver driver;
@@ -205,7 +211,7 @@ public class BoltFailuresIT
         awaitNumberOfActiveQueriesToBe( 0 );
 
         // verify that closing of the driver resulted in transaction termination on the server and correct log message
-        internalLogProvider.assertAtLeastOnce( inLog( BoltMessagingProtocolV1Handler.class ).warn(
+        awaitLogToContainMessage( internalLogProvider, inLog( BoltMessagingProtocolV1Handler.class ).warn(
                 startsWith( "Unable to send error back to the client" ),
                 instanceOf( TransactionTerminatedException.class ) ) );
     }
@@ -291,11 +297,17 @@ public class BoltFailuresIT
 
     private void awaitNumberOfActiveQueriesToBe( int value ) throws TimeoutException
     {
-        Predicates.await( () ->
+        await( () ->
         {
             Result listQueriesResult = db.execute( "CALL dbms.listQueries()" );
             return count( listQueriesResult ) == value + 1; // procedure call itself is also listed
-        }, 1, MINUTES );
+        } );
+    }
+
+    private void awaitLogToContainMessage( AssertableLogProvider logProvider, LogMatcher matcher )
+            throws TimeoutException
+    {
+        await( () -> logProvider.containsMatchingLogCall( matcher ) );
     }
 
     private Future<?> updateAllNodesAsync( Driver driver )
@@ -340,6 +352,11 @@ public class BoltFailuresIT
         when( monitors.newMonitor( SessionMonitor.class ) ).thenReturn( sessionMonitor );
         when( monitors.hasListeners( SessionMonitor.class ) ).thenReturn( true );
         return monitors;
+    }
+
+    private static void await( Supplier<Boolean> condition ) throws TimeoutException
+    {
+        Predicates.await( condition, PREDICATE_AWAIT_TIMEOUT_SECONDS, SECONDS );
     }
 
     private static class BoltKernelExtensionWithWorkerFactory extends BoltKernelExtension

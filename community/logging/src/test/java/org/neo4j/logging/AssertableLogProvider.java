@@ -28,7 +28,6 @@ import org.junit.runners.model.Statement;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
@@ -37,6 +36,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
+
+import org.neo4j.helpers.collection.Iterators;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -601,20 +602,10 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
      */
     public void assertAtLeastOnce( LogMatcher... expected )
     {
-        Set<LogMatcher> expectedMatchers = new HashSet<>( Arrays.asList( expected ) );
+        Set<LogMatcher> expectedMatchers = Iterators.asSet( expected );
         synchronized ( logCalls )
         {
-            for ( LogCall logCall : logCalls )
-            {
-                for ( LogMatcher matcher : expectedMatchers )
-                {
-                    if ( matcher.matches( logCall ) )
-                    {
-                        expectedMatchers.remove( matcher );
-                        break;
-                    }
-                }
-            }
+            expectedMatchers.removeIf( this::containsMatchingLogCall );
 
             if ( expectedMatchers.size() > 0 )
             {
@@ -629,17 +620,12 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
 
     public void assertNone( LogMatcher notExpected )
     {
-        synchronized ( logCalls )
+        LogCall logCall = firstMatchingLogCall( notExpected );
+        if ( logCall != null )
         {
-            for ( LogCall logCall : logCalls )
-            {
-                if ( notExpected.matches( logCall ) )
-                {
-                    fail( format(
-                            "Log call was not expected, but occurred:\n%s\n", logCall.toString()
-                    ) );
-                }
-            }
+            fail( format(
+                    "Log call was not expected, but occurred:\n%s\n", logCall.toString()
+            ) );
         }
     }
 
@@ -663,7 +649,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    boolean containsLogCallContaining( String partOfMessage )
+    private boolean containsLogCallContaining( String partOfMessage )
     {
         synchronized ( logCalls )
         {
@@ -676,6 +662,26 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             }
         }
         return false;
+    }
+
+    public boolean containsMatchingLogCall( LogMatcher logMatcher )
+    {
+        return firstMatchingLogCall( logMatcher ) != null;
+    }
+
+    private LogCall firstMatchingLogCall( LogMatcher logMatcher )
+    {
+        synchronized ( logCalls )
+        {
+            for ( LogCall logCall : logCalls )
+            {
+                if ( logMatcher.matches( logCall ) )
+                {
+                    return logCall;
+                }
+            }
+        }
+        return null;
     }
 
     public void assertContainsMessageContaining( String partOfMessage )
