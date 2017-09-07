@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,6 +59,7 @@ import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.Collections.newSetFromMap;
 import static java.util.concurrent.CompletableFuture.runAsync;
@@ -96,8 +98,12 @@ public class SessionResetIT
     private static final long STRESS_IT_DURATION_MS = SECONDS.toMillis( 5 );
     private static final String[] STRESS_IT_QUERIES = {SHORT_QUERY_1, SHORT_QUERY_2, LONG_QUERY};
 
+    private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 3, MINUTES ).build();
+    private final Neo4jRule db = new EnterpriseNeo4jRule();
+
     @Rule
-    public final Neo4jRule db = new EnterpriseNeo4jRule();
+    public final RuleChain ruleChain = RuleChain.outerRule( timeout ).around( db );
+
     private Driver driver;
 
     @Before
@@ -133,7 +139,7 @@ public class SessionResetIT
         // periodic commit query can't be terminated so but reset must fail the transaction
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( LONG_PERIODIC_COMMIT_QUERY, true );
 
-        assertNull( queryResult.get( 5,  MINUTES) );
+        assertNull( queryResult.get( 1, MINUTES ) );
         assertDatabaseIsIdle();
 
         // termination must cause transaction failure and no nodes should be committed
@@ -373,7 +379,7 @@ public class SessionResetIT
     {
         for ( Future<?> future : futures )
         {
-            assertNull( future.get( 10, SECONDS ) );
+            assertNull( future.get( 1, MINUTES ) );
         }
     }
 }
