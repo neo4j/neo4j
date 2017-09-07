@@ -28,8 +28,6 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Configuration
   Apache Commons Lang
-  Commons BeanUtils
-  Commons Digester
   Commons Lang
   Commons Logging
   Lucene Core

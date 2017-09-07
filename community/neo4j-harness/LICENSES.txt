@@ -11,8 +11,6 @@ Apache Software License, Version 2.0
   Apache HttpClient
   Apache HttpCore
   Caffeine cache
-  Commons BeanUtils
-  Commons Digester
   Commons IO
   Commons Lang
   ConcurrentLinkedHashMap

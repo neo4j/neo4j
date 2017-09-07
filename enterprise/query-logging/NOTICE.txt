@@ -25,6 +25,8 @@ Third-party licenses
 --------------------
 
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Lucene Core
   Lucene Memory
   Netty/All-in-One
