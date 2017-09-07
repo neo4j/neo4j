@@ -20,15 +20,21 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.configuration.Settings;
 
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
+import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
+import static org.neo4j.kernel.configuration.Settings.matchesAny;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -37,13 +43,18 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class LoadableBloomFulltextConfig implements LoadableConfig
 {
 
-    // Bloom index
+    public static final String UNSUPPORTED_PROPERY_KEY_REGEX = "^(?!" + LUCENE_FULLTEXT_ADDON_INTERNAL_ID + ").+$";
+    public static final BiFunction<List<String>,Function<String,String>,List<String>> ILLEGAL_VALUE_CONSTRAINT =
+            illegalValueMessage( "Must not contain '" + LUCENE_FULLTEXT_ADDON_INTERNAL_ID + "'", matchesAny( UNSUPPORTED_PROPERY_KEY_REGEX ) );
+    public static final BiFunction<List<String>,Function<String,String>,List<String>> MUST_NOT_BE_EMPTY_CONSTRAINT =
+            illegalValueMessage( "Must not be empty", Settings.nonEmptyList );
+
     @Internal
-    static final Setting<List<String>> bloom_indexed_properties = setting( "unsupported.dbms.bloom_indexed_properties", STRING_LIST, NO_DEFAULT );
+    static final Setting<List<String>> bloom_indexed_properties =
+            buildSetting( "unsupported.dbms.bloom_indexed_properties", STRING_LIST, "" ).constraint( ILLEGAL_VALUE_CONSTRAINT ).constraint(
+                    MUST_NOT_BE_EMPTY_CONSTRAINT ).build();
 
     @Description( "Define the analyzer to use for the bloom index. Expects the fully qualified classname of the analyzer to use" )
     @Internal
-    static final Setting<String> bloom_analyzer =
-            setting( "unsupported.dbms.bloom_analyzer", STRING, "org.apache.lucene.analysis.standard.StandardAnalyzer" );
-
+    static final Setting<String> bloom_analyzer = setting( "unsupported.dbms.bloom_analyzer", STRING, "org.apache.lucene.analysis.standard.StandardAnalyzer" );
 }
