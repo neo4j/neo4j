@@ -72,7 +72,7 @@ public class RmiPublicationIT
         String dir = testDirectory.directory( name ).getAbsolutePath();
         return waitForExit( getRuntime()
                 .exec( new String[]{"java", "-cp", getProperty( "java.class.path" ), "-Djava.awt.headless=true",
-                        mainClass.getName(), dir} ), 20 );
+                        mainClass.getName(), dir} ), 120 );
     }
 
     private int waitForExit( Process process, int maxSeconds ) throws InterruptedException
