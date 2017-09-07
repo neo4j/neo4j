@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -112,7 +111,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
     @Override
     public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
-        List<T> filteredAndCasted = Stream.of( life.getLifecycleInstances() )
+        List<T> filteredAndCasted = life.getLifecycleInstances().stream()
                 .filter( type::isInstance )
                 .map( type::cast )
                 .collect( Collectors.toList() );
