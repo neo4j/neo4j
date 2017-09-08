@@ -209,7 +209,7 @@ class StorePropertyPayloadCursor
         assertOfType( STRING );
         readFromStore( stringRecordCursor );
         buffer.flip();
-        return Values.utf8Value( buffer.array().clone(), 0, buffer.limit() );
+        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
     }
 
     private Value shortArrayValue()
