@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.index.lucene;
+package org.neo4j.kernel.api.impl.index;
 
 import java.io.File;
 import java.util.function.Supplier;
 
+import org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -29,44 +30,38 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 
-/**
- * @deprecated removed in 4.0
- */
-@Deprecated
 public class LuceneKernelExtension extends LifecycleAdapter
 {
-    private final org.neo4j.kernel.api.impl.index.LuceneKernelExtension delegate;
+    private final File storeDir;
+    private final Config config;
+    private final Supplier<IndexConfigStore> indexStore;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final IndexProviders indexProviders;
+    private final OperationalMode operationalMode;
 
-    /**
-     * @deprecated removed in 4.0
-     */
-    @Deprecated
-    public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
-            FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
-    {
-        this( storeDir, config, indexStore, fileSystemAbstraction, indexProviders, OperationalMode.single );
-    }
-
-    /**
-     * @deprecated removed in 4.0
-     */
-    @Deprecated
     public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders, OperationalMode operationalMode )
     {
-        delegate = new org.neo4j.kernel.api.impl.index.LuceneKernelExtension( storeDir, config, indexStore,
-                fileSystemAbstraction, indexProviders, operationalMode );
+        this.storeDir = storeDir;
+        this.config = config;
+        this.indexStore = indexStore;
+        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.indexProviders = indexProviders;
+        this.operationalMode = operationalMode;
     }
 
     @Override
     public void init()
     {
-        delegate.init();
+
+        LuceneIndexImplementation indexImplementation =
+                new LuceneIndexImplementation( storeDir, config, indexStore, fileSystemAbstraction, operationalMode );
+        indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
 
     @Override
     public void shutdown()
     {
-        delegate.shutdown();
+        indexProviders.unregisterIndexProvider( LuceneIndexImplementation.SERVICE_NAME );
     }
 }
