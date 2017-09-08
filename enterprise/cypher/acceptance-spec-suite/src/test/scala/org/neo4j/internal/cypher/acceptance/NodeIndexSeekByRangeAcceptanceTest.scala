@@ -927,13 +927,17 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Label) WHERE n.prop >= '1' AND n.prop > 10 RETURN n.prop AS prop"
 
     executeWith(Configs.Interpreted, s"EXPLAIN $query") should use(IndexSeekByRange.name)
+
+    an[IllegalArgumentException] should be thrownBy {
+      executeWith(Configs.Empty, query).toList
+    }
   }
 
   test("should refuse to execute index seeks using inequalities over incomparable types (detected at compile time)") {
     // Given
     val query = "MATCH (n:Label) WHERE n.prop >= [1, 2, 3] RETURN n.prop AS prop"
     a [SyntaxException] should be thrownBy {
-      executeWith(Configs.AbsolutelyAll, query).toList
+      executeWith(Configs.Empty, query).toList
     }
   }
 
@@ -946,13 +950,13 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    an[IllegalArgumentException] should be thrownBy {
-      executeWith(Configs.AbsolutelyAll, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
-    }
-
     val result = executeWith(Configs.Interpreted, s"EXPLAIN $query")
     result should use(IndexSeekByRange.name)
     result.toList should be(empty)
+
+    an[IllegalArgumentException] should be thrownBy {
+      executeWith(Configs.Empty, query, params = Map("param" -> Array[Int](1, 2, 3))).toList
+    }
   }
 
   test("should return no rows when executing index seeks using inequalities over incomparable types but also comparing against null") {

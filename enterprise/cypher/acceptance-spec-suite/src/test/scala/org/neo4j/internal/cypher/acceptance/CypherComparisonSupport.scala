@@ -99,7 +99,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
   Unit = {
     for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
       thisScenario.prepare()
-      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.scenarios.contains(thisScenario)
+      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
       tryResult match {
@@ -122,54 +122,49 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  protected def executeWith(expectedSuccessFrom: TestConfiguration,
+  protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
                             ignoreResults: TestConfiguration = Configs.Empty,
                             ignorePlans: TestConfiguration = Configs.AllRulePlanners,
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
-    val compareResults = expectedSuccessFrom -  ignoreResults
-    val comparePlans = expectedSuccessFrom - ignorePlans
-    val firstScenario = extractFirstScenario(expectedSuccessFrom, compareResults, comparePlans)
+    val compareResults = expectSucceed -  ignoreResults
+    val comparePlans = expectSucceed - ignorePlans
+    val baseScenario =
+      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults, comparePlans)
+      else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
-    // let this throw to enable catching exceptions outside
-    firstScenario.prepare()
-    graph.rollback({
-      executeBefore()
-      innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params)
-    })
-
-    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
+    val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
       thisScenario =>
-        executeScenario(thisScenario, query, expectedSuccessFrom.scenarios.contains(thisScenario), executeBefore, params)
+        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params)
     }
 
-    firstScenario.prepare()
+    baseScenario.prepare()
     executeBefore()
-    val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params)
-    firstScenario.checkStateForSuccess(query)
-    firstScenario.checkResultForSuccess(query, lastResult)
+    val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
+    baseScenario.checkStateForSuccess(query)
+    baseScenario.checkResultForSuccess(query, baseResult)
 
     positiveResults.foreach {
       case (scenario, result) =>
-        if (comparePlans.scenarios.contains(scenario)) {
-          assertPlansSimilar(lastResult, result, s"plan for ${scenario.name} did not equal ${firstScenario.name}")
+        if (comparePlans.containsScenario(scenario)) {
+          assertPlansSimilar(baseResult, result, s"plan for ${scenario.name} did not equal ${baseScenario.name}")
         } else {
-          assertPlansNotSimilar(lastResult, result, s"plan for ${scenario.name} was equal to ${firstScenario.name}")
+          assertPlansNotSimilar(baseResult, result, s"plan for ${scenario.name} was equal to ${baseScenario.name}")
         }
-        if (compareResults.scenarios.contains(scenario)) {
-          assertResultsSame(result, lastResult, query, s"${scenario.name} returned different results than ${firstScenario.name}")
+        if (compareResults.containsScenario(scenario)) {
+          assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
         } else {
-          assertResultsNotSame(result, lastResult, query, s"Unexpectedly (but correctly!)\n${scenario.name} returned same results as ${firstScenario.name}")
+          assertResultsNotSame(result, baseResult, query, s"Unexpectedly (but correctly!)\n${scenario.name} returned same results as ${baseScenario.name}")
         }
     }
 
-    lastResult
+    baseResult
   }
 
-  private def extractFirstScenario(config: TestConfiguration, compareResults: TestConfiguration, comparePlans: TestConfiguration): TestScenario = {
+  private def extractBaseScenario(expectSucceed: TestConfiguration, compareResults: TestConfiguration, comparePlans: TestConfiguration): TestScenario = {
     val scenariosToChooseFrom = (compareResults.scenarios.isEmpty, comparePlans.scenarios.isEmpty) match {
-      case (true, true) => config
+      case (true, true) => expectSucceed
       case (true, false) => comparePlans
       case (false, true) => compareResults
       case (false, false) => TestConfiguration(comparePlans.scenarios.intersect(compareResults.scenarios))
@@ -178,7 +173,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       fail("At least one scenario must be expected to succeed, be comparable with plan and result")
     }
     val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
-    if (scenariosToChooseFrom.scenarios.contains(preferredScenario))
+    if (scenariosToChooseFrom.containsScenario(preferredScenario))
       preferredScenario
     else
       scenariosToChooseFrom.scenarios.head
@@ -500,6 +495,8 @@ object CypherComparisonSupport {
     def +(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios ++ other.scenarios)
 
     def -(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios -- other.scenarios)
+
+    def containsScenario(scenario: TestScenario): Boolean = this.scenarios.contains(scenario)
   }
 
   object TestConfiguration {

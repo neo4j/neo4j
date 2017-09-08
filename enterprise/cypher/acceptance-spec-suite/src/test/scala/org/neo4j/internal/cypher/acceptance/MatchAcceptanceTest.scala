@@ -539,9 +539,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     //WHEN
     val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AbsolutelyAll).length
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
     val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AbsolutelyAll).length
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -575,9 +575,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     //WHEN
 
     val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AbsolutelyAll).length
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
     val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AbsolutelyAll).length
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN

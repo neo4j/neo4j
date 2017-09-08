@@ -40,11 +40,11 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
                    |WITH user, collect(friendship) AS friendships
                    |WITH user, friendships[toInt({param} * size(friendships))] AS selectedFriendship
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
-    val params = "param" -> 3
+    val params = Map("param" -> 3)
 
     val result1 = executeWith(Configs.CommunityInterpreted, query1,
-      ignorePlans = Configs.AbsolutelyAll - Configs.Cost3_3, params = Map(params)).toList
-    val result2 = executeWith(Configs.CommunityInterpreted, query2, params = Map(params)).toList
+      ignorePlans = Configs.AbsolutelyAll - Configs.Cost3_3, params = params).toList
+    val result2 = executeWith(Configs.CommunityInterpreted, query2, params = params).toList
 
     result1.size should equal(result2.size)
   }
