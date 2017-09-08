@@ -34,6 +34,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
@@ -77,11 +78,7 @@ public class StartClientIT extends AbstractShellIT
         StartClient.main( new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()} );
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
-            tx.success();
-        }
+        assertNodeExists( 0, "foo", "bar" );
     }
 
     @Test
@@ -103,11 +100,7 @@ public class StartClientIT extends AbstractShellIT
         }
 
         // Then
-        try ( Transaction tx = db.beginTx() )
-        {
-            assertThat( db.getNodeById( 0 ).getProperty( "foo" ), equalTo( "bar" ) );
-            tx.success();
-        }
+        assertNodeExists( 0, "foo", "bar" );
     }
 
     @Test
@@ -230,6 +223,30 @@ public class StartClientIT extends AbstractShellIT
             {
                 shellServer.shutdown();
             }
+        }
+    }
+
+    private void assertNodeExists( long id, String property, Object value )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( db.getNodeById( id ).getProperty( property ), equalTo( value ) );
+            tx.success();
+        }
+        catch ( NotFoundException e )
+        {
+            System.out.println( "Unable to find either node with id 0 of it's property 'foo'" );
+            e.printStackTrace( System.out );
+
+            System.out.println( "Printing database content:" );
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.getAllNodes().forEach( node ->
+                        System.out.println( "Node [" + node.getId() + "] with props: " + node.getAllProperties() ) );
+                tx.success();
+            }
+
+            throw e;
         }
     }
 
