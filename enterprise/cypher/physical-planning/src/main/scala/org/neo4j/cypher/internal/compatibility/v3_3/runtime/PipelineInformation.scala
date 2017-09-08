@@ -180,9 +180,6 @@ class PipelineInformation(private var slots: Map[String, Slot],
   def foreachSlot[U](f: ((String,Slot)) => U): Unit =
     slots.foreach(f)
 
-  def forallSlot(f: ((String,Slot)) => Boolean): Boolean =
-    slots.forall(f)
-
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
 
   override def equals(other: Any): Boolean = other match {

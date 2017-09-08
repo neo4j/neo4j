@@ -28,7 +28,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 import org.neo4j.values.virtual._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
-object ValueComparisonHelper extends ValueComparisonHelper {
+object ValueComparisonHelper {
 
   def beEquivalentTo(result: Seq[Map[String, Any]]) = new Matcher[Seq[ExecutionContext]] {
     override def apply(left: Seq[ExecutionContext]): MatchResult = MatchResult(
@@ -47,11 +47,8 @@ object ValueComparisonHelper extends ValueComparisonHelper {
       rawFailureMessage = s"$left != $value",
       rawNegatedFailureMessage = s"$left == $value")
   }
-}
 
-class ValueComparisonHelper {
-
-  protected def check(left: AnyValue, right: Any): Boolean = (left, right) match {
+  private def check(left: AnyValue, right: Any): Boolean = (left, right) match {
     case (l: AnyValue, r: AnyValue) => l == r
     case (l: AnyValue, null) => l == Values.NO_VALUE
     case (n1: NodeValue, n2: Node) => n1.id() == n2.getId

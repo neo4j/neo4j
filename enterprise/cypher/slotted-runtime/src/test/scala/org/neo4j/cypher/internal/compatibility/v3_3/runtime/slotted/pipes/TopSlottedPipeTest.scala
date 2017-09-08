@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryStateHelper}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes.TopSlottedPipeTestSupport._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.ValueUtils
@@ -31,10 +32,6 @@ import org.neo4j.cypher.internal.javacompat.ValueUtils
 import scala.util.Random
 
 class TopSlottedPipeTest extends CypherFunSuite {
-
-  private sealed trait TestColumnOrder
-  private case object AscendingOrder extends TestColumnOrder
-  private case object DescendingOrder extends TestColumnOrder
 
   test("returning top 10 from 5 possible should return all") {
     val input = randomlyShuffledIntDataFromZeroUntil(5)
@@ -175,7 +172,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("top 5 from multi column values") {
     val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
     val result = twoColumnTopWithInput(
-      input, orderBy = (AscendingOrder, DescendingOrder), limit = 5
+      input, orderBy = Seq(AscendingOrder, DescendingOrder), limit = 5
     )
     result should equal(list((0, 5), (0, 4), (0, 2), (1, 2), (1, 2)))
   }
@@ -183,23 +180,43 @@ class TopSlottedPipeTest extends CypherFunSuite {
   test("top 1 from multi column values") {
     val input = List((2, 0), (1, 2), (0, 4), (1, 1), (0, 2), (1, 2), (0, 5), (2, 1))
     val result = twoColumnTopWithInput(
-      input, orderBy = (AscendingOrder, DescendingOrder), limit = 1
+      input, orderBy = Seq(AscendingOrder, DescendingOrder), limit = 1
     )
     result should equal(list((0, 5)))
   }
+}
 
-  private def list(a: Any*) = a.map {
+object TopSlottedPipeTestSupport {
+  sealed trait TestColumnOrder
+  case object AscendingOrder extends TestColumnOrder
+  case object DescendingOrder extends TestColumnOrder
+
+  def list(a: Any*) = a.map {
     case (x: Number, y: Number) => (ValueUtils.of(x.longValue()), ValueUtils.of(y.longValue()))
     case x: Number => ValueUtils.of(x.longValue())
+    case (x, y) => (ValueUtils.of(x), ValueUtils.of(y))
     case x => ValueUtils.of(x)
   }.toList
 
-  private def randomlyShuffledIntDataFromZeroUntil(count: Int): Seq[Int] = {
+  def randomlyShuffledIntDataFromZeroUntil(count: Int): Seq[Int] = {
     val data = Random.shuffle((0 until count).toList)
     data
   }
 
-  private def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int) = {
+  private def createTopPipe(source: Pipe, orderBy: List[ColumnOrder], limit: Int, withTies: Boolean) = {
+    if (withTies) {
+      assert(limit == 1)
+      Top1WithTiesSlottedPipe(source, orderBy)()
+    }
+    else if (limit == 1) {
+      Top1SlottedPipe(source, orderBy)()
+    }
+    else {
+      TopNSlottedPipe(source, orderBy, Literal(limit))()
+    }
+  }
+
+  def singleColumnTopWithInput(data: Traversable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false) = {
     val pipeline = PipelineInformation.empty
       .newReference("a", nullable = true, CTAny)
 
@@ -212,11 +229,7 @@ class TopSlottedPipeTest extends CypherFunSuite {
       case DescendingOrder => List(Descending(slot))
     }
 
-    val topPipe =
-      if (limit == 1)
-        Top1SlottedPipe(source, topOrderBy)()
-      else
-        TopNSlottedPipe(source, topOrderBy, Literal(limit))()
+    val topPipe = createTopPipe(source, topOrderBy, limit, withTies)
 
     val results = topPipe.createResults(QueryStateHelper.empty)
     results.map {
@@ -230,35 +243,38 @@ class TopSlottedPipeTest extends CypherFunSuite {
     }.toList
   }
 
-  private def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: (TestColumnOrder, TestColumnOrder), limit: Int) = {
+  def twoColumnTopWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder], limit: Int, withTies: Boolean = false) = {
     val pipeline = PipelineInformation.empty
       .newReference("a", nullable = true, CTAny)
       .newReference("b", nullable = true, CTAny)
 
-    val slot1 = pipeline("a")
-    val slot2 = pipeline("b")
+    val slots = Seq(pipeline("a"), pipeline("b"))
 
     val source = FakeSlottedPipe(data.map { case (v1, v2) => Map("a" -> v1, "b" -> v2) }.toIterator, pipeline)
 
-    val topOrderBy = List((orderBy._1, slot1), (orderBy._2, slot2)).map {
+    val topOrderBy = orderBy.zip(slots).map {
       case (AscendingOrder, slot) => Ascending(slot)
       case (DescendingOrder, slot) => Descending(slot)
-    }
+    }.toList
 
-    val topPipe =
-      if (limit == 1)
-        Top1SlottedPipe(source, topOrderBy)()
-      else
-        TopNSlottedPipe(source, topOrderBy, Literal(limit))()
+    val topPipe = createTopPipe(source, topOrderBy, limit, withTies)
 
     topPipe.createResults(QueryStateHelper.empty).map {
       case c: PrimitiveExecutionContext =>
-        (slot1, slot2) match {
+        (slots(0), slots(1)) match {
           case (RefSlot(offset1, _, _, _), RefSlot(offset2, _, _, _)) =>
             (c.getRefAt(offset1), c.getRefAt(offset2))
           case _ =>
             throw new InternalException("LongSlot not yet supported in the test framework")
         }
     }.toList
+  }
+
+  def singleColumnTop1WithTiesWithInput(data: Traversable[Any], orderBy: TestColumnOrder) = {
+    singleColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
+  }
+
+  def twoColumnTop1WithTiesWithInput(data: Traversable[(Any, Any)], orderBy: Seq[TestColumnOrder]) = {
+    twoColumnTopWithInput(data, orderBy, limit = 1, withTies = true)
   }
 }
