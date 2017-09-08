@@ -430,7 +430,11 @@ object CypherComparisonSupport {
     def name: String = {
       val versionName = if (version == Versions.Default) "<default version>" else version.name
       val plannerName = if (planner == Planners.Default) "<default planner>" else planner.preparserOption
-      val runtimeName = if (runtime == Runtimes.Default) "<default runtime>" else runtime.preparserOption
+      val runtimeName = runtime match {
+        case Runtimes.Default => "<default runtime>"
+        case Runtimes.ProcedureOrSchema => "<procedure or schema runtime>"
+        case _ => runtime.preparserOption
+      }
       s"${versionName} ${plannerName} ${runtimeName}"
     }
 
