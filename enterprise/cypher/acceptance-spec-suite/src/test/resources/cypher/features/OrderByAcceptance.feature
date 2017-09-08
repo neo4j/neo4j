@@ -257,6 +257,7 @@ Feature: OrderByAcceptance
       | []            |
     And no side effects
 
+  # ORDER BY should work in slotted runtime for a variable that is allocated to a long slot
   Scenario: ORDER BY node problem
     Given an empty graph
     And having executed:

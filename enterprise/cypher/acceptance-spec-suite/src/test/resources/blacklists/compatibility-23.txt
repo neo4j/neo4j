@@ -53,6 +53,7 @@ Ordering is well defined across all types, ascending
 Ordering is well defined across all types, descending
 Ordering for lists, ascending
 Ordering for lists, descending
+ORDER BY node problem
 
 //SkipLimitAcceptance.feature - Unsupported limit syntax
 Negative parameter for LIMIT should not generate errors
