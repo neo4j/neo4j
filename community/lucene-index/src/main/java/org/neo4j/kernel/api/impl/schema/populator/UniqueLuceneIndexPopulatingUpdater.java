@@ -56,20 +56,20 @@ public class UniqueLuceneIndexPopulatingUpdater extends LuceneIndexPopulatingUpd
     }
 
     @Override
-    protected void added( IndexEntryUpdate update )
+    protected void added( IndexEntryUpdate<?> update )
     {
         sampler.increment( 1 );
         updatedValueTuples.add( update.values() );
     }
 
     @Override
-    protected void changed( IndexEntryUpdate update )
+    protected void changed( IndexEntryUpdate<?> update )
     {
         updatedValueTuples.add( update.values() );
     }
 
     @Override
-    protected void removed( IndexEntryUpdate update )
+    protected void removed( IndexEntryUpdate<?> update )
     {
         sampler.increment( -1 );
     }

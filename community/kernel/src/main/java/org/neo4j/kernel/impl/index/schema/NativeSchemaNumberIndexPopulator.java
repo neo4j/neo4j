@@ -127,7 +127,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
-            public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+            public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
             {
                 assertOpen();
                 updates.add( update );
@@ -256,7 +256,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             this.conflictDetectingValueMerger = conflictDetectingValueMerger;
         }
 
-        public void process( IndexEntryUpdate indexEntryUpdate ) throws Exception
+        public void process( IndexEntryUpdate<?> indexEntryUpdate ) throws Exception
         {
             NativeSchemaNumberIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
         }

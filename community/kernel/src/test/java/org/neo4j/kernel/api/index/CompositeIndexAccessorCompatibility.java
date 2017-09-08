@@ -133,7 +133,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
         }
     }
 
-    private static IndexEntryUpdate add( long nodeId, LabelSchemaDescriptor schema, Object value1, Object value2 )
+    private static IndexEntryUpdate<LabelSchemaDescriptor> add( long nodeId, LabelSchemaDescriptor schema, Object value1, Object value2 )
     {
         return IndexEntryUpdate.add( nodeId, schema, Values.of( value1 ), Values.of( value2 ) );
     }

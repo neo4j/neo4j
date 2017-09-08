@@ -34,7 +34,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 /**
  * Node scanner that will perform some sort of process over set of nodes
  * from nodeStore {@link NodeStore} based on node ids supplied by underlying store aware id iterator.
- * @param <FAILURE>
+ * @param <FAILURE> type of exception thrown on failure
  */
 public abstract class NodeStoreScan<FAILURE extends Exception> implements StoreScan<FAILURE>
 {

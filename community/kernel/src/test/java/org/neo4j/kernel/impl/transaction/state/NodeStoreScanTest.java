@@ -61,19 +61,19 @@ public class NodeStoreScanTest
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NodeStoreScan scan = new NodeStoreScan( nodeStore, locks,  total )
+        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks,  total )
         {
             private int read;
 
             @Override
-            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+            public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                     long currentlyIndexedNodeId )
             {
                 // no-op
             }
 
             @Override
-            public void configure( Collection populations )
+            public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
             {
                 // no-op
             }
@@ -96,7 +96,7 @@ public class NodeStoreScanTest
 
     private static class PercentageSupplier implements Supplier<Float>
     {
-        private StoreScan storeScan;
+        private StoreScan<?> storeScan;
 
         @Override
         public Float get()
@@ -106,7 +106,7 @@ public class NodeStoreScanTest
             return (float) progress.getCompleted() / (float) progress.getTotal();
         }
 
-        public void setStoreScan( StoreScan storeScan )
+        public void setStoreScan( StoreScan<?> storeScan )
         {
             this.storeScan = storeScan;
         }

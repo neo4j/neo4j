@@ -29,16 +29,16 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 public class UpdateCapturingIndexUpdater implements IndexUpdater
 {
     private final IndexUpdater actual;
-    private final Collection<IndexEntryUpdate> updatesTarget;
+    private final Collection<IndexEntryUpdate<?>> updatesTarget;
 
-    public UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate> updatesTarget )
+    public UpdateCapturingIndexUpdater( IndexUpdater actual, Collection<IndexEntryUpdate<?>> updatesTarget )
     {
         this.actual = actual;
         this.updatesTarget = updatesTarget;
     }
 
     @Override
-    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         actual.process( update );
         updatesTarget.add( update );

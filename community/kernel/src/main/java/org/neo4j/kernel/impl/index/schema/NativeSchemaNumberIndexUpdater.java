@@ -59,7 +59,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     }
 
     @Override
-    public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
+    public void process( IndexEntryUpdate<?> update ) throws IOException, IndexEntryConflictException
     {
         assertOpen();
         processUpdate( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
@@ -84,7 +84,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     }
 
     static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processUpdate( KEY treeKey, VALUE treeValue,
-            IndexEntryUpdate update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            IndexEntryUpdate<?> update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IOException, IndexEntryConflictException
     {
         switch ( update.updateMode() )

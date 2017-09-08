@@ -40,9 +40,9 @@ public class UpdateCapturingIndexProvider extends SchemaIndexProvider
 {
     private final SchemaIndexProvider actual;
     private final Map<Long,UpdateCapturingIndexAccessor> indexes = new ConcurrentHashMap<>();
-    private final Map<Long,Collection<IndexEntryUpdate>> initialUpdates;
+    private final Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates;
 
-    public UpdateCapturingIndexProvider( SchemaIndexProvider actual, Map<Long,Collection<IndexEntryUpdate>> initialUpdates )
+    public UpdateCapturingIndexProvider( SchemaIndexProvider actual, Map<Long,Collection<IndexEntryUpdate<?>>> initialUpdates )
     {
         super( actual );
         this.actual = actual;
@@ -81,9 +81,9 @@ public class UpdateCapturingIndexProvider extends SchemaIndexProvider
         return actual.storeMigrationParticipant( fs, pageCache );
     }
 
-    public Map<Long,Collection<IndexEntryUpdate>> snapshot()
+    public Map<Long,Collection<IndexEntryUpdate<?>>> snapshot()
     {
-        Map<Long,Collection<IndexEntryUpdate>> result = new HashMap<>();
+        Map<Long,Collection<IndexEntryUpdate<?>>> result = new HashMap<>();
         indexes.forEach( ( indexId, index ) -> result.put( indexId, index.snapshot() ) );
         return result;
     }

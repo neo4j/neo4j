@@ -59,10 +59,10 @@ public class LuceneIndexAccessor implements IndexAccessor
         switch ( mode )
         {
         case ONLINE:
-            return new LuceneIndexUpdater( writer, false );
+            return new LuceneIndexUpdater( false );
 
         case RECOVERY:
-            return new LuceneIndexUpdater( writer, true );
+            return new LuceneIndexUpdater( true );
 
         default:
             throw new IllegalArgumentException( "Unsupported update mode: " + mode );
@@ -123,17 +123,15 @@ public class LuceneIndexAccessor implements IndexAccessor
     private class LuceneIndexUpdater implements IndexUpdater
     {
         private final boolean isRecovery;
-        private final LuceneIndexWriter writer;
         private boolean hasChanges;
 
-        private LuceneIndexUpdater( LuceneIndexWriter indexWriter, boolean isRecovery )
+        private LuceneIndexUpdater( boolean isRecovery )
         {
             this.isRecovery = isRecovery;
-            this.writer = indexWriter;
         }
 
         @Override
-        public void process( IndexEntryUpdate update ) throws IOException
+        public void process( IndexEntryUpdate<?> update ) throws IOException
         {
             // we do not support adding partial entries
             assert update.indexKey().schema().equals( descriptor.schema() );

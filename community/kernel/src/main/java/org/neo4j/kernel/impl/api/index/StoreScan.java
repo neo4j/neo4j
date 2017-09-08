@@ -30,7 +30,7 @@ public interface StoreScan<FAILURE extends Exception>
 
     void stop();
 
-    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
+    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
             long currentlyIndexedNodeId );
 
     PopulationProgress getProgress();

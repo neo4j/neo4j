@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 /**
  * Store scan view that will try to minimize amount of scanned nodes by using label scan store {@link LabelScanStore}
  * as a source of known labeled node ids.
- * @param <FAILURE>
+ * @param <FAILURE> type of exception thrown on failure
  */
 public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {

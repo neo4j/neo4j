@@ -76,7 +76,7 @@ public class TentativeConstraintIndexProxy extends AbstractDelegatingIndexProxy
                 return new DelegatingIndexUpdater( target.accessor.newUpdater( mode ) )
                 {
                     @Override
-                    public void process( IndexEntryUpdate update )
+                    public void process( IndexEntryUpdate<?> update )
                             throws IOException, IndexEntryConflictException
                     {
                         try

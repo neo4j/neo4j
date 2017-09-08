@@ -32,6 +32,8 @@ import static java.lang.String.format;
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or
  * update.
  * This is of use in populating indexes that might be relevant to node label and property combinations.
+ *
+ * @param <INDEX_KEY> {@link LabelSchemaSupplier} specifying the schema
  */
 public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
 {
@@ -94,7 +96,7 @@ public class IndexEntryUpdate<INDEX_KEY extends LabelSchemaSupplier>
             return false;
         }
 
-        IndexEntryUpdate that = (IndexEntryUpdate) o;
+        IndexEntryUpdate<?> that = (IndexEntryUpdate<?>) o;
 
         if ( entityId != that.entityId )
         {

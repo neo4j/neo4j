@@ -72,6 +72,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
 
     void incrementIndexUpdates( long indexId, long updatesDelta );
 
+    @SuppressWarnings( "rawtypes" )
     StoreScan EMPTY_SCAN = new StoreScan()
     {
         @Override
@@ -115,6 +116,7 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
             return Values.NO_VALUE;
         }
 
+        @SuppressWarnings( "unchecked" )
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
                 IntPredicate propertyKeyIdFilter, Visitor<NodeUpdates,FAILURE> propertyUpdateVisitor,
@@ -151,6 +153,5 @@ public interface IndexStoreView extends PropertyAccessor, PropertyLoader
         public void incrementIndexUpdates( long indexId, long updatesDelta )
         {
         }
-
     };
 }
