@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import java.util.Comparator
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
@@ -30,16 +30,18 @@ case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 
+  private val comparator = orderBy
+    .map(new ExecutionContextOrdering(_))
+    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
+
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val orderings = orderBy.map(new ExecutionContextOrdering(_)(state))
-    val comparator = orderings.reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
     val array = input.toArray
     java.util.Arrays.sort(array, comparator)
     array.toIterator
   }
 }
 
-private class ExecutionContextOrdering(order: ColumnOrder)(implicit qtx: QueryState) extends scala.Ordering[ExecutionContext] {
+private class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
     val column = order.id
     val aVal = a(column)
@@ -51,13 +53,13 @@ private class ExecutionContextOrdering(order: ColumnOrder)(implicit qtx: QuerySt
 sealed trait ColumnOrder {
   def id: String
 
-  def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int
+  def compareValues(a: AnyValue, b: AnyValue): Int
 }
 
 case class Ascending(id: String) extends ColumnOrder {
-  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(a, b)
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(a, b)
 }
 
 case class Descending(id: String) extends ColumnOrder {
-  override def compareValues(a: AnyValue, b: AnyValue)(implicit qtx: QueryState): Int = AnyValues.COMPARATOR.compare(b, a)
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(b, a)
 }

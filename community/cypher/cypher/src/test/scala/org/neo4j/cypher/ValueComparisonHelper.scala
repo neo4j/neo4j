@@ -48,7 +48,6 @@ object ValueComparisonHelper {
       rawNegatedFailureMessage = s"$left == $value")
   }
 
-
   private def check(left: AnyValue, right: Any): Boolean = (left, right) match {
     case (l: AnyValue, r: AnyValue) => l == r
     case (l: AnyValue, null) => l == Values.NO_VALUE

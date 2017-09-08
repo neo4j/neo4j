@@ -56,11 +56,13 @@ public class AcceptanceSpecSuiteTest
         @AfterClass
         public static void teardown()
         {
-            Set<String> diff = BlacklistPlugin.getDiffBetweenBlacklistAndUsedScenarios();
-            if ( !diff.isEmpty() )
+            if ( FEATURE_TO_RUN.isEmpty() && SCENARIO_NAME_REQUIRED.isEmpty() )
             {
-                fail( "The following scenarios were blacklisted but no test corresponds to that name:\n"
-                        + String.join( "\n", diff ) );
+                Set<String> diff = BlacklistPlugin.getDiffBetweenBlacklistAndUsedScenarios();
+                if ( !diff.isEmpty() )
+                {
+                    fail( "The following scenarios were blacklisted but no test corresponds to that name:\n" + String.join( "\n", diff ) );
+                }
             }
         }
     }
