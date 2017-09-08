@@ -311,12 +311,6 @@ public class LuceneIndexRecoveryIT
                 LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
-            public Class<LuceneSchemaIndexProviderFactory.Dependencies> getSettingsClass()
-            {
-                return LuceneSchemaIndexProviderFactory.Dependencies.class;
-            }
-
-            @Override
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {

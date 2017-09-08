@@ -75,10 +75,10 @@ public class OnlineBackupExtensionFactory extends KernelExtensionFactory<OnlineB
         super( KEY );
     }
 
-    @Override
+    @Deprecated
     public Class<OnlineBackupSettings> getSettingsClass()
     {
-        return OnlineBackupSettings.class;
+        throw new AssertionError();
     }
 
     @Override

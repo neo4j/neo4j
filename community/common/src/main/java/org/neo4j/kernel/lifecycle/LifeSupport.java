@@ -277,7 +277,7 @@ public class LifeSupport
         return false;
     }
 
-    public Iterable<Lifecycle> getLifecycleInstances()
+    public List<Lifecycle> getLifecycleInstances()
     {
         return instances.stream().map( ( l ) -> l.instance ).collect( toList() );
     }

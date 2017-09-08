@@ -297,7 +297,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
         SchemaIndexProvider provider = extensions.resolveDependency( SchemaIndexProvider.class,
-                HighestSelectionStrategy.getInstance() );
+                HighestSelectionStrategy.INSTANCE );
         schemaIndexProviders = new DefaultSchemaIndexProviderMap( provider );
         labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
