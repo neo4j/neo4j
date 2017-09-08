@@ -102,7 +102,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     void readValue( PageCursor cursor, VALUE into );
 
     /**
-     * Used as a checksum for when loading an index after creation, to verify that the same layout is used,
+     * Used as verification when loading an index after creation, to verify that the same layout is used,
      * as the one it was initially created with.
      *
      * @return a long acting as an identifier, written in the header of an index.
@@ -142,13 +142,14 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     }
 
     /**
-     * Utility method for generating an {@link #identifier()}.
+     * Utility method for generating an {@link #identifier()}. Generates an 8-byte identifier from a short name
+     * plus a 4-byte identifier.
      *
      * @param name name to be part of this identifier, must at most be 4 characters.
-     * @param checksum checksum to include into the identifier.
-     * @return a long which is a combination of {@code name} and {@code checksum}.
+     * @param identifier to include into the returned named identifier.
+     * @return a long which is a combination of {@code name} and {@code identifier}.
      */
-    static long namedIdentifier( String name, int checksum )
+    static long namedIdentifier( String name, int identifier )
     {
         char[] chars = name.toCharArray();
         if ( chars.length > 4 )
@@ -163,7 +164,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
             upperInt |= byteValue & 0xFF;
         }
 
-        return (upperInt << Integer.SIZE) | checksum;
+        return (upperInt << Integer.SIZE) | identifier;
     }
 
     /**
