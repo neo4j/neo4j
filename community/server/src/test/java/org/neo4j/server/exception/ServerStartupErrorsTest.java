@@ -49,8 +49,8 @@ public class ServerStartupErrorsTest
 
         // then
         logging.assertExactly( inLog( "console" )
-                .error( "Neo4j cannot be started, because the database files require upgrading and upgrades are " +
-                        "disabled in configuration. Please set '" + GraphDatabaseSettings.allow_upgrade.name() +
-                        "' to 'true' in your configuration file and try " + "again." ) );
+                .error( "Neo4j cannot be started because the database files require upgrading and upgrades are disabled " +
+                        "in the configuration. Please set '" + GraphDatabaseSettings.allow_upgrade.name() + "' to 'true' " +
+                        "in your configuration file and try again." ) );
     }
 }

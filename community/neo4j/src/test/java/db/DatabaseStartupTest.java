@@ -81,8 +81,8 @@ public class DatabaseStartupTest
             // then
             assertTrue( ex.getCause() instanceof LifecycleException );
             assertTrue( ex.getCause().getCause() instanceof UpgradeNotAllowedByConfigurationException );
-            assertEquals( "Neo4j cannot be started, because the database files require upgrading and upgrades " +
-                            "are disabled in configuration. Please set '" + allow_upgrade.name() + "' to 'true' in your " +
+            assertEquals( "Neo4j cannot be started because the database files require upgrading and upgrades are " +
+                            "disabled in the configuration. Please set '" + allow_upgrade.name() + "' to 'true' in your " +
                             "configuration file and try again.",
                     ex.getCause().getCause().getMessage());
         }

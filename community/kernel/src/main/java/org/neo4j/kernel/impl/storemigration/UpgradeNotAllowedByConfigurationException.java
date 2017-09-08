@@ -36,8 +36,8 @@ public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowed
     private static String baseMessage()
     {
         return String.format(
-                "Neo4j cannot be started, because the database files require upgrading and upgrades is " +
-                        "disabled in configuration. Please set '%s' to 'true' in your configuration file and try again.",
+                "Neo4j cannot be started because the database files require upgrading and upgrades are disabled " +
+                "in the configuration. Please set '%s' to 'true' in your configuration file and try again.",
                 GraphDatabaseSettings.allow_upgrade.name() );
     }
 }
