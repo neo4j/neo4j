@@ -204,8 +204,8 @@ sealed trait IndexUsage {
 
 final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
-final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
-final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
+final case class ExplicitNodeIndexUsage(identifier: String, index: String) extends IndexUsage
+final case class ExplicitRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
 
 class LogicalPlanId(val underlying: Int) extends AnyVal {
   def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)

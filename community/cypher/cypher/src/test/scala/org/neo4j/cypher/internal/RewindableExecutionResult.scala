@@ -197,7 +197,7 @@ object RewindableExecutionResult {
           .UpdateActionName(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.MergePattern(startPoint) => Arguments
           .MergePattern(startPoint)
-        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyIndex(value) => Arguments.LegacyIndex(value)
+        case v2_3.planDescription.InternalPlanDescription.Arguments.LegacyIndex(value) => Arguments.ExplicitIndex(value)
         case v2_3.planDescription.InternalPlanDescription.Arguments.Index(label, propertyKey) => Arguments
           .Index(label, Seq(propertyKey))
         case v2_3.planDescription.InternalPlanDescription.Arguments.PrefixIndex(label, propertyKey, _) => Arguments
@@ -316,7 +316,7 @@ object RewindableExecutionResult {
         case Arguments3_1.LegacyExpression(_) => Arguments.Expression(null)
         case Arguments3_1.UpdateActionName(value) => Arguments.UpdateActionName(value)
         case Arguments3_1.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
-        case Arguments3_1.LegacyIndex(value) => Arguments.LegacyIndex(value)
+        case Arguments3_1.LegacyIndex(value) => Arguments.ExplicitIndex(value)
         case Arguments3_1.Index(label, propertyKey) => Arguments.Index(label, Seq(propertyKey))
         case Arguments3_1.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
         case Arguments3_1.InequalityIndex(label, propertyKey, bounds) => Arguments
@@ -453,7 +453,7 @@ object RewindableExecutionResult {
         case Arguments3_2.LegacyExpression(_) => Arguments.Expression(null)
         case Arguments3_2.UpdateActionName(value) => Arguments.UpdateActionName(value)
         case Arguments3_2.MergePattern(startPoint) => Arguments.MergePattern(startPoint)
-        case Arguments3_2.LegacyIndex(value) => Arguments.LegacyIndex(value)
+        case Arguments3_2.LegacyIndex(value) => Arguments.ExplicitIndex(value)
         case Arguments3_2.Index(label, propertyKey) => Arguments.Index(label, propertyKey)
         case Arguments3_2.PrefixIndex(label, propertyKey, _) => Arguments.PrefixIndex(label, propertyKey, null)
         case Arguments3_2.InequalityIndex(label, propertyKey, bounds) => Arguments
