@@ -35,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.GBPTreeUtil;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
@@ -59,7 +58,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     public void drop() throws IOException
     {
         closeTree();
-        GBPTreeUtil.delete( pageCache, storeFile );
+        gbpTreeFileUtil.deleteFile( storeFile );
     }
 
     @Override
