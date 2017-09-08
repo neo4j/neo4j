@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, TreeBuilder}
+import org.neo4j.cypher.internal.frontend.v3_2.IdentityMap
 
 /*
 The map of logical plan and ids is used to allow profiling to connect to the right part in the logical plan
@@ -36,10 +37,10 @@ object LogicalPlanIdentificationBuilder extends (LogicalPlan => Map[LogicalPlan,
   private class IdAssigner extends TreeBuilder[Map[LogicalPlan, Id]] {
     def mapIds(plan: LogicalPlan): Map[LogicalPlan, Id] = create(plan)
 
-    override protected def build(plan: LogicalPlan): Map[LogicalPlan, Id] = Map(plan -> new Id)
+    override protected def build(plan: LogicalPlan): Map[LogicalPlan, Id] = IdentityMap(plan -> new Id)
 
-    override protected def build(plan: LogicalPlan, source: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = source ++ Map(plan -> new Id)
+    override protected def build(plan: LogicalPlan, source: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = source + (plan -> new Id)
 
-    override protected def build(plan: LogicalPlan, lhs: Map[LogicalPlan, Id], rhs: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = lhs ++ rhs ++ Map(plan -> new Id)
+    override protected def build(plan: LogicalPlan, lhs: Map[LogicalPlan, Id], rhs: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = lhs ++ rhs + (plan -> new Id)
   }
 }
