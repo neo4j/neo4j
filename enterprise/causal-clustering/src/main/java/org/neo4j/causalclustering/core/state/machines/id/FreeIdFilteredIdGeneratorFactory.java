@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -41,7 +42,7 @@ public class FreeIdFilteredIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         FreeIdFilteredIdGenerator freeIdFilteredIdGenerator =
                 new FreeIdFilteredIdGenerator( delegate.open( filename, idType, highId, maxId ), freeIdCondition );
@@ -50,7 +51,7 @@ public class FreeIdFilteredIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         FreeIdFilteredIdGenerator freeIdFilteredIdGenerator =
                 new FreeIdFilteredIdGenerator( delegate.open( filename, grabSize, idType, highId, maxId ),

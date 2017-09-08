@@ -117,7 +117,7 @@ import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockMan
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
     EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
-            final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
+                                        final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
 

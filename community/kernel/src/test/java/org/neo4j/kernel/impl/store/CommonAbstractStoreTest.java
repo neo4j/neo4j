@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.OpenOption;
+import java.util.Arrays;
+import java.util.function.Supplier;
+
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -26,11 +32,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.OpenOption;
-import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -121,7 +122,7 @@ public class CommonAbstractStoreTest
     @Before
     public void setUpMocks() throws IOException
     {
-        when( idGeneratorFactory.open( any( File.class ), eq( idType ), anyInt(), anyInt() ) )
+        when( idGeneratorFactory.open( any( File.class ), eq( idType ), any( Supplier.class ), anyInt() ) )
                 .thenReturn( idGenerator );
 
         when( pageFile.pageSize() ).thenReturn( PAGE_SIZE );

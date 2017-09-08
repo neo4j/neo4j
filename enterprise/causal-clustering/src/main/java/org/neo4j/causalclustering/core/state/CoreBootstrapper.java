@@ -180,7 +180,7 @@ public class CoreBootstrapper
 
     private long getHighId( File coreDir, DefaultIdGeneratorFactory factory, IdType idType, String store )
     {
-        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType, -1, Long.MAX_VALUE );
+        IdGenerator idGenerator = factory.open( new File( coreDir, idFile( store ) ), idType, () -> -1L, Long.MAX_VALUE );
         long highId = idGenerator.getHighId();
         idGenerator.close();
         return highId;

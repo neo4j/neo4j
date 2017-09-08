@@ -55,14 +55,14 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration typeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return open( filename, typeConfiguration.getGrabSize(), idType, highId, maxId);
     }
 
     @Override
-    public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         assert boundaries != null : "Factory needs to be initialized before usage";
 
