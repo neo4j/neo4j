@@ -73,7 +73,7 @@ public class BoltMessageLoggerImplTest
         // when
         boltMessageLogger.clientEvent( "TEST", () -> "details" );
         // then
-        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C: TEST details" );
+        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C TEST details" );
     }
 
     @Test

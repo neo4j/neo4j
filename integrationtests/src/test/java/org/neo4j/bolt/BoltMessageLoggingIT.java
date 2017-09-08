@@ -170,7 +170,7 @@ public class BoltMessageLoggingIT
         catch ( Exception e )
         {
             String contents = readFile( customBoltLogFile );
-            assertThat( contents, containsString( "S: FAILURE" ) );
+            assertThat( contents, containsString( "S FAILURE" ) );
         }
     }
 
@@ -185,7 +185,7 @@ public class BoltMessageLoggingIT
         }
 
         String contents = readFile( boltLogFile );
-        assertThat( contents, containsString( "C: RUN " + query + " {}" ) );
+        assertThat( contents, containsString( "C RUN " + query + " {}" ) );
     }
 
     private String readFile( File file ) throws IOException
