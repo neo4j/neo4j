@@ -31,6 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -53,7 +54,6 @@ public class ClusterIdReuseIT
     public void setUp() throws Exception
     {
         EnterpriseCoreEditionModule.idReuse = true;
-        cluster = clusterRule.startCluster();
     }
 
     @After
@@ -65,6 +65,9 @@ public class ClusterIdReuseIT
     @Test
     public void shouldReuseIdsInCluster() throws Exception
     {
+        final int RECORD_ID_BATCH_SIZE = 1;
+        cluster = clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( RECORD_ID_BATCH_SIZE ) ).startCluster();
+
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
 
@@ -106,6 +109,9 @@ public class ClusterIdReuseIT
     @Test
     public void newLeaderShouldNotReuseIds() throws Exception
     {
+        final int RECORD_ID_BATCH_SIZE = 20;
+        cluster = clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( RECORD_ID_BATCH_SIZE ) ).startCluster();
+
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
 
@@ -134,7 +140,7 @@ public class ClusterIdReuseIT
         CoreClusterMember newCreationLeader = cluster.coreTx( ( db, tx ) ->
         {
             Node node = db.createNode();
-            assertEquals( idGenerator.getHighestPossibleIdInUse(), node.getId() );
+            assertEquals( idGenerator.getHighId(), node.getId() + RECORD_ID_BATCH_SIZE );
 
             tx.success();
         } );
@@ -144,6 +150,8 @@ public class ClusterIdReuseIT
     @Test
     public void reusePreviouslyFreedIds() throws Exception
     {
+        cluster = clusterRule.startCluster();
+
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
 

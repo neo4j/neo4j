@@ -150,6 +150,7 @@ class ReplicatedIdGenerator implements IdGenerator
         {
             acquireNextIdBatch();
             range = idQueue.nextIdBatch( size );
+            setHighId( range.getHighId() );
         }
         return range;
     }

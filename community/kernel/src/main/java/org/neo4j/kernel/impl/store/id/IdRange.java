@@ -89,4 +89,9 @@ public class IdRange
     {
         return Objects.hash( defragIds, rangeStart, rangeLength );
     }
+
+    public long getHighId()
+    {
+        return rangeStart + rangeLength;
+    }
 }
