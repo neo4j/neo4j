@@ -576,12 +576,6 @@
         <version>1.10</version>
         <type>jar</type>
         <scope>compile</scope>
-        <exclusions>
-          <exclusion>
-            <artifactId>commons-digester3</artifactId>
-            <groupId>commons-digester3</groupId>
-          </exclusion>
-        </exclusions>
       </dependency>
       <!-- Added (directly) to avoid version clash in commons-configuration. -->
       <dependency>
