@@ -87,7 +87,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
         return new FusionSchemaIndexProvider( nativeProvider,
-                luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ) );
+                luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
     }
 
     public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -42,12 +43,17 @@ class FusionIndexAccessor implements IndexAccessor
     private final IndexAccessor nativeAccessor;
     private final IndexAccessor luceneAccessor;
     private final Selector selector;
+    private final long indexId;
+    private final DropAction dropAction;
 
-    FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor luceneAccessor, Selector selector )
+    FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor luceneAccessor, Selector selector,
+            long indexId, DropAction dropAction )
     {
         this.nativeAccessor = nativeAccessor;
         this.luceneAccessor = luceneAccessor;
         this.selector = selector;
+        this.indexId = indexId;
+        this.dropAction = dropAction;
     }
 
     @Override
@@ -61,6 +67,7 @@ class FusionIndexAccessor implements IndexAccessor
         {
             luceneAccessor.drop();
         }
+        dropAction.drop( indexId );
     }
 
     @Override

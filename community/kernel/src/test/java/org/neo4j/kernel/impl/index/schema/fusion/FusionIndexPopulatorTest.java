@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.Matchers.sameInstance;
@@ -55,13 +56,15 @@ public class FusionIndexPopulatorTest
     private IndexPopulator nativePopulator;
     private IndexPopulator lucenePopulator;
     private FusionIndexPopulator fusionIndexPopulator;
+    private final long indexId = 8;
+    private final DropAction dropAction = mock( DropAction.class );
 
     @Before
     public void mockComponents()
     {
         nativePopulator = mock( IndexPopulator.class );
         lucenePopulator = mock( IndexPopulator.class );
-        fusionIndexPopulator = new FusionIndexPopulator( nativePopulator, lucenePopulator, new NativeSelector() );
+        fusionIndexPopulator = new FusionIndexPopulator( nativePopulator, lucenePopulator, new NativeSelector(), indexId, dropAction );
     }
 
     /* create */
@@ -116,6 +119,7 @@ public class FusionIndexPopulatorTest
         // then
         verify( nativePopulator, times( 1 ) ).drop();
         verify( lucenePopulator, times( 1 ) ).drop();
+        verify( dropAction ).drop( indexId );
     }
 
     @Test

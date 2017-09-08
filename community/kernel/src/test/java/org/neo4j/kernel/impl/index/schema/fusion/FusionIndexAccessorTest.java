@@ -30,6 +30,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.sameInstance;
@@ -53,13 +54,15 @@ public class FusionIndexAccessorTest
     private IndexAccessor nativeAccessor;
     private IndexAccessor luceneAccessor;
     private FusionIndexAccessor fusionIndexAccessor;
+    private final long indexId = 10;
+    private final DropAction dropAction = mock( DropAction.class );
 
     @Before
     public void setup()
     {
         nativeAccessor = mock( IndexAccessor.class );
         luceneAccessor = mock( IndexAccessor.class );
-        fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, luceneAccessor, new NativeSelector() );
+        fusionIndexAccessor = new FusionIndexAccessor( nativeAccessor, luceneAccessor, new NativeSelector(), indexId, dropAction );
     }
 
     /* drop */
@@ -73,6 +76,7 @@ public class FusionIndexAccessorTest
         // then
         verify( nativeAccessor, times( 1 ) ).drop();
         verify( luceneAccessor, times( 1 ) ).drop();
+        verify( dropAction ).drop( indexId );
     }
 
     @Test

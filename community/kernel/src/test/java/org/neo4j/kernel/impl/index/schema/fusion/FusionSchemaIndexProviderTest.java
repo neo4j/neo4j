@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
@@ -250,7 +251,8 @@ public class FusionSchemaIndexProviderTest
 
     private FusionSchemaIndexProvider fusionProvider()
     {
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10, NONE );
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10, NONE,
+                mock( FileSystemAbstraction.class ) );
     }
 
     private void setInitialState( SchemaIndexProvider mockedProvider, InternalIndexState state )
