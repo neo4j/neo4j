@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.helper;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -35,6 +36,11 @@ public class ExponentialBackoffStrategy implements TimeoutStrategy
 
         this.initialBackoffTimeMillis = timeUnit.toMillis( initialBackoffTime );
         this.upperBoundBackoffTimeMillis = timeUnit.toMillis( upperBoundBackoffTime );
+    }
+
+    public ExponentialBackoffStrategy( Duration initialBackoffTime, Duration upperBoundBackoffTime )
+    {
+        this( initialBackoffTime.toMillis(), upperBoundBackoffTime.toMillis(), TimeUnit.MILLISECONDS );
     }
 
     @Override

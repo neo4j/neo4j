@@ -41,7 +41,7 @@ public class OutboundMessageCollector implements Outbound<MemberId, RaftMessages
     }
 
     @Override
-    public void send( MemberId to, RaftMessages.RaftMessage message )
+    public void send( MemberId to, RaftMessages.RaftMessage message, boolean block )
     {
         raftMessages( to ).add( message );
     }

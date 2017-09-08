@@ -53,7 +53,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
     }
 
     @Override
-    public void send( MemberId to, RaftMessage message )
+    public void send( MemberId to, RaftMessage message, boolean block )
     {
         Optional<ClusterId> clusterId = clusterIdentity.get();
         if ( !clusterId.isPresent() )
@@ -65,7 +65,7 @@ public class RaftOutbound implements Outbound<MemberId, RaftMessage>
         Optional<CoreServerInfo> coreServerInfo = coreTopologyService.coreServers().find( to );
         if ( coreServerInfo.isPresent() )
         {
-            outbound.send( coreServerInfo.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ) );
+            outbound.send( coreServerInfo.get().getRaftServer(), new ClusterIdAwareMessage( clusterId.get(), message ), block );
         }
         else
         {

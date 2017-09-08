@@ -147,8 +147,12 @@ public class TestNetwork<T>
         }
 
         @Override
-        public void send( T destination, Message message )
+        public void send( T destination, Message message, boolean block )
         {
+            if ( block )
+            {
+                throw new UnsupportedOperationException( "Not implemented" );
+            }
             doSend( destination, message, System.currentTimeMillis() );
         }
 

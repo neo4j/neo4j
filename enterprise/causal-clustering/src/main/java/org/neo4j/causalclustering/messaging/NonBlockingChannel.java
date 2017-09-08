@@ -22,178 +22,123 @@ package org.neo4j.causalclustering.messaging;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.FutureListener;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.EventLoop;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 
-import java.io.IOException;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.LockSupport;
-
-import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
-import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 class NonBlockingChannel
 {
-    private static final int CONNECT_BACKOFF_IN_MS = 250;
-    /* This pause is a maximum for retrying in case of a park/unpark race as well as for any other abnormal
-    situations. */
-    private static final int RETRY_DELAY_MS = 100;
-    private final Thread messageSendingThread;
-    private final Log log;
-    private Channel nettyChannel;
-    private Bootstrap bootstrap;
-    private AdvertisedSocketAddress destination;
-    private Queue<Object> messageQueue = new ConcurrentLinkedQueue<>();
-    private volatile boolean stillRunning = true;
-    private final MessageQueueMonitor monitor;
-    private final int maxQueueSize;
-    private FutureListener<Void> errorListener;
+    private static final int CONNECT_BACKOFF_MS = 250;
 
-    NonBlockingChannel( Bootstrap bootstrap, final AdvertisedSocketAddress destination,
-            final Log log, MessageQueueMonitor monitor, int maxQueueSize )
+    private final Log log;
+    private final Bootstrap bootstrap;
+    private final EventLoop eventLoop;
+    private final SocketAddress destination;
+
+    private volatile Channel channel;
+    private volatile ChannelFuture fChannel;
+
+    private volatile boolean disposed;
+
+    NonBlockingChannel( Bootstrap bootstrap, EventLoop eventLoop, final SocketAddress destination, final Log log )
     {
         this.bootstrap = bootstrap;
+        this.eventLoop = eventLoop;
         this.destination = destination;
-        this.monitor = monitor;
-        this.maxQueueSize = maxQueueSize;
         this.log = log;
-
-        this.errorListener = future ->
-        {
-            if ( !future.isSuccess() )
-            {
-                log.error( "Failed to send message to " + destination, future.cause() );
-            }
-        };
-
-        messageSendingThread = new Thread( this::messageSendingThreadWork );
-        messageSendingThread.start();
     }
 
-    private void messageSendingThreadWork()
+    void start()
     {
-        while ( stillRunning )
-        {
-            try
-            {
-                ensureConnected();
+        tryConnect();
+    }
 
-                if ( sendMessages() )
+    private synchronized void tryConnect()
+    {
+        if ( disposed )
+        {
+            return;
+        }
+        else if ( fChannel != null && !fChannel.isDone() )
+        {
+            return;
+        }
+
+        fChannel = bootstrap.connect( destination.socketAddress() );
+        channel = fChannel.channel();
+
+        fChannel.addListener( ( ChannelFuture f ) ->
+        {
+            if ( !f.isSuccess() )
+            {
+                f.channel().eventLoop().schedule( this::tryConnect, CONNECT_BACKOFF_MS, MILLISECONDS );
+            }
+            else
+            {
+                log.info( "Connected: " + f.channel() );
+                f.channel().closeFuture().addListener( closed ->
                 {
-                    nettyChannel.flush();
-                }
+                    log.warn( String.format( "Lost connection to: %s (%s)", destination, channel.remoteAddress() ) );
+                    f.channel().eventLoop().schedule( this::tryConnect, CONNECT_BACKOFF_MS, MILLISECONDS );
+                } );
             }
-            catch ( IOException e )
-            {
-                /* IO-exceptions from inside netty are dealt with by closing any existing channel and retrying with a
-                 fresh one. */
-                if ( nettyChannel != null )
-                {
-                    log.warn( "Got exception for: " + nettyChannel + ". Will reconnect.", e );
-                    nettyChannel.close();
-                    nettyChannel = null;
-                }
-            }
-
-            parkNanos( MILLISECONDS.toNanos( RETRY_DELAY_MS ) );
-        }
-
-        if ( nettyChannel != null )
-        {
-            nettyChannel.close();
-            messageQueue.clear();
-            monitor.queueSize( destination, messageQueue.size() );
-        }
+        } );
     }
 
-    public void dispose()
+    public synchronized void dispose()
     {
-        stillRunning = false;
-
-        while ( messageSendingThread.isAlive() )
-        {
-            messageSendingThread.interrupt();
-
-            try
-            {
-                messageSendingThread.join( 100 );
-            }
-            catch ( InterruptedException e )
-            {
-                // Do nothing
-            }
-        }
+        disposed = true;
+        channel.close();
     }
 
-    public void send( Object msg )
+    public Future<Void> send( Object msg )
     {
-        if ( !stillRunning )
+        if ( disposed )
         {
             throw new IllegalStateException( "sending on disposed channel" );
         }
 
-        if ( messageQueue.size() < maxQueueSize )
+        if ( channel.isActive() )
         {
-            messageQueue.offer( msg );
-            LockSupport.unpark( messageSendingThread );
-            monitor.queueSize( destination, messageQueue.size());
+            return channel.writeAndFlush( msg );
         }
         else
         {
-            monitor.droppedMessage( destination );
+            Promise<Void> promise = eventLoop.newPromise();
+            deferredWrite( msg, fChannel, promise, true );
+            return promise;
         }
     }
 
-    private boolean sendMessages() throws IOException
+    /**
+     * Will try to reconnect once before giving up on a send. The reconnection *must* happen
+     * after write was scheduled. This is necessary to provide proper ordering when a message
+     * is sent right after the non-blocking channel was setup and before the server is ready
+     * to accept a connection. This happens frequently in tests.
+     */
+    private void deferredWrite( Object msg, ChannelFuture channelFuture, Promise<?> promise, boolean firstAttempt )
     {
-        if ( nettyChannel == null )
+        channelFuture.addListener( (ChannelFutureListener) f ->
         {
-            return false;
-        }
-
-        boolean sentSomething = false;
-        Object message;
-        while ( (message = messageQueue.peek()) != null )
-        {
-            ChannelFuture write = nettyChannel.write( message );
-            write.addListener( errorListener );
-
-            messageQueue.poll();
-            monitor.queueSize( destination, messageQueue.size());
-            sentSomething = true;
-        }
-
-        return sentSomething;
-    }
-
-    private void ensureConnected() throws IOException
-    {
-        if ( nettyChannel != null && !nettyChannel.isOpen() )
-        {
-            log.warn( String.format( "Lost connection to: %s (%s)", destination, nettyChannel.remoteAddress() ) );
-            nettyChannel = null;
-        }
-
-        while ( nettyChannel == null && stillRunning )
-        {
-            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
-
-            Channel channel = channelFuture.awaitUninterruptibly().channel();
-            if ( channelFuture.isSuccess() )
+            if ( f.isSuccess() )
             {
-                channel.flush();
-                nettyChannel = channel;
-                log.info( "Connected: " + nettyChannel );
+                f.channel().writeAndFlush( msg ).addListener( x -> promise.setSuccess( null ) );
+            }
+            else if ( firstAttempt )
+            {
+                tryConnect();
+                deferredWrite( msg, fChannel, promise, false );
             }
             else
             {
-                channel.close();
-                parkNanos( MILLISECONDS.toNanos( CONNECT_BACKOFF_IN_MS ) );
+                promise.setFailure( f.cause() );
             }
-        }
+        } );
     }
 }
