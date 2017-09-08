@@ -65,7 +65,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        IndexProviders indexProvider = mimicClassWith( IndexProviders.class, dependencies.getIndexProviders() );
+        IndexProviders indexProvider = createImposterOf( IndexProviders.class, dependencies.getIndexProviders() );
         return new org.neo4j.kernel.api.impl.index.LuceneKernelExtension(
                 context.storeDir(),
                 dependencies.getConfig(),
@@ -76,19 +76,31 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     }
 
     /**
-     * Create a mimicking proxy since it's in the public API and can't be changed
+     * Create an imposter of an interface. This is effectively used to mimic duck-typing.
+     *
+     * @param target the interface to mimic.
+     * @param imposter the instance of any class, it has to implement all methods of the interface provided by {@code target}.
+     * @param <T> the type of interface to mimic.
+     * @param <F> the actual type of the imposter.
+     * @return an imposter that can be passed as the type of mimicked interface.
+     *
+     * @implNote Method conformity is never checked, this is up to the user of the function to ensure. Sharp tool, use
+     * with caution.
      */
     @SuppressWarnings( "unchecked" )
-    private static <T,F> T mimicClassWith( Class<T> clazz, F base )
+    private static <T,F> T createImposterOf( Class<T> target, F imposter )
     {
-        return (T)Proxy.newProxyInstance( null, new Class<?>[]{clazz}, new MimicWrapper<>( base ) );
+        return (T)Proxy.newProxyInstance( target.getClassLoader(), new Class<?>[]{target}, new MirroredInvocationHandler<>( imposter ) );
     }
 
-    private static class MimicWrapper<F> implements InvocationHandler
+    /**
+     * Will pass through everything, as is, to the wrapped instance.
+     */
+    private static class MirroredInvocationHandler<F> implements InvocationHandler
     {
         private final F wrapped;
 
-        MimicWrapper( F wrapped )
+        MirroredInvocationHandler( F wrapped )
         {
             this.wrapped = wrapped;
         }
