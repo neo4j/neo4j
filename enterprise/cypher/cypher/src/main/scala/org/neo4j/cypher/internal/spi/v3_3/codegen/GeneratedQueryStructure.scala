@@ -202,7 +202,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       tracer = clazz.field(typeRef[QueryExecutionTracer], "tracer"),
       params = clazz.field(typeRef[MapValue], "params"),
       closeable = clazz.field(typeRef[Completable], "closeable"),
-      queryContext = clazz.field(typeRef[QueryContext], "queryContext"))
+      queryContext = clazz.field(typeRef[QueryContext], "queryContext"),
+      skip = clazz.field(typeRef[Boolean], "skip"))
   }
 
   def method[O <: AnyRef, R](name: String, params: TypeReference*)

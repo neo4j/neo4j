@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_3.codegen
 
+import java.io.PrintStream
 import java.util
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
@@ -38,7 +39,7 @@ import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
-import org.neo4j.kernel.api.exceptions.KernelException
+import org.neo4j.kernel.api.exceptions.{EntityNotFoundException, KernelException}
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
@@ -86,7 +87,55 @@ object Templates {
     methodReference(typeRef[IntStream], typeRef[IntStream], "of", typeRef[Array[Int]]),
     Expression.newArray(typeRef[Int], values: _*))
 
-  def handleKernelExceptions[V](generate: CodeBlock, ro: FieldReference, finalizers: Seq[Boolean => CodeBlock => Unit])
+  def handleEntityNotFound[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
+                             (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
+    var result = null.asInstanceOf[V]
+
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(innerBody: CodeBlock): Unit = result = happyPath(innerBody)
+    }, new Consumer[CodeBlock] {
+      override def accept(innerError: CodeBlock): Unit = {
+        innerError.put(innerError.self(), fields.skip, Expression.constant(true))
+        result = onFailure(innerError)
+      }
+    }, param[EntityNotFoundException]("enf"))
+    result
+  }
+
+  def handleEntityNotFoundAndKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
+                                                (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
+    var result = null.asInstanceOf[V]
+    generate.tryCatch(new Consumer[CodeBlock] {
+      override def accept(outerBody: CodeBlock): Unit = {
+        outerBody.tryCatch(new Consumer[CodeBlock] {
+          override def accept(innerBody: CodeBlock): Unit =  result = happyPath(innerBody)
+        }, new Consumer[CodeBlock] {
+          override def accept(innerError: CodeBlock): Unit = {
+            innerError.put(innerError.self(), fields.skip, Expression.constant(true))
+            result = onFailure(innerError)
+          }
+        }, param[EntityNotFoundException]("enf"))
+      }
+    },new Consumer[CodeBlock] {
+      override def accept(handle: CodeBlock): Unit = {
+        finalizers.foreach(block => block(false)(handle))
+        handle.throwException(Expression.invoke(
+          Expression.newInstance(typeRef[CypherExecutionException]),
+          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
+          Expression
+            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+                    Expression.invoke(
+                      Expression.newInstance(typeRef[StatementTokenNameLookup]),
+                      MethodReference
+                        .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
+                      Expression.get(handle.self(), fields.ro))), handle.load("e")
+        ))
+      }
+    }, param[KernelException]("e"))
+    result
+  }
+
+  def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
 
@@ -106,7 +155,7 @@ object Templates {
                       Expression.newInstance(typeRef[StatementTokenNameLookup]),
                       MethodReference
                         .constructorReference(typeRef[StatementTokenNameLookup], typeRef[ReadOperations]),
-                      Expression.get(handle.self(), ro))), handle.load("e")
+                      Expression.get(handle.self(), fields.ro))), handle.load("e")
         ))
       }
     }, param[KernelException]("e"))
@@ -151,6 +200,7 @@ object Templates {
     put(self(classHandle), typeRef[NodeManager], "nodeManager",
         cast(typeRef[NodeManager],
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, Object]("entityAccessor")))).
+    put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
 
   def getOrLoadReadOperations(clazz: ClassGenerator, fields: Fields) = {
