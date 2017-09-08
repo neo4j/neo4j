@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -67,7 +68,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
                   |
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.CommunityInterpreted, query, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
     val plan = result.executionPlanDescription().toString
     result.close()
 

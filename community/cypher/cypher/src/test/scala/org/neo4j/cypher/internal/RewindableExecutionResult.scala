@@ -248,6 +248,8 @@ object RewindableExecutionResult {
     override def hasNext: Boolean = inner.hasNext
 
     override def withNotifications(notification: Notification*): InternalExecutionResult = this
+
+    override def executionPlanString(): String = inner.executionPlanDescription().toString
   }
 
   private case class InternalExecutionResultCompatibilityWrapperFor3_1(inner: v3_1.executionplan.InternalExecutionResult)
@@ -385,6 +387,8 @@ object RewindableExecutionResult {
     override def hasNext: Boolean = inner.hasNext
 
     override def withNotifications(notification: Notification*): InternalExecutionResult = this
+
+    override def executionPlanString(): String = inner.executionPlanDescription().toString
   }
 
   private case class InternalExecutionResultCompatibilityWrapperFor3_2(inner: v3_2.executionplan.InternalExecutionResult)
@@ -522,6 +526,8 @@ object RewindableExecutionResult {
     override def hasNext: Boolean = inner.hasNext
 
     override def withNotifications(notification: Notification*): InternalExecutionResult = this
+
+    override def executionPlanString(): String = inner.executionPlanDescription().toString
   }
 
 }

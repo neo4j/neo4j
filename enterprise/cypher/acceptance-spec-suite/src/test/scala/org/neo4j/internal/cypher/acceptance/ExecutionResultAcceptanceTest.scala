@@ -19,20 +19,18 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.SecurityContext._
 
-class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
   test("closing the result without exhausting it should not fail the transaction") {
     val query = "UNWIND [1, 2, 3] as x RETURN x"
 
-    Seq(
-      s"CYPHER runtime=compiled $query",
-      s"CYPHER runtime=interpreted $query",
-      s"CYPHER 2.3 $query"
-    ).foreach(q => {
+    Configs.All.scenarios.map(s =>
+    s"CYPHER ${s.preparserOptions} $query").foreach(q => {
       val tx = graph.beginTransaction(KernelTransaction.Type.`explicit`, AUTH_DISABLED)
       val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
       tx.success()

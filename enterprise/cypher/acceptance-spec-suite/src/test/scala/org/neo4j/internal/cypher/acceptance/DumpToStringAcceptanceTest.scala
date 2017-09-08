@@ -21,15 +21,16 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   implicit val windowsSafe = WindowsStringSafe
 
   test("format node") {
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n").dumpToString() should
+    executeWith(Configs.All, ("match (n) return n")).dumpToString() should
       equal(
         """+----------------------------+
           || n                          |
@@ -43,7 +44,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("format relationship") {
     relate(createNode(), createNode(), "T", Map("prop1" -> "A", "prop2" -> 2))
 
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode("match ()-[r]->() return r").dumpToString() should equal(
+    executeWith(Configs.All, "match ()-[r]->() return r").dumpToString() should equal(
       """+--------------------------+
         || r                        |
         |+--------------------------+
@@ -54,7 +55,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("format collection of maps") {
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
+    executeWith(Configs.All,  """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
       equal(
         """+----------------------------------------+
           || [{ inner: 'Map1' }, { inner: 'Map2' }] |

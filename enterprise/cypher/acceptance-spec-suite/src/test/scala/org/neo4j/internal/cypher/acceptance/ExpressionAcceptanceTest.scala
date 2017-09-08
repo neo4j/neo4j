@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -85,7 +86,7 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     relate(actor, createLabeledNode(Map("title" -> "Movie 2"), "Movie"))
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, """MATCH (actor:Actor)-->(movie:Movie)
-            |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin, ignorePlans = Configs.AbsolutelyAll)
+            |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin, expectedDifferentPlans = Configs.AbsolutelyAll)
     result.toList should equal(
       List(Map("actor" ->
         Map("name" -> "Actor 1", "movies" -> Seq(
