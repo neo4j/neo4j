@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OffsetChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -85,7 +86,7 @@ public class IdContainer
             initialHighId = readAndValidateHeader();
             markAsSticky();
 
-            this.freeIdKeeper = new FreeIdKeeper( fileChannel, grabSize, aggressiveReuse, HEADER_SIZE );
+            this.freeIdKeeper = new FreeIdKeeper( new OffsetChannel( fileChannel, HEADER_SIZE ), grabSize, aggressiveReuse );
             closed = false;
         }
         catch ( IOException e )

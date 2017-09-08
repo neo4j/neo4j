@@ -206,11 +206,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
-        int maxQueueSize = config.get( CausalClusteringSettings.outgoing_queue_size );
 
         final SenderService raftSender = new SenderService(
                 new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, clusterSslPolicy ),
-                logProvider, platformModule.monitors, maxQueueSize );
+                logProvider, platformModule.monitors );
         life.add( raftSender );
 
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );

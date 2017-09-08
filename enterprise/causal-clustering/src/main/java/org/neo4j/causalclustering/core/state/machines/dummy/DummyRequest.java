@@ -39,6 +39,18 @@ public class DummyRequest implements CoreReplicatedContent
         this.data = data;
     }
 
+    @Override
+    public boolean hasSize()
+    {
+        return true;
+    }
+
+    @Override
+    public long size()
+    {
+        return data.length;
+    }
+
     public long byteCount()
     {
         return data != null ? data.length : 0;

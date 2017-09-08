@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering;
 
 import java.io.File;
+import java.time.Duration;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -39,8 +40,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ReplicationModule
 {
@@ -67,9 +66,13 @@ public class ReplicationModule
         LocalSessionPool sessionPool = new LocalSessionPool( myGlobalSession );
         progressTracker = new ProgressTrackerImpl( myGlobalSession );
 
-        ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 10, 60, SECONDS );
+        long replicationLimit = config.get( CausalClusteringSettings.replication_total_size_limit );
+        Duration initialBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_base );
+        Duration upperBoundBackoff = config.get( CausalClusteringSettings.replication_retry_timeout_limit );
+
+        ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( initialBackoff, upperBoundBackoff );
         replicator = life.add( new RaftReplicator( consensusModule.raftMachine(), myself, outbound, sessionPool,
-            progressTracker, retryStrategy, platformModule.availabilityGuard, logProvider ) );
+            progressTracker, retryStrategy, platformModule.availabilityGuard, logProvider, replicationLimit ) );
     }
 
     public RaftReplicator getReplicator()

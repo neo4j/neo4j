@@ -50,11 +50,12 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final AvailabilityGuard availabilityGuard;
     private final LeaderLocator leaderLocator;
     private final Log log;
+    private final Throttler throttler;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy timeoutStrategy, AvailabilityGuard availabilityGuard,
-            LogProvider logProvider )
+            LogProvider logProvider, long replicationLimit )
     {
         this.me = me;
         this.outbound = outbound;
@@ -62,14 +63,26 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         this.sessionPool = sessionPool;
         this.timeoutStrategy = timeoutStrategy;
         this.availabilityGuard = availabilityGuard;
-
+        this.throttler = new Throttler( replicationLimit );
         this.leaderLocator = leaderLocator;
         leaderLocator.registerListener( this );
         log = logProvider.getLog( getClass() );
     }
 
     @Override
-    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException, NoLeaderFoundException
+    public Future<Object> replicate( ReplicatedContent command, boolean trackResult ) throws InterruptedException
+    {
+        if ( command.hasSize() )
+        {
+            return throttler.invoke( () -> replicate0( command, trackResult ), command.size() );
+        }
+        else
+        {
+            return replicate0( command, trackResult );
+        }
+    }
+
+    private Future<Object> replicate0( ReplicatedContent command, boolean trackResult ) throws InterruptedException
     {
         OperationContext session = sessionPool.acquireSession();
 
@@ -82,7 +95,8 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
             assertDatabaseNotShutdown();
             try
             {
-                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ) );
+                // blocking at least until the send has succeeded or failed before retrying
+                outbound.send( leaderLocator.getLeader(), new RaftMessages.NewEntry.Request( me, operation ), true );
                 progress.awaitReplication( timeout.getMillis() );
                 timeout.increment();
             }
