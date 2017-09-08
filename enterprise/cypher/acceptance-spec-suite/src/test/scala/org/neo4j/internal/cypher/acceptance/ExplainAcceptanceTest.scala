@@ -25,7 +25,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
   test("normal query is marked as such") {
     createNode()
-    val result = succeedWith(Configs.All, "match (n) return n")
+    val result = executeWith(Configs.All, "match (n) return n")
 
     result.planDescriptionRequested should equal(false)
     result shouldNot be(empty)
@@ -33,7 +33,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
 
   test("explain query is marked as such") {
     createNode()
-    val result = succeedWith(Configs.All, "explain match (n) return n")
+    val result = executeWith(Configs.All, "explain match (n) return n")
 
     result.planDescriptionRequested should equal(true)
     result should be(empty)
@@ -67,7 +67,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
                   |
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
-    val result = succeedWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.CommunityInterpreted, query, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
     val plan = result.executionPlanDescription().toString
     result.close()
 

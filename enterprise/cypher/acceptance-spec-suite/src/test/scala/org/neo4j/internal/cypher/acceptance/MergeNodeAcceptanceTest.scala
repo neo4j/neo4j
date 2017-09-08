@@ -27,7 +27,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
   // TODO: Reflect something like this in the TCK
   test("multiple merges after each other") {
     1 to 100 foreach { prop =>
-      val result = updateWith(Configs.Interpreted - Configs.Cost2_3, s"merge (a:Label {prop: $prop}) return a.prop")
+      val result = executeWith(Configs.Interpreted - Configs.Cost2_3, s"merge (a:Label {prop: $prop}) return a.prop")
       assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     }
   }

@@ -43,7 +43,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    succeedWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
+    executeWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -58,7 +58,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     result should use("NodeIndexSeek")
@@ -77,7 +77,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.All, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
@@ -98,7 +98,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     result should useIndex(":User(firstname,lastname)")
@@ -121,13 +121,12 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.All,
-      """
-        |MATCH (n:User)
-        |USING INDEX n:User(lastname)
-        |WHERE n.lastname = 'Soap' AND n.firstname = 'Joe'
-        |RETURN n
-        |""".stripMargin)
+    val result = executeWith(Configs.All, """
+            |MATCH (n:User)
+            |USING INDEX n:User(lastname)
+            |WHERE n.lastname = 'Soap' AND n.firstname = 'Joe'
+            |RETURN n
+            |""".stripMargin)
 
     // Then
     result should not(useIndex(":User(firstname,lastname)"))
@@ -150,7 +149,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
@@ -163,17 +162,18 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph.createIndex("Person", "firstname", "lastname")
     val n = graph.execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").next().asInstanceOf[Node]
     graph.execute("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
     result should use("NodeIndexSeek")
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
   test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
-    succeedWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
-    succeedWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
+    executeWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
+      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
     result should useIndex(":Person(firstname,lastname)")
   }
 
@@ -188,12 +188,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
-      """MATCH (n:Foo)
-        |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
-        |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
-        |RETURN n.idx as x
-        |ORDER BY x""".stripMargin)
+    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+            |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
+            |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
+            |RETURN n.idx as x
+            |ORDER BY x""".stripMargin, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     result should useIndex(":Foo(bar,baz)")
@@ -209,12 +208,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
-      """MATCH (n:Foo)
-        |WHERE n.bar = 1
-        |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
-        |RETURN n.baz as x
-        |ORDER BY x""".stripMargin)
+    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+            |WHERE n.bar = 1
+            |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
+            |RETURN n.baz as x
+            |ORDER BY x""".stripMargin, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     result should useIndex(":Foo(bar,baz)")
@@ -230,12 +228,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
-      """MATCH (n:Foo)
-        |WHERE n.baz = 1
-        |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
-        |RETURN n.bar as x
-        |ORDER BY x""".stripMargin)
+    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+            |WHERE n.baz = 1
+            |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
+            |RETURN n.bar as x
+            |ORDER BY x""".stripMargin, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
 
     // Then
     result should useIndex(":Foo(bar,baz)")
@@ -252,7 +249,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz")
   }
@@ -267,15 +264,15 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = executeWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz)")
   }
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
-    succeedWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
-    succeedWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
+    executeWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
+    executeWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
   }
 
   test("should not use range queries against a composite index") {
@@ -284,7 +281,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // When
-    val result = succeedWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
+    val result = executeWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
 
     // Then
     result.toComparableResult should equal(Seq(Map("n" -> n)))
@@ -314,7 +311,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         // When
         val query = s"MATCH (n:User) WHERE $predicates RETURN n"
         val result = try {
-          succeedWith(testConfig, query)
+          if (valid)
+            executeWith(testConfig, query, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1)
+          else
+            executeWith(testConfig, query)
         } catch {
           case e: Exception =>
             System.err.println(query)
@@ -347,8 +347,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // 2.3 excluded because the params syntax was not supported in that version
-    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
-      "id" -> a.getId)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1, params = Map("id" -> a.getId))
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
     result should useIndex(":X(p1,p2)")

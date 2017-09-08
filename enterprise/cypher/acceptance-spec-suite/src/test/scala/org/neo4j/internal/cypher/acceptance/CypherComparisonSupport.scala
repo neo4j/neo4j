@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
+import org.neo4j.cypher._
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -95,188 +95,19 @@ trait CypherComparisonSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
-  private def extractFirstScenario(config: TestConfiguration): TestScenario = {
-    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
-    if (config.scenarios.contains(preferredScenario))
-      preferredScenario
-    else
-      config.scenarios.head
-  }
-
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
-
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, false, params: _*)
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    query: String,
-                                                    params: (String, Any)*): InternalExecutionResult =
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, Configs.Empty, query, checkPlans, params: _*)
-  }
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    ignoreScenarios: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, checkPlans, () => {}, params: _*)
-  }
-
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                    ignoreScenarios: TestConfiguration,
-                                                    query: String,
-                                                    checkPlans: Boolean,
-                                                    executeBefore: () => Unit,
-                                                    params: (String, Any)*): InternalExecutionResult = {
-    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
-    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
-
-    val firstScenario = extractFirstScenario(expectedSuccessFrom)
-
-    val positiveResults = (runAgainstScenarios.scenarios - firstScenario).flatMap {
-      thisScenario =>
-        thisScenario.prepare()
-        val tryResult: Try[InternalExecutionResult] = graph.rollback(
-          {
-            executeBefore()
-            Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
-          }
-        )
-
-        val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
-
-        if (expectedToSucceed) {
-          tryResult match {
-            case Success(thisResult) =>
-              thisScenario.checkStateForSuccess(query)
-              thisScenario.checkResultForSuccess(query, thisResult)
-              Some(thisResult -> thisScenario)
-            case Failure(e) =>
-              fail(s"Expected to succeed in ${thisScenario.name} but got exception", e)
-          }
-        } else {
-          thisScenario.checkStateForFailure(query)
-          thisScenario.checkResultForFailure(query, tryResult)
-          None
-        }
-
-    }
-
-    firstScenario.prepare()
-    executeBefore()
-    val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
-    firstScenario.checkStateForSuccess(query)
-    firstScenario.checkResultForSuccess(query, lastResult)
-
-    positiveResults.foreach {
-      case (result, scenario) =>
-        if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(scenario)) {
-          assertPlansSimilar(lastResult, result, s"${scenario.name} did not equal ${firstScenario.name}")
-        }
-        assertResultsAreSame(result, lastResult, query, s"${scenario.name} returned different results than ${firstScenario.name}")
-    }
-
-    lastResult
-  }
-
-  private def assertNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
-    val hasOverlap = expectedSuccessFrom.scenarios.exists(ignoreScenarios.scenarios.contains(_))
-    if (hasOverlap)
-      fail("Set of configurations that were expected to succeed and the set of configs that should be ignored are overlapping")
-  }
-
-  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
-    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
-
-  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
-                                                     query: String,
-                                                     params: (String, Any)*): InternalExecutionResult =
-    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
-
-  protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
-  InternalExecutionResult =
-    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, Configs.Empty, query, checkPlans, params: _*)
-
-  protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
-  InternalExecutionResult = {
-    assertNoOverlap(expectedSuccessFrom, ignoreScenarios)
-    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
-    if (expectedSuccessFrom.scenarios.isEmpty) {
-      for (thisScenario <- runAgainstScenarios.scenarios) {
-        thisScenario.prepare()
-        val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
-        thisScenario.checkStateForFailure(query)
-        thisScenario.checkResultForFailure(query, tryResult)
-      }
-      null
-    } else {
-      val firstScenario = extractFirstScenario(expectedSuccessFrom)
-      firstScenario.prepare()
-      val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
-      firstScenario.checkStateForSuccess(query)
-
-      for (thisScenario <- runAgainstScenarios.scenarios if thisScenario != firstScenario) {
-        thisScenario.prepare()
-        val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
-
-        val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
-
-        if (expectedToSucceed) {
-          tryResult match {
-            case Success(thisResult) =>
-              thisScenario.checkStateForSuccess(query)
-              thisScenario.checkResultForSuccess(query, thisResult)
-              if (checkPlans && !Configs.AllRulePlanners.scenarios.contains(thisScenario)) {
-                assertPlansSimilar(firstResult, thisResult, "${firstScenario.name} returned different results than ${thisScenario.name}")
-              }
-              assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
-            case Failure(e) =>
-              fail(s"Expected to succeed in ${thisScenario.name} but got exception.", e)
-          }
-        } else {
-          thisScenario.checkStateForFailure(query)
-          thisScenario.checkResultForFailure(query, tryResult)
-        }
-      }
-
-      firstResult
-    }
-  }
-
-  private def assertPlansSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String) = {
-    val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
-    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue(hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult.executionPlanDescription()) {
-      assert(currentOps equals otherOps)
-    }
-  }
-
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
-
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: String, params: (String, Any)*):
   Unit = {
     for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
       thisScenario.prepare()
-      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.scenarios.contains(thisScenario)
+      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.containsScenario(thisScenario)
 
-      try {
-        innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)
-        if (expectedToFailWithSpecificMessage) {
-          fail("Unexpectedly Succeeded in " + thisScenario.name + " instead of failing with this message:'" + message + "'")
-        } else {
+      val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
+      tryResult match {
+        case Success(result) =>
           fail("Unexpectedly Succeeded in " + thisScenario.name)
-        }
-      } catch {
-        case e: CypherException =>
+        case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
-            if (!e.getMessage.contains(message)) {
+            if (e.getMessage == null || !e.getMessage.contains(message)) {
               fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
                 "' the error message was '" + e.getMessage + "'")
             }
@@ -286,18 +117,126 @@ trait CypherComparisonSupport extends CypherTestSupport {
             }
             // It failed like expected, and we did not specify any message for this config
           }
-
-        case e: Throwable => throw e
+        case Failure(e: Throwable) => throw e
       }
     }
   }
 
-  protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+  protected def executeWith(expectSucceed: TestConfiguration,
+                            query: String,
+                            ignoreResults: TestConfiguration = Configs.Empty,
+                            ignorePlans: TestConfiguration = Configs.AllRulePlanners,
+                            executeBefore: () => Unit = () => {},
+                            params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+    val compareResults = expectSucceed -  ignoreResults
+    val comparePlans = expectSucceed - ignorePlans
+    val baseScenario =
+      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults, comparePlans)
+      else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+
+    val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
+      thisScenario =>
+        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params)
+    }
+
+    baseScenario.prepare()
+    executeBefore()
+    val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
+    baseScenario.checkStateForSuccess(query)
+    baseScenario.checkResultForSuccess(query, baseResult)
+
+    positiveResults.foreach {
+      case (scenario, result) =>
+        if (comparePlans.containsScenario(scenario)) {
+          assertPlansSimilar(baseResult, result, s"plan for ${scenario.name} did not equal ${baseScenario.name}")
+        } else {
+          assertPlansNotSimilar(baseResult, result, s"plan for ${scenario.name} was equal to ${baseScenario.name}")
+        }
+        if (compareResults.containsScenario(scenario)) {
+          assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
+        } else {
+          assertResultsNotSame(result, baseResult, query, s"Unexpectedly (but correctly!)\n${scenario.name} returned same results as ${baseScenario.name}")
+        }
+    }
+
+    baseResult
+  }
+
+  private def extractBaseScenario(expectSucceed: TestConfiguration, compareResults: TestConfiguration, comparePlans: TestConfiguration): TestScenario = {
+    val scenariosToChooseFrom = (compareResults.scenarios.isEmpty, comparePlans.scenarios.isEmpty) match {
+      case (true, true) => expectSucceed
+      case (true, false) => comparePlans
+      case (false, true) => compareResults
+      case (false, false) => TestConfiguration(comparePlans.scenarios.intersect(compareResults.scenarios))
+    }
+    if (scenariosToChooseFrom.scenarios.isEmpty) {
+      fail("At least one scenario must be expected to succeed, be comparable with plan and result")
+    }
+    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+    if (scenariosToChooseFrom.containsScenario(preferredScenario))
+      preferredScenario
+    else
+      scenariosToChooseFrom.scenarios.head
+  }
+
+  private def executeScenario(scenario: TestScenario, query: String, expectedToSucceed: Boolean, executeBefore: () => Unit, params: Map[String, Any]) = {
+    scenario.prepare()
+    val tryResult = graph.rollback(
+      {
+        executeBefore()
+        Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+      })
+
+    if (expectedToSucceed) {
+      tryResult match {
+        case Success(thisResult) =>
+          scenario.checkStateForSuccess(query)
+          scenario.checkResultForSuccess(query, thisResult)
+          Some(scenario -> thisResult)
+        case Failure(e) =>
+          fail(s"Expected to succeed in ${scenario.name} but got exception", e)
+      }
+    } else {
+      scenario.checkStateForFailure(query)
+      scenario.checkResultForFailure(query, tryResult)
+      None
+    }
+  }
+
+  private def assertPlansSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
+    val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
+    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
+    withClue(hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult.executionPlanDescription()) {
+      assert(currentOps equals otherOps)
+    }
+  }
+
+  private def assertPlansNotSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
+    val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
+    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
+    withClue("Unexpectedly (but correctly!)\n" + hint + "\n" + thisResult.executionPlanDescription() + "\n equaled \n" + firstResult.executionPlanDescription()) {
+      assert(!(currentOps equals otherOps))
+    }
+  }
+
+  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
+
+  private def assertResultsSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
         result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
       } else {
         result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs result2.toComparableResultWithOptions(replaceNaNs)
+      }
+    }
+  }
+
+  private def assertResultsNotSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
+    withClue(errorMsg) {
+      if (queryText.toLowerCase contains "order by") {
+        result1.toComparableResultWithOptions(replaceNaNs) shouldNot contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
+      } else {
+        result1.toComparableResultWithOptions(replaceNaNs) shouldNot contain theSameElementsAs result2.toComparableResultWithOptions(replaceNaNs)
       }
     }
   }
@@ -328,6 +267,10 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
+
+    def Cost3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
+
+    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
 
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
@@ -457,6 +400,9 @@ object CypherComparisonSupport {
 
   object Runtimes {
 
+    // Default behaves different from specifying a specific runtime - thus it's included
+    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, Interpreted, ProcedureOrSchema, Default)
+
     implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
     object CompiledSource extends Runtime("COMPILED", "runtime=compiled debug=generate_java_source")
@@ -550,6 +496,8 @@ object CypherComparisonSupport {
     def +(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios ++ other.scenarios)
 
     def -(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios -- other.scenarios)
+
+    def containsScenario(scenario: TestScenario): Boolean = this.scenarios.contains(scenario)
   }
 
   object TestConfiguration {
