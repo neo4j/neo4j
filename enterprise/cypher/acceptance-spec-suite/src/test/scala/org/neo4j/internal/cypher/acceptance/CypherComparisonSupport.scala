@@ -400,6 +400,7 @@ object CypherComparisonSupport {
 
   object Runtimes {
 
+    // Default behaves different from specifying a specific runtime - thus it's included
     val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, Interpreted, ProcedureOrSchema, Default)
 
     implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
