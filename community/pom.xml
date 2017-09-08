@@ -49,7 +49,6 @@
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>
-    <module>monitor-logging</module>
     <module>lucene-index</module>
     <module>lucene-index-upgrade</module>
     <module>graph-algo</module>
