@@ -78,7 +78,7 @@ public class GBPTreeFileUtilTest extends AbstractGBPTreeFileUtilTest
     protected File existingFile( String fileName ) throws IOException
     {
         File file = directory.file( fileName );
-        fs.create( file );
+        fs.create( file ).close();
         return file;
     }
 
