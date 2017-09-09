@@ -38,7 +38,6 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -47,10 +46,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.StoreLogService;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.FileOperation;
-import org.neo4j.kernel.impl.storemigration.StoreFile;
-import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
 import org.neo4j.kernel.impl.util.Validator;
@@ -536,22 +531,13 @@ public class ImportTool
             }
 
             life.shutdown();
+
             if ( !success )
             {
-                try
-                {
-                    StoreFile.fileOperation( FileOperation.DELETE, fs, storeDir, null,
-                            Iterables.<StoreFile,StoreFile>iterable( StoreFile.values() ),
-                            false, ExistingTargetStrategy.FAIL, StoreFileType.values() );
-                }
-                catch ( IOException e )
-                {
-                    err.println( "Unable to delete store files after an aborted import " + e );
-                    if ( enableStacktrace )
-                    {
-                        e.printStackTrace();
-                    }
-                }
+                err.println( "WARNING Import failed. The store files in " + storeDir.getAbsolutePath() +
+                        " are left as they are, although they are likely in an unusable state. " +
+                        "Starting a database on these store files will likely fail or observe inconsistent records so " +
+                        "start at your own risk or delete the store manually" );
             }
         }
     }

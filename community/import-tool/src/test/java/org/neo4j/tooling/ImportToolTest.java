@@ -54,7 +54,9 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
@@ -87,6 +89,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 
@@ -1282,6 +1285,14 @@ public class ImportToolTest
             // EXPECT
             assertTrue( suppressOutput.getErrorVoice().containsMessage( message ) );
         }
+
+        for ( StoreType storeType : StoreType.values() )
+        {
+            if ( storeType.isRecordStore() )
+            {
+                new File( dbRule.getStoreDirFile(), DEFAULT_NAME + storeType.getStoreName() ).delete();
+            }
+        }
     }
 
     @Test
@@ -1886,6 +1897,53 @@ public class ImportToolTest
 
         String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
         assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
+    }
+
+    @Test
+    public void shouldKeepStoreFilesAfterFailedImport() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = nodeIds();
+        Configuration config = Configuration.TABS;
+
+        // WHEN data file contains more columns than header file
+        int extraColumns = 3;
+        String storeDir = dbRule.getStoreDirAbsolutePath();
+        try
+        {
+            importTool(
+                    "--into", storeDir,
+                    "--nodes", nodeHeader( config ).getAbsolutePath() + MULTI_FILE_DELIMITER +
+                            nodeData( false, config, nodeIds, TRUE, Charset.defaultCharset(), extraColumns ).getAbsolutePath() );
+            fail( "Should have thrown exception" );
+        }
+        catch ( InputException e )
+        {
+            // THEN the store files should be there
+            for ( StoreType storeType : StoreType.values() )
+            {
+                if ( storeType.isRecordStore() )
+                {
+                    assertTrue( new File( storeDir, MetaDataStore.DEFAULT_NAME + storeType.getStoreName() ).exists() );
+                }
+            }
+
+            List<String> errorLines = suppressOutput.getErrorVoice().lines();
+            assertContains( errorLines, "Starting a database on these store files will likely fail or observe inconsistent records" );
+        }
+    }
+
+    private void assertContains( List<String> errorLines, String string )
+    {
+        for ( String line : errorLines )
+        {
+            if ( line.contains( string ) )
+            {
+                return;
+            }
+        }
+        fail( "Expected error lines " + join( errorLines.toArray( new String[errorLines.size()] ), format( "%n" ) ) +
+                " to have at least one line containing the string '" + string + "'" );
     }
 
     private static int occurencesOf( String text, String lookFor )
