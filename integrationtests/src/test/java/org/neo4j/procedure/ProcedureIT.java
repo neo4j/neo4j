@@ -53,6 +53,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
@@ -101,6 +102,7 @@ public class ProcedureIT
         db = new TestEnterpriseGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         onCloseCalled = new boolean[2];
     }
