@@ -38,6 +38,10 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertDoesNotRewrite("MATCH n RETURN n[\"name\"]")
   }
 
+  test("should not extract string literals in graph urls") {
+    assertDoesNotRewrite("WITH GRAPH foo AT 'blub' MATCH (n) RETURN n")
+  }
+
   test("should extract literals in return clause") {
     assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0" -> 1))
     assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0" -> 1.1))
