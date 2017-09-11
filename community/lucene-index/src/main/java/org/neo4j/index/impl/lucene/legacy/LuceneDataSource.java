@@ -168,7 +168,7 @@ public class LuceneDataSource extends LifecycleAdapter
         // If the index searcher has never been loaded, we need to load it now to populate the map.
         if ( stringDocValuesTypeMap == null )
         {
-            getIndexSearcher( identifier );
+            getIndexSearcher( identifier ).close();
             stringDocValuesTypeMap = indexTypeMap.get( identifier );
         }
         DocValuesType actualType;
