@@ -499,7 +499,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Remaining ids are freed back to id generator on clean shutdown." )
     @Internal
     public static final Setting<Integer> record_id_batch_size = buildSetting( "unsupported.dbms.record_id_batch_size", INTEGER,
-            "1" ).constraint( range( 1, 1_000 ) ).build();
+            "20" ).constraint( range( 1, 1_000 ) ).build();
 
     @Description( "An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM." )
