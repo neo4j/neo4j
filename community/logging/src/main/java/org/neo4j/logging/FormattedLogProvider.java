@@ -26,6 +26,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
@@ -234,6 +235,19 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static Builder withZoneId( ZoneId zoneId )
     {
         return new Builder().withZoneId( zoneId );
+    }
+
+    /**
+     * Start creating a {@link FormattedLogProvider} with the specified zoneId from timezone for datestamps in the log
+     *
+     * @param timeZone
+     * @return a builder for a {@link FormattedLogProvider}
+     * @Deprecated use {@link #withZoneId(ZoneId)}
+     */
+    @Deprecated
+    public static Builder withTimeZone( TimeZone timeZone )
+    {
+        return new Builder().withZoneId( timeZone.toZoneId() );
     }
 
     /**
