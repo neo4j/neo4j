@@ -231,7 +231,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
 
     private void markTreeAsOnline() throws IOException
     {
-        tree.checkpoint( IOLimiter.unlimited(), ( pc ) -> pc.putByte( BYTE_ONLINE ) );
+        tree.checkpoint( IOLimiter.unlimited(), pc -> pc.putByte( BYTE_ONLINE ) );
     }
 
     void closeWriter() throws IOException

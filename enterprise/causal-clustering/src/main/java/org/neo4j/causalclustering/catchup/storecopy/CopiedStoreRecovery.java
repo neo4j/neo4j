@@ -70,7 +70,7 @@ public class CopiedStoreRecovery extends LifecycleAdapter
         }
         catch ( Exception e )
         {
-            Throwable peeled = Exceptions.peel( e, ( t ) -> !(t instanceof UpgradeNotAllowedByConfigurationException) );
+            Throwable peeled = Exceptions.peel( e, t -> !(t instanceof UpgradeNotAllowedByConfigurationException) );
             if ( peeled != null )
             {
                 throw new RuntimeException( failedToStartMessage(), e );

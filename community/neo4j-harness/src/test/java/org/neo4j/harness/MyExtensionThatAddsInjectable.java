@@ -42,7 +42,7 @@ public class MyExtensionThatAddsInjectable
     public Lifecycle newInstance( KernelContext context,
             Dependencies dependencies ) throws Throwable
     {
-        dependencies.procedures().registerComponent( SomeService.class, ( ctx ) -> new SomeService(), true );
+        dependencies.procedures().registerComponent( SomeService.class, ctx -> new SomeService(), true );
         return new LifecycleAdapter();
     }
 

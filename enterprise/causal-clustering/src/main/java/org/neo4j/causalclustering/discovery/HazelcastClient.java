@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,24 +29,19 @@ import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
-import static java.lang.Integer.parseInt;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP_NAME;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology
-        .READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP_NAME;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
 
 class HazelcastClient extends LifecycleAdapter implements TopologyService
 {
@@ -122,8 +116,8 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
      */
     private void refreshTopology() throws HazelcastInstanceNotActiveException
     {
-        coreTopology = hzInstance.apply( ( hz ) -> getCoreTopology( hz, config, log ) );
-        rrTopology = hzInstance.apply( ( hz ) -> getReadReplicaTopology( hz, log ) );
+        coreTopology = hzInstance.apply( hz -> getCoreTopology( hz, config, log ) );
+        rrTopology = hzInstance.apply( hz -> getReadReplicaTopology( hz, log ) );
         catchupAddressMap = extractCatchupAddressesMap( coreTopology, rrTopology );
     }
 

@@ -45,12 +45,12 @@ public class LegacySslPolicyConfig implements LoadableConfig
     @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
     public static Setting<File> tls_certificate_file =
             derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
-                    ( certificates ) -> new File( certificates, "neo4j.cert" ), PATH );
+                    certificates -> new File( certificates, "neo4j.cert" ), PATH );
 
     //@Deprecated to be deprecated in 3.3
     @Internal
     @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
     public static final Setting<File> tls_key_file =
             derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
-                    ( certificates ) -> new File( certificates, "neo4j.key" ), PATH );
+                    certificates -> new File( certificates, "neo4j.key" ), PATH );
 }

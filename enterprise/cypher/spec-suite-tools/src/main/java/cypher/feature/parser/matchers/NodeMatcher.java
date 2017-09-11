@@ -61,7 +61,7 @@ public class NodeMatcher implements ValueMatcher
     {
         StringBuilder sb = new StringBuilder();
         sb.append( "(" );
-        labelNames.forEach( ( l ) -> sb.append( ":" ).append( l ) );
+        labelNames.forEach( l -> sb.append( ":" ).append( l ) );
         sb.append( " " ).append( propertyMatcher ).append( ")" );
         return sb.toString();
     }

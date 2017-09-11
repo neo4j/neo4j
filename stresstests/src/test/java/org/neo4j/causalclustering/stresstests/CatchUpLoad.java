@@ -28,13 +28,13 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.helper.IsConnectionRestByPeer;
-import org.neo4j.helper.IsStoreClosed;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
+import org.neo4j.helper.IsConnectionRestByPeer;
+import org.neo4j.helper.IsStoreClosed;
 import org.neo4j.helper.RepeatUntilCallable;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -71,7 +71,7 @@ class CatchUpLoad extends RepeatUntilCallable
         {
             monitoredException = startAndRegisterExceptionMonitor( readReplica );
             await( this::leaderTxId, // if the txId from the leader is -1, give up and retry later (leader switch?)
-                    ( leaderTxId ) -> leaderTxId < BASE_TX_ID || leaderTxId <= txId( readReplica, true ), // caught up?
+                    leaderTxId -> leaderTxId < BASE_TX_ID || leaderTxId <= txId( readReplica, true ), // caught up?
                     10, TimeUnit.MINUTES );
         }
         catch ( Throwable e )

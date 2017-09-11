@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -119,7 +118,7 @@ public class ClusterOverviewProcedure extends CallableProcedure.BasicProcedure
 
         endpoints.sort( comparing( o -> o.addresses().toString() ) );
 
-        return map( ( endpoint ) -> new Object[]
+        return map( endpoint -> new Object[]
                         {
                                 endpoint.memberId().toString(),
                                 endpoint.addresses().uriList().stream().map( URI::toString ).collect( Collectors.toList() ),

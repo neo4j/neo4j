@@ -45,7 +45,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
             Dependencies dependencies ) throws Throwable
     {
         dependencies.procedures().registerComponent( MyCoreAPI.class,
-                ( ctx ) -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),
+                ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),
                         dependencies.logService().getUserLog( MyCoreAPI.class ) ), true );
         return new LifecycleAdapter();
     }

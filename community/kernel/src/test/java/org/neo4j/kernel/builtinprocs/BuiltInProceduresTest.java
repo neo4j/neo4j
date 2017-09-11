@@ -372,7 +372,7 @@ public class BuiltInProceduresTest
             return newIndex;
         };
         return tokens.entrySet().stream()
-                     .filter( ( entry ) -> entry.getValue().equals( name ) )
+                     .filter( entry -> entry.getValue().equals( name ) )
                      .map( Map.Entry::getKey )
                      .findFirst().orElseGet( allocateFromMap );
     }
@@ -380,9 +380,9 @@ public class BuiltInProceduresTest
     @Before
     public void setup() throws Exception
     {
-        procs.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ), false );
-        procs.registerComponent( DependencyResolver.class, ( ctx ) -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        procs.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> ctx.get( GRAPHDATABASEAPI ), false );
+        procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
+        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
         procs.registerType( Node.class, new TypeMappers.SimpleConverter( NTNode, Node.class ) );
@@ -400,16 +400,16 @@ public class BuiltInProceduresTest
         when( read.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
         when( read.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
         when( read.indexesGetAll() ).thenAnswer(
-                ( i ) -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( read.constraintsGetAll() ).thenAnswer( ( i ) -> constraints.iterator() );
+                i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
+        when( read.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
         when( read.proceduresGetAll() ).thenReturn( procs.getAllProcedures() );
 
         when( read.propertyKeyGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> propKeys.get( invocation.getArguments()[0] ) );
+                .thenAnswer( invocation -> propKeys.get( invocation.getArguments()[0] ) );
         when( read.labelGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> labels.get( invocation.getArguments()[0] ) );
+                .thenAnswer( invocation -> labels.get( invocation.getArguments()[0] ) );
         when( read.relationshipTypeGetName( anyInt() ) )
-                .thenAnswer( ( invocation ) -> relTypes.get( invocation.getArguments()[0] ) );
+                .thenAnswer( invocation -> relTypes.get( invocation.getArguments()[0] ) );
 
         // Make it appear that labels are in use
         // TODO: We really should just have `labelsInUse()` on the Kernel API directly,
@@ -424,8 +424,8 @@ public class BuiltInProceduresTest
 
     private Answer<Iterator<Token>> asTokens( Map<Integer,String> tokens )
     {
-        return ( i ) -> tokens.entrySet().stream()
-                              .map( ( entry ) -> new Token( entry.getValue(), entry.getKey() ) )
+        return i -> tokens.entrySet().stream()
+                              .map( entry -> new Token( entry.getValue(), entry.getKey() ) )
                               .iterator();
     }
 

@@ -80,38 +80,38 @@ public class SecuritySettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> native_authentication_enabled =
             derivedSetting( "dbms.security.native.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via native authorization provider." )
     @Internal
     public static final Setting<Boolean> native_authorization_enabled =
             derivedSetting( "dbms.security.native.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( NATIVE_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via settings configurable LDAP authentication provider." )
     @Internal
     public static final Setting<Boolean> ldap_authentication_enabled =
             derivedSetting( "dbms.security.ldap.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authorization via settings configurable LDAP authorization provider." )
     @Internal
     public static final Setting<Boolean> ldap_authorization_enabled =
             derivedSetting( "dbms.security.ldap.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
+                    providers -> providers.contains( LDAP_REALM_NAME ), BOOLEAN );
 
     @Description( "Enable authentication via plugin authentication providers." )
     @Internal
     public static final Setting<Boolean> plugin_authentication_enabled =
             derivedSetting( "dbms.security.plugin.authentication_enabled", auth_providers,
-                    ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    providers -> providers.stream().anyMatch( r -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
     @Description( "Enable authorization via plugin authorization providers." )
     @Internal
     public static final Setting<Boolean> plugin_authorization_enabled =
             derivedSetting( "dbms.security.plugin.authorization_enabled", auth_providers,
-                    ( providers ) -> providers.stream().anyMatch( ( r ) -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
+                    providers -> providers.stream().anyMatch( r -> r.startsWith( PLUGIN_REALM_NAME_PREFIX ) ),
                     BOOLEAN );
 
     //=========================================================================
@@ -282,7 +282,7 @@ public class SecuritySettings implements LoadableConfig
     @Description( "Path to the security log file." )
     public static final Setting<File> security_log_filename = derivedSetting( "dbms.logs.security.path",
             GraphDatabaseSettings.logs_directory,
-            ( logs ) -> new File( logs, "security.log" ),
+            logs -> new File( logs, "security.log" ),
             PATH );
 
     @Description( "Security log level threshold." )

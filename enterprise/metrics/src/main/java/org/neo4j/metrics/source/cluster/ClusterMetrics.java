@@ -68,7 +68,7 @@ public class ClusterMetrics extends LifecycleAdapter
         monitors.addMonitorListener( monitor );
 
         registry.register( IS_MASTER, new RoleGauge( MASTER::equals ) );
-        registry.register( IS_AVAILABLE, new RoleGauge( ( s ) -> !UNKNOWN.equals( s ) ) );
+        registry.register( IS_AVAILABLE, new RoleGauge( s -> !UNKNOWN.equals( s ) ) );
 
         registry.register( SLAVE_PULL_UPDATES, (Gauge<Long>) () -> monitor.events.get() );
         registry.register( SLAVE_PULL_UPDATE_UP_TO_TX, (Gauge<Long>) () -> monitor.lastAppliedTxId );

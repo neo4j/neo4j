@@ -102,7 +102,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             serverAddress =  config.httpConnectors().stream()
                     .filter( c -> Encryption.NONE.equals( c.encryptionLevel() ) )
                     .findFirst()
-                    .map( ( connector ) -> config.get( connector.listen_address ).toString() )
+                    .map( connector -> config.get( connector.listen_address ).toString() )
                     .orElse( serverAddress );
 
             checkCompatibility();
@@ -193,7 +193,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
             Thread t = Thread.currentThread();
             log.debug( "Installing signal handler to interrupt thread named " + t.getName() );
             // SIGTERM is invoked when system service is stopped
-            Signal.handle( new Signal( SIGTERM ), ( signal ) ->
+            Signal.handle( new Signal( SIGTERM ), signal ->
             {
                 t.interrupt();
                 System.exit( 0 );
@@ -206,7 +206,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         try
         {
             // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
-            Signal.handle( new Signal( SIGINT ), ( signal ) -> System.exit( 0 ) );
+            Signal.handle( new Signal( SIGINT ), signal -> System.exit( 0 ) );
         }
         catch ( Throwable e )
         {

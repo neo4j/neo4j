@@ -233,7 +233,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
         protocolHandlers.put(
                 (long) BoltMessagingProtocolV1Handler.VERSION,
-                ( boltChannel ) ->
+                boltChannel ->
                         new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), logging )
         );
         return protocolHandlers;

@@ -57,7 +57,7 @@ public class CsvOutput implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        consume( "nodes.csv", input.nodes(), nodeHeader, ( node ) ->
+        consume( "nodes.csv", input.nodes(), nodeHeader, node ->
         {
             deserialization.clear();
             for ( Header.Entry entry : nodeHeader.entries() )
@@ -78,7 +78,7 @@ public class CsvOutput implements BatchImporter
             }
             return deserialization.materialize();
         } );
-        consume( "relationships.csv", input.relationships(), relationshipHeader, ( relationship ) ->
+        consume( "relationships.csv", input.relationships(), relationshipHeader, relationship ->
         {
             deserialization.clear();
             for ( Header.Entry entry : relationshipHeader.entries() )

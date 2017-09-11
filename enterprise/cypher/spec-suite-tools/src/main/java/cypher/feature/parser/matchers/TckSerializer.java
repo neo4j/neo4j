@@ -53,7 +53,7 @@ class TckSerializer
         {
             Node n = (Node) obj;
             sb.append( "(" );
-            n.getLabels().forEach( ( l ) -> sb.append( ":" ).append( l.name() ) );
+            n.getLabels().forEach( l -> sb.append( ":" ).append( l.name() ) );
             sb.append( " {" );
             String[] comma = new String[]{ "" };
             n.getAllProperties().forEach( ( k, v ) ->

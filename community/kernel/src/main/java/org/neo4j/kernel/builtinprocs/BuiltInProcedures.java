@@ -225,7 +225,7 @@ public class BuiltInProcedures
 
             return asList( operations.constraintsGetAll() )
                     .stream()
-                    .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
+                    .map( constraint -> constraint.prettyPrint( tokens ) )
                     .sorted()
                     .map( ConstraintResult::new );
         }
@@ -242,7 +242,7 @@ public class BuiltInProcedures
         {
             ReadOperations readOperations = statement.readOperations();
             ExplicitIndexHits hits = readOperations.nodeExplicitIndexGet( explicitIndexName, key, value );
-            return toStream( hits, ( id ) -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+            return toStream( hits, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -281,7 +281,7 @@ public class BuiltInProcedures
         {
             ReadOperations readOperations = statement.readOperations();
             ExplicitIndexHits hits = readOperations.relationshipExplicitIndexGet( manualIndexName, key, value, -1, -1 );
-            return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+            return toStream( hits, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -383,7 +383,7 @@ public class BuiltInProcedures
         {
             ReadOperations readOperations = statement.readOperations();
             ExplicitIndexHits hits = readOperations.nodeExplicitIndexGet( "node_auto_index", key, value );
-            return toStream( hits, ( id ) -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+            return toStream( hits, id -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {
@@ -420,7 +420,7 @@ public class BuiltInProcedures
             ReadOperations readOperations = statement.readOperations();
             ExplicitIndexHits hits =
                     readOperations.relationshipExplicitIndexGet( "relationship_auto_index", key, value, -1, -1 );
-            return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+            return toStream( hits, id -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
         }
         catch ( ExplicitIndexNotFoundKernelException e )
         {

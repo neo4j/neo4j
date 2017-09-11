@@ -81,7 +81,7 @@ public class ReadReplicaStartupProcessTest
         members.put( memberId, mock( CoreServerInfo.class ) );
 
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( ( f ) -> Stream.empty() );
+        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( f -> Stream.empty() );
         when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );

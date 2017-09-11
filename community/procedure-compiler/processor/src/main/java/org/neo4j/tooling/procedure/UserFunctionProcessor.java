@@ -58,6 +58,6 @@ public class UserFunctionProcessor extends DuplicationAwareBaseProcessor<UserFun
 
     private static Function<UserFunction,Optional<String>> customNameExtractor()
     {
-        return ( function ) -> CustomNameExtractor.getName( function::name, function::value );
+        return function -> CustomNameExtractor.getName( function::name, function::value );
     }
 }

@@ -105,6 +105,6 @@ public class SslPolicyConfig
     // TODO: can we make this handle relative paths?
     private Setting<File> derivedDefault( String settingName, Setting<File> baseDirectory, String defaultFilename )
     {
-        return derivedSetting( settingName, baseDirectory, ( base ) -> new File( base, defaultFilename ), PATH );
+        return derivedSetting( settingName, baseDirectory, base -> new File( base, defaultFilename ), PATH );
     }
 }

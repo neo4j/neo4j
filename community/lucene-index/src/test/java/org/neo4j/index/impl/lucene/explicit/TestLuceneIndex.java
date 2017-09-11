@@ -193,7 +193,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         doubleNumericPropertyValueForAllNodesWithLabel( index, priceProperty, nodeLabel );
 
         queryAndSortNodesByNumericProperty( index, yearProperty );
-        queryAndSortNodesByNumericProperty( index, priceProperty, ( value ) -> value * 2 );
+        queryAndSortNodesByNumericProperty( index, priceProperty, value -> value * 2 );
     }
 
     @Test
@@ -2251,7 +2251,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
     private void queryAndSortNodesByStringProperty( Index<Node> index, String stringProperty, String[] values )
     {
-        queryAndSortNodesByStringProperty( index, stringProperty, ( i ) -> values[i] );
+        queryAndSortNodesByStringProperty( index, stringProperty, i -> values[i] );
     }
 
     private void queryAndSortNodesByStringProperty( Index<Node> index, String stringProperty,

@@ -37,7 +37,7 @@ public class ProcedureProcessor extends DuplicationAwareBaseProcessor<Procedure>
 
     public ProcedureProcessor()
     {
-        super( Procedure.class, ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ),
+        super( Procedure.class, proc -> CustomNameExtractor.getName( proc::name, proc::value ),
                 processingEnvironment ->
                 {
                     Types typeUtils = processingEnvironment.getTypeUtils();

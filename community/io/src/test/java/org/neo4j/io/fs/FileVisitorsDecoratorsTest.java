@@ -19,6 +19,11 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -28,15 +33,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.function.Function;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import org.neo4j.function.Predicates;
 
 import static java.util.Arrays.asList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
@@ -45,7 +44,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.function.ThrowingConsumer.noop;
 
 @RunWith( Parameterized.class )
@@ -82,8 +80,8 @@ public class FileVisitorsDecoratorsTest
                         (Function<FileVisitor<Path>, FileVisitor<Path>>) FileVisitors::throwExceptions,
                         true
                 },
-                new Object[]{"onlyMatching", (Function<FileVisitor<Path>, FileVisitor<Path>>) ( wrapped )
-                        -> FileVisitors.onlyMatching( Predicates.alwaysTrue(), wrapped ),
+                new Object[]{"onlyMatching", (Function<FileVisitor<Path>, FileVisitor<Path>>)
+                        wrapped -> FileVisitors.onlyMatching( Predicates.alwaysTrue(), wrapped ),
                         false
                 }
         );

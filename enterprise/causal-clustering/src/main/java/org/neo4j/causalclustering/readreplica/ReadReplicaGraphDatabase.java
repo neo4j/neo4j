@@ -45,7 +45,7 @@ public class ReadReplicaGraphDatabase extends GraphDatabaseFacade
             DiscoveryServiceFactory discoveryServiceFactory, MemberId memberId )
     {
         Function<PlatformModule,EditionModule> factory =
-                ( platformModule ) -> new EnterpriseReadReplicaEditionModule( platformModule,
+                platformModule -> new EnterpriseReadReplicaEditionModule( platformModule,
                         discoveryServiceFactory, memberId );
         new GraphDatabaseFacadeFactory( DatabaseInfo.READ_REPLICA, factory ).initFacade( storeDir, config,
                 dependencies, this );

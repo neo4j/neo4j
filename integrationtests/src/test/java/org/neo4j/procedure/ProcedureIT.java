@@ -1438,7 +1438,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.simpleArgument", map( "name", someValue ) )
                     .stream()
-                    .map( ( row ) -> new Output( (Long) row.get( "someVal" ) ) );
+                    .map( row -> new Output( (Long) row.get( "someVal" ) ) );
         }
 
         @Procedure
@@ -1603,7 +1603,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
                     .stream()
-                    .map( ( row ) -> new Output( 0 ) );
+                    .map( row -> new Output( 0 ) );
         }
 
         @Procedure( mode = WRITE )
@@ -1611,7 +1611,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.writingProcedure" )
                     .stream()
-                    .map( ( row ) -> new Output( 0 ) );
+                    .map( row -> new Output( 0 ) );
         }
 
         @Procedure( mode = WRITE )
@@ -1619,7 +1619,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.integrationTestMe" )
                     .stream()
-                    .map( ( row ) -> new Output( 0 ) );
+                    .map( row -> new Output( 0 ) );
         }
 
         @Procedure( mode = WRITE )
@@ -1627,7 +1627,7 @@ public class ProcedureIT
         {
             return db.execute( "CALL org.neo4j.procedure.schemaProcedure" )
                     .stream()
-                    .map( ( row ) -> new Output( 0 ) );
+                    .map( row -> new Output( 0 ) );
         }
 
         @Procedure( mode = WRITE )

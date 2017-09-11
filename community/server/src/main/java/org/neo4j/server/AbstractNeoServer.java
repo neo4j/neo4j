@@ -170,8 +170,8 @@ public abstract class AbstractNeoServer implements NeoServer
         httpsConnector = httpConnectors.stream()
                 .filter( c -> Encryption.TLS.equals( c.encryptionLevel() ) )
                 .findFirst();
-        httpsListenAddress = httpsConnector.map( ( connector ) -> config.get( connector.listen_address ) );
-        httpsAdvertisedAddress = httpsConnector.map( ( connector ) -> config.get( connector.advertised_address ) );
+        httpsListenAddress = httpsConnector.map( connector -> config.get( connector.listen_address ) );
+        httpsAdvertisedAddress = httpsConnector.map( connector -> config.get( connector.advertised_address ) );
     }
 
     @Override
@@ -417,7 +417,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     public Optional<URI> httpsUri()
     {
-        return httpsAdvertisedAddress.map( ( address ) -> uriBuilder.buildURI( address, true ) );
+        return httpsAdvertisedAddress.map( address -> uriBuilder.buildURI( address, true ) );
     }
 
     public WebServer getWebServer()

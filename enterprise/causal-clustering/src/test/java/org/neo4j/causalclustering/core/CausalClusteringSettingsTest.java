@@ -19,10 +19,10 @@
  */
 package org.neo4j.causalclustering.core;
 
+import org.junit.Test;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.Test;
 
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.kernel.configuration.Settings;
@@ -78,7 +78,7 @@ public class CausalClusteringSettingsTest
         rawConfig.put( "causal_clustering.load_balancing.config.server_policies.us_east_1c", "all()" );
 
         // when
-        Map<String, String> validConfig = CausalClusteringSettings.load_balancing_config.validate( rawConfig, ( s ) ->
+        Map<String, String> validConfig = CausalClusteringSettings.load_balancing_config.validate( rawConfig, s ->
         {
         } );
 

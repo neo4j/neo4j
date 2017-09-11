@@ -194,7 +194,7 @@ public class KernelSchemaStateFlushingTest
         try ( KernelTransaction transaction = kernel.newTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
               Statement statement = transaction.acquireStatement() )
         {
-            while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, ( ignored ) -> null ) != null )
+            while ( statement.readOperations().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
                 LockSupport.parkNanos( MILLISECONDS.toNanos( 10 ) );
             }

@@ -40,9 +40,9 @@ public class TermsTest
         terms = new Terms( prevIndex, prevTerm );
 
         // then
-        assertTermInRange( -1, prevIndex, ( index ) -> -1L );
+        assertTermInRange( -1, prevIndex, index -> -1L );
         assertEquals( prevTerm, terms.get( prevIndex ) );
-        assertTermInRange( prevIndex + 1, prevIndex + 10, ( index ) -> -1L );
+        assertTermInRange( prevIndex + 1, prevIndex + 10, index -> -1L );
     }
 
     @Test
@@ -53,10 +53,10 @@ public class TermsTest
         int count = 10;
 
         // when
-        appendRange( 0, count, ( index ) -> index * 2L );
+        appendRange( 0, count, index -> index * 2L );
 
         // then
-        assertTermInRange( 0, count, ( index ) -> index * 2L );
+        assertTermInRange( 0, count, index -> index * 2L );
         assertEquals( -1, terms.get( -1 ) );
         assertEquals( -1, terms.get( count ) );
     }
@@ -199,8 +199,8 @@ public class TermsTest
         terms.truncate( truncateFromIndex );
 
         // then
-        assertTermInRange( prevIndex + 1, truncateFromIndex, ( index ) -> term );
-        assertTermInRange( truncateFromIndex, 30, ( index ) -> -1L );
+        assertTermInRange( prevIndex + 1, truncateFromIndex, index -> term );
+        assertTermInRange( truncateFromIndex, 30, index -> -1L );
     }
 
     @Test
@@ -497,7 +497,7 @@ public class TermsTest
 
     private void assertTermInRange( long from, long to, long expectedTerm )
     {
-        assertTermInRange( from, to, ( index ) -> expectedTerm );
+        assertTermInRange( from, to, index -> expectedTerm );
     }
 
     private void assertTermInRange( long from, long to, Function<Long,Long> expectedTermFunction )
@@ -510,7 +510,7 @@ public class TermsTest
 
     private void appendRange( long from, long to, long term )
     {
-        appendRange( from, to, ( index ) -> term );
+        appendRange( from, to, index -> term );
     }
 
     private void appendRange( long from, long to, Function<Long,Long> termFunction )

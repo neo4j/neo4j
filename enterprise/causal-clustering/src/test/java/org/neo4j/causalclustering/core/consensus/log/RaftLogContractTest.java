@@ -258,7 +258,7 @@ public abstract class RaftLogContractTest
 
         final long[] expectedVal = {prunedIndex + 1};
         log.getEntryCursor( prunedIndex + 1 )
-                .forAll( ( entry ) -> assertThat( entry.content(), is( valueOf( 10 * (int)expectedVal[0]++ ) ) ) );
+                .forAll( entry -> assertThat( entry.content(), is( valueOf( 10 * (int)expectedVal[0]++ ) ) ) );
 
         assertThat( log, hasNoContent( prunedIndex ) );
     }

@@ -63,7 +63,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
     @Override
     protected void process( Batch<InputRelationship,RelationshipRecord> batch, BatchSender sender ) throws Throwable
     {
-        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), ( t ) -> new HashMap<>() );
+        Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), t -> new HashMap<>() );
         Stream.of( batch.input )
               .map( InputRelationship::typeAsObject )
               .filter( type -> type != null )

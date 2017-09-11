@@ -1168,23 +1168,23 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         testTemplate.accept( PageCursor::getInt );
         testTemplate.accept( PageCursor::getLong );
         testTemplate.accept( PageCursor::getShort );
-        testTemplate.accept( ( cursor ) -> cursor.getByte( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getInt( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getLong( 0 ) );
-        testTemplate.accept( ( cursor ) -> cursor.getShort( 0 ) );
+        testTemplate.accept( cursor -> cursor.getByte( 0 ) );
+        testTemplate.accept( cursor -> cursor.getInt( 0 ) );
+        testTemplate.accept( cursor -> cursor.getLong( 0 ) );
+        testTemplate.accept( cursor -> cursor.getShort( 0 ) );
     }
 
     private void verifyOnWriteCursor(
             ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
     {
-        testTemplate.accept( ( cursor ) -> cursor.putByte( (byte) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putInt( 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putLong( 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putShort( (short) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putByte( 0, (byte) 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putInt( 0, 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putLong( 0, 1 ) );
-        testTemplate.accept( ( cursor ) -> cursor.putShort( 0, (short) 1 ) );
+        testTemplate.accept( cursor -> cursor.putByte( (byte) 1 ) );
+        testTemplate.accept( cursor -> cursor.putInt( 1 ) );
+        testTemplate.accept( cursor -> cursor.putLong( 1 ) );
+        testTemplate.accept( cursor -> cursor.putShort( (short) 1 ) );
+        testTemplate.accept( cursor -> cursor.putByte( 0, (byte) 1 ) );
+        testTemplate.accept( cursor -> cursor.putInt( 0, 1 ) );
+        testTemplate.accept( cursor -> cursor.putLong( 0, 1 ) );
+        testTemplate.accept( cursor -> cursor.putShort( 0, (short) 1 ) );
         testTemplate.accept( PageCursor::zapPage );
     }
 

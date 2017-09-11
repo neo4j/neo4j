@@ -114,7 +114,7 @@ public class ReflectiveUserAggregationFunctionTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, ( ctx ) -> log );
+        components.register( Log.class, ctx -> log );
         CallableUserAggregationFunction
                 function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
 

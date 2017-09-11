@@ -45,7 +45,7 @@ public class CoreGraphDatabase extends GraphDatabaseFacade
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
         Function<PlatformModule,EditionModule> factory =
-                ( platformModule ) -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
+                platformModule -> new EnterpriseCoreEditionModule( platformModule, discoveryServiceFactory );
         new GraphDatabaseFacadeFactory( DatabaseInfo.CORE, factory ).initFacade( storeDir, config, dependencies, this );
     }
 

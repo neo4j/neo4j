@@ -198,7 +198,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         // Build a new map with the same keys, but each value passed
         // through `toNeo4jValue`
         return attributeValue.entrySet().stream()
-                .map( ( e ) -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
+                .map( e -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
                 .collect( Collectors.toMap( Pair::first, Pair::other ) );
     }
 

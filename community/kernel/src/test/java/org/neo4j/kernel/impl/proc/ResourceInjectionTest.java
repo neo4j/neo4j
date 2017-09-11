@@ -79,9 +79,9 @@ public class ResourceInjectionTest
     {
         ComponentRegistry safeComponents = new ComponentRegistry();
         ComponentRegistry allComponents = new ComponentRegistry();
-        safeComponents.register( MyAwesomeAPI.class, ( ctx ) -> new MyAwesomeAPI() );
-        allComponents.register( MyAwesomeAPI.class, ( ctx ) -> new MyAwesomeAPI() );
-        allComponents.register( MyUnsafeAPI.class, ( ctx ) -> new MyUnsafeAPI() );
+        safeComponents.register( MyAwesomeAPI.class, ctx -> new MyAwesomeAPI() );
+        allComponents.register( MyAwesomeAPI.class, ctx -> new MyAwesomeAPI() );
+        allComponents.register( MyUnsafeAPI.class, ctx -> new MyUnsafeAPI() );
 
         compiler = new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, log,
                 ProcedureConfig.DEFAULT );

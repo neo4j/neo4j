@@ -1744,7 +1744,7 @@ public class StateHandlingStatementOperations implements
         // Augment with types stored on disk, minus any types where all rels of that type are deleted
         // in current tx.
         types.addAll( filter( storeLayer.relationshipTypes( statement.getStoreStatement(), node ).iterator(),
-                ( current ) -> !types.contains( current ) && degree( statement, node, Direction.BOTH, current ) > 0 ) );
+                current -> !types.contains( current ) && degree( statement, node, Direction.BOTH, current ) > 0 ) );
 
         return types;
     }

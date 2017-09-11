@@ -118,7 +118,7 @@ public class GraphDatabaseFacadeFactoryTest
     private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN,
-                ( p ) -> Mockito.mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )
+                p -> mock( EditionModule.class, Mockito.RETURNS_DEEP_STUBS ) )
         {
             @Override
             protected PlatformModule createPlatform( File storeDir, Config config,

@@ -118,7 +118,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, labelVisitor, false );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -141,7 +141,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeLabelUpdate,Exception> labelVisitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, labelVisitor, false );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, labelVisitor, false );
 
         // when
         storeScan.run();
@@ -157,7 +157,7 @@ public class NeoStoreIndexStoreViewTest
         @SuppressWarnings( "unchecked" )
         Visitor<NodeUpdates,Exception> visitor = mock( Visitor.class );
         StoreScan<Exception> storeScan =
-                storeView.visitNodes( new int[]{labelId}, ( id ) -> id == propertyKeyId, visitor, null, false );
+                storeView.visitNodes( new int[]{labelId}, id -> id == propertyKeyId, visitor, null, false );
 
         // when
         storeScan.run();

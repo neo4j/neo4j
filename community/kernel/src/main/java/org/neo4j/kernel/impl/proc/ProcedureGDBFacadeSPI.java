@@ -189,7 +189,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
             availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = sourceModule.kernelAPI.get().newTransaction( type, this.securityContext, timeout );
             kernelTx.registerCloseListener(
-                    ( txId ) -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
+                    txId -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             sourceModule.threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );
             return kernelTx;
         }

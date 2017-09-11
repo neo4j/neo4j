@@ -234,7 +234,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
 
         this.schema = new SchemaImpl( statementSupplier );
         this.relActions = new StandardRelationshipActions( statementSupplier, transactionSupplier, assertTransactionOpen,
-                        ( id ) -> new NodeProxy( nodeActions, id ), this );
+                        id -> new NodeProxy( nodeActions, id ), this );
         this.nodeActions = new StandardNodeActions( statementSupplier, transactionSupplier, assertTransactionOpen, relActions, this );
 
         this.indexManager = Suppliers.lazySingleton( () ->

@@ -48,15 +48,13 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.dump.DumpProcessInformationRule;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.test.rule.dump.DumpProcessInformationRule.localVm;
@@ -69,7 +67,7 @@ public class TransactionConstraintsIT
     public final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withSharedSetting( HaSettings.pull_interval, "0" )
                     .withInstanceSetting( HaSettings.slave_only,
-                            ( serverId ) -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
+                            serverId -> serverId == SLAVE_ONLY_ID ? "true" : "false" );
 
     private DumpProcessInformationRule dumpInfo = new DumpProcessInformationRule( 1, MINUTES, localVm( System.out ) );
     private ExpectedException exception = ExpectedException.none();

@@ -322,7 +322,7 @@ public class Cluster
     public int numberOfCoreMembersReportedByTopology()
     {
         CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
-                .filter( ( member ) -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
+                .filter( member -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.coreServers().members().size();

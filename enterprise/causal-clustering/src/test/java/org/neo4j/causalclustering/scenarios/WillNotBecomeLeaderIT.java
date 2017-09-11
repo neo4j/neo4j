@@ -53,7 +53,7 @@ public class WillNotBecomeLeaderIT
         // given
         int leaderId = 0;
 
-        clusterRule.withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, ( x ) ->
+        clusterRule.withInstanceCoreParam( CausalClusteringSettings.refuse_to_be_leader, x ->
         {
             if ( x == leaderId )
             {

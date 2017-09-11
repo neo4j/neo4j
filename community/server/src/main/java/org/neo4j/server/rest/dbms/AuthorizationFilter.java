@@ -42,7 +42,7 @@ public abstract class AuthorizationFilter implements Filter
 {
     protected static ThrowingConsumer<HttpServletResponse, IOException> error( int code, Object body )
     {
-        return ( response ) ->
+        return response ->
         {
             response.setStatus( code );
             response.addHeader( HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8" );

@@ -124,7 +124,7 @@ public class Jetty9WebServer implements WebServer
             serverConnector = connectorFactory.createConnector( jetty, jettyAddress, jettyThreadCalculator );
             jetty.addConnector( serverConnector );
 
-            jettyHttpsAddress.ifPresent( ( address ) ->
+            jettyHttpsAddress.ifPresent( address ->
             {
                 if ( sslPolicy == null )
                 {

@@ -46,7 +46,6 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -225,7 +224,7 @@ public class CausalClusteringSettings implements LoadableConfig
     @Internal
     public static final Setting<File> raft_messages_log_path =
             derivedSetting( "causal_clustering.raft_messages_log_path", logs_directory,
-                    ( logs ) -> new File( logs, "raft-messages.log" ), PATH );
+                    logs -> new File( logs, "raft-messages.log" ), PATH );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
