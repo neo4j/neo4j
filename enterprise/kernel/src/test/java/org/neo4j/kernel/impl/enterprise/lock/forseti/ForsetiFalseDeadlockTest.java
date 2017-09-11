@@ -181,7 +181,7 @@ public class ForsetiFalseDeadlockTest
                     @Override
                     public void acquire( Locks.Client client, ResourceType resourceType, int resource )
                     {
-                        client.acquireShared( LockTracer.NONE, resourceType, resource );
+                        client.acquireShared( LockTracer.NONE, resourceType, false, resource );
                     }
 
                     @Override

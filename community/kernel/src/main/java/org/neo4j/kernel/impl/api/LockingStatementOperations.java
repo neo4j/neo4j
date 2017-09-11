@@ -66,6 +66,7 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.schemaResource;
 import static org.neo4j.unsafe.impl.internal.dragons.FeatureToggles.flag;
 
 public class LockingStatementOperations implements
+//        EntityReadOperations,
         EntityWriteOperations,
         SchemaReadOperations,
         SchemaWriteOperations,
@@ -469,7 +470,7 @@ public class LockingStatementOperations implements
     @Override
     public Property graphSetProperty( KernelStatement state, DefinedProperty property )
     {
-        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        state.locks().entityModifyAcquireExclusive( ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();
         return entityWriteDelegate.graphSetProperty( state, property );
     }
@@ -477,7 +478,7 @@ public class LockingStatementOperations implements
     @Override
     public Property graphRemoveProperty( KernelStatement state, int propertyKeyId )
     {
-        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+        state.locks().entityModifyAcquireExclusive( ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
         state.assertOpen();
         return entityWriteDelegate.graphRemoveProperty( state, propertyKeyId );
     }
@@ -485,28 +486,28 @@ public class LockingStatementOperations implements
     @Override
     public void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().pessimistic().acquireExclusive( state.lockTracer(), resourceType, resourceId );
+        state.locks().pessimisticAcquireExclusive( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().pessimistic().acquireShared( state.lockTracer(), resourceType, resourceId );
+        state.locks().pessimisticAcquireShared( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseExclusive( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().pessimistic().releaseExclusive( type, resourceId );
+        state.locks().pessimisticReleaseExclusive( type, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseShared( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().pessimistic().releaseShared( type, resourceId );
+        state.locks().pessimisticReleaseShared( type, resourceId );
         state.assertOpen();
     }
 
@@ -522,7 +523,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().nodeIsAddedInThisTx( nodeId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
+            state.locks().entityModifyAcquireExclusive( ResourceTypes.NODE, nodeId );
         }
     }
 
@@ -530,7 +531,7 @@ public class LockingStatementOperations implements
     {
         if ( !state.hasTxStateWithChanges() || !state.txState().relationshipIsAddedInThisTx( relationshipId ) )
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId );
+            state.locks().entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         }
     }
 
@@ -538,7 +539,7 @@ public class LockingStatementOperations implements
     {
         if ( !SCHEMA_WRITES_DISABLE )
         {
-            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+            state.locks().schemaModifyAcquireShared( ResourceTypes.SCHEMA, schemaResource() );
         }
     }
 
@@ -550,7 +551,7 @@ public class LockingStatementOperations implements
         }
         else
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+            state.locks().schemaModifyAcquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         }
     }
 }

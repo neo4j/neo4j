@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.function.Supplier;
@@ -34,9 +35,12 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 public class CursorRelationshipIteratorTest
 {
+    @Ignore( "In order to support Iterator Stability isolation level, we actually have to peek the next cursor item " +
+             "eagerly" )
     @Test
     public void shouldLazilyGoToNext() throws Exception
     {
@@ -57,7 +61,7 @@ public class CursorRelationshipIteratorTest
             }
         } ) );
 
-        try ( CursorRelationshipIterator iterator = new CursorRelationshipIterator( cursor ) )
+        try ( CursorRelationshipIterator iterator = new CursorRelationshipIterator( cursor, NO_LOCK ) )
         {
             verifyZeroInteractions( cursor );
 

@@ -19,33 +19,128 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+import org.neo4j.storageengine.api.lock.ResourceType;
+
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+
 /**
- * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
- * locks using {@link DeferringLockClient}.
+ * A {@link StatementLocks} implementation that defers optimistic locks using {@link DeferringLockClient}.
  */
 public class DeferringStatementLocks implements StatementLocks
 {
     private final Locks.Client explicit;
     private final DeferringLockClient implicit;
+    private Supplier<LockTracer> lockTracerSupplier;
 
     public DeferringStatementLocks( Locks.Client explicit )
     {
         this.explicit = explicit;
         this.implicit = new DeferringLockClient( this.explicit );
+        lockTracerSupplier = DEFAULT_LOCK_TRACER_SUPPLIER;
     }
 
     @Override
-    public Locks.Client pessimistic()
+    public void pessimisticAcquireExclusive( ResourceType type, long... resourceId )
     {
-        return explicit;
+        explicit.acquireExclusive( getTracer(), type, resourceId );
+    }
+
+    private LockTracer getTracer()
+    {
+        return lockTracerSupplier.get();
     }
 
     @Override
-    public Locks.Client optimistic()
+    public void pessimisticReleaseExclusive( ResourceType type, long resourceId )
+    {
+        explicit.releaseExclusive( type, resourceId );
+    }
+
+    @Override
+    public void pessimisticAcquireShared( ResourceType type, long... resourceId )
+    {
+        explicit.acquireShared( getTracer(), type, false, resourceId );
+    }
+
+    @Override
+    public void pessimisticReleaseShared( ResourceType type, long resourceId )
+    {
+        explicit.releaseShared( type, resourceId );
+    }
+
+    @Override
+    public int getLockSessionId()
+    {
+        return explicit.getLockSessionId();
+    }
+
+    private Locks.Client optimistic()
     {
         return implicit;
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireExclusive( long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseExclusive( long resource )
+    {
+        optimistic().releaseExclusive( INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireShared( long resource )
+    {
+        optimistic().acquireShared( getTracer(), INDEX_ENTRY, false, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseShared( long resource )
+    {
+        optimistic().releaseShared( INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void schemaModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void schemaModifyAcquireShared( ResourceType type, long resource )
+    {
+        optimistic().acquireShared( getTracer(), type, false, resource );
+    }
+
+    @Override
+    public void entityModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void entityModifyReleaseExclusive( ResourceType type, long resource )
+    {
+        optimistic().releaseExclusive( type, resource );
+    }
+
+    @Override
+    public void entityIterateAcquireShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
+    }
+
+    @Override
+    public void entityIterateReleaseShared( ResourceType type, long resource )
+    {
+        // Not taken with Read Committed
     }
 
     @Override
@@ -76,5 +171,20 @@ public class DeferringStatementLocks implements StatementLocks
     public long activeLockCount()
     {
         return explicit.activeLockCount() + implicit.activeLockCount();
+    }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        throw new IllegalStateException(
+                "Isolation level cannot be changed when deferred locking is enabled. Unset or change the `" +
+                DeferringStatementLocksFactory.deferred_locks_enabled.name() + "` setting to `false`, to allow " +
+                "changing the isolation level on transactions." );
+    }
+
+    @Override
+    public void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier )
+    {
+        this.lockTracerSupplier = lockTracerSupplier;
     }
 }

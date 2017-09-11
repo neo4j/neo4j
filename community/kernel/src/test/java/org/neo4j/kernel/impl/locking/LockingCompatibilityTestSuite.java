@@ -205,7 +205,7 @@ public abstract class LockingCompatibilityTestSuite
                 @Override
                 public void doWork( Locks.Client client ) throws AcquireLockTimeoutException
                 {
-                    client.acquireShared( tracer, resourceType, key );
+                    client.acquireShared( tracer, resourceType, false, key );
                 }
             };
         }

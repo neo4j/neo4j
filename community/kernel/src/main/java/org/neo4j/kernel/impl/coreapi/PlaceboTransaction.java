@@ -104,4 +104,10 @@ public class PlaceboTransaction implements InternalTransaction
     {
         return currentTransaction.getReasonIfTerminated();
     }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        currentTransaction.setIsolationLevel( isolationLevel );
+    }
 }

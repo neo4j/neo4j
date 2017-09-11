@@ -65,9 +65,9 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     public void closeShouldWaitAllOperationToFinish()
     {
         // given
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
-        clientA.acquireShared( LockTracer.NONE, NODE, 3L );
-        clientB.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 3L );
+        clientB.acquireShared( LockTracer.NONE, NODE, false, 1L );
         acquireShared( clientC, LockTracer.NONE, NODE, 2L );
         acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
         acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
@@ -91,7 +91,7 @@ public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibil
     public void shouldNotBeAbleToAcquireSharedLockFromClosedClient()
     {
         clientA.close();
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
     }
 
     @Test( expected = LockClientStoppedException.class )

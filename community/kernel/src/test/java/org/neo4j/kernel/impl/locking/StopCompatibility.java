@@ -81,9 +81,9 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     public void releaseWriteLockWaitersOnStop()
     {
         // given
-        clientA.acquireShared( LockTracer.NONE, NODE, 1L );
-        clientB.acquireShared( LockTracer.NONE, NODE, 2L );
-        clientC.acquireShared( LockTracer.NONE, NODE, 3L );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 1L );
+        clientB.acquireShared( LockTracer.NONE, NODE, false, 2L );
+        clientC.acquireShared( LockTracer.NONE, NODE, false, 3L );
         acquireExclusive( clientB, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
         acquireExclusive( clientC, LockTracer.NONE, NODE, 1L ).callAndAssertWaiting();
 
@@ -118,7 +118,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
     @Test( expected = LockClientStoppedException.class )
     public void acquireSharedThrowsWhenClientStopped()
     {
-        stoppedClient().acquireShared( LockTracer.NONE, ResourceTypes.NODE, 1 );
+        stoppedClient().acquireShared( LockTracer.NONE, ResourceTypes.NODE, false, 1 );
     }
 
     @Test( expected = LockClientStoppedException.class )
@@ -356,7 +356,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
     private AcquiredLock acquireSharedLockInThisThread()
     {
-        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
         assertLocksHeld( RESOURCE_ID );
         return AcquiredLock.shared( client, RESOURCE_TYPE, RESOURCE_ID );
     }
@@ -387,7 +387,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             Locks.Client client = newLockClient( lockAcquisition );
             if ( shared )
             {
-                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
             }
             else
             {
@@ -413,7 +413,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
                 {
                     if ( firstShared )
                     {
-                        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                        client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
                     }
                     else
                     {
@@ -435,7 +435,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( secondShared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
                 }
                 else
                 {
@@ -458,7 +458,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
         {
             try ( Locks.Client client = newLockClient( lockAcquisition ) )
             {
-                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
 
                 sharedLockAcquired.countDown();
                 await( startExclusiveLock );
@@ -483,7 +483,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
             {
                 if ( shared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, OTHER_RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, OTHER_RESOURCE_ID );
                 }
                 else
                 {
@@ -494,7 +494,7 @@ public class StopCompatibility extends LockingCompatibilityTestSuite.Compatibili
 
                 if ( shared )
                 {
-                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, RESOURCE_ID );
+                    client.acquireShared( LockTracer.NONE, RESOURCE_TYPE, false, RESOURCE_ID );
                 }
                 else
                 {

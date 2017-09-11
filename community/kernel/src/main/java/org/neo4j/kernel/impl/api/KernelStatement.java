@@ -200,6 +200,7 @@ public class KernelStatement implements TxStateHolder, Statement, AssertOpen
         this.statementLocks = statementLocks;
         this.pageCursorTracer = pageCursorCounters;
         facade.initialize( operationParts );
+        this.statementLocks.setLockTracerSupplier( this::lockTracer );
     }
 
     public StatementLocks locks()

@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.RelationshipItem;
 
 /**
@@ -32,6 +33,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 public class CursorRelationshipIterator implements RelationshipIterator, Resource
 {
     private Cursor<RelationshipItem> cursor;
+    private Lock lock;
     private boolean hasDeterminedNext;
     private boolean hasNext;
 
@@ -40,9 +42,11 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
     private long startNode;
     private long endNode;
 
-    public CursorRelationshipIterator( Cursor<RelationshipItem> resourceCursor )
+    public CursorRelationshipIterator( Cursor<RelationshipItem> resourceCursor,
+                                       Lock lock )
     {
         cursor = resourceCursor;
+        this.lock = lock;
     }
 
     private boolean nextCursor()
@@ -83,12 +87,12 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
                 type = item.type();
                 startNode = item.startNode();
                 endNode = item.endNode();
-
                 return item.id();
             }
             finally
             {
                 hasDeterminedNext = false;
+                releaseLock();
             }
         }
         throw new NoSuchElementException();
@@ -109,6 +113,16 @@ public class CursorRelationshipIterator implements RelationshipIterator, Resourc
         {
             cursor.close();
             cursor = null;
+        }
+        releaseLock();
+    }
+
+    private void releaseLock()
+    {
+        if ( lock != null )
+        {
+            lock.release();
+            lock = null;
         }
     }
 }

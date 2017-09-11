@@ -47,7 +47,7 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     {
         // given
         clientA.acquireExclusive( LockTracer.NONE, NODE, 1, 2, 3 );
-        clientA.acquireShared( LockTracer.NONE, NODE, 3, 4, 5 );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 3, 4, 5 );
 
         // when
         Stream<? extends ActiveLock> locks = clientA.activeLocks();
@@ -68,9 +68,9 @@ public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSui
     public void shouldCountNumberOfActiveLocks() throws Exception
     {
         // given
-        clientA.acquireShared( LockTracer.NONE, SCHEMA, 0 );
-        clientA.acquireShared( LockTracer.NONE, RELATIONSHIP, 17 );
-        clientA.acquireShared( LockTracer.NONE, NODE, 12 );
+        clientA.acquireShared( LockTracer.NONE, SCHEMA, false, 0 );
+        clientA.acquireShared( LockTracer.NONE, RELATIONSHIP, false, 17 );
+        clientA.acquireShared( LockTracer.NONE, NODE, false, 12 );
 
         // when
         long count = clientA.activeLockCount();

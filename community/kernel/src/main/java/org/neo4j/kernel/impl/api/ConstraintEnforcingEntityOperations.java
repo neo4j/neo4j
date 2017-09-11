@@ -70,8 +70,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.schema.NodeSchemaMatcher;
 import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -82,7 +81,6 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 
 public class ConstraintEnforcingEntityOperations implements EntityOperations, SchemaWriteOperations
@@ -245,11 +243,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             assertIndexOnline( state, index );
 
             int labelId = index.schema().getLabelId();
-            state.locks().optimistic().acquireExclusive(
-                    state.lockTracer(),
-                    INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyValues )
-                );
+            long resourceId = indexEntryResourceId( labelId, propertyValues );
+            state.locks().uniquenessConstraintEntryAcquireExclusive( resourceId );
 
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, propertyValues );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
@@ -378,24 +373,23 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
 
         // If we find the node - hold a shared lock. If we don't find a node - hold an exclusive lock.
         // If locks are deferred than both shared and exclusive locks will be taken only at commit time.
-        Locks.Client locks = state.locks().optimistic();
-        LockTracer lockTracer = state.lockTracer();
+        StatementLocks statementLocks = state.locks();
         long indexEntryId = indexEntryResourceId( labelId, predicates );
 
-        locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+        statementLocks.uniquenessConstraintEntryAcquireShared( indexEntryId );
 
         long nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, predicates );
         if ( NO_SUCH_NODE == nodeId )
         {
-            locks.releaseShared( INDEX_ENTRY, indexEntryId );
-            locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
+            statementLocks.uniquenessConstraintEntryReleaseShared( indexEntryId );
+            statementLocks.uniquenessConstraintEntryAcquireExclusive( indexEntryId );
 
             nodeId = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, predicates );
             if ( NO_SUCH_NODE != nodeId ) // we found it under the exclusive lock
             {
                 // downgrade to a shared lock
-                locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-                locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
+                statementLocks.uniquenessConstraintEntryAcquireShared( indexEntryId );
+                statementLocks.uniquenessConstraintEntryReleaseExclusive( indexEntryId );
             }
         }
         return nodeId;

@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 
@@ -68,7 +67,7 @@ public interface Locks
                 long lockIdentityHashCode );
     }
 
-    interface Client extends ResourceLocker, AutoCloseable
+    interface Client extends AutoCloseable
     {
         /**
          * Represents the fact that no lock session is used because no locks are taken.
@@ -78,14 +77,15 @@ public interface Locks
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
          * behavior is specified by the {@link WaitStrategy} for the given {@link ResourceType}.
-         *
          * @param tracer a tracer for listening on lock events.
          * @param resourceType type or resource(s) to lock.
+         * @param shortLived {@code true} if the lock is short-lived. That is, if the lock is expected to be released
+         * significantly sooner than transaction commit time. Short-lived shared locks do not propagate throughout a
+         * database cluster, but are instead only used for coordinating local entity modifications.
          * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
          */
-        void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+        void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived, long... resourceIds ) throws AcquireLockTimeoutException;
 
-        @Override
         void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */

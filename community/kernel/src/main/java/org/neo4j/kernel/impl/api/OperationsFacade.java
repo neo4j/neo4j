@@ -102,8 +102,12 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.api.store.CursorRelationshipIterator;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -115,6 +119,7 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK;
 
 public class OperationsFacade
         implements ReadOperations, DataWriteOperations, TokenWriteOperations, SchemaWriteOperations,
@@ -308,10 +313,14 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
+        final StatementLocks statementLocks = statement.locks();
+        statementLocks.entityIterateAcquireShared( ResourceTypes.NODE, nodeId );
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
+            Lock lock = new CompositeSharedNodeLock( node.get(), statementLocks, nodeId );
             return new CursorRelationshipIterator( dataRead()
-                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ) );
+                    .nodeGetRelationships( statement, node.get(), direction( direction ), deduplicate( relTypes ) ),
+                    lock );
         }
     }
 
@@ -331,10 +340,13 @@ public class OperationsFacade
             throws EntityNotFoundException
     {
         statement.assertOpen();
+        final StatementLocks statementLocks = statement.locks();
+        statementLocks.entityIterateAcquireShared( ResourceTypes.NODE, nodeId );
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, nodeId ) )
         {
+            Lock lock = new CompositeSharedNodeLock( node.get(), statementLocks, nodeId );
             return new CursorRelationshipIterator(
-                    dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ) );
+                    dataRead().nodeGetRelationships( statement, node.get(), direction( direction ) ), lock );
         }
     }
 
@@ -1518,5 +1530,25 @@ public class OperationsFacade
     {
         return statement.getPageCursorTracer();
     }
-    // </Procedures>
+
+    private static class CompositeSharedNodeLock extends Lock
+    {
+        private final Lock innerLock;
+        private final StatementLocks statementLocks;
+        private final long nodeId;
+
+        CompositeSharedNodeLock( NodeItem node, StatementLocks statementLocks, long nodeId )
+        {
+            this.innerLock = RecordStorageEngine.takeRelationshipChainReadLocks ? node.lock() : NO_LOCK;
+            this.statementLocks = statementLocks;
+            this.nodeId = nodeId;
+        }
+
+        @Override
+        public void release()
+        {
+            innerLock.release();
+            statementLocks.entityIterateReleaseShared( ResourceTypes.NODE, nodeId );
+        }
+    }
 }

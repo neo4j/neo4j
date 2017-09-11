@@ -164,7 +164,7 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, boolean shortLived, long... resourceIds ) throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );

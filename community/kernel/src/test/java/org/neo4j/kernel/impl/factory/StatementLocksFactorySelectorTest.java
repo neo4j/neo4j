@@ -25,8 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -60,8 +62,10 @@ public class StatementLocksFactorySelectorTest
         assertThat( factory, instanceOf( SimpleStatementLocksFactory.class ) );
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
 
-        assertSame( locksClient, statementLocks.optimistic() );
-        assertSame( locksClient, statementLocks.pessimistic() );
+        statementLocks.pessimisticAcquireExclusive( ResourceTypes.NODE, 0 );
+        statementLocks.entityModifyAcquireExclusive( ResourceTypes.RELATIONSHIP, 1 );
+        verify( locksClient ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
+        verify( locksClient ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1 );
     }
 
     @Test

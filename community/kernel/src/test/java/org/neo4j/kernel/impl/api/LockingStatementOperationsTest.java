@@ -138,7 +138,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeAddLabel( state, 123, 456 );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( entityWriteOps ).nodeAddLabel( state, 123, 456 );
     }
 
@@ -181,7 +181,7 @@ public class LockingStatementOperationsTest
         lockingOps.nodeSetProperty( state, 123, property );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( entityWriteOps ).nodeSetProperty( state, 123, property );
     }
 
@@ -252,7 +252,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertSame( rules, result );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaReadOps ).indexesGetAll( state );
     }
 
@@ -297,7 +297,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForSchema( state, descriptor );
     }
 
@@ -312,7 +312,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetForLabel( state, 123 );
     }
 
@@ -327,7 +327,7 @@ public class LockingStatementOperationsTest
 
         // then
         assertThat( asList( result ), empty() );
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaReadOps ).constraintsGetAll( state );
     }
 
@@ -341,7 +341,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateGetOrCreate( state, null, creator );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaStateOps ).schemaStateGetOrCreate( state, null, creator );
     }
 
@@ -352,7 +352,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateContains( state, null );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaStateOps ).schemaStateContains( state, null );
     }
 
@@ -363,7 +363,7 @@ public class LockingStatementOperationsTest
         lockingOps.schemaStateFlush( state );
 
         // then
-        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, schemaResource() );
+        order.verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.SCHEMA, false, schemaResource() );
         order.verify( schemaStateOps ).schemaStateFlush( state );
     }
 

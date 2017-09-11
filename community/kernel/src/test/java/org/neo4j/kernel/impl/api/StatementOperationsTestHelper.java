@@ -39,8 +39,7 @@ import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -74,7 +73,7 @@ public abstract class StatementOperationsTestHelper
     public static KernelStatement mockedState( final TransactionState txState )
     {
         KernelStatement state = mock( KernelStatement.class );
-        Locks.Client locks = mock( Locks.Client.class );
+        StatementLocks locks = mock( StatementLocks.class );
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
@@ -89,7 +88,7 @@ public abstract class StatementOperationsTestHelper
         }
         when( state.txState() ).thenReturn( txState );
         when( state.hasTxStateWithChanges() ).thenAnswer( invocation -> txState.hasChanges() );
-        when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
+        when( state.locks() ).thenReturn( locks );
         when( state.readOperations() ).thenReturn( mock( ReadOperations.class ) );
         return state;
     }
