@@ -20,6 +20,9 @@
 package org.neo4j.index.impl.lucene.legacy;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -109,6 +112,7 @@ public abstract class LuceneLegacyIndex implements LegacyIndex
         for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
         {
             oneValue = getCorrectValue( oneValue );
+            dataSource.assertValidType( key, oneValue, identifier );
             transaction.add( this, entity, key, oneValue );
             commandFactory.addNode( identifier.indexName, entityId, key, oneValue );
         }

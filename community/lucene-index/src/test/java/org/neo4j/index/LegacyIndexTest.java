@@ -21,6 +21,7 @@ package org.neo4j.index;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
+import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -42,6 +44,8 @@ public class LegacyIndexTest
 
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void removalOfNodeIndexDoesNotInfluenceRelationshipIndexWithSameName()
@@ -97,6 +101,39 @@ public class LegacyIndexTest
             assertFalse( db.index().existsForRelationships( indexName ) );
             Index<Node> nodeIndex = db.index().forNodes( indexName );
             assertEquals( 2, sizeOf( nodeIndex ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void shouldThrowIllegalArgumentChangingTypeOfField()
+    {
+        String indexName = "index";
+
+        createNodeLegacyIndexWithSingleNode( db, indexName );
+
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            Index<Node> nodeIndex = db.index().forNodes( indexName );
+            nodeIndex.add( node, "key", "otherValue" );
+            tx.success();
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Index<Node> nodeIndex = db.index().forNodes( indexName );
+            nodeIndex.remove( db.getNodeById( nodeId ), "key" );
+            tx.success();
+        }
+
+        expectedException.expect( IllegalArgumentException.class );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Index<Node> nodeIndex = db.index().forNodes( indexName );
+            nodeIndex.add( db.getNodeById( nodeId ), "key", ValueContext.numeric( 52 ) );
             tx.success();
         }
     }

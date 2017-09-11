@@ -27,8 +27,11 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Sort;
@@ -42,9 +45,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.neo4j.graphdb.Node;
@@ -111,6 +116,7 @@ public class LuceneDataSource extends LifecycleAdapter
     private boolean closed;
     private LuceneFilesystemFacade filesystemFacade;
     private IndexReferenceFactory indexReferenceFactory;
+    private Map<IndexIdentifier,Map<String,DocValuesType>> indexTypeMap;
 
     /**
      * Constructs this data source.
@@ -140,7 +146,39 @@ public class LuceneDataSource extends LifecycleAdapter
         this.indexReferenceFactory = readOnly ?
                                      new ReadOnlyIndexReferenceFactory( filesystemFacade, baseStorePath, typeCache ) :
                                      new WritableIndexReferenceFactory( filesystemFacade, baseStorePath, typeCache );
+        this.indexTypeMap = new ConcurrentHashMap<>();
         closed = false;
+    }
+
+    public void assertValidType( String key, Object value, IndexIdentifier identifier )
+    {
+        DocValuesType expectedType;
+        String expectedTypeName;
+        if ( value instanceof Number )
+        {
+            expectedType = DocValuesType.SORTED_NUMERIC;
+            expectedTypeName = "numbers";
+        }
+        else
+        {
+            expectedType = DocValuesType.SORTED_SET;
+            expectedTypeName = "strings";
+        }
+        Map<String,DocValuesType> stringDocValuesTypeMap = indexTypeMap.get( identifier );
+        // If the index searcher has never been loaded, we need to load it now to populate the map.
+        if ( stringDocValuesTypeMap == null )
+        {
+            getIndexSearcher( identifier );
+            stringDocValuesTypeMap = indexTypeMap.get( identifier );
+        }
+        DocValuesType actualType;
+
+        actualType = stringDocValuesTypeMap.putIfAbsent( key, expectedType );
+        if ( actualType != null && !actualType.equals( expectedType ) )
+        {
+            throw new IllegalArgumentException(
+                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
+        }
     }
 
     public static File getLuceneIndexStoreDirectory( File storeDir )
@@ -281,6 +319,15 @@ public class LuceneDataSource extends LifecycleAdapter
             {
                 indexReference = indexReferenceFactory.createIndexReference( identifier );
                 indexSearchers.put( identifier, indexReference );
+                ConcurrentHashMap<String,DocValuesType> fieldTypes = new ConcurrentHashMap<>();
+                for ( LeafReaderContext leafReaderContext : indexReference.getSearcher().getTopReaderContext().leaves() )
+                {
+                    for ( FieldInfo fieldInfo : leafReaderContext.reader().getFieldInfos() )
+                    {
+                        fieldTypes.put( fieldInfo.name, fieldInfo.getDocValuesType() );
+                    }
+                }
+                indexTypeMap.put( identifier, fieldTypes );
             }
             else
             {
@@ -331,6 +378,7 @@ public class LuceneDataSource extends LifecycleAdapter
         }
         closeIndex( identifier );
         FileUtils.deleteRecursively( getFileDirectory( baseStorePath, identifier ) );
+        indexTypeMap.remove( identifier );
         boolean removeFromIndexStore =
                 !recovery || (indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
