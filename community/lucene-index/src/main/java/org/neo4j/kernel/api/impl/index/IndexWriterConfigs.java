@@ -73,10 +73,10 @@ public final class IndexWriterConfigs
     public static IndexWriterConfig standard()
     {
         Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
-        return getIndexWriterConfigWithAnalyzer( analyzer );
+        return standard( analyzer );
     }
 
-    private static IndexWriterConfig getIndexWriterConfigWithAnalyzer( Analyzer analyzer )
+    public static IndexWriterConfig standard( Analyzer analyzer )
     {
         IndexWriterConfig writerConfig = new IndexWriterConfig( analyzer );
 
@@ -118,7 +118,7 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig population( Analyzer analyzer )
     {
-        IndexWriterConfig writerConfig = getIndexWriterConfigWithAnalyzer( analyzer );
+        IndexWriterConfig writerConfig = standard( analyzer );
         writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
         writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
         return writerConfig;

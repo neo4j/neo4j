@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,21 +41,16 @@ import static java.util.Collections.singletonMap;
 
 class LuceneFulltext extends AbstractLuceneIndex
 {
-
-    private static final String KEY_STATUS = "status";
-    private static final String ONLINE = "online";
-    private static final Map<String,String> ONLINE_COMMIT_USER_DATA = singletonMap( KEY_STATUS, ONLINE );
     private final Analyzer analyzer;
     private final String identifier;
     private final FulltextProvider.FULLTEXT_INDEX_TYPE type;
-    private final TaskCoordinator taskCoordinator = new TaskCoordinator( 10, TimeUnit.MILLISECONDS );
     private final Set<String> properties;
 
-    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, String[] properties, Analyzer analyzer,
+    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, List<String> properties, Analyzer analyzer,
             String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type )
     {
         super( indexStorage, partitionFactory );
-        this.properties = Collections.unmodifiableSet( new HashSet<>( Arrays.asList( properties ) ) );
+        this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );
         this.analyzer = analyzer;
         this.identifier = identifier;
         this.type = type;

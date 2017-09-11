@@ -25,6 +25,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -56,7 +58,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -92,7 +94,7 @@ public class FulltextAnalyzerTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -53,17 +54,8 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void init() throws IOException, ProcedureException
     {
-        String[] properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties ).toArray( new String[0] );
-        Analyzer analyzer;
-        try
-        {
-            Class configuredAnalayzer = Class.forName( config.get( LoadableBloomFulltextConfig.bloom_analyzer ) );
-            analyzer = (Analyzer) configuredAnalayzer.newInstance();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Could not create the configured analyzer", e );
-        }
+        List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
+        Analyzer analyzer = getAnalyzer();
 
         FulltextProvider provider = FulltextProvider.instance( db );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
@@ -74,6 +66,21 @@ class BloomKernelExtension extends LifecycleAdapter
 
         procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.NODES, bloomNodes, provider ) );
         procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.RELATIONSHIPS, bloomRelationships, provider ) );
+    }
+
+    private Analyzer getAnalyzer()
+    {
+        Analyzer analyzer;
+        try
+        {
+            Class configuredAnalayzer = Class.forName( config.get( LoadableBloomFulltextConfig.bloom_analyzer ) );
+            analyzer = (Analyzer) configuredAnalayzer.newInstance();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create the configured analyzer", e );
+        }
+        return analyzer;
     }
 
     @Override

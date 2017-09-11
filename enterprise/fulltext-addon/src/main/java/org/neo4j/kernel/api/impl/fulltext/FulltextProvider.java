@@ -57,7 +57,7 @@ public class FulltextProvider implements AutoCloseable
     /**
      * Fetch the current instance of the provider. If there is none, create one associated with the given database.
      * @param db Database used for eventual creation of the provider.
-     * @return
+     * @return The instance for the given database.
      */
     public static synchronized FulltextProvider instance( GraphDatabaseService db )
     {

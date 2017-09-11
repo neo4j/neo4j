@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.util.List;
 
 import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,16 +32,15 @@ import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 
-import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
-
 /**
  * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
  */
 public class FulltextFactory
 {
+    public static final String INDEX_DIR = "fulltext";
     private final FileSystemAbstraction fileSystem;
     private final WritableIndexPartitionFactory partitionFactory;
-    private final File storeDir;
+    private final File indexDir;
     private final Analyzer analyzer;
 
     /**
@@ -55,9 +54,9 @@ public class FulltextFactory
     {
         this.analyzer = analyzer;
         this.fileSystem = fileSystem;
-        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( analyzer );
-        partitionFactory = new WritableIndexPartitionFactory( population );
-        this.storeDir = storeDir;
+        Factory<IndexWriterConfig> indexWriterConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
+        partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
+        indexDir = new File( storeDir, INDEX_DIR );
     }
 
     /**
@@ -68,12 +67,11 @@ public class FulltextFactory
      * @param provider The provider to register with
      * @throws IOException
      */
-    public void createFulltextIndex( String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type, String[] properties, FulltextProvider provider )
+    public void createFulltextIndex( String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type, List<String> properties, FulltextProvider provider )
             throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withDirectoryFactory(
-                directoryFactory( false, this.fileSystem ) ).withIndexRootFolder( Paths.get( this.storeDir.getAbsolutePath(), "fulltext" ).toFile() );
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withIndexRootFolder( indexDir );
         provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
     }
 }

@@ -24,6 +24,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -61,7 +63,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -96,7 +98,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -131,7 +133,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -166,7 +168,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -209,7 +211,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -258,7 +260,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -301,7 +303,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop", "prop2"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop", "prop2" ), provider );
 
             long firstID;
             long secondID;
@@ -364,7 +366,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -398,7 +400,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop", "prop2"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop", "prop2" ), provider );
 
             long firstID;
             long secondID;
@@ -438,7 +440,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"first", "last"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "first", "last" ), provider );
 
             long firstID;
             long secondID;
@@ -485,8 +487,8 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
-            fulltextFactory.createFulltextIndex( "relationships", FULLTEXT_INDEX_TYPE.RELATIONSHIPS, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", FULLTEXT_INDEX_TYPE.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
 
             long firstNodeID;
             long secondNodeID;
@@ -545,7 +547,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -584,7 +586,7 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -628,8 +630,8 @@ public class LuceneFulltextUpdaterTest
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
         try ( FulltextProvider provider = FulltextProvider.instance( db ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, new String[]{"prop"}, provider );
-            fulltextFactory.createFulltextIndex( "relationships", FULLTEXT_INDEX_TYPE.RELATIONSHIPS, new String[]{"prop"}, provider );
+            fulltextFactory.createFulltextIndex( "nodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", FULLTEXT_INDEX_TYPE.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
 
             try ( Transaction tx = db.beginTx() )
             {

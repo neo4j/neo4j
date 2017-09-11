@@ -44,7 +44,7 @@ public class BloomProcedure extends CallableProcedure.BasicProcedure
     private static final String[] PROCEDURE_NAMESPACE = {"db", "fulltext"};
     private final String identifier;
     private final FulltextProvider provider;
-    private FulltextProvider.FULLTEXT_INDEX_TYPE type;
+    private final FulltextProvider.FULLTEXT_INDEX_TYPE type;
 
     /**
      * Creates a procedure for querying the bloom fulltext addon.
