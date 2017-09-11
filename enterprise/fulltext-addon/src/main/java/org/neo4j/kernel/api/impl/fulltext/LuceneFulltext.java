@@ -25,11 +25,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
@@ -37,17 +34,15 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
-import static java.util.Collections.singletonMap;
-
 class LuceneFulltext extends AbstractLuceneIndex
 {
     private final Analyzer analyzer;
     private final String identifier;
-    private final FulltextProvider.FULLTEXT_INDEX_TYPE type;
+    private final FulltextProvider.FulltextIndexType type;
     private final Set<String> properties;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, List<String> properties, Analyzer analyzer,
-            String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type )
+            String identifier, FulltextProvider.FulltextIndexType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );
@@ -98,7 +93,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return hasSinglePartition( partitions ) ? createSimpleReader( partitions ) : createPartitionedReader( partitions );
     }
 
-    FulltextProvider.FULLTEXT_INDEX_TYPE getType()
+    FulltextProvider.FulltextIndexType getType()
     {
         return type;
     }

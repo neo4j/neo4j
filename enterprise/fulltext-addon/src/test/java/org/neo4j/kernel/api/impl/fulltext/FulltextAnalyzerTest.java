@@ -30,6 +30,8 @@ import java.util.Arrays;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -39,11 +41,12 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FULLTEXT_INDEX_TYPE;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType;
 
 public class FulltextAnalyzerTest
 {
     private static final Label LABEL = Label.label( "label" );
+    private static final LogService LOG_SERVICE = NullLogService.getInstance();
     @ClassRule
     public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @ClassRule
@@ -56,9 +59,9 @@ public class FulltextAnalyzerTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
-        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
+        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -74,7 +77,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FulltextIndexType.NODES ) )
             {
 
                 assertFalse( reader.query( "and" ).hasNext() );
@@ -92,9 +95,9 @@ public class FulltextAnalyzerTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
-        try ( FulltextProvider provider = FulltextProvider.instance( db ) )
+        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
             long firstID;
             long secondID;
@@ -110,7 +113,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FULLTEXT_INDEX_TYPE.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FulltextIndexType.NODES ) )
             {
                 assertEquals( firstID, reader.query( "and" ).next() );
                 assertEquals( firstID, reader.query( "in" ).next() );

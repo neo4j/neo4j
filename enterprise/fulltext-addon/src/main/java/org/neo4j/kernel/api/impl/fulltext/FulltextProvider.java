@@ -27,6 +27,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.logging.Log;
 
 /**
  * Provider class that manages and provides fulltext indices. This is the main entry point for the fulltext addon.
@@ -35,6 +37,7 @@ public class FulltextProvider implements AutoCloseable
 {
     private static FulltextProvider instance;
     private final GraphDatabaseService db;
+    private Log log;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
     private boolean closed;
     private Set<String> nodeProperties;
@@ -42,9 +45,10 @@ public class FulltextProvider implements AutoCloseable
     private Map<String,LuceneFulltext> nodeIndices;
     private Map<String,LuceneFulltext> relationshipIndices;
 
-    private FulltextProvider( GraphDatabaseService db )
+    private FulltextProvider( GraphDatabaseService db, Log log )
     {
         this.db = db;
+        this.log = log;
         closed = false;
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this );
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
@@ -57,13 +61,14 @@ public class FulltextProvider implements AutoCloseable
     /**
      * Fetch the current instance of the provider. If there is none, create one associated with the given database.
      * @param db Database used for eventual creation of the provider.
+     * @param logService
      * @return The instance for the given database.
      */
-    public static synchronized FulltextProvider instance( GraphDatabaseService db )
+    public static synchronized FulltextProvider instance( GraphDatabaseService db, LogService logService )
     {
         if ( instance == null || instance.closed )
         {
-            instance = new FulltextProvider( db );
+            instance = new FulltextProvider( db, logService.getInternalLog( FulltextProvider.class ) );
         }
         return instance;
     }
@@ -86,7 +91,7 @@ public class FulltextProvider implements AutoCloseable
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    log.error( "Unable to close fulltext node index.", e );
                 }
             } );
             relationshipIndices.values().forEach( luceneFulltextIndex ->
@@ -97,7 +102,7 @@ public class FulltextProvider implements AutoCloseable
                 }
                 catch ( IOException e )
                 {
-                    e.printStackTrace();
+                    log.error( "Unable to close fulltext relationship index.", e );
                 }
             } );
         }
@@ -106,7 +111,7 @@ public class FulltextProvider implements AutoCloseable
     synchronized void register( LuceneFulltext fulltextIndex ) throws IOException
     {
         fulltextIndex.open();
-        if ( fulltextIndex.getType() == FULLTEXT_INDEX_TYPE.NODES )
+        if ( fulltextIndex.getType() == FulltextIndexType.NODES )
         {
             nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
             nodeProperties.addAll( fulltextIndex.getProperties() );
@@ -145,9 +150,9 @@ public class FulltextProvider implements AutoCloseable
      * @return A {@link ReadOnlyFulltext} for the index, or null if no such index is found.
      * @throws IOException
      */
-    public ReadOnlyFulltext getReader( String identifier, FULLTEXT_INDEX_TYPE type ) throws IOException
+    public ReadOnlyFulltext getReader( String identifier, FulltextIndexType type ) throws IOException
     {
-        if ( type == FULLTEXT_INDEX_TYPE.NODES )
+        if ( type == FulltextIndexType.NODES )
         {
             return nodeIndices.get( identifier ).getIndexReader();
         }
@@ -160,7 +165,7 @@ public class FulltextProvider implements AutoCloseable
     /**
      * Fulltext index type.
      */
-    public enum FULLTEXT_INDEX_TYPE
+    public enum FulltextIndexType
     {
         NODES
                 {

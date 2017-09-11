@@ -67,7 +67,7 @@ public class FulltextFactory
      * @param provider The provider to register with
      * @throws IOException
      */
-    public void createFulltextIndex( String identifier, FulltextProvider.FULLTEXT_INDEX_TYPE type, List<String> properties, FulltextProvider provider )
+    public void createFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type, List<String> properties, FulltextProvider provider )
             throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();

@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -41,14 +42,17 @@ class BloomKernelExtension extends LifecycleAdapter
     private final FileSystemAbstraction fileSystemAbstraction;
     private final GraphDatabaseService db;
     private final Procedures procedures;
+    private LogService logService;
 
-    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures )
+    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures,
+            LogService logService )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.db = db;
         this.procedures = procedures;
+        this.logService = logService;
     }
 
     @Override
@@ -57,15 +61,15 @@ class BloomKernelExtension extends LifecycleAdapter
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
         Analyzer analyzer = getAnalyzer();
 
-        FulltextProvider provider = FulltextProvider.instance( db );
+        FulltextProvider provider = FulltextProvider.instance( db, logService );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
         String bloomNodes = "bloomNodes";
-        fulltextFactory.createFulltextIndex( bloomNodes, FulltextProvider.FULLTEXT_INDEX_TYPE.NODES, properties, provider );
+        fulltextFactory.createFulltextIndex( bloomNodes, FulltextProvider.FulltextIndexType.NODES, properties, provider );
         String bloomRelationships = "bloomRelationships";
-        fulltextFactory.createFulltextIndex( bloomRelationships, FulltextProvider.FULLTEXT_INDEX_TYPE.RELATIONSHIPS, properties, provider );
+        fulltextFactory.createFulltextIndex( bloomRelationships, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
 
-        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.NODES, bloomNodes, provider ) );
-        procedures.register( new BloomProcedure( FulltextProvider.FULLTEXT_INDEX_TYPE.RELATIONSHIPS, bloomRelationships, provider ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FulltextIndexType.NODES, bloomNodes, provider ) );
+        procedures.register( new BloomProcedure( FulltextProvider.FulltextIndexType.RELATIONSHIPS, bloomRelationships, provider ) );
     }
 
     private Analyzer getAnalyzer()
@@ -86,6 +90,6 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void shutdown() throws Exception
     {
-        FulltextProvider.instance( db ).close();
+        FulltextProvider.instance( db, logService ).close();
     }
 }

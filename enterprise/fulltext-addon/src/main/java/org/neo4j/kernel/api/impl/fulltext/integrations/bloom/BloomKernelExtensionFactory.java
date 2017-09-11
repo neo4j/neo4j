@@ -23,6 +23,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -47,6 +48,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         FileSystemAbstraction fileSystem();
 
         Procedures procedures();
+
+        LogService logService();
     }
 
     BloomKernelExtensionFactory()
@@ -58,6 +61,6 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new BloomKernelExtension( dependencies.fileSystem(), context.storeDir(), dependencies.getConfig(), dependencies.db(),
-                dependencies.procedures() );
+                dependencies.procedures(), dependencies.logService() );
     }
 }
