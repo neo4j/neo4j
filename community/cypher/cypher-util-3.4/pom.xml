@@ -8,12 +8,12 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+  <artifactId>neo4j-cypher-util-3.4</artifactId>
   <packaging>jar</packaging>
   <version>3.4.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher Frontend 3.4</name>
+  <name>Neo4j - Cypher Util 3.4</name>
 
-  <description>Front end of the Cypher compiler</description>
+  <description>Cypher utilities</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -23,6 +23,9 @@
   </scm>
 
   <properties>
+    <version-package>cypher.internal.util.v3_4</version-package>
+    <scala.version>2.11.11</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
     <license.header>${project.baseUri}/ASL-2-header.txt</license.header>
   </properties>
 
@@ -35,6 +38,21 @@
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-Xlint</arg>
+          </args>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
@@ -74,6 +92,7 @@
           </properties>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
 
@@ -81,24 +100,18 @@
 
     <!-- shared versions are defined in the parent pom -->
 
-    <!-- neo4j -->
-
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.4</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
     <!-- scala -->
 
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.scala-lang</groupId>
       <artifactId>scala-reflect</artifactId>
+      <groupId>org.scala-lang</groupId>
+      <version>${scala.version}</version>
     </dependency>
 
     <!-- scala test dependencies -->
@@ -133,5 +146,40 @@
     </dependency>
 
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>neo-full-build-with-javadoc</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>fullBuild</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>generate-dummy-javadocs-jar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>
