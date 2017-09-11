@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -77,7 +78,7 @@ public class PartitionedUniquenessVerifierTest
 
     private PartitionedUniquenessVerifier createPartitionedVerifier()
     {
-        return new PartitionedUniquenessVerifier( getSearchers() );
+        return new PartitionedUniquenessVerifier( getSearchers(), mock( IndexDescriptor.class ) );
     }
 
     private List<PartitionSearcher> getSearchers()

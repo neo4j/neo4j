@@ -205,7 +205,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         PartitionSearcher partitionSearcher = singlePartition.acquireSearcher();
-        return new SimpleUniquenessVerifier( partitionSearcher );
+        return new SimpleUniquenessVerifier( partitionSearcher, descriptor );
     }
 
     private PartitionedIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
@@ -217,7 +217,7 @@ class LuceneSchemaIndex extends AbstractLuceneIndex
     private UniquenessVerifier createPartitionedUniquenessVerifier( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedUniquenessVerifier( searchers );
+        return new PartitionedUniquenessVerifier( searchers, descriptor );
     }
 
 }
