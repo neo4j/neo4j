@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.hamcrest.Matchers;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -26,10 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -90,7 +90,7 @@ public class TestCrashWithRebuildSlow
 
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( () -> db.shutdown() );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )

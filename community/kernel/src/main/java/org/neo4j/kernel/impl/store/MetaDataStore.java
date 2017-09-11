@@ -189,7 +189,15 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         storeFile = null;
     }
 
+    @Override
+    protected void checkAndLoadStorage( boolean createIfNotExists )
+    {
+        super.checkAndLoadStorage( createIfNotExists );
+        initHighId();
+    }
+
     // Only for initialization and recovery, so we don't need to lock the records
+
     @Override
     public void setLastCommittedAndClosedTransactionId(
             long transactionId, long checksum, long commitTimestamp, long byteOffset, long logVersion )
@@ -205,7 +213,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
-
     /**
      * Writes a record in a neostore file.
      * This method only works for neostore files of the current version.
@@ -253,6 +260,13 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
             }
         }
         return previousValue;
+    }
+
+    private void initHighId()
+    {
+        Position[] values = Position.values();
+        long highestPossibleId = values[values.length - 1].id;
+        setHighestPossibleIdInUse( highestPossibleId );
     }
 
     private static int offset( Position position )
@@ -610,20 +624,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void setRecord( Position position, long value )
     {
-        // We need to do a little special handling of high id in neostore since it's not updated in the same
-        // way as other stores. Other stores always gets updates via commands where records are updated and
-        // the one making the update can also track the high id in the event of recovery.
-        // Here methods can be called directly, for example setLatestConstraintIntroducingTx where it's
-        // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
-        // Furthermore, we want the store to have a fixed size to accommodate the fixed number of fields it has. But,
-        // there is no guarantee that the field with the largest id will be called in a particular run. That means
-        // that to make sure we always have a proper max id, we must always set it to the highest possible value
-        // according to the enumeration of fields
-        Position[] values = Position.values();
-        long highestPossibleId = values[ values.length - 1 ].id;
-
-        setHighestPossibleIdInUse( highestPossibleId );
-
         MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
         record.setId( position.id );
