@@ -22,16 +22,16 @@ package org.neo4j.logging;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.function.Suppliers;
 
 import static org.neo4j.logging.FormattedLog.OUTPUT_STREAM_CONVERTER;
-import static org.neo4j.logging.FormattedLogger.UTC;
 
 /**
  * A {@link LogProvider} implementation that applies a simple formatting to each log message.
@@ -46,7 +46,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     public static class Builder
     {
         private boolean renderContext = true;
-        private TimeZone timezone = UTC;
+        private ZoneId zoneId = ZoneOffset.UTC;
         private Map<String, Level> levels = new HashMap<>();
         private Level defaultLevel = Level.INFO;
         private boolean autoFlush = true;
@@ -67,24 +67,24 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
          * @return this builder
          */
-        public Builder withUTCTimeZone()
+        public Builder withUTCZoneId()
         {
-            return withTimeZone( FormattedLogger.UTC );
+            return withZoneId( ZoneOffset.UTC );
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
-         * @param timezone the timezone to use for datestamps
          * @return this builder
+         * @param zoneId
          */
-        public Builder withTimeZone( TimeZone timezone )
+        public Builder withZoneId( ZoneId zoneId )
         {
-            this.timezone = timezone;
+            this.zoneId = zoneId;
             return this;
         }
 
@@ -193,13 +193,12 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
          */
         public FormattedLogProvider toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLogProvider( writerSupplier, timezone,
-                    renderContext, levels, defaultLevel, autoFlush );
+            return new FormattedLogProvider( writerSupplier, zoneId, renderContext, levels, defaultLevel, autoFlush );
         }
     }
 
     private final Supplier<PrintWriter> writerSupplier;
-    private final TimeZone timezone;
+    private final ZoneId zoneId;
     private final boolean renderContext;
     private final Map<String, Level> levels;
     private final Level defaultLevel;
@@ -223,18 +222,18 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
      */
     public static Builder withUTCTimeZone()
     {
-        return new Builder().withUTCTimeZone();
+        return new Builder().withUTCZoneId();
     }
 
     /**
-     * Start creating a {@link FormattedLogProvider} with the specified timezone for datestamps in the log
+     * Start creating a {@link FormattedLogProvider} with the specified zoneId for datestamps in the log
      *
-     * @param timezone the timezone to use for datestamps
      * @return a builder for a {@link FormattedLogProvider}
+     * @param zoneId
      */
-    public static Builder withTimeZone( TimeZone timezone )
+    public static Builder withZoneId( ZoneId zoneId )
     {
-        return new Builder().withTimeZone( timezone );
+        return new Builder().withZoneId( zoneId );
     }
 
     /**
@@ -318,11 +317,11 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     }
 
     FormattedLogProvider( Supplier<PrintWriter> writerSupplier,
-                          TimeZone timezone, boolean renderContext,
+                          ZoneId zoneId, boolean renderContext,
                           Map<String, Level> levels, Level defaultLevel, boolean autoFlush )
     {
         this.writerSupplier = writerSupplier;
-        this.timezone = timezone;
+        this.zoneId = zoneId;
         this.renderContext = renderContext;
         this.levels = new HashMap<>( levels );
         this.defaultLevel = defaultLevel;
@@ -345,7 +344,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     private FormattedLog buildLog( String context, Level level )
     {
-        return new FormattedLog( writerSupplier, timezone, this, renderContext ? context : null, level, autoFlush );
+        return new FormattedLog( writerSupplier, zoneId, this, renderContext ? context : null, level, autoFlush );
     }
 
     private Level levelForContext( String context )

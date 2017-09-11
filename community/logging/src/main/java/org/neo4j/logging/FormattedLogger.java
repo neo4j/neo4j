@@ -21,39 +21,37 @@
 package org.neo4j.logging;
 
 import java.io.PrintWriter;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
 
 import org.neo4j.function.Suppliers;
 
-public class FormattedLogger extends AbstractPrintWriterLogger
+class FormattedLogger extends AbstractPrintWriterLogger
 {
-    public static final DateTimeFormatter DATE_TIME_FORMATTER =
+    static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern( "yyyy-MM-dd HH:mm:ss.SSSZ" );
-    public static final TimeZone UTC = TimeZone.getTimeZone( "UTC" );
-    public static final Function<TimeZone, ZonedDateTime> DEFAULT_CURRENT_DATE_TIME = timeZone ->
+    static final Function<ZoneId, ZonedDateTime> DEFAULT_CURRENT_DATE_TIME = zoneId ->
             ZonedDateTime.now()
-                    .withZoneSameInstant( timeZone.toZoneId() );
+                    .withZoneSameInstant( zoneId );
     private FormattedLog formattedLog;
     private final String prefix;
-    private final Function<TimeZone, ZonedDateTime> currentZonedDateTimeSupplier;
-
     private final DateTimeFormatter dateTimeFormatter;
+    private Supplier<ZonedDateTime> supplier;
 
     FormattedLogger( FormattedLog formattedLog, @Nonnull Supplier<PrintWriter> writerSupplier,
                      @Nonnull String prefix, DateTimeFormatter dateTimeFormatter,
-                     Function<TimeZone, ZonedDateTime> zoneIdZonedDateTimeFunction )
+                     Supplier<ZonedDateTime> zonedDateTimeSupplier )
     {
         super( writerSupplier, formattedLog.lock, formattedLog.autoFlush );
 
         this.formattedLog = formattedLog;
         this.prefix = prefix;
         this.dateTimeFormatter = dateTimeFormatter;
-        this.currentZonedDateTimeSupplier = zoneIdZonedDateTimeFunction;
+        this.supplier = zonedDateTimeSupplier;
     }
 
     @Override
@@ -82,7 +80,7 @@ public class FormattedLogger extends AbstractPrintWriterLogger
     protected Logger getBulkLogger( @Nonnull PrintWriter out, @Nonnull Object lock )
     {
         return new FormattedLogger( formattedLog, Suppliers.singleton( out ), prefix, DATE_TIME_FORMATTER,
-                DEFAULT_CURRENT_DATE_TIME );
+                () -> DEFAULT_CURRENT_DATE_TIME.apply( formattedLog.zoneId ) );
     }
 
     private void lineStart( PrintWriter out )
@@ -95,6 +93,6 @@ public class FormattedLogger extends AbstractPrintWriterLogger
 
     private String time()
     {
-        return dateTimeFormatter.format( currentZonedDateTimeSupplier.apply( formattedLog.timezone ) );
+        return dateTimeFormatter.format( supplier.get() );
     }
 }

@@ -24,9 +24,10 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -48,37 +49,38 @@ public class FormattedLog extends AbstractLog
      */
     public static class Builder
     {
-        private TimeZone timezone = FormattedLogger.UTC;
+        private ZoneId zoneId = ZoneOffset.UTC;
         private Object lock = this;
         private String category;
         private Level level = Level.INFO;
         private boolean autoFlush = true;
-        private Function<TimeZone, ZonedDateTime> dateTimeFunction = FormattedLogger.DEFAULT_CURRENT_DATE_TIME;
         private DateTimeFormatter dateTimeFormatter = FormattedLogger.DATE_TIME_FORMATTER;
+        private Supplier<ZonedDateTime> dateTimeFormatterSupplier = () ->
+                FormattedLogger.DEFAULT_CURRENT_DATE_TIME.apply( zoneId );
 
         private Builder()
         {
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
          * @return this builder
          */
-        public Builder withUTCTimeZone()
+        public Builder withUTCZoneId()
         {
-            return withTimeZone( FormattedLogger.UTC );
+            return withZoneId( ZoneOffset.UTC );
         }
 
         /**
-         * Set the timezone for datestamps in the log
+         * Set the zoneId for datestamps in the log
          *
-         * @param timezone the timezone to use for datestamps
          * @return this builder
+         * @param zoneId
          */
-        public Builder withTimeZone( TimeZone timezone )
+        public Builder withZoneId( ZoneId zoneId )
         {
-            this.timezone = timezone;
+            this.zoneId = zoneId;
             return this;
         }
 
@@ -133,12 +135,12 @@ public class FormattedLog extends AbstractLog
         /**
          * Use the specified function
          *
-         * @param dateTimeFunction the log level to use as a default
+         * @param zonedDateTimeSupplier the log level to use as a default
          * @return this builder
          */
-        public Builder withDateTimeFormatterFunction( Function<TimeZone, ZonedDateTime> dateTimeFunction )
+        public Builder withTimeSupplier( Supplier<ZonedDateTime> zonedDateTimeSupplier )
         {
-            this.dateTimeFunction = dateTimeFunction;
+            this.dateTimeFormatterSupplier = zonedDateTimeSupplier;
             return this;
         }
 
@@ -207,13 +209,13 @@ public class FormattedLog extends AbstractLog
          */
         public FormattedLog toPrintWriter( Supplier<PrintWriter> writerSupplier )
         {
-            return new FormattedLog( writerSupplier, timezone, lock, category, level, autoFlush,
-                    dateTimeFormatter, dateTimeFunction );
+            return new FormattedLog( writerSupplier, zoneId, lock, category, level, autoFlush,
+                    dateTimeFormatter, dateTimeFormatterSupplier );
         }
     }
 
     private final Supplier<PrintWriter> writerSupplier;
-    final TimeZone timezone;
+    final ZoneId zoneId;
     final Object lock;
     private final String category;
     private final AtomicReference<Level> levelRef;
@@ -230,18 +232,18 @@ public class FormattedLog extends AbstractLog
      */
     public static Builder withUTCTimeZone()
     {
-        return new Builder().withUTCTimeZone();
+        return new Builder().withUTCZoneId();
     }
 
     /**
-     * Start creating a {@link FormattedLog} with the specified timezone for datestamps in the log
+     * Start creating a {@link FormattedLog} with the specified zoneId for datestamps in the log
      *
-     * @param timezone the timezone to use for datestamps
      * @return a builder for a {@link FormattedLog}
+     * @param zoneId
      */
-    public static Builder withTimeZone( TimeZone timezone )
+    public static Builder withZoneId( ZoneId zoneId )
     {
-        return new Builder().withTimeZone( timezone );
+        return new Builder().withZoneId( zoneId );
     }
 
     /**
@@ -349,27 +351,29 @@ public class FormattedLog extends AbstractLog
 
     protected FormattedLog(
             Supplier<PrintWriter> writerSupplier,
-            TimeZone timezone,
+            ZoneId zoneId,
             Object maybeLock,
             String category,
             Level level,
             boolean autoFlush )
     {
-        this( writerSupplier, timezone, maybeLock, category, level, autoFlush,
-                FormattedLogger.DATE_TIME_FORMATTER, FormattedLogger.DEFAULT_CURRENT_DATE_TIME );
+        this( writerSupplier, zoneId, maybeLock, category, level, autoFlush,
+                FormattedLogger.DATE_TIME_FORMATTER,
+                () -> FormattedLogger.DEFAULT_CURRENT_DATE_TIME.apply( zoneId ) );
     }
 
     protected FormattedLog(
             Supplier<PrintWriter> writerSupplier,
-            TimeZone timezone,
+            ZoneId zoneId,
             Object maybeLock,
             String category,
             Level level,
             boolean autoFlush,
-            DateTimeFormatter dateTimeFormatter, Function<TimeZone, ZonedDateTime> zoneIdZonedDateTimeFunction )
+            DateTimeFormatter dateTimeFormatter,
+            Supplier<ZonedDateTime> dateTimeSupplier )
     {
         this.writerSupplier = writerSupplier;
-        this.timezone = timezone;
+        this.zoneId = zoneId;
         this.lock = ( maybeLock != null ) ? maybeLock : this;
         this.category = category;
         this.levelRef = new AtomicReference<>( level );
@@ -381,13 +385,13 @@ public class FormattedLog extends AbstractLog
         String errorPrefix = ( category != null && !category.isEmpty() ) ? "ERROR [" + category + "]" : "ERROR";
 
         this.debugLogger = new FormattedLogger( this, writerSupplier, debugPrefix, dateTimeFormatter,
-                zoneIdZonedDateTimeFunction );
+                dateTimeSupplier );
         this.infoLogger = new FormattedLogger( this, writerSupplier, infoPrefix, dateTimeFormatter,
-                zoneIdZonedDateTimeFunction );
+                dateTimeSupplier );
         this.warnLogger = new FormattedLogger( this, writerSupplier, warnPrefix, dateTimeFormatter,
-                zoneIdZonedDateTimeFunction );
+                dateTimeSupplier );
         this.errorLogger = new FormattedLogger( this, writerSupplier, errorPrefix, dateTimeFormatter,
-                zoneIdZonedDateTimeFunction );
+                dateTimeSupplier );
     }
 
     /**
@@ -476,7 +480,7 @@ public class FormattedLog extends AbstractLog
         synchronized ( lock )
         {
             writer = writerSupplier.get();
-            consumer.accept( new FormattedLog( Suppliers.singleton( writer ), timezone,
+            consumer.accept( new FormattedLog( Suppliers.singleton( writer ), zoneId,
                     lock, category, levelRef.get(), false ) );
         }
         if ( autoFlush )

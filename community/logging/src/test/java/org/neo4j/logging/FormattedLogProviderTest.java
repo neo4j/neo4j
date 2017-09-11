@@ -22,6 +22,7 @@ package org.neo4j.logging;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
@@ -131,6 +132,6 @@ public class FormattedLogProviderTest
     private static FormattedLogProvider newFormattedLogProvider( StringWriter writer, Map<String, Level> levels )
     {
         return new FormattedLogProvider( Suppliers.singleton( new PrintWriter( writer ) ),
-                FormattedLogger.UTC, true, levels, Level.INFO, true );
+                ZoneOffset.UTC, true, levels, Level.INFO, true );
     }
 }

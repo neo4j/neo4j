@@ -148,16 +148,7 @@ public class BoltMessageLoggingIT
         db.setConfig( bolt_logging_enabled, TRUE );
         db.setConfig( bolt_log_filename, customBoltLogFile.toString() );
         db.ensureStarted();
-        try
-        {
-            driver = newDriver();
-        }
-        catch ( Exception e )
-        {
-            String contents = readFile( customBoltLogFile );
-            System.out.println( contents );
-            assertThat( contents, containsString( "S: FAILURE" ) );
-        }
+        driver = newDriver();
 
         assertTrue( fs.fileExists( customBoltLogFile ) );
 
