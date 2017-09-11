@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 /**
  * Static methods for computing the hashCode of primitive numbers and arrays of primitive numbers.
- *
+ * <p>
  * Also compares Value typed number arrays.
  */
 @SuppressWarnings( "WeakerAccess" )
@@ -34,11 +34,39 @@ public final class NumberValues
     {
     }
 
+    /*
+     * Using the fact that the hashcode ∑x_i * 31^(i-1) can be expressed as
+     * a dot product, [1, v_1, v_2, v_2, ..., v_n] • [31^n, 31^{n-1}, ..., 31, 1]. By expressing
+     * it in that way the compiler is smart enough to better parallelize the
+     * computation of the hash code.
+     */
+    static final int MAX_LENGTH = 10000;
+    private static final int[] COEFFICIENTS = new int[MAX_LENGTH + 1];
     private static final long NON_DOUBLE_LONG = 0xFFE0_0000_0000_0000L; // doubles are exact integers up to 53 bits
 
+    static
+    {
+        //We are defining the coefficient vector backwards, [1, 31, 31^2,...]
+        //makes it easier and faster do find the starting position later
+        COEFFICIENTS[0] = 1;
+        for ( int i = 1; i <= MAX_LENGTH; ++i )
+        {
+            COEFFICIENTS[i] = 31 * COEFFICIENTS[i - 1];
+        }
+    }
+
+    /*
+     * For equality semantics it is important that the hashcode of a long
+     * is the same as the hashcode of an int as long as the long can fit in 32 bits.
+     */
     public static int hash( long number )
     {
-        return (int) (number ^ (number >>> 32));
+        int asInt = (int) number;
+        if ( asInt == number )
+        {
+            return asInt;
+        }
+        return Long.hashCode( number );
     }
 
     public static int hash( double number )
@@ -49,49 +77,65 @@ public final class NumberValues
             return hash( asLong );
         }
         long bits = Double.doubleToLongBits( number );
-        return (int)(bits ^ (bits >>> 32));
+        return (int) (bits ^ (bits >>> 32));
     }
 
+    /*
+     * This is a slightly silly optimization but by turning the computation
+     * of the hashcode into a dot product we trick the jit compiler to use SIMD
+     * instructions and performance doubles.
+     */
     public static int hash( byte[] values )
     {
-        int result = 1;
-        for ( byte value : values )
+        final int max = Math.min( values.length, MAX_LENGTH );
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( short[] values )
     {
-        int result = 1;
-        for ( short value : values )
+        final int max = Math.min( values.length, MAX_LENGTH );
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
+        }
+        return result;
+    }
+
+    public static int hash( char[] values )
+    {
+        final int max = Math.min( values.length, MAX_LENGTH );
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
+        {
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( int[] values )
     {
-        int result = 1;
-        for ( int value : values )
+        final int max = Math.min( values.length, MAX_LENGTH );
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * values[i];
         }
         return result;
     }
 
     public static int hash( long[] values )
     {
-        int result = 1;
-        for ( long value : values )
+        final int max = Math.min( values.length, MAX_LENGTH );
+        int result = COEFFICIENTS[max];
+        for ( int i = 0; i < values.length && i < COEFFICIENTS.length - 1; ++i )
         {
-            int elementHash = NumberValues.hash( value );
-            result = 31 * result + elementHash;
+            result += COEFFICIENTS[max - i - 1] * NumberValues.hash( values[i] );
         }
         return result;
     }
@@ -167,7 +211,7 @@ public final class NumberValues
     // Tested by PropertyValueComparisonTest
     public static int compareDoubleAgainstLong( double lhs, long rhs )
     {
-        if  ( (NON_DOUBLE_LONG & rhs ) != NON_DOUBLE_LONG )
+        if ( (NON_DOUBLE_LONG & rhs) != NON_DOUBLE_LONG )
         {
             if ( Double.isNaN( lhs ) )
             {
@@ -185,7 +229,7 @@ public final class NumberValues
     // Tested by PropertyValueComparisonTest
     public static int compareLongAgainstDouble( long lhs, double rhs )
     {
-        return - compareDoubleAgainstLong( rhs, lhs );
+        return -compareDoubleAgainstLong( rhs, lhs );
     }
 
     public static boolean numbersEqual( IntegralArray lhs, IntegralArray rhs )

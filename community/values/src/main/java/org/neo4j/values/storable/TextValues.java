@@ -19,8 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import java.util.Arrays;
-
 /**
  * Static methods for comparing and hashing chars, Strings and Text values.
  */
@@ -62,15 +60,5 @@ public final class TextValues
             x = a.length() - b.length();
         }
         return x;
-    }
-
-    public static int hash( char[] value )
-    {
-        return Arrays.hashCode( value );
-    }
-
-    public static int hash( String[] value )
-    {
-        return Arrays.hashCode( value );
     }
 }

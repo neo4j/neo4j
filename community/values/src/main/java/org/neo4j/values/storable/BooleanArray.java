@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class BooleanArray extends ArrayValue
+public abstract class BooleanArray extends ArrayValue
 {
     abstract boolean[] value();
 

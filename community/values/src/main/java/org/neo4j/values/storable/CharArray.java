@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class CharArray extends TextArray
+public abstract class CharArray extends TextArray
 {
     abstract char[] value();
 
@@ -73,7 +73,7 @@ abstract class CharArray extends TextArray
     @Override
     public int computeHash()
     {
-        return TextValues.hash( value() );
+        return NumberValues.hash( value() );
     }
 
     @Override
