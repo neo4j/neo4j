@@ -86,7 +86,7 @@ public class ListQueriesProcedureTest
     @Rule
     public final RuleChain chain = RuleChain.outerRule( db ).around( threads );
 
-    private static final int SECONDS_TIMEOUT = 120;
+    private static final int SECONDS_TIMEOUT = 240;
 
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( SECONDS_TIMEOUT - 2, TimeUnit.SECONDS ).build();
