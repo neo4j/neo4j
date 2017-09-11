@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.phases
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, SemanticErrorDef}
+import org.neo4j.cypher.internal.apa.v3_4.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticErrorDef
 
 trait BaseContext {
   def tracer: CompilationPhaseTracer

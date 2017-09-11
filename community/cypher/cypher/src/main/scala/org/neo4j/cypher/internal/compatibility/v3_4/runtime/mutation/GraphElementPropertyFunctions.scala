@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation
 
 import java.util.function.BiConsumer
 
+import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

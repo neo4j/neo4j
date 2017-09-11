@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{Foldable, InternalException, SemanticTable, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, UnionQuery}
 
 object StatementConverters {
-  import Foldable._
+  import org.neo4j.cypher.internal.apa.v3_4.Foldable._
 
   def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder =
     q.clauses.foldLeft(PlannerQueryBuilder(semanticTable)) {

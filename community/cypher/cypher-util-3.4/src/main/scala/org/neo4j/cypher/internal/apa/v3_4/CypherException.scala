@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4
+package org.neo4j.cypher.internal.apa.v3_4
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ExhaustiveShortestPathForbiddenException.ERROR_MSG
-import org.neo4j.cypher.internal.frontend.v3_4.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.apa.v3_4.spi.MapToPublicExceptions
 
 abstract class CypherException(protected val message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this() = this(null, null)
@@ -138,11 +136,6 @@ class CypherExecutionException(message: String, cause: Throwable) extends Cypher
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.cypherExecutionException(message, this)
 }
 
-class ExhaustiveShortestPathForbiddenException extends CypherExecutionException(ERROR_MSG, null) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
-    mapper.shortestPathFallbackDisableRuntimeException(message, this)
-}
-
 object ExhaustiveShortestPathForbiddenException {
   val ERROR_MSG: String =
     s"""Shortest path fallback has been explicitly disabled. That means that no full path enumeration is performed in
@@ -156,10 +149,10 @@ object ExhaustiveShortestPathForbiddenException {
        |start filtering.""".stripMargin
 }
 
-class ShortestPathCommonEndNodesForbiddenException extends CypherExecutionException(
-  ShortestPathCommonEndNodesForbiddenException.ERROR_MSG, null) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
-    mapper.shortestPathCommonEndNodesForbiddenException(message, this)
+class ExhaustiveShortestPathForbiddenException extends CypherExecutionException(
+  ExhaustiveShortestPathForbiddenException.ERROR_MSG, null) {
+override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+mapper.shortestPathFallbackDisableRuntimeException(message, this)
 }
 
 object ShortestPathCommonEndNodesForbiddenException {
@@ -171,4 +164,10 @@ object ShortestPathCommonEndNodesForbiddenException {
        |`cypher.forbid_shortestpath_common_node` to false. If you cannot accept missing results, and really want the
        |shortestPath between two common nodes, then re-write the query using a standard Cypher variable length pattern
        |expression followed by ordering by path length and limiting to one result.""".stripMargin
+}
+
+class ShortestPathCommonEndNodesForbiddenException extends CypherExecutionException(
+  ShortestPathCommonEndNodesForbiddenException.ERROR_MSG, null) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.shortestPathCommonEndNodesForbiddenException(message, this)
 }

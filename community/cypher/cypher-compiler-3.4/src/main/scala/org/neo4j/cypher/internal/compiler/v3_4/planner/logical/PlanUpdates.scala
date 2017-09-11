@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{LogicalPlanProducer, mergeUniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ContainerIndex, PathExpression, Variable}
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LockNodes, LogicalPlan}

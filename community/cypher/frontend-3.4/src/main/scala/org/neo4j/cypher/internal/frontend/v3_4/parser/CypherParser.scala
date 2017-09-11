@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.{SyntaxException, ast}
+import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.parboiled.scala._
 
 class CypherParser extends Parser

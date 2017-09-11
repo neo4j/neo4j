@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.spi
+package org.neo4j.cypher.internal.apa.v3_4.spi
 
-import org.neo4j.cypher.internal.frontend.v3_4.CypherException
+import org.neo4j.cypher.internal.apa.v3_4.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
   def failedIndexException(indexName: String, cause: Throwable): T

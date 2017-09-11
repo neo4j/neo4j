@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.apa.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.v3_4.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -67,7 +67,6 @@ class CommunityCompatibilityFactory(graph: GraphDatabaseQueryService, kernelAPI:
     case _ =>
       v3_1.CostCompatibility(graph, as3_1(config), CompilerEngineDelegator.CLOCK, kernelMonitors, kernelAPI, log, spec.planner, spec.runtime, spec.updateStrategy)
   }
-
 
   override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =
     (spec.planner, spec.runtime) match {

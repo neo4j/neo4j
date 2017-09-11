@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 import org.neo4j.cypher.internal.frontend.v3_4.ast.LabelName
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticTable}
-import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils.fromNodeProxy
 

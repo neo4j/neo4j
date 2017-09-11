@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
+import org.neo4j.cypher.internal.apa.v3_4.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue

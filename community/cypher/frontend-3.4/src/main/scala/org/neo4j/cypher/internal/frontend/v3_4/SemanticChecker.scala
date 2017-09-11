@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 
 object SemanticChecker {

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.mockito.ArgumentMatchers.anyBoolean
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.CypherException
+import org.neo4j.cypher.internal.apa.v3_4.CypherException
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.intValue

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.codegen
 
 import java.util
 
-import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{Assertions, Matchers, PropSpec}
 

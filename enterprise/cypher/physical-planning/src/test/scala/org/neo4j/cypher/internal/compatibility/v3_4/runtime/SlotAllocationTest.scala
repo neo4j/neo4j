@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, _}
-import org.neo4j.cypher.internal.v3_3.logical.{plans => logicalPlans}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, _}
+import org.neo4j.cypher.internal.v3_4.logical.{plans => logicalPlans}
 
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

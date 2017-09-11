@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v3_3.logical.plans.{NodeByLabelScan, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{NodeByLabelScan, NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

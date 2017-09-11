@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{Equals, FunctionInvocation, 
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, ast}
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Expand, ExpandAll, LogicalPlanId, SingleRow}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlanId, SingleRow}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {

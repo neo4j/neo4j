@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhaseEvent, CompilationPhase => v3_1Phase}
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration => CypherCompilerConfiguration3_1}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
@@ -52,12 +52,12 @@ object helpers {
     new v3_1.CompilationPhaseTracer {
       override def beginPhase(phase: v3_1.CompilationPhaseTracer.CompilationPhase) = {
         val wrappedPhase = phase match {
-          case v3_1Phase.AST_REWRITE => v3_3Phase.AST_REWRITE
-          case v3_1Phase.CODE_GENERATION => v3_3Phase.CODE_GENERATION
-          case v3_1Phase.LOGICAL_PLANNING => v3_3Phase.LOGICAL_PLANNING
-          case v3_1Phase.PARSING => v3_3Phase.PARSING
-          case v3_1Phase.PIPE_BUILDING => v3_3Phase.PIPE_BUILDING
-          case v3_1Phase.SEMANTIC_CHECK => v3_3Phase.SEMANTIC_CHECK
+          case v3_1Phase.AST_REWRITE => v3_4Phase.AST_REWRITE
+          case v3_1Phase.CODE_GENERATION => v3_4Phase.CODE_GENERATION
+          case v3_1Phase.LOGICAL_PLANNING => v3_4Phase.LOGICAL_PLANNING
+          case v3_1Phase.PARSING => v3_4Phase.PARSING
+          case v3_1Phase.PIPE_BUILDING => v3_4Phase.PIPE_BUILDING
+          case v3_1Phase.SEMANTIC_CHECK => v3_4Phase.SEMANTIC_CHECK
           case _ => throw new InternalException(s"Cannot handle $phase in 3.1")
         }
 

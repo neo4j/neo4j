@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 

@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting
 
 import org.neo4j.cypher.internal.apa.v3_4.Rewriter
-import org.neo4j.cypher.internal.frontend.v3_4.Rewriter
 
 case object RewriterTaskBuilder {
 

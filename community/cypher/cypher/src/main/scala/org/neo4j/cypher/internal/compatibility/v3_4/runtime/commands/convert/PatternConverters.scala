@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert
 
+import org.neo4j.cypher.internal.apa.v3_4.SyntaxException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{Pattern, SingleNode, values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_4.{SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 
 object PatternConverters {
 

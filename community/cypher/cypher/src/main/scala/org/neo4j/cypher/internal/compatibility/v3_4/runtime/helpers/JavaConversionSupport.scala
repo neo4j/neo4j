@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
 import org.neo4j.collection.primitive.{PrimitiveIntIterator, PrimitiveLongIterator}
-import org.neo4j.cypher.internal.frontend.v3_4.EntityNotFoundException
+import org.neo4j.cypher.internal.apa.v3_4.EntityNotFoundException
 
 object JavaConversionSupport {
 

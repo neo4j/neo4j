@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{TreeElem, TreeZipper}

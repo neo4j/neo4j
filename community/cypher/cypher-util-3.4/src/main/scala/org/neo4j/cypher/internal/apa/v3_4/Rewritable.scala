@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4
+package org.neo4j.cypher.internal.apa.v3_4
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.apa.v3_4.Rewriter
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
+import org.neo4j.cypher.internal.apa.v3_4.Foldable._
+import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
 
 import scala.annotation.tailrec
 import scala.collection.mutable

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
+import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.storable.{TextValue, Values}

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
+import org.neo4j.cypher.internal.apa.v3_4.SyntaxException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{CreateIndex, DropIndex, IndexOperation}
 import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.SyntaxException
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class IndexOperationPipe(indexOp: IndexOperation)(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {

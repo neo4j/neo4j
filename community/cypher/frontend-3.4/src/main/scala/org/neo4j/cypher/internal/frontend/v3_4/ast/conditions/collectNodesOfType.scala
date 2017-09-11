@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable.FoldableAny
+import org.neo4j.cypher.internal.apa.v3_4.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTNode
 
 import scala.reflect.ClassTag

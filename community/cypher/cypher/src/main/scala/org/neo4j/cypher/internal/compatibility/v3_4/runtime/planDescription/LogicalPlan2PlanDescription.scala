@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, PlannerName, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => InternalPlanDescription) {
@@ -34,7 +35,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => Intern
                      plannerName: PlannerName): InternalPlanDescription = {
     val readOnly = input.solved.readOnly
     new LogicalPlan2PlanDescription(readOnly).create(input)
-      .addArgument(Version("CYPHER 3.4"))
+      .addArgument(Version("CYPHER 3.3"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
   }
@@ -53,7 +54,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case _: AllNodesScan =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq.empty, variables)
 
-      case _: logical.plans.Argument =>
+      case _: plans.Argument =>
         PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
       case NodeByLabelScan(_, label, _) =>

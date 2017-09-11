@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -33,9 +34,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticTable, ast => frontEndAst}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
-import org.neo4j.cypher.internal.v3_4.logical
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
@@ -258,7 +258,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  private def translateColumnOrder(pipeline: PipelineInformation, s: logical.plans.ColumnOrder): pipes.ColumnOrder = s match {
+  private def translateColumnOrder(pipeline: PipelineInformation, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => {
       pipeline.get(name) match {
         case Some(slot) => pipes.Ascending(slot)

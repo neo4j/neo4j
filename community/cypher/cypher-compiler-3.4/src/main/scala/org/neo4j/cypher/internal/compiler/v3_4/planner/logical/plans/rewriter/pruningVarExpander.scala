@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, FunctionInvocation}
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, topDown}
 
 import scala.collection.mutable
 

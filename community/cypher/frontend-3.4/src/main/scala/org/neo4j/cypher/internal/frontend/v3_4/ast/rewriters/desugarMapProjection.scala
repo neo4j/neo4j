@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, Rewriter}
+import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{SemanticCheckableExpressionTraversable, SemanticContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTMap
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, SemanticState, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticState
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user

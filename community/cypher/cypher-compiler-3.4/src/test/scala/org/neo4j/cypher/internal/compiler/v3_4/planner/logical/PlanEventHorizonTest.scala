@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
 
 class PlanEventHorizonTest extends CypherFunSuite {
 

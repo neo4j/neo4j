@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
+import org.neo4j.cypher.internal.apa.v3_4.ArithmeticException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4
@@ -29,9 +30,9 @@ class DivideTest extends CypherFunSuite {
     val ctx = ExecutionContext.empty
     val state = QueryStateHelper.empty
 
-    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
+    intercept[ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
+    intercept[ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
   }
 }

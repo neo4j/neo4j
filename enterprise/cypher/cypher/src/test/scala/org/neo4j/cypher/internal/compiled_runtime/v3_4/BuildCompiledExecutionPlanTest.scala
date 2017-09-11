@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_3
+package org.neo4j.cypher.internal.compiled_runtime.v3_4
 
 import org.neo4j.cypher.internal.compatibility.v3_4.WrappedMonitors
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.BuildCompiledExecutionPlan
@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.{CostBasedPlannerName, HardcodedG
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, QueryGraph, RegularPlannerQuery}
-import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
+import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult, SingleRow}
 import org.neo4j.kernel.monitoring.Monitors
 
 class BuildCompiledExecutionPlanTest extends CypherFunSuite {

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
+import org.neo4j.cypher.internal.apa.v3_4.ArithmeticException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_4.ArithmeticException
 import org.neo4j.values._
 import org.neo4j.values.storable._
 

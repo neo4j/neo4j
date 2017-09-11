@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expression
 
 import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 
+import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{QueryState, QueryStateHelper}
-import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.virtual.PointValue

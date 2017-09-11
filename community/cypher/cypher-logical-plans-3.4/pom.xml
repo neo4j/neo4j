@@ -11,8 +11,9 @@
   <artifactId>neo4j-cypher-logical-plans-3.4</artifactId>
   <packaging>jar</packaging>
   <version>3.4.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher logical plans 3.4</name>
-  <description>Logical plans for Cypher</description>
+  <name>Neo4j - Cypher Logical Plans 3.4</name>
+
+  <description>Cypher logical plans</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -20,6 +21,12 @@
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
+
+  <properties>
+    <version-package>cypher.internal.logical.plans.v3.3</version-package>
+    <scala.version>2.11.11</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
+  </properties>
 
   <licenses>
     <license>
@@ -54,6 +61,28 @@
 
     <!-- shared versions are defined in the parent pom -->
 
+    <!-- neo4j -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-ir-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-frontend-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
     <!-- scala -->
 
     <dependency>
@@ -80,35 +109,32 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_2.11</artifactId>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <artifactId>scala-library</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>org.scalacheck</groupId>
       <artifactId>scalacheck_2.11</artifactId>
       <scope>test</scope>
     </dependency>
 
-    <!-- neo4j-cypher -->
+    <!-- other -->
 
+    <dependency>
+      <groupId>org.parboiled</groupId>
+      <artifactId>parboiled-scala_2.11</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
+    <!-- test dependencies -->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.4</artifactId>
       <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-ir-3.4</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+
 
   </dependencies>
-
 </project>

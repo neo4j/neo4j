@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Rewriter, TypedRewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, Rewriter, TypedRewriter, topDown}
 
 case object inlineProjections extends Rewriter {
 

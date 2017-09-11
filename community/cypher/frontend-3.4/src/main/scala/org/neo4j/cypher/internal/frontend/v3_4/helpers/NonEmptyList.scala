@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_4.InternalException
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
 
 import scala.annotation.tailrec
 import scala.collection.generic.CanBuildFrom

@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.apa.v3_4.Rewriter
+import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+import org.neo4j.cypher.internal.apa.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, Rewriter, topDown, ast => frontendAst}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand, _}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand, _}
 
 import scala.collection.mutable
 
@@ -177,7 +176,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
             throw new CantCompileQueryException("Did not find `" + k + "` in the pipeline information")
         }
 
-      case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Id =>
+      case idFunction: FunctionInvocation if idFunction.function == functions.Id =>
         idFunction.args.head match {
           case Variable(key) =>
             val slot = pipelineInformation(key)
@@ -189,7 +188,7 @@ class SlottedRewriter(tokenContext: TokenContext) {
           case _ => idFunction // Don't know how to specialize this
         }
 
-      case idFunction: FunctionInvocation if idFunction.function == frontendAst.functions.Exists =>
+      case idFunction: FunctionInvocation if idFunction.function == functions.Exists =>
         idFunction.args.head match {
           case Property(Variable(key), PropertyKeyName(propKey)) =>
             checkIfPropertyExists(pipelineInformation, key, propKey)

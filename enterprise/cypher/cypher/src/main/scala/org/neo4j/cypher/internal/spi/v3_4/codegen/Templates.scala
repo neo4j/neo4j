@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
-import java.io.PrintStream
 import java.util
 import java.util.function.Consumer
 import java.util.stream.{DoubleStream, IntStream, LongStream}
@@ -29,11 +28,11 @@ import org.neo4j.codegen.MethodDeclaration.Builder
 import org.neo4j.codegen.MethodReference._
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
+import org.neo4j.cypher.internal.apa.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext}

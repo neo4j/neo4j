@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.apa.v3_4.inSequence
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
@@ -26,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.LateAstRewriting
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticChecker, SemanticTable, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticChecker, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph}
 import org.scalatest.mock.MockitoSugar
 

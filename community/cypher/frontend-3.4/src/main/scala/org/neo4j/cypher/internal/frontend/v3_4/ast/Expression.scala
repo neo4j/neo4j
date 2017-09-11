@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.apa.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression._

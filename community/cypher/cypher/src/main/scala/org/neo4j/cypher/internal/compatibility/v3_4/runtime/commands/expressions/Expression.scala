@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
+import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.AstNode
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{CoercedPredicate, Predicate}
@@ -26,7 +27,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.TypeSafeMath
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 

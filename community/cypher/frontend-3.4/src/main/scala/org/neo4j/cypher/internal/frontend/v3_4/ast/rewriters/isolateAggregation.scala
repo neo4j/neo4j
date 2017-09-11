@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.Rewriter
+import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{AggregationNameGenerator, fixedPoint}
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, Rewriter, bottomUp}
 
 /**
   * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so

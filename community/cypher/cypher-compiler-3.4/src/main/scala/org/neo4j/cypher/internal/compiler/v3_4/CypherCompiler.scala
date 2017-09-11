@@ -30,8 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.ir.v3_4.UnionQuery
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
-import org.neo4j.graphdb.InputPosition
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                                                       monitors: Monitors,

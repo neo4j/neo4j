@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticCheckable}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
 sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
   def variables: NonEmptyList[Variable]

@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
+import org.neo4j.cypher.internal.apa.v3_4.InternalException
+
 object Ref {
   def apply[T <: AnyRef](v: T) = new Ref[T](v)
 }

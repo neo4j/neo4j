@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.frontend.v3_4.ArithmeticException
+import org.neo4j.cypher.internal.apa.v3_4.ArithmeticException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 
