@@ -113,7 +113,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     } finally {
       tx.close()
     }
-    
+
     val indexDirectory = NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure( storeDir )
         .forProvider( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ).directoryForIndex( 1 )
     graph.shutdown()
