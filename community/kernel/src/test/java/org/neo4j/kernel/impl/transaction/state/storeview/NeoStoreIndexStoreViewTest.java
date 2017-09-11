@@ -23,8 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.stubbing.Answer;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,11 +57,16 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.emptySetOf;
 
@@ -96,11 +99,13 @@ public class NeoStoreIndexStoreViewTest
 
         neoStores = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
 
-        locks = mock( LockService.class, (Answer) invocation ->
-        {
-            Long nodeId = (Long) invocation.getArguments()[0];
-            return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
-        } );
+        locks = mock( LockService.class );
+        when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
+                invocation ->
+                {
+                    Long nodeId = (Long) invocation.getArguments()[0];
+                    return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
+                } );
         storeView = new NeoStoreIndexStoreView( locks, neoStores );
     }
 
@@ -157,7 +162,7 @@ public class NeoStoreIndexStoreViewTest
         storeScan.run();
 
         // then
-        assertEquals( "allocated locks: " + lockMocks.keySet(), 2, lockMocks.size() );
+        assertThat( "allocated locks: " + lockMocks.keySet(), lockMocks.size(), greaterThanOrEqualTo( 2 ) );
         Lock lock0 = lockMocks.get( 0L );
         Lock lock1 = lockMocks.get( 1L );
         assertNotNull( "Lock[node=0] never acquired", lock0 );
@@ -167,7 +172,6 @@ public class NeoStoreIndexStoreViewTest
         order.verify( lock0 ).release();
         order.verify( locks ).acquireNodeLock( 1, LockService.LockType.READ_LOCK );
         order.verify( lock1 ).release();
-        order.verifyNoMoreInteractions();
     }
 
     @Test

@@ -27,6 +27,9 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+
 public class IdRangeIteratorTest
 {
     @Test
@@ -34,16 +37,16 @@ public class IdRangeIteratorTest
     {
         // given
         int rangeLength = 1024;
-        IdRangeIterator iterator = new IdRangeIterator( new IdRange( new long[]{}, 0, rangeLength ) );
+        IdRangeIterator iterator = new IdRange( new long[]{}, 0, rangeLength ).iterator();
 
         // when
         for ( int i = 0; i < rangeLength; i++ )
         {
-            iterator.next();
+            iterator.nextId();
         }
 
         // then
-        assertEquals( IdRangeIterator.VALUE_REPRESENTING_NULL, iterator.next() );
+        assertEquals( IdRangeIterator.VALUE_REPRESENTING_NULL, iterator.nextId() );
     }
 
     @Test
@@ -51,13 +54,13 @@ public class IdRangeIteratorTest
     {
         // given
         int rangeLength = 1024;
-        IdRangeIterator iterator = new IdRangeIterator( new IdRange( new long[]{}, 0, rangeLength ) );
+        IdRangeIterator iterator = new IdRange( new long[]{}, 0, rangeLength ).iterator();
 
         // when
         Set<Long> seenIds = new HashSet<>();
         for ( int i = 0; i < rangeLength; i++ )
         {
-            seenIds.add( iterator.next() );
+            seenIds.add( iterator.nextId() );
             if ( i > 0 )
             {
                 // then
@@ -71,12 +74,129 @@ public class IdRangeIteratorTest
     {
         // given
         int rangeLength = 1024;
-        IdRangeIterator iterator = new IdRangeIterator( new IdRange( new long[]{7,8,9}, 1024, rangeLength ) );
+        IdRangeIterator iterator = new IdRange( new long[] {7, 8, 9}, 1024, rangeLength ).iterator();
 
         // then
-        assertEquals(7, iterator.next());
-        assertEquals(8, iterator.next());
-        assertEquals(9, iterator.next());
-        assertEquals(1024, iterator.next());
+        assertEquals( 7, iterator.nextId() );
+        assertEquals( 8, iterator.nextId() );
+        assertEquals( 9, iterator.nextId() );
+        assertEquals( 1024, iterator.nextId() );
+    }
+
+    @Test
+    public void shouldGetNextIdBatchFromOnlyDefragIds() throws Exception
+    {
+        // given
+        IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
+
+        // when
+        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+
+        // then
+        assertEquals( 6, iterator.nextId() );
+        for ( long i = 0; i < 5; i++ )
+        {
+            assertEquals( 1 + i, subRange.nextId() );
+        }
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+    }
+
+    @Test
+    public void shouldGetNextIdBatchFromOnlyDefragIdsWhenSomeDefragIdsHaveAlreadyBeenReturned() throws Exception
+    {
+        // given
+        IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3, 4, 5, 6}, 7, 0 ).iterator();
+        iterator.nextId();
+        iterator.nextId();
+
+        // when
+        IdRangeIterator subRange = iterator.nextIdBatch( 3 ).iterator();
+
+        // then
+        assertEquals( 6, iterator.nextId() );
+        for ( long i = 0; i < 3; i++ )
+        {
+            assertEquals( 3 + i, subRange.nextId() );
+        }
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+    }
+
+    @Test
+    public void shouldGetNextIdBatchFromSomeDefragAndSomeRangeIds() throws Exception
+    {
+        // given
+        IdRangeIterator iterator = new IdRange( new long[] {1, 2, 3}, 10, 5 ).iterator();
+        iterator.nextId();
+
+        // when
+        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+
+        // then
+        assertEquals( 13, iterator.nextId() );
+        assertEquals( 2, subRange.nextId() );
+        assertEquals( 3, subRange.nextId() );
+        assertEquals( 10, subRange.nextId() );
+        assertEquals( 11, subRange.nextId() );
+        assertEquals( 12, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+    }
+
+    @Test
+    public void shouldGetNextIdBatchFromSomeRangeIds() throws Exception
+    {
+        // given
+        IdRangeIterator iterator = new IdRange( EMPTY_LONG_ARRAY, 0, 20 ).iterator();
+        iterator.nextId();
+
+        // when
+        IdRangeIterator subRange = iterator.nextIdBatch( 5 ).iterator();
+
+        // then
+        assertEquals( 6, iterator.nextId() );
+        assertEquals( 1, subRange.nextId() );
+        assertEquals( 2, subRange.nextId() );
+        assertEquals( 3, subRange.nextId() );
+        assertEquals( 4, subRange.nextId() );
+        assertEquals( 5, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+
+        // when
+        subRange = iterator.nextIdBatch( 2 ).iterator();
+
+        // then
+        assertEquals( 9, iterator.nextId() );
+        assertEquals( 7, subRange.nextId() );
+        assertEquals( 8, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+    }
+
+    @Test
+    public void shouldGetNextIdBatchFromSomeRangeIdsWhenThereAreUsedDefragIds() throws Exception
+    {
+        // given
+        IdRangeIterator iterator = new IdRange( new long[] {0, 1, 2}, 3, 10 ).iterator();
+        iterator.nextId();
+        iterator.nextId();
+        iterator.nextId();
+
+        // when
+        IdRangeIterator subRange = iterator.nextIdBatch( 3 ).iterator();
+
+        // then
+        assertEquals( 6, iterator.nextId() );
+        assertEquals( 3, subRange.nextId() );
+        assertEquals( 4, subRange.nextId() );
+        assertEquals( 5, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
+
+        // when
+        subRange = iterator.nextIdBatch( 3 ).iterator();
+
+        // then
+        assertEquals( 10, iterator.nextId() );
+        assertEquals( 7, subRange.nextId() );
+        assertEquals( 8, subRange.nextId() );
+        assertEquals( 9, subRange.nextId() );
+        assertEquals( VALUE_REPRESENTING_NULL, subRange.nextId() );
     }
 }

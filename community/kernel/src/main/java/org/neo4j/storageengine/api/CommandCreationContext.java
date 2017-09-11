@@ -17,33 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.graphdb.Resource;
 
-public class AllIdIterator extends HighIdAwareIterator<CommonAbstractStore<?,?>>
+/**
+ * A context which {@link StorageEngine} hands out to clients and which gets passed back in
+ * to calls about creating commands.
+ */
+public interface CommandCreationContext extends Resource
 {
-    private long currentId;
-
-    public AllIdIterator( CommonAbstractStore<?,?> store )
-    {
-        super( store );
-    }
-
-    @Override
-    protected boolean doFetchNext( long highId )
-    {
-        if ( currentId <= highId )
-        {
-            try
-            {
-                return next( currentId );
-            }
-            finally
-            {
-                currentId++;
-            }
-        }
-        return false;
-    }
 }

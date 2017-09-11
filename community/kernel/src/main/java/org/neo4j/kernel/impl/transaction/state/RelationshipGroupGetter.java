@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
@@ -27,11 +27,11 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 
 public class RelationshipGroupGetter
 {
-    private final RecordStore<RelationshipGroupRecord> store;
+    private final IdSequence idGenerator;
 
-    public RelationshipGroupGetter( RecordStore<RelationshipGroupRecord> store )
+    public RelationshipGroupGetter( IdSequence idGenerator )
     {
-        this.store = store;
+        this.idGenerator = idGenerator;
     }
 
     public RelationshipGroupPosition getRelationshipGroup( NodeRecord node, int type,
@@ -69,7 +69,7 @@ public class RelationshipGroupGetter
         if ( change == null )
         {
             assert node.isDense() : "Node " + node + " should have been dense at this point";
-            long id = store.nextId();
+            long id = idGenerator.nextId();
             change = relGroupRecords.create( id, type );
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );

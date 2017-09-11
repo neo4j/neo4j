@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -180,6 +181,7 @@ public class JavaProceduresTest
     {
         // When
         try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
+                .withConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .withProcedure( MyProceduresUsingMyCoreAPI.class ).newServer() )
         {
             // Then

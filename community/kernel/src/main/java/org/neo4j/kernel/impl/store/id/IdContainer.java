@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OffsetChannel;
@@ -238,6 +239,24 @@ public class IdContainer
     public long getReusableId()
     {
         return freeIdKeeper.getId();
+    }
+
+    public IdRange getReusableIdBatch( int maxSize )
+    {
+        long[] tmpIdArr = new long[maxSize];
+        int count = 0;
+        while ( count < maxSize )
+        {
+            long id = freeIdKeeper.getId();
+            if ( id == FreeIdKeeper.NO_RESULT )
+            {
+                break;
+            }
+            tmpIdArr[count++] = id;
+        }
+
+        long[] defragIdArr = count == maxSize ? tmpIdArr : Arrays.copyOfRange( tmpIdArr, 0, count );
+        return new IdRange( defragIdArr, 0, 0 );
     }
 
     public void freeId( long id )

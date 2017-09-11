@@ -243,6 +243,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      */
     <EXCEPTION extends Exception> void scanAllRecords( Visitor<RECORD,EXCEPTION> visitor ) throws EXCEPTION;
 
+    void freeId( long id );
+
     Predicate<AbstractBaseRecord> IN_USE = AbstractBaseRecord::inUse;
 
     class Delegator<R extends AbstractBaseRecord> implements RecordStore<R>
@@ -390,6 +392,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public <EXCEPTION extends Exception> void scanAllRecords( Visitor<R,EXCEPTION> visitor ) throws EXCEPTION
         {
             actual.scanAllRecords( visitor );
+        }
+
+        @Override
+        public void freeId( long id )
+        {
+            actual.freeId( id );
         }
     }
 

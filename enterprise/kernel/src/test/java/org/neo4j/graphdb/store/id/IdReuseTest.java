@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -47,7 +48,8 @@ public class IdReuseTest
 {
     @Rule
     public DatabaseRule dbRule = new EnterpriseDatabaseRule()
-            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP );
+            .withSetting( EnterpriseEditionSettings.idTypesToReuse, IdType.NODE + "," + IdType.RELATIONSHIP )
+            .withSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception
