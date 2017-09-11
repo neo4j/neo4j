@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.mockito.Mockito;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,7 +27,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.causalclustering.core.replication.DirectReplicator;
 import org.neo4j.causalclustering.core.state.storage.InMemoryStateStorage;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -117,9 +115,7 @@ public class ReplicatedIdRangeAcquirerTest
         ReplicatedIdRangeAcquirer acquirer = new ReplicatedIdRangeAcquirer( replicator, idAllocationStateMachine,
                 allocationSizes, member, NullLogProvider.getInstance() );
 
-        LeaderLocator leaderLocator = Mockito.mock( LeaderLocator.class );
-
-        return new ReplicatedIdGenerator( fs, file, IdType.ARRAY_BLOCK, initialHighId, acquirer,
+        return new ReplicatedIdGenerator( fs, file, IdType.ARRAY_BLOCK, () -> initialHighId, acquirer,
                 NullLogProvider.getInstance(), 10, true );
     }
 }

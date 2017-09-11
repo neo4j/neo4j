@@ -19,9 +19,10 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
-import org.junit.Test;
-
 import java.io.File;
+import java.util.function.Supplier;
+
+import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -29,6 +30,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -44,9 +47,10 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         IdType idType = IdType.NODE;
         long highId = 1L;
         long maxId = 10L;
-        IdGenerator idGenerator = filteredGenerator.open( file, idType, highId, maxId );
+        Supplier<Long> highIdSupplier = () -> highId;
+        IdGenerator idGenerator = filteredGenerator.open( file, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( file, idType, highId, maxId );
+        verify( idGeneratorFactory ).open( eq( file ), eq( idType ), any( Supplier.class ), eq( maxId ) );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 
@@ -58,9 +62,10 @@ public class FreeIdFilteredIdGeneratorFactoryTest
         long highId = 1L;
         long maxId = 10L;
         int grabSize = 5;
-        IdGenerator idGenerator = filteredGenerator.open( file, grabSize, idType, highId, maxId );
+        Supplier<Long> highIdSupplier = () -> highId;
+        IdGenerator idGenerator = filteredGenerator.open( file, grabSize, idType, highIdSupplier, maxId );
 
-        verify( idGeneratorFactory ).open( file, grabSize, idType, highId, maxId );
+        verify( idGeneratorFactory ).open( file, grabSize, idType, highIdSupplier, maxId );
         assertThat( idGenerator, instanceOf( FreeIdFilteredIdGenerator.class ) );
     }
 

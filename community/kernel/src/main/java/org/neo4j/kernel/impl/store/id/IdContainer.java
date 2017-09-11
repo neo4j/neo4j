@@ -72,14 +72,20 @@ public class IdContainer
         this.aggressiveReuse = aggressiveReuse;
     }
 
-    // initialize the id generator and performs a simple validation
-    public void init()
+    /**
+     * Initializes the id generator and performs a simple validation. Returns true if the initialization restored
+     * properly on disk state, false otherwise (such as creating an id file from scratch).
+     * Will throw {@link InvalidIdGeneratorException} if the id file is found to be damaged or unclean.
+     */
+    public boolean init()
     {
+        boolean result = true;
         try
         {
             if ( !fs.fileExists( file ) )
             {
                 createEmptyIdFile( fs, file, 0, false );
+                result = false;
             }
 
             fileChannel = fs.open( file, "rw" );
@@ -93,6 +99,7 @@ public class IdContainer
         {
             throw new UnderlyingStorageException( "Unable to init id file " + file, e );
         }
+        return result;
     }
 
     public boolean isClosed()

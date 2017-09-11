@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -44,13 +45,13 @@ public class JumpingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         return get( idType );
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         return get( idType );
     }

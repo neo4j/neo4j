@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.io.File;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 
@@ -138,6 +139,36 @@ public class IdContainerTest
         assertEquals( 30, idContainer.getInitialHighId() );
 
         idContainer.close( 30 );
+    }
+
+    @Test
+    public void shouldReturnFalseOnInitIfTheFileWasCreated() throws Exception
+    {
+        // When
+        // An IdContainer is created with no underlying file
+        IdContainer idContainer = new IdContainer( fs, file, 100, false );
+
+        // Then
+        // Init should return false
+        assertFalse( idContainer.init() );
+    }
+
+    @Test
+    public void shouldReturnTrueOnInitIfAProperFileWasThere() throws Exception
+    {
+        // Given
+        // A properly created and closed id file
+        IdContainer idContainer = new IdContainer( fs, file, 100, false );
+        idContainer.init();
+        idContainer.close( 100 );
+
+        // When
+        // An IdContainer is created over it
+        idContainer = new IdContainer( fs, file, 100, false );
+
+        // Then
+        // init() should return true
+        assertTrue( idContainer.init() );
     }
 
     private void createEmptyFile()
