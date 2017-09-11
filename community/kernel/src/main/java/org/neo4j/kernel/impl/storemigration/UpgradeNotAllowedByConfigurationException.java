@@ -25,14 +25,19 @@ public class UpgradeNotAllowedByConfigurationException extends UpgradeNotAllowed
 {
     public UpgradeNotAllowedByConfigurationException( String msg )
     {
-        super( msg );
+        super( String.format( "%s Detailed description: %s", baseMessage() , msg)  );
     }
 
     public UpgradeNotAllowedByConfigurationException()
     {
-        super( String.format(
-                "Failed to start Neo4j with an older data store version. "
-                        + "To enable automatic upgrade, please set configuration parameter \"%s=true\"",
-                GraphDatabaseSettings.allow_upgrade.name() ) );
+        super( baseMessage() );
+    }
+
+    private static String baseMessage()
+    {
+        return String.format(
+                "Neo4j cannot be started because the database files require upgrading and upgrades are disabled " +
+                "in the configuration. Please set '%s' to 'true' in your configuration file and try again.",
+                GraphDatabaseSettings.allow_upgrade.name() );
     }
 }
