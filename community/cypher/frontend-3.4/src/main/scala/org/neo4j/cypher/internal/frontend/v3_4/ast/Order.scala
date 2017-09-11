@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckable}
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck

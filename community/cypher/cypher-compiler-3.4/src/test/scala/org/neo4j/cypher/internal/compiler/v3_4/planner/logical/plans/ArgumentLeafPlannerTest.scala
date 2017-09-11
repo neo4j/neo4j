@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PatternExpression
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.v3_4.logical.plans.Argument
+import org.neo4j.cypher.internal.v3_3.logical.plans.Argument
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

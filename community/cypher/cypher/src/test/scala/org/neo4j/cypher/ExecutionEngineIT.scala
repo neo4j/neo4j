@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -77,11 +77,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan2.getArguments.get("planner-impl") should equal(CostBasedPlannerName.default.name)
   }
 
-  test("by default when using cypher 3.4 some queries should default to COST") {
+  test("by default when using cypher 3.3 some queries should default to COST") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.4").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
@@ -159,12 +159,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     plan.getArguments.get("planner-impl") should equal("IDP")
   }
 
-  test("should be able to force COST as default when using cypher 3.4") {
+  test("should be able to force COST as default when using cypher 3.3") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
       .setConfig(GraphDatabaseSettings.cypher_planner, "COST")
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.4").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.3").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when

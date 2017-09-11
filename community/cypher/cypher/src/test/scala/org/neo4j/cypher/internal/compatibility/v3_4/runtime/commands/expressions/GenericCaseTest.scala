@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{CoercedPredicate, Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
 class GenericCaseTest extends CypherFunSuite {

@@ -16,9 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckResult, SemanticState, _}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState, _}
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression with InfixFunctionTyping {
   override val signatures = Vector(

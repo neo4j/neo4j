@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.apa.v3_4.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
@@ -28,7 +29,7 @@ case object normalizeGraphReturnItems extends Rewriter {
     case item: SourceGraphAs => item
     case item: TargetGraphAs => item
     case graphItem@GraphAs(ref, None, _) =>
-      graphItem.copy(as = Some(Variable(ref.name)(ref.position)))(graphItem.position)
+      graphItem.copy(as = Some(ref))(graphItem.position)
     case graphItem: SingleGraphAs if graphItem.as.isEmpty =>
       val pos = graphItem.position.bumped()
       graphItem.withNewName(Variable(FreshIdNameGenerator.name(pos))(pos)).asGenerated

@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
     val ctx = ExecutionContext.empty
     val state = QueryStateHelper.empty
 
-    intercept[v3_4.ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
-    intercept[v3_4.ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
-    intercept[v3_4.ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
-    intercept[v3_4.ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
   }
 }

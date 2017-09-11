@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_4
+package org.neo4j.cypher.internal.spi.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_4.Cardinality
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

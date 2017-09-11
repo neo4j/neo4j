@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.DummyPosition
+import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 class ModuloTest extends InfixExpressionTestBase(Modulo(_, _)(DummyPosition(0))) {

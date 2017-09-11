@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.ArgumentMatchers.{anyInt, anyLong}
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, PropertyKeyId, SemanticTable}
-import org.neo4j.cypher.internal.spi.v3_4.{Operations, QueryContext}
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue

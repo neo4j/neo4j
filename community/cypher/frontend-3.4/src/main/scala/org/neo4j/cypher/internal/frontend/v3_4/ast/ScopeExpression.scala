@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult
 
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where

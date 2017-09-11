@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckResult, SemanticState, _}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState, _}
 
 sealed trait GraphReturnItem extends ASTNode with ASTParticle {
   def graphs: Set[SingleGraphAs]

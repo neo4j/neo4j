@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{doubleValue, longValue}
 
 class ModuloTest extends CypherFunSuite {

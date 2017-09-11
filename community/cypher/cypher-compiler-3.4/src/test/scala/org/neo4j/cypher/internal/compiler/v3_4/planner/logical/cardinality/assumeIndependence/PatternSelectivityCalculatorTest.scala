@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTe
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, HasLabels, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{VarPatternLength, _}
 

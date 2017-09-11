@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())
   def error(state: SemanticState, error: SemanticErrorDef): SemanticCheckResult = SemanticCheckResult(state, Vector(error))

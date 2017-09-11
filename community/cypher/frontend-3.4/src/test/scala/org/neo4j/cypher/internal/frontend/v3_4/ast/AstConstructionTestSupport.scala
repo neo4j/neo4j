@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.apa.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherTestSupport
 
 import scala.language.implicitConversions
 

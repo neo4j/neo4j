@@ -16,11 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper
 import org.neo4j.cypher.internal.frontend.v3_4.parser.ParserTest
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition, PlannerName, SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState, SemanticTable, ast, parser}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, PlannerName, SemanticCheckResult, SemanticErrorDef, SemanticFeature, SemanticState, SemanticTable, ast, parser}
 import org.parboiled.scala.Rule1
 
 class MultipleGraphClauseSemanticCheckingTest

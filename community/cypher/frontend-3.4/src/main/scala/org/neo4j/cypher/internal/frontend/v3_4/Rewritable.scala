@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4
 
 import java.lang.reflect.Method
 
+import org.neo4j.cypher.internal.apa.v3_4.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
 

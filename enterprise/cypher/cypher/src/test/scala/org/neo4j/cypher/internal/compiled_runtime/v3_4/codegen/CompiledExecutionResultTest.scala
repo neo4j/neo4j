@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen
+package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
 
 import java.util
 import java.util.function.BiConsumer
@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.CompiledExe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Completable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.ResultRecord
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
-import org.neo4j.cypher.internal.v3_4.executionplan.GeneratedQueryExecution
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

@@ -13,7 +13,7 @@
   <version>3.4.0-SNAPSHOT</version>
   <name>Neo4j - Cypher Util 3.4</name>
 
-  <description>Cypher utilities</description>
+  <description>Front end of the Cypher compiler</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>

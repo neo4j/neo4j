@@ -16,9 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{SemanticContext, _}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, _}
+import org.neo4j.cypher.internal.frontend.v3_4._
 
 case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outerScope: Scope = Scope.empty)
                         (val position: InputPosition)

@@ -17,8 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_4.logical.plans
+package org.neo4j.cypher.internal.v3_3.logical.plans
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.compiler.v3_4.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext

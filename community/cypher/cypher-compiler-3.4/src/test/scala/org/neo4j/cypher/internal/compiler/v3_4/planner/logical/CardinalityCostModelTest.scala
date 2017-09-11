@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, HasLabels, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{Cost, LazyMode}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
@@ -40,7 +40,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
           )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
 
-    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(231))
+    CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(301))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
@@ -57,7 +57,28 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     CardinalityCostModel(plan, whatever) should be < CardinalityCostModel(plan, pleaseLazy)
   }
 
-  test("non-lazy plan should be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
+  test("eager plan should be penalized when estimating cost when lazyness is preferred") {
+    // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
+    val eagerPlan = Projection(
+      NodeHashJoin(Set("b"),
+                   Expand(
+                     NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
+                     "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
+                   )(solvedWithEstimation(50.0)),
+                   Expand(
+                     NodeByLabelScan("a2", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
+                     "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
+                   )(solvedWithEstimation(50.0))
+      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
+    )(solvedWithEstimation(250.0))
+
+    val whateverCost = CardinalityCostModel(eagerPlan, QueryGraphSolverInput.empty)
+    val preferLazyCost = CardinalityCostModel(eagerPlan, QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode))
+
+    whateverCost should be < preferLazyCost
+  }
+
+  test("lazy plan should not be penalized when estimating cost wrt a lazy one when lazyness is preferred") {
     // MATCH (a1: A)-[r1]->(b)<-[r2]-(a2: A) RETURN b
 
     val lazyPlan = Projection(
@@ -73,24 +94,10 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
       )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
     )(solvedWithEstimation(250.0))
 
-    val eagerPlan = Projection(
-      NodeHashJoin(Set("b"),
-        Expand(
-          NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
-        )(solvedWithEstimation(50.0)),
-        Expand(
-          NodeByLabelScan("a2", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
-        )(solvedWithEstimation(50.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
-    )(solvedWithEstimation(250.0))
+    val whateverCost = CardinalityCostModel(lazyPlan, QueryGraphSolverInput.empty)
+    val preferLazyCost = CardinalityCostModel(lazyPlan, QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode))
 
-    val whatever = QueryGraphSolverInput.empty
-    CardinalityCostModel(lazyPlan, whatever) should be > CardinalityCostModel(eagerPlan, whatever)
-
-    val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    CardinalityCostModel(lazyPlan, pleaseLazy) should be < CardinalityCostModel(eagerPlan, pleaseLazy)
+    whateverCost should equal(preferLazyCost)
   }
 
   test("multiple property expressions are counted for in cost") {

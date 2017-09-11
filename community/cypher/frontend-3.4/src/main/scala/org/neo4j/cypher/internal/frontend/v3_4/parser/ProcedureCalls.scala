@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.parboiled.scala._
 
 trait ProcedureCalls {

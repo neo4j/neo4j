@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticState
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 

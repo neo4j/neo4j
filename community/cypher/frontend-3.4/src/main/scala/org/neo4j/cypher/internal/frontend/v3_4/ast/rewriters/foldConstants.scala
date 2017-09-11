@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.apa.v3_4.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_4
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
@@ -25,7 +26,7 @@ case object foldConstants extends Rewriter {
   try {
     instance.apply(that)
   } catch {
-    case e: java.lang.ArithmeticException => throw new v3_4.ArithmeticException(e.getMessage, e)
+    case e: java.lang.ArithmeticException => throw new v3_3.ArithmeticException(e.getMessage, e)
   }
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>

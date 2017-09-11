@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class SplittingPredicateTest extends CypherFunSuite {
 

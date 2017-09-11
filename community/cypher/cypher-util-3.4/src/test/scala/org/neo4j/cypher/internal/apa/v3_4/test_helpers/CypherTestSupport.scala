@@ -14,15 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.test_helpers
+package org.neo4j.cypher.internal.apa.v3_4.test_helpers
 
-import org.scalactic.Equality
-
-// Makes it easy to compare strings without having to worry about new lines
-object WindowsStringSafe extends Equality[String] {
-  override def areEqual(a: String, b: Any) = b match {
-    case b: String =>
-      a.replaceAll("\r\n", "\n") equals b.replaceAll("\r\n", "\n")
-    case _ => false
-  }
+// Inherited by test mixin classes that need to manage resources
+trait CypherTestSupport  {
+  protected def initTest() {}
+  protected def stopTest() {}
 }
+

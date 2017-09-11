@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility.v3_4.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_2
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
@@ -140,6 +141,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
   def parseQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer): ParsedQuery = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
+    import org.neo4j.cypher.internal.compatibility.v3_2.helpers._
 
     var version = preParsedQuery.version
     val planner = preParsedQuery.planner
@@ -147,7 +149,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val updateStrategy = preParsedQuery.updateStrategy
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty
-    if ((version == CypherVersion.v3_3 || version == CypherVersion.v3_4) && planner == CypherPlanner.rule) {
+    if ((version == CypherVersion.v3_3 || version == CypherVersion.v3_2) && planner == CypherPlanner.rule) {
       val position = preParsedQuery.offset
       preParsingNotifications = preParsingNotifications + rulePlannerUnavailableFallbackNotification(position)
       version = CypherVersion.v3_1
@@ -156,18 +158,18 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     def planForVersion(input: Either[CypherVersion, ParsedQuery]): Either[CypherVersion, ParsedQuery] = input match {
       case r@Right(_) => r
 
-      case Left(CypherVersion.v3_4) =>
+      case Left(CypherVersion.v3_3) =>
         val parserQuery = compatibilityFactory.
-          create(PlannerSpec_v3_4(planner, runtime, updateStrategy), config).
+          create(PlannerSpec_v3_3(planner, runtime, updateStrategy), config).
           produceParsedQuery(preParsedQuery, tracer, preParsingNotifications)
 
         parserQuery.onError {
-          // if there is a create unique in the cypher 3.4 query try to fallback to 3.1
-          case ex: frontend.v3_4.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+          // if there is a create unique in the cypher 3.3 query try to fallback to 3.1
+          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
             Left(CypherVersion.v3_1)
-          case ex: frontend.v3_4.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             preParsingNotifications = preParsingNotifications +
               createStartUnavailableNotification(ex, preParsedQuery) +
               createStartDeprecatedNotification(ex, preParsedQuery)
@@ -175,8 +177,23 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
           case _ => Right(parserQuery)
         }.getOrElse(Right(parserQuery))
 
-      //TODO: We need to add support for 3.3 via logical plan conversion ASAP
-      case Left(CypherVersion.v3_3) => throw new InternalException("CYPHER 3.3 support is not added yet")
+      case Left(CypherVersion.v3_2) =>
+        val parserQuery = compatibilityFactory.
+          create(PlannerSpec_v3_2(planner, runtime, updateStrategy), config).
+          produceParsedQuery(preParsedQuery, as3_2(tracer), preParsingNotifications)
+        parserQuery.onError {
+          // if there is a create unique in the cypher 3.2 query try to fallback to 3.1
+          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+            preParsingNotifications = preParsingNotifications + createUniqueNotification(ex, preParsedQuery)
+            Left(CypherVersion.v3_1)
+          case ex: v3_2.SyntaxException if ex.getMessage.startsWith("START is no longer supported") =>
+            preParsingNotifications = preParsingNotifications +
+              createStartNotification(ex, preParsedQuery) +
+              createStartDeprecatedNotification(ex, preParsedQuery)
+
+            Left(CypherVersion.v3_1)
+          case _ => Right(parserQuery)
+        }.getOrElse(Right(parserQuery))
 
       case Left(CypherVersion.v3_1) =>
         val parsedQuery = compatibilityFactory.
@@ -195,19 +212,37 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     result.right.get
   }
 
-  private def createStartUnavailableNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartUnavailableNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
 
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartDeprecatedNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartDeprecatedNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
   }
 
-  private def createUniqueNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createUniqueNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
+    CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
+  }
+
+  private def createStartNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(
+      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
+    START_UNAVAILABLE_FALLBACK.notification(pos)
+  }
+
+  private def createStartDeprecatedNotification(ex: frontend.v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(
+      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
+    START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
+  }
+
+  private def createUniqueNotification(ex: v3_2.SyntaxException, preParsedQuery: PreParsedQuery) = {
+    val pos = convertInputPosition(ex.pos.getOrElse(
+      v3_2.InputPosition(preParsedQuery.offset.offset, preParsedQuery.offset.line, preParsedQuery.offset.column)))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
@@ -215,6 +250,9 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(convertInputPosition(offset))
 
   private def convertInputPosition(offset: InputPosition) =
+    new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
+
+  private def convertInputPosition(offset: v3_2.InputPosition) =
     new org.neo4j.graphdb.InputPosition(offset.offset, offset.line, offset.column)
 
   private def getQueryCacheSize : Int = {

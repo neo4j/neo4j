@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.apa.v3_4.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Condition, Phase}
@@ -56,27 +57,11 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   private def returnAliases(statement: Statement): Set[Ref[Variable]] =
     statement.treeFold(Set.empty[Ref[Variable]]) {
 
-      case With(_, _, GraphReturnItems(_, items), _, _, _, _) =>
-        val gVars = extractGraphVars(items)
-        acc => (acc ++ gVars, Some(identity))
-
       // ignore variable in StartItem that represents index names and key names
-      case Return(_, ReturnItems(_, items), graphItems, _, _, _, _) =>
+      case Return(_, ReturnItems(_, items), _, _, _, _, _) =>
         val variables = items.map(_.alias.map(Ref[Variable]).get)
-        val gVars = graphItems.map(_.items).map(extractGraphVars).getOrElse(Seq.empty)
-        acc => (acc ++ variables ++ gVars, Some(identity))
+        acc => (acc ++ variables, Some(identity))
     }
-
-  private def extractGraphVars(items: Seq[GraphReturnItem]): Seq[Ref[Variable]] = {
-    items.flatMap { item =>
-      item.graphs.flatMap {
-        case g: GraphAs =>
-          Seq(g.ref, g.as.get).map(Ref[Variable])
-        case x =>
-          x.as.map(Ref[Variable])
-      }
-    }
-  }
 
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
                                 ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =

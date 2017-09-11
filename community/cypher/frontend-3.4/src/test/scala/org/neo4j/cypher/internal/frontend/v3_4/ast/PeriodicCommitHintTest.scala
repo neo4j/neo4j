@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, InputPosition, SemanticState}
+import org.neo4j.cypher.internal.apa.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticState
 
 class PeriodicCommitHintTest extends CypherFunSuite with Positional {
   test("negative values should fail") {

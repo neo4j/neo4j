@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{PropertyKeyId, SemanticTable}
 
 import scala.collection.mutable
 

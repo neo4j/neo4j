@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.normalizeGraphReturnItems
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class normalizeGraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 

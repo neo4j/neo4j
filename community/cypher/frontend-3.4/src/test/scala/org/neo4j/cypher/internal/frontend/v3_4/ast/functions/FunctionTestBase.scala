@@ -16,11 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
+import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticCheckResult, SemanticState, ast}
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState, ast}
 
 abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
 

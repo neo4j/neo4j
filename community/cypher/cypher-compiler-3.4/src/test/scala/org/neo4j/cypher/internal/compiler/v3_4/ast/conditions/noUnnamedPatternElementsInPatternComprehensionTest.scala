@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.conditions
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.noUnnamedPatternElementsInPatternComprehension
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{RelationshipPattern, StringLiteral, _}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite with AstConstructionTestSupport {
 

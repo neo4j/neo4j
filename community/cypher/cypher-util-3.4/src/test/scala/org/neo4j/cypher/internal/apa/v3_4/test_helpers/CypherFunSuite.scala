@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.test_helpers
+package org.neo4j.cypher.internal.apa.v3_4.test_helpers
 
 import org.junit.runner.RunWith
 import org.mockito.ArgumentCaptor

@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTString
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck, SemanticCheckable, SemanticChecking}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckable, SemanticChecking}
 
 final case class GraphUrl(url: Either[Parameter, StringLiteral])(val position: InputPosition)
   extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
