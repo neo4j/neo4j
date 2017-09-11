@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.replication;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.HashSet;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,8 +34,10 @@ import org.neo4j.function.ThrowingSupplier;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class ThrottlerTest
@@ -68,16 +71,16 @@ public class ThrottlerTest
     {
         // given
         Throttler throttler = new Throttler( 1000 );
-
         Counter counter = new Counter();
-        ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES );
-        ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES );
 
         // when
-        int count = ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES );
+        HashSet<Integer> set = new HashSet<>();
+        set.add( ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES ) );
+        set.add( ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES ) );
+        set.add( ecs.submit( () -> throttler.invoke( counter, 1000 ) ).get( 1, MINUTES ) );
 
         // then
-        assertEquals( 3, count );
+        assertThat( set, hasItems( 1, 2, 3 ) );
     }
 
     @Test
@@ -87,6 +90,7 @@ public class ThrottlerTest
         Throttler throttler = new Throttler( 1000 );
         Counter counter = new Counter();
         ecs.submit( () -> throttler.invoke( counter, 500 ) ).get( 1, MINUTES );
+        assertEventually( null, counter::count, equalTo( 1 ), 1, MINUTES );
 
         // when
         int count = ecs.submit( () -> throttler.invoke( counter, 800 ) ).get( 1, MINUTES );
@@ -102,13 +106,14 @@ public class ThrottlerTest
         Throttler throttler = new Throttler( 1000 );
         Blocker blocker = new Blocker();
         Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 1200 ) );
-        Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 800 ) );
+        assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
 
         // when
+        Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 800 ) );
         Thread.sleep( 10 );
 
         // then
-        assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
+        assertEquals( 1, blocker.count() );
         assertFalse( call1.isDone() );
         assertFalse( call2.isDone() );
 
@@ -187,6 +192,11 @@ public class ThrottlerTest
         public Integer get() throws Exception
         {
             return count.incrementAndGet();
+        }
+
+        public int count()
+        {
+            return count.get();
         }
     }
 
