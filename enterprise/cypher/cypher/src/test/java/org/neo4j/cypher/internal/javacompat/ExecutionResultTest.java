@@ -174,6 +174,9 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), notNullValue() );
         assertThat( arguments.get( "runtime-impl" ), notNullValue() );
     }
@@ -188,6 +191,9 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "COMPILED" ) );
         assertThat( arguments.get( "runtime-impl" ), equalTo( "COMPILED" ) );
     }
@@ -202,12 +208,15 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "INTERPRETED" ) );
         assertThat( arguments.get( "runtime-impl" ), equalTo( "INTERPRETED" ) );
     }
 
     @Test
-    public void shouldShowProcedureRuntimeInExecutionPlan()
+    public void shouldShowArgumentsExecutionPlan()
     {
         // Given
         Result result = db.execute( "EXPLAIN CALL db.labels" );
@@ -216,6 +225,43 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
+    }
+
+    @Test
+    public void shouldShowArgumentsInProfileExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "PROFILE CALL db.labels" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
+    }
+
+    @Test
+    public void shouldShowArgumentsInSchemaExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "EXPLAIN CREATE INDEX on :L(prop)" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
     }
