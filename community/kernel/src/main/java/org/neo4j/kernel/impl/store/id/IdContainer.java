@@ -248,7 +248,7 @@ public class IdContainer
         while ( count < maxSize )
         {
             long id = freeIdKeeper.getId();
-            if ( id == FreeIdKeeper.NO_RESULT )
+            if ( id == NO_RESULT )
             {
                 break;
             }
