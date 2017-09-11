@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{LogicalPlan, TreeBuilder}
 import org.neo4j.cypher.internal.frontend.v3_2.IdentityMap
 
 /*
@@ -30,12 +30,17 @@ to report db hits and rows passed through.
 object LogicalPlanIdentificationBuilder extends (LogicalPlan => Map[LogicalPlan, Id]) {
   def apply(plan: LogicalPlan): Map[LogicalPlan, Id] = {
 
-    def build(input: Map[LogicalPlan, Id], plan: LogicalPlan): Map[LogicalPlan, Id] = {
-      val l = plan.lhs.foldLeft(input)(build)
-      val r = plan.rhs.foldLeft(l)(build)
-      r + (plan -> new Id)
-    }
+    val builder = new IdAssigner
+    builder.mapIds(plan)
+  }
 
-    build(IdentityMap.empty, plan)
+  private class IdAssigner extends TreeBuilder[Map[LogicalPlan, Id]] {
+    def mapIds(plan: LogicalPlan): Map[LogicalPlan, Id] = create(plan)
+
+    override protected def build(plan: LogicalPlan): Map[LogicalPlan, Id] = IdentityMap(plan -> new Id)
+
+    override protected def build(plan: LogicalPlan, source: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = source + (plan -> new Id)
+
+    override protected def build(plan: LogicalPlan, lhs: Map[LogicalPlan, Id], rhs: Map[LogicalPlan, Id]): Map[LogicalPlan, Id] = lhs ++ rhs + (plan -> new Id)
   }
 }
