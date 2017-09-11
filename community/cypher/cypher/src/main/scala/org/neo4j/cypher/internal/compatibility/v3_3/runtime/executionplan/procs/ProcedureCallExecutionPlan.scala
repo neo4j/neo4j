@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
@@ -46,7 +47,7 @@ import org.neo4j.values.virtual.MapValue
   * latter case we will have to resort to runtime type checking.
   *
   * @param signature the signature of the procedure
-  * @param argExprs the arguments to the procedure
+  * @param argExprs  the arguments to the procedure
   */
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
@@ -56,85 +57,93 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       converter: ExpressionConverters)
   extends ExecutionPlan {
 
-    assert(resultSymbols.size == resultIndices.size)
+  assert(resultSymbols.size == resultIndices.size)
 
   private val resultMappings = resultSymbols.indices.map(i => {
-      val r = resultIndices(i)
-      (r._1, r._2, resultSymbols(i)._2)
-    })
+    val r = resultIndices(i)
+    (r._1, r._2, resultSymbols(i)._2)
+  })
 
-    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(converter.toCommandExpression) ++
-      signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
+  private val argExprCommands: Seq[expressions.Expression] = argExprs.map(converter.toCommandExpression) ++
+    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
-    override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
-      val input = evaluateArguments(ctx, params)
+  override def run(ctx: QueryContext, planType: ExecutionMode, params: MapValue): InternalExecutionResult = {
+    val input = evaluateArguments(ctx, params)
 
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(ctx.transactionalContext.close)
+    val taskCloser = new TaskCloser
+    taskCloser.addTask(ctx.transactionalContext.close)
 
-      planType match {
-        case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)
-        case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input, notifications)
-        case ProfileMode => createProfiledExecutionResult(ctx, taskCloser, input, planType)
-      }
+    planType match {
+      case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)
+      case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input, notifications)
+      case ProfileMode => createProfiledExecutionResult(ctx, taskCloser, input, planType)
     }
+  }
 
-    private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
+  private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
+                                          input: Seq[Any], planType: ExecutionMode) = {
+    val descriptionGenerator = () => createNormalPlan
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+                                 resultMappings, descriptionGenerator, planType)
+  }
+
+  private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
+                                             notifications: Set[Notification]) = {
+    // close all statements
+    taskCloser.close(success = true)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
+    ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
+  }
+
+  private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
                                             input: Seq[Any], planType: ExecutionMode) = {
-      val descriptionGenerator = () => createNormalPlan
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   resultMappings, descriptionGenerator, planType)
+    val rowCounter = Counter()
+    val descriptionGenerator = createProfilePlanGenerator(rowCounter)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+                                 resultMappings, descriptionGenerator, planType) {
+      override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
     }
+  }
 
-    private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
-                                               notifications: Set[Notification]) = {
-      // close all statements
-      taskCloser.close(success = true)
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-      ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
-    }
-
-    private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
-                                              input: Seq[Any], planType: ExecutionMode) = {
-      val rowCounter = Counter()
-      val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   resultMappings, descriptionGenerator, planType) {
-        override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
-      }
-    }
-
-    private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
-      val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-      argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
-    }
+  private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params)
+    argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
+  }
 
   private def createNormalPlan =
     PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-                        Seq(createSignatureArgument,
-                            Runtime(ProcedureRuntimeName.toTextOutput),
-                            RuntimeImpl(ProcedureRuntimeName.name)),
+                        arguments,
                         resultSymbols.map(_._1).toSet
     )
 
-    private def createProfilePlanGenerator(rowCounter: Counter) = () =>
-      PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-        Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted),
-            Runtime(ProcedureRuntimeName.toTextOutput),
-            RuntimeImpl(ProcedureRuntimeName.name)),
-        resultSymbols.map(_._1).toSet
-      )
+  private def createProfilePlanGenerator(rowCounter: Counter) = () =>
+    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+                        arguments,
+                        resultSymbols.map(_._1).toSet
+    )
 
-    private def createSignatureArgument =
-      Signature(signature.name, Seq.empty, resultSymbols)
+  private def arguments = Seq(createSignatureArgument,
+                              Runtime(runtimeUsed.toTextOutput),
+                              RuntimeImpl(runtimeUsed.name),
+                              Planner(plannerUsed.toTextOutput),
+                              PlannerImpl(plannerUsed.name),
+                              Version(CypherVersion.default.name))
 
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
-    override def isPeriodicCommit: Boolean = false
-    override def runtimeUsed = ProcedureRuntimeName
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
-    override def plannerUsed = ProcedurePlannerName
-  }
+
+  private def createSignatureArgument =
+    Signature(signature.name, Seq.empty, resultSymbols)
+
+  override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
+
+  override def isPeriodicCommit: Boolean = false
+
+  override def runtimeUsed = ProcedureRuntimeName
+
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
+
+  override def plannerUsed = ProcedurePlannerName
+}
 

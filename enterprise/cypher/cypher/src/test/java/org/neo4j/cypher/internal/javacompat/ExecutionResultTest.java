@@ -207,7 +207,7 @@ public class ExecutionResultTest
     }
 
     @Test
-    public void shouldShowProcedureRuntimeInExecutionPlan()
+    public void shouldShowArgumentsExecutionPlan()
     {
         // Given
         Result result = db.execute( "EXPLAIN CALL db.labels" );
@@ -216,6 +216,26 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
+        assertThat( arguments.get( "version" ), equalTo( "3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
+    }
+
+    @Test
+    public void shouldShowArgumentsInProfileExecutionPlan()
+    {
+        // Given
+        Result result = db.execute( "PROFILE CALL db.labels" );
+
+        // When
+        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
+
+        // Then
+        assertThat( arguments.get( "version" ), equalTo( "3.3" ) );
+        assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
+        assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime-impl" ), equalTo( "PROCEDURE" ) );
     }
