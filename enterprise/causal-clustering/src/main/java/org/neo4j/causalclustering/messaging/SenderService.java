@@ -96,15 +96,16 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         if ( nonBlockingChannel == null )
         {
             nonBlockingChannel = new NonBlockingChannel( bootstrap, eventLoopGroup.next(), to, log );
+            nonBlockingChannel.start();
             NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
 
             if ( existingNonBlockingChannel != null )
             {
+                nonBlockingChannel.dispose();
                 nonBlockingChannel = existingNonBlockingChannel;
             }
             else
             {
-                nonBlockingChannel.start();
                 log.info( "Creating channel to: [%s] ", to );
             }
         }
