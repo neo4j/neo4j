@@ -19,10 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-
 import org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -30,7 +26,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.spi.explicitindex.IndexProviders;
+import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 
 /**
  * @deprecated removed in 4.0
@@ -46,7 +42,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     {
         Config getConfig();
 
-        org.neo4j.kernel.spi.legacyindex.IndexProviders getIndexProviders();
+        IndexProviders getIndexProviders();
 
         IndexConfigStore getIndexStore();
 
@@ -65,51 +61,12 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        IndexProviders indexProvider = createImposterOf( IndexProviders.class, dependencies.getIndexProviders() );
-        return new org.neo4j.kernel.api.impl.index.LuceneKernelExtension(
+        return new LuceneKernelExtension(
                 context.storeDir(),
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
                 dependencies.fileSystem(),
-                indexProvider,
+                dependencies.getIndexProviders(),
                 context.databaseInfo().operationalMode );
-    }
-
-    /**
-     * Create an imposter of an interface. This is effectively used to mimic duck-typing.
-     *
-     * @param target the interface to mimic.
-     * @param imposter the instance of any class, it has to implement all methods of the interface provided by {@code target}.
-     * @param <T> the type of interface to mimic.
-     * @param <F> the actual type of the imposter.
-     * @return an imposter that can be passed as the type of mimicked interface.
-     *
-     * @implNote Method conformity is never checked, this is up to the user of the function to ensure. Sharp tool, use
-     * with caution.
-     */
-    @SuppressWarnings( "unchecked" )
-    private static <T,F> T createImposterOf( Class<T> target, F imposter )
-    {
-        return (T)Proxy.newProxyInstance( target.getClassLoader(), new Class<?>[]{target}, new MirroredInvocationHandler<>( imposter ) );
-    }
-
-    /**
-     * Will pass through everything, as is, to the wrapped instance.
-     */
-    private static class MirroredInvocationHandler<F> implements InvocationHandler
-    {
-        private final F wrapped;
-
-        MirroredInvocationHandler( F wrapped )
-        {
-            this.wrapped = wrapped;
-        }
-
-        @Override
-        public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
-        {
-            Method match = wrapped.getClass().getMethod(method.getName(), method.getParameterTypes());
-            return match.invoke( wrapped, args);
-        }
     }
 }
