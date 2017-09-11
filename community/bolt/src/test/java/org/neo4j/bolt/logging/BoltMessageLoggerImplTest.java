@@ -108,9 +108,9 @@ public class BoltMessageLoggerImplTest
     public void logInit() throws Exception
     {
         // when
-        boltMessageLogger.logInit( "userAgent", singletonMap( "username", "password" ) );
+        boltMessageLogger.logInit( "userAgent" );
         // then
-        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C INIT userAgent [\"username\"]" );
+        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C INIT userAgent" );
 
     }
 

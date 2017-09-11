@@ -101,10 +101,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     }
 
     @Override
-    public void logInit( String userAgent, Map<String,Object> authToken )
+    public void logInit( String userAgent )
     {
-        // log only auth toke keys, not values that include password
-        clientEvent( "INIT", () -> format( "%s %s", userAgent, json( authToken.keySet() ) ) );
+        clientEvent( "INIT", () -> userAgent);
     }
 
     @Override

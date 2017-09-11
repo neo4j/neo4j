@@ -65,7 +65,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     public void onInit( String userAgent, Map<String,Object> authToken ) throws RuntimeException
     {
         // TODO: make the client transmit the version for now it is hardcoded to -1 to ensure current behaviour
-        messageLogger.logInit(userAgent, authToken);
+        messageLogger.logInit(userAgent );
         worker.enqueue( session -> session.init( userAgent, authToken, initHandler ) );
     }
 
