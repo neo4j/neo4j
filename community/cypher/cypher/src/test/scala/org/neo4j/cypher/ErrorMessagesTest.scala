@@ -199,13 +199,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   }
 
   test("trying to add unique constraint when duplicates exist") {
-    createLabeledNode(Map("name" -> "A"), "Person")
-    createLabeledNode(Map("name" -> "A"), "Person")
+    val node1 = createLabeledNode(Map("name" -> "A"), "Person").getId
+    val node2 = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
       String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
+        "Both Node(" + node1 + ") and Node(" + node2 + ") have the label `Person` and property `name` = 'A'")
     )
   }
 

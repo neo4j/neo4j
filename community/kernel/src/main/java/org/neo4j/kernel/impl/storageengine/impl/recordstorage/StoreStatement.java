@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
@@ -27,6 +27,13 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.store.AllIdIterator;
+import org.neo4j.kernel.impl.api.store.StoreIteratorRelationshipCursor;
+import org.neo4j.kernel.impl.api.store.StoreNodeRelationshipCursor;
+import org.neo4j.kernel.impl.api.store.StorePropertyCursor;
+import org.neo4j.kernel.impl.api.store.StoreSingleNodeCursor;
+import org.neo4j.kernel.impl.api.store.StoreSinglePropertyCursor;
+import org.neo4j.kernel.impl.api.store.StoreSingleRelationshipCursor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -34,6 +41,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.util.InstanceCache;
 import org.neo4j.storageengine.api.Direction;
@@ -66,6 +74,7 @@ public class StoreStatement implements StorageStatement
     private final RecordCursors recordCursors;
     private final Supplier<LabelScanReader> labelScanStore;
     private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
+    private final RecordStorageCommandCreationContext commandCreationContext;
 
     private IndexReaderFactory indexReaderFactory;
     private LabelScanReader labelScanReader;
@@ -74,11 +83,13 @@ public class StoreStatement implements StorageStatement
     private boolean closed;
 
     public StoreStatement( NeoStores neoStores, Supplier<IndexReaderFactory> indexReaderFactory,
-            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService )
+            Supplier<LabelScanReader> labelScanReaderSupplier, LockService lockService,
+            RecordStorageCommandCreationContext commandCreationContext )
     {
         this.neoStores = neoStores;
         this.indexReaderFactorySupplier = indexReaderFactory;
         this.labelScanStore = labelScanReaderSupplier;
+        this.commandCreationContext = commandCreationContext;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
@@ -203,6 +214,7 @@ public class StoreStatement implements StorageStatement
         assert !closed;
         closeSchemaResources();
         recordCursors.close();
+        commandCreationContext.close();
         closed = true;
     }
 
@@ -249,5 +261,22 @@ public class StoreStatement implements StorageStatement
     public RecordCursors recordCursors()
     {
         return recordCursors;
+    }
+
+    RecordStorageCommandCreationContext getCommandCreationContext()
+    {
+        return commandCreationContext;
+    }
+
+    @Override
+    public long reserveNode()
+    {
+        return commandCreationContext.nextId( StoreType.NODE );
+    }
+
+    @Override
+    public long reserveRelationship()
+    {
+        return commandCreationContext.nextId( StoreType.RELATIONSHIP );
     }
 }

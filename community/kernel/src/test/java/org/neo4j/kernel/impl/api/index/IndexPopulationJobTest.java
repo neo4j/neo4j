@@ -37,6 +37,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -120,7 +121,8 @@ public class IndexPopulationJobTest
     @Before
     public void before() throws Exception
     {
-        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();

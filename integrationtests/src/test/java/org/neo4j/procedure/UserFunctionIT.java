@@ -838,6 +838,7 @@ public class UserFunctionIT
         db = new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
 
     }

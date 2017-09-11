@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.javacompat;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -60,7 +60,7 @@ public class NotificationAcceptanceTest
         InputPosition position = new InputPosition( 20, 1, 21 );
 
         // then
-        assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        assertThat( result.getNotifications(), Matchers.<Notification>contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
@@ -75,7 +75,7 @@ public class NotificationAcceptanceTest
         InputPosition position = new InputPosition( 24, 1, 25 );
 
         // then
-        assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        assertThat( result.getNotifications(), Matchers.<Notification>contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
@@ -90,7 +90,7 @@ public class NotificationAcceptanceTest
         InputPosition position = new InputPosition( 24, 1, 25 );
 
         // then
-        assertThat( result.getNotifications(), contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        assertThat( result.getNotifications(), Matchers.<Notification>contains( RULE_PLANNER_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
@@ -123,7 +123,7 @@ public class NotificationAcceptanceTest
 
         // then
         assertThat( result.getNotifications(),
-                contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+                Matchers.<Notification>contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();
@@ -138,7 +138,7 @@ public class NotificationAcceptanceTest
 
         // then
         assertThat( result.getNotifications(),
-                contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+                Matchers.<Notification>contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();
@@ -153,7 +153,7 @@ public class NotificationAcceptanceTest
 
         // then
         assertThat( result.getNotifications(),
-                contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+                Matchers.<Notification>contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();

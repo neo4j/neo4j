@@ -157,4 +157,22 @@ public interface StorageStatement extends AutoCloseable
      * @return record cursors
      */
     RecordCursors recordCursors();
+
+    /**
+     * Reserves a node id for future use to store a node. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved node id for future use.
+     */
+    long reserveNode();
+
+    /**
+     * Reserves a relationship id for future use to store a relationship. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved relationship id for future use.
+     */
+    long reserveRelationship();
 }
