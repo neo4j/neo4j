@@ -194,4 +194,23 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
       case e: Exception => e.getMessage should startWith("Expected to find a node at x but")
     }
   }
+
+  test("should handle complicated scope with aggregation expression and order by") {
+    val u = createLabeledNode("User")
+    val p = createLabeledNode("Photo")
+    relate(p, u, "BelongsTo")
+
+    val  mainQuery =
+      """
+        |MATCH (u:User)<-[:BelongsTo]-(p:Photo)
+        |WITH u, p, count(1) > 1 AS nothing
+        |FOREACH (dummy in [1] | MERGE (u)<-[:NewRelationship]-(p))
+        |WITH u ORDER BY u.Id
+        |return u""".stripMargin
+
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(mainQuery)
+
+    // No new nodes should be created
+    assertStats(result, relationshipsCreated = 1)
+  }
 }
