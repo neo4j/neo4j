@@ -21,10 +21,13 @@ package org.neo4j.kernel.api.impl;
 
 import org.apache.lucene.search.Query;
 
+import org.neo4j.kernel.api.impl.schema.ToggleableInfoStream;
+
 public class LuceneErrorDetails
 {
     public static String searchError( String indexDetails, Query query )
     {
-        return String.format( "index:%s, query:\"%s\"", indexDetails, query );
+        ToggleableInfoStream.toggle( true );
+        return String.format( "index:'%s', query:'%s'\"'", indexDetails, query );
     }
 }
