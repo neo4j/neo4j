@@ -182,11 +182,6 @@
       <artifactId>commons-configuration</artifactId>
     </dependency>
 
-    <!-- Added directly to avoid version clash in commons-configuration. -->
-    <dependency>
-      <groupId>commons-digester</groupId>
-      <artifactId>commons-digester</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>commons-io</groupId>

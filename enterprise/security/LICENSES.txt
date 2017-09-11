@@ -3,11 +3,20 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
   Apache Commons Compress
   Apache Commons Text
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
   Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
   Caffeine cache
-  Commons BeanUtils
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
