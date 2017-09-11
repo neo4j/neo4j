@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Execu
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
@@ -121,19 +121,19 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private def createProfilePlanGenerator(rowCounter: Counter) = () =>
     PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-                        arguments,
+                        Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)) ++ arguments,
                         resultSymbols.map(_._1).toSet
     )
 
-  private def arguments = Seq(createSignatureArgument,
-                              Runtime(runtimeUsed.toTextOutput),
-                              RuntimeImpl(runtimeUsed.name),
-                              Planner(plannerUsed.toTextOutput),
-                              PlannerImpl(plannerUsed.name),
-                              Version(CypherVersion.default.name))
+  private def arguments: Seq[Argument] = Seq(createSignatureArgument,
+                                                               Runtime(runtimeUsed.toTextOutput),
+                                                               RuntimeImpl(runtimeUsed.name),
+                                                               Planner(plannerUsed.toTextOutput),
+                                                               PlannerImpl(plannerUsed.name),
+                                                               Version(s"CYPHER ${CypherVersion.default.name}"))
 
 
-  private def createSignatureArgument =
+  private def createSignatureArgument: Argument =
     Signature(signature.name, Seq.empty, resultSymbols)
 
   override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
