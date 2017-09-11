@@ -146,15 +146,20 @@ public class ThrottlerTest
         // given
         Throttler throttler = new Throttler( 1000 );
         Blocker blocker = new Blocker();
-        Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 2000 ) );
-        Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 400 ) );
-        Future<Integer> call3 = ecs.submit( () -> throttler.invoke( blocker, 400 ) );
 
         // when
-        Thread.sleep( 10 );
+        Future<Integer> call1 = ecs.submit( () -> throttler.invoke( blocker, 2000 ) );
 
         // then
         assertEventually( null, blocker::count, equalTo( 1 ), 1, MINUTES );
+
+        // when
+        Future<Integer> call2 = ecs.submit( () -> throttler.invoke( blocker, 400 ) );
+        Future<Integer> call3 = ecs.submit( () -> throttler.invoke( blocker, 400 ) );
+        Thread.sleep( 10 );
+
+        // then
+        assertEquals( 1, blocker.count() );
 
         // when
         blocker.release( 1 );
