@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.ha.id;
 
+import java.io.File;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.io.File;
 
 import org.neo4j.com.ComException;
 import org.neo4j.com.RequestContext;
@@ -53,7 +53,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 
@@ -192,7 +191,7 @@ public class HaIdGeneratorFactoryTest
         File idFile = new File( "my.id" );
         // ... opening an id generator as master
         fac.create( idFile, 10, true );
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, () -> 10L, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
         assertTrue( fs.fileExists( idFile ) );
         idGenerator.close();
 
@@ -213,7 +212,7 @@ public class HaIdGeneratorFactoryTest
         fac.create( idFile, 10, true );
 
         // WHEN
-        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, 10, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
+        IdGenerator idGenerator = fac.open( idFile, 10, IdType.NODE, () -> 10L, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
 
         // THEN
         assertFalse( "Id file should've been deleted by now", fs.fileExists( idFile ) );
@@ -271,7 +270,7 @@ public class HaIdGeneratorFactoryTest
     private IdGenerator switchToSlave()
     {
         fac.switchToSlave();
-        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, 1, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
+        IdGenerator gen = fac.open( new File( "someFile" ), 10, IdType.NODE, () -> 1L, Standard.LATEST_RECORD_FORMATS.node().getMaxId() );
         masterDelegate.setDelegate( master );
         return gen;
     }

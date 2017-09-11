@@ -21,12 +21,11 @@ package org.neo4j.kernel.impl.store.id;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
-
-import static java.lang.Math.max;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -92,17 +91,28 @@ public class IdGeneratorImpl implements IdGenerator
      * {@link #nextId()}.
      * @param aggressiveReuse will reuse ids during the same session, not requiring
      * a restart to be able reuse ids freed with {@link #freeId(long)}.
-     * @param highId the highest id in use.
+     * @param highId A supplier for the high id to be used if the id file is found to be empty or not properly shut down
      * @throws UnderlyingStorageException
      *             If no such file exist or if the id generator is sticky
      */
     public IdGeneratorImpl( FileSystemAbstraction fs, File file, int grabSize, long max, boolean aggressiveReuse,
-            long highId )
+            Supplier<Long> highId )
     {
         this.max = max;
         this.idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
-        this.idContainer.init();
-        this.highId = max( idContainer.getInitialHighId(), highId );
+        /*
+         * The highId supplier will be called only if the id container tells us that the information found in the
+         * id file is not reliable (typically the file had to be created). Calling the supplier can be a potentially
+         * expensive operation.
+         */
+        if ( this.idContainer.init() )
+        {
+            this.highId = idContainer.getInitialHighId();
+        }
+        else
+        {
+            this.highId = highId.get();
+        }
     }
 
     /**

@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.junit.After;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,7 +26,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.stream.LongStream;
+
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.After;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
@@ -374,7 +375,7 @@ public class NodeStoreTest
         {
             @Override
             protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-                    boolean aggressiveReuse, long highId )
+                    boolean aggressiveReuse, Supplier<Long> highId )
             {
                 return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
             }

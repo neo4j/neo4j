@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.util.function.Supplier;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
@@ -53,7 +53,7 @@ public class BufferingIdGeneratorFactoryTest
                 actual, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
         bufferingIdGeneratorFactory.initialize( boundaries );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
+                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -85,7 +85,7 @@ public class BufferingIdGeneratorFactoryTest
         bufferingIdGeneratorFactory.initialize( boundaries );
 
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
-                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
+                new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
         // WHEN
         idGenerator.freeId( 7 );
@@ -130,13 +130,13 @@ public class BufferingIdGeneratorFactoryTest
         private final IdGenerator[] generators = new IdGenerator[IdType.values().length];
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
         {
             return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
+        public IdGenerator open( File filename, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
         {
             return generators[idType.ordinal()] = mock( IdGenerator.class );
         }

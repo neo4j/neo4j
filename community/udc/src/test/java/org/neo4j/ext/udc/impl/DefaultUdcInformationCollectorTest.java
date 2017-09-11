@@ -19,9 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -30,7 +27,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -224,13 +225,13 @@ public class DefaultUdcInformationCollectorTest
         }
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
         {
             return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
         {
             return get( idType );
         }

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
@@ -47,14 +48,14 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return open( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         IdGenerator generator = instantiate( fs, fileName, grabSize, maxId, idTypeConfiguration.allowAggressiveReuse(), highId );
@@ -63,7 +64,7 @@ public class DefaultIdGeneratorFactory implements IdGeneratorFactory
     }
 
     protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue,
-            boolean aggressiveReuse, long highId )
+            boolean aggressiveReuse, Supplier<Long> highId )
     {
         return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, highId );
     }

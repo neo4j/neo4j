@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import java.io.File;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -46,13 +47,13 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         return open( filename, 0, idType, highId, maxId );
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         return idGenerators.computeIfAbsent( idType, k -> new BatchingIdGenerator( fs, fileName, highId ) );
     }
@@ -74,12 +75,12 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         private final FileSystemAbstraction fs;
         private final File fileName;
 
-        BatchingIdGenerator( FileSystemAbstraction fs, File fileName, long highId )
+        BatchingIdGenerator( FileSystemAbstraction fs, File fileName, Supplier<Long> highId )
         {
             this.fs = fs;
             this.fileName = fileName;
             this.idSequence = new BatchingIdSequence();
-            this.idSequence.set( highId );
+            this.idSequence.set( highId.get() );
         }
 
         @Override

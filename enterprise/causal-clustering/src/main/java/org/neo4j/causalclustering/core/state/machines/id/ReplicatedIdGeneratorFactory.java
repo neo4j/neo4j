@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -49,7 +50,7 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+    public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return openGenerator( filename, idTypeConfiguration.getGrabSize(), idType, highId, maxId,
@@ -57,13 +58,13 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
     }
 
     @Override
-    public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+    public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
         return openGenerator( fileName, grabSize, idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
     }
 
-    private IdGenerator openGenerator( File file, int grabSize, IdType idType, long highId, long maxId,
+    private IdGenerator openGenerator( File file, int grabSize, IdType idType, Supplier<Long> highId, long maxId,
             boolean aggressiveReuse )
     {
         ReplicatedIdGenerator other = generators.get( idType );

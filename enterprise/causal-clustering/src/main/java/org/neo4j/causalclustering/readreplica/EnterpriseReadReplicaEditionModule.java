@@ -115,7 +115,8 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
-    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule, final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
+    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
+                                        final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
 

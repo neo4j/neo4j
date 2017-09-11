@@ -26,6 +26,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -44,13 +45,13 @@ public class EphemeralIdGenerator implements IdGenerator
                 idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
         @Override
-        public IdGenerator open( File filename, IdType idType, long highId, long maxId )
+        public IdGenerator open( File filename, IdType idType, Supplier<Long> highId, long maxId )
         {
             return open( filename, 0, idType, highId, maxId );
         }
 
         @Override
-        public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
+        public IdGenerator open( File fileName, int grabSize, IdType idType, Supplier<Long> highId, long maxId )
         {
             IdGenerator generator = generators.get( idType );
             if ( generator == null )

@@ -610,18 +610,23 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     private void setRecord( Position position, long value )
     {
-        long id = position.id;
-
         // We need to do a little special handling of high id in neostore since it's not updated in the same
         // way as other stores. Other stores always gets updates via commands where records are updated and
         // the one making the update can also track the high id in the event of recovery.
         // Here methods can be called directly, for example setLatestConstraintIntroducingTx where it's
         // unclear from the outside which record id that refers to, so here we need to manage high id ourselves.
-        setHighestPossibleIdInUse( id );
+        // Furthermore, we want the store to have a fixed size to accommodate the fixed number of fields it has. But,
+        // there is no guarantee that the field with the largest id will be called in a particular run. That means
+        // that to make sure we always have a proper max id, we must always set it to the highest possible value
+        // according to the enumeration of fields
+        Position[] values = Position.values();
+        long highestPossibleId = values[ values.length - 1 ].id;
+
+        setHighestPossibleIdInUse( highestPossibleId );
 
         MetaDataRecord record = new MetaDataRecord();
         record.initialize( true, value );
-        record.setId( id );
+        record.setId( position.id );
         updateRecord( record );
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.io.File;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdContainer;
@@ -44,11 +45,11 @@ class ReplicatedIdGenerator implements IdGenerator
     private IdContainer idContainer;
     private final ReentrantLock idContainerLock = new ReentrantLock();
 
-    ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
+    ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, Supplier<Long> highId,
             ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse )
     {
         this.idType = idType;
-        this.highId = highId;
+        this.highId = highId.get();
         this.acquirer = acquirer;
         this.log = logProvider.getLog( getClass() );
         idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
