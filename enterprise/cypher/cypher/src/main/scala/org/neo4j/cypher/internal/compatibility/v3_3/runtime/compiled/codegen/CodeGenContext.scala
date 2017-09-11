@@ -22,22 +22,21 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, LogicalPlanId}
 
 import scala.collection.mutable
 
 case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id],
+class CodeGenContext(val semanticTable: SemanticTable,
                      lookup: Map[String, Int], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
   private val probeTables: mutable.Map[CodeGenPlan, JoinData] = mutable.Map()
   private val parents: mutable.Stack[CodeGenPlan] = mutable.Stack()
-  val operatorIds: mutable.Map[Id, String] = mutable.Map()
+  val operatorIds: mutable.Map[LogicalPlanId, String] = mutable.Map()
 
   def addVariable(queryVariable: String, variable: Variable) {
     //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
@@ -91,7 +90,7 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
   def popParent(): CodeGenPlan = parents.pop()
 
   def registerOperator(plan: LogicalPlan): String = {
-    operatorIds.getOrElseUpdate(idMap(plan), namer.newOpName(plan.getClass.getSimpleName))
+    operatorIds.getOrElseUpdate(plan.assignedId, namer.newOpName(plan.getClass.getSimpleName))
   }
 }
 

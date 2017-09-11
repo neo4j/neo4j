@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Dir
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTNode, CTRelationship, ListType}
@@ -367,7 +367,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   private def traceEvent(planStepId: String) =
     invoke(tracer, executeOperator,
-           getStatic(FieldReference.staticField(generator.owner(), typeRef[Id], planStepId)))
+           getStatic(FieldReference.staticField(generator.owner(), typeRef[LogicalPlanId], planStepId)))
 
   override def incrementDbHits() = if (tracing) generator.expression(invoke(loadEvent, Methods.dbHit))
 

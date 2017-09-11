@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class LimitPipeTest extends CypherFunSuite {
@@ -47,7 +47,7 @@ class LimitPipeTest extends CypherFunSuite {
 class DummyPipe(inputIterator: Iterator[ExecutionContext]) extends Pipe {
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = ???
 
-  override def id: Id = ???
+  override def id: LogicalPlanId = ???
 
   override def createResults(state: QueryState): Iterator[ExecutionContext] = inputIterator
 }

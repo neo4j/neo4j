@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 /*
 This pipe can be used whenever we are aggregating and not grouping on anything
  */
 case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
                                                       pipelineInformation: PipelineInformation,
-                                                      aggregations: Map[Int, AggregationExpression])(val id: Id = new Id)
+                                                      aggregations: Map[Int, AggregationExpression])(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))

@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalQueryType, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -58,7 +59,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
     }
   }
 
-  private def description = PlanDescriptionImpl(new Id, name, NoChildren,
+  private def description = PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, NoChildren,
                                                 Seq(Planner(plannerUsed.toTextOutput),
                                                     PlannerImpl(plannerUsed.name),
                                                     Runtime(runtimeUsed.toTextOutput),

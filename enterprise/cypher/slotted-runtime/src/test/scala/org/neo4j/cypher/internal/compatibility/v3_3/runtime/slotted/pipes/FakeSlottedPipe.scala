@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.scalatest.mock.MockitoSugar
 
 case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineInformation)
@@ -50,5 +50,5 @@ case class FakeSlottedPipe(data: Iterator[Map[String, Any]], pipeline: PipelineI
     }
   }
 
-  var id = new Id
+  var id = LogicalPlanId.DEFAULT
 }

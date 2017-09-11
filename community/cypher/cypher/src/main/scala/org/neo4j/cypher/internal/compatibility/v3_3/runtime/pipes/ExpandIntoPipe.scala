@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
@@ -41,7 +41,7 @@ case class ExpandIntoPipe(source: Pipe,
                           toName: String,
                           dir: SemanticDirection,
                           lazyTypes: LazyTypes)
-                          (val id: Id = new Id)
+                          (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with CachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000

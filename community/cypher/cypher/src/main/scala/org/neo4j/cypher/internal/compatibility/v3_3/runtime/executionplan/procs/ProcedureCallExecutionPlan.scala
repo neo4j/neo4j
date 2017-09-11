@@ -29,8 +29,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Execu
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -115,13 +116,13 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def createNormalPlan =
-    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+    PlanDescriptionImpl(LogicalPlanId.DEFAULT, "ProcedureCall", NoChildren,
                         arguments,
                         resultSymbols.map(_._1).toSet
     )
 
   private def createProfilePlanGenerator(rowCounter: Counter) = () =>
-    PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
+    PlanDescriptionImpl(LogicalPlanId.DEFAULT, "ProcedureCall", NoChildren,
                         Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)) ++ arguments,
                         resultSymbols.map(_._1).toSet
     )

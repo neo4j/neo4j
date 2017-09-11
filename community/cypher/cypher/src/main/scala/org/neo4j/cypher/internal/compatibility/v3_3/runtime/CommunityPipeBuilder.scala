@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
@@ -43,7 +42,7 @@ import org.neo4j.values.virtual.{EdgeValue, NodeValue}
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
 case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-                                idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters,
+                                expressionConverters: ExpressionConverters,
                                 rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                                (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
@@ -55,7 +54,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
 
   def build(plan: LogicalPlan): Pipe = {
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     plan match {
       case SingleRow() =>
         SingleRowPipe()(id)
@@ -104,7 +103,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   def build(plan: LogicalPlan, source: Pipe): Pipe = {
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     plan match {
       case Projection(_, expressions) =>
         ProjectionPipe(source, Eagerly.immutableMapValues(expressions, buildExpression))(id = id)
@@ -337,7 +336,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     plan match {
       case CartesianProduct(_, _) =>
         CartesianProductPipe(lhs, rhs)(id = id)
@@ -403,7 +402,6 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private val resolver = new KeyTokenResolver
   implicit val table: SemanticTable = context.semanticTable
 
   private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {

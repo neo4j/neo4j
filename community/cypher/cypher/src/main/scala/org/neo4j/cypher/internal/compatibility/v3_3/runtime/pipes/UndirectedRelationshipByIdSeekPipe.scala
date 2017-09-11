@@ -23,8 +23,7 @@ import java.lang
 import java.util.function
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -32,7 +31,7 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.JavaConverters._
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
-                                             (val id: Id = new Id) extends Pipe {
+                                             (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   relIdExpr.registerOwningPipe(this)
 

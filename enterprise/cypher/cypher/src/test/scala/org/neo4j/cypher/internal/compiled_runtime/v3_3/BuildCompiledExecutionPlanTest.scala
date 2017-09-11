@@ -63,6 +63,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   }
 
   private def process(monitors: WrappedMonitors, plan: LogicalPlan) = {
+    plan.assignIds()
     val context = codegen.CompiledRuntimeContextHelper.create(
       monitors = monitors,
       planContext = new NotImplementedPlanContext {

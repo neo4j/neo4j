@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -31,7 +31,7 @@ import scala.collection.mutable
 
 case class DistinctSlottedPipe(source: Pipe,
                                pipelineInformation: PipelineInformation,
-                               groupingExpressions: Map[Int, Expression])(val id: Id = new Id)
+                               groupingExpressions: Map[Int, Expression])(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
 
   private val keyOffsets: Array[Int] = groupingExpressions.keys.toArray

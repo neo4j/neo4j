@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsAllNodes}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.ValueUtils
@@ -47,7 +47,7 @@ case class NodeStartPipe(source: Pipe,
                          name: String,
                          createSource: EntityProducer[Node],
                          itemEffects: Effects = Effects(ReadsAllNodes))
-                        (val id: Id = new Id)
+                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends StartPipe[Node](source, name, createSource) {
   def variableType = CTNode
 
@@ -55,7 +55,7 @@ case class NodeStartPipe(source: Pipe,
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
-                                (val id: Id = new Id) extends StartPipe[Relationship](source, name, createSource) {
+                                (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends StartPipe[Relationship](source, name, createSource) {
   def variableType = CTRelationship
 
   override def asAnyValue(in: Relationship): AnyValue = ValueUtils.fromRelationshipProxy(in)

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.v3_3.codegen;
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.QueryExecutionEvent;
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id;
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId;
+
 public interface QueryExecutionTracer
 {
-    QueryExecutionEvent executeOperator( Id queryId );
+    QueryExecutionEvent executeOperator( LogicalPlanId queryId );
 
     QueryExecutionTracer NONE = queryId -> QueryExecutionEvent.NONE;
 }

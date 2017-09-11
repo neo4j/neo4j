@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RenderSummaryTest extends CypherFunSuite {
@@ -29,7 +30,7 @@ class RenderSummaryTest extends CypherFunSuite {
       Rows(42),
       DbHits(33))
 
-    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set())
+    val plan = PlanDescriptionImpl(new LogicalPlanId(0), "NAME", NoChildren, arguments, Set())
 
     renderSummary(plan) should equal("Total database accesses: 33")
   }
@@ -43,15 +44,15 @@ class RenderSummaryTest extends CypherFunSuite {
       Rows(42),
       DbHits(22))
 
-    val child = PlanDescriptionImpl(new Id, "NAME1", NoChildren, arguments1, Set())
-    val parent = PlanDescriptionImpl(new Id, "NAME2", SingleChild(child), arguments2, Set())
+    val child = PlanDescriptionImpl(new LogicalPlanId(0), "NAME1", NoChildren, arguments1, Set())
+    val parent = PlanDescriptionImpl(new LogicalPlanId(1), "NAME2", SingleChild(child), arguments2, Set())
 
     renderSummary(parent) should equal("Total database accesses: 55")  }
 
   test("execution plan without profiler stats uses question marks") {
     val arguments = Seq()
 
-    val plan = PlanDescriptionImpl(new Id, "NAME", NoChildren, arguments, Set())
+    val plan = PlanDescriptionImpl(new LogicalPlanId(0), "NAME", NoChildren, arguments, Set())
 
     renderSummary(plan) should equal("Total database accesses: ?")  }
 }

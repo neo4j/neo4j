@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseR
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.SlottedPipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.SlottedExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
@@ -55,7 +54,6 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
-      val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
       val converters = new ExpressionConverters(SlottedExpressionConverters, CommunityExpressionConverter)
       val pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
@@ -64,10 +62,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
                                                          from.plannerName)
       val pipeInfo = executionPlanBuilder
-        .build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
+        .build(from.periodicCommit, logicalPlan)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
-      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
+      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan)
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
@@ -85,7 +83,6 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    beforeRewrite.assignIds()
     val pipelines: Map[LogicalPlanId, PipelineInformation] = SlotAllocation.allocateSlots(beforeRewrite)
     val slottedRewriter = new SlottedRewriter(context.planContext)
     val logicalPlan = slottedRewriter(beforeRewrite, pipelines)
@@ -115,16 +112,15 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
 
   case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlanId, PipelineInformation])
     extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id],
+    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
               expressionConverters: ExpressionConverters)
              (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
 
       val expressionToExpression = recursePipes(recurse, planContext) _
 
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters,
-                                          expressionToExpression)
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, expressionToExpression)
 
-      new SlottedPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
+      new SlottedPipeBuilder(fallback, expressionConverters, monitors, pipelineInformation, readOnly,
         expressionToExpression)
     }
   }

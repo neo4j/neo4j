@@ -1536,6 +1536,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private def param(values: (String,AnyRef)*): MapValue = ValueUtils.asMapValue(values.toMap.asJava)
 
   private def compile(plan: LogicalPlan) = {
+    plan.assignIds()
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
 

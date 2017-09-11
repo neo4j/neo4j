@@ -31,6 +31,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
@@ -57,7 +58,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val allNodeIds = mutable.ArrayBuffer[Long]()
 
   // used by instructions that generate probe tables
-  private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty, Map.empty)
+  private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty)
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.readOperations).thenReturn(readOps)
   when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
@@ -204,7 +205,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
-    val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
+    val ids: Map[String, LogicalPlanId] = instructions.flatMap(_.allOperatorIds.map(id => id -> LogicalPlanId.DEFAULT)).toMap
     evaluate(instructions, queryContext, Seq(resultRowKey), EMPTY_MAP, ids)
   }
 

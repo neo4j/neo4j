@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NestedPipeExpression, Pipe}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
@@ -33,7 +32,6 @@ trait PipeBuilderFactory {
   def apply(monitors: Monitors,
             recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
-            idMap: Map[LogicalPlan, Id],
             expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.storable.Values
@@ -53,7 +53,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                max: Option[Int],
                                nodeInScope: Boolean,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
-                              (val id: Id = new Id) extends PipeWithSource(source) {
+                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(NodeValue, Seq[EdgeValue])] = {
     val stack = new mutable.Stack[(NodeValue, Seq[EdgeValue])]
