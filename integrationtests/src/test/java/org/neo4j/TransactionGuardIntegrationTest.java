@@ -600,6 +600,7 @@ public class TransactionGuardIntegrationTest
                 customClockEnterpriseFacadeFactory )
                 .newImpermanentDatabaseBuilder( storeDir );
         configMap.forEach( databaseBuilder::setConfig );
+        databaseBuilder.setConfig( GraphDatabaseSettings.record_id_batch_size, "1" );
 
         GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
         cleanupRule.add( database );
