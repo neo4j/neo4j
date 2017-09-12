@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,6 +34,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RepeatRule;
+
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterables.asSet;
 
 /**
  * Token creation should be able to handle cases of concurrent token creation
@@ -102,7 +104,7 @@ public class TokenCreationIT
                         Label[] createdLabels = getLabels();
                         Node node = database.createNode( createdLabels );
                         Iterable<Label> nodeLabels = node.getLabels();
-                        Assert.assertEquals( Sets.newHashSet( createdLabels ), Sets.newHashSet( nodeLabels ) );
+                        assertEquals( asSet( asList( createdLabels ) ), asSet( nodeLabels ) );
                         transaction.success();
                     }
                     catch ( Exception e )

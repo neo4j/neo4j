@@ -125,10 +125,6 @@ the relevant Commercial Agreement.
       <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.google.jimfs</groupId>
-      <artifactId>jimfs</artifactId>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
