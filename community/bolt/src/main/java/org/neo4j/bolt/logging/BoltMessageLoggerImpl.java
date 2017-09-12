@@ -47,7 +47,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     private final String remoteAddress;
     private Channel channel;
 
-    private static final String BOLT_X_CORRELATION_ID_HEADER = "Bolt-X-CorrelationId";
+    private static final String BOLT_X_CORRELATION_ID_HEADER = "BoltCorrelationId";
     public static final AttributeKey<String> CORRELATION_ATTRIBUTE_KEY = AttributeKey.valueOf(
             BOLT_X_CORRELATION_ID_HEADER );
 
@@ -156,14 +156,8 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
     private Consumer<String> errorLogger( String errorMessage )
     {
-        if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
-        {
-            channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
-        }
-
-        String boltCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
         return formatMessageWithEventName ->
-                messageLog.error( remoteAddress, boltCorrelationId, formatMessageWithEventName, errorMessage );
+                messageLog.error( remoteAddress, getCorrelationId(), formatMessageWithEventName, errorMessage );
     }
 
     private String randomCorrelationIdGenerator()
@@ -173,16 +167,20 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
     private BiConsumer<String, String> infoLogger()
     {
+        return ( formatMessageWithEventName, details ) ->
+                messageLog.info( remoteAddress,
+                        getCorrelationId(),
+                        format( "%s %s", formatMessageWithEventName, details ) );
+    }
+
+    private String getCorrelationId()
+    {
         if ( !channel.hasAttr( CORRELATION_ATTRIBUTE_KEY ) )
         {
             channel.attr( CORRELATION_ATTRIBUTE_KEY ).set( randomCorrelationIdGenerator() );
         }
 
-        String boltCorrelationId = channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
-        return ( formatMessageWithEventName, details ) ->
-                messageLog.info( remoteAddress,
-                        boltCorrelationId,
-                        format( "%s %s", formatMessageWithEventName, details ) );
+        return channel.attr( CORRELATION_ATTRIBUTE_KEY ).get();
     }
 
     private BiConsumer<String, String> errorLoggerWithArgs( String errorMessage )

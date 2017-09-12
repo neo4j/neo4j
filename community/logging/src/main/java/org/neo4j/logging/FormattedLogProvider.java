@@ -90,6 +90,19 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         }
 
         /**
+         * Set the zoneId from timestamp for datestamps in the log
+         *
+         * @param timezone
+         * @return this builder
+         * @deprecated use {@link #withZoneId(ZoneId)}
+         */
+        @Deprecated
+        public Builder withTimeZone( TimeZone timezone )
+        {
+            return withZoneId( timezone.toZoneId() );
+        }
+
+        /**
          * Use the specified log {@link Level} for all {@link Log}s by default.
          *
          * @param level the log level to use as a default
@@ -242,7 +255,7 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
      *
      * @param timeZone
      * @return a builder for a {@link FormattedLogProvider}
-     * @Deprecated use {@link #withZoneId(ZoneId)}
+     * @deprecated use {@link #withZoneId(ZoneId)}
      */
     @Deprecated
     public static Builder withTimeZone( TimeZone timeZone )

@@ -78,7 +78,7 @@ public class FormattedLog extends AbstractLog
          *
          * @return this builder
          * @param timezone
-         * @Deprecated use {@link #withZoneId(ZoneId)}
+         * @deprecated use {@link #withZoneId(ZoneId)}
          */
         @Deprecated
         public Builder withTimeZone( TimeZone timezone )
@@ -254,7 +254,7 @@ public class FormattedLog extends AbstractLog
      *
      * @return a builder for a {@link FormattedLog}
      * @param timezone
-     * @Deprecated use {@link #withZoneId(ZoneId)}()}
+     * @deprecated use {@link #withZoneId(ZoneId)}
      */
     @Deprecated
     public static Builder withTimeZone( TimeZone timezone )
