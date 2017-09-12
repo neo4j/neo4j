@@ -92,6 +92,6 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
 
     private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
     {
-        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction::apply ).collect( Collectors.toList() ) );
+        return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );
     }
 }

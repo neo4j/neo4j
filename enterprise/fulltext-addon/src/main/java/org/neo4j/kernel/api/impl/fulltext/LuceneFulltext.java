@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
@@ -75,9 +76,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     @Override
     public int hashCode()
     {
-        int result = identifier.hashCode();
-        result = 31 * result + type.hashCode();
-        return result;
+        return Objects.hash( identifier, type );
     }
 
     PartitionedIndexWriter getIndexWriter( WritableFulltext writableIndex ) throws IOException

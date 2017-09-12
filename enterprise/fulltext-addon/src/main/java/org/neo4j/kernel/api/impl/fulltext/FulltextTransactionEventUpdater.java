@@ -33,15 +33,18 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.logging.Log;
 
 class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
 
-    private FulltextProvider fulltextProvider;
+    private final FulltextProvider fulltextProvider;
+    private final Log log;
 
-    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider )
+    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, Log log )
     {
         this.fulltextProvider = fulltextProvider;
+        this.log = log;
     }
 
     @Override
@@ -105,7 +108,7 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( "Unable to update fulltext index", e );
+            log.error( "Unable to update fulltext index", e );
         }
     }
 
@@ -119,7 +122,7 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
                 long entityId = stateEntry.getKey();
                 Map<String,Object> allProperties =
                         stateEntry.getValue().entrySet().stream().filter( entry -> indexedProperties.contains( entry.getKey() ) ).collect(
-                                Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue() ) );
+                                Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
                 if ( !allProperties.isEmpty() )
                 {
                     Document document = LuceneFulltextDocumentStructure.documentRepresentingProperties( entityId, allProperties );
@@ -154,7 +157,7 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
+            log.error( "Failed to refresh fulltext after updates", e );
         }
     }
 

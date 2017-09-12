@@ -23,14 +23,13 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 
 import java.io.IOException;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
@@ -59,54 +58,15 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     @Override
     public PrimitiveLongIterator query( String... terms )
     {
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
-        Query query;
-        try
-        {
-            query = multiFieldQueryParser.parse( String.join( " ", terms ) );
-        }
-        catch ( ParseException e )
-        {
-            query = parseFallbackBooleanQuery( multiFieldQueryParser, terms );
-        }
-        return query( query );
-    }
-
-    private Query parseFallbackBooleanQuery( MultiFieldQueryParser multiFieldQueryParser, String[] tokens )
-    {
-        Query query;
-        BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for ( String s : tokens )
-        {
-            for ( String property : properties )
-            {
-                Query booleanQuery = multiFieldQueryParser.createBooleanQuery( property, s );
-                if ( booleanQuery != null )
-                {
-                    builder.add( booleanQuery, BooleanClause.Occur.SHOULD );
-                }
-            }
-        }
-        query = builder.build();
-        return query;
+        String concatenatedQuery = String.join( " ", terms );
+        return innerQuery( concatenatedQuery );
     }
 
     @Override
     public PrimitiveLongIterator fuzzyQuery( String... terms )
     {
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
-        Query query;
-        try
-        {
-            query = multiFieldQueryParser.parse(  String.join( "~ ", terms ) + "~" );
-        }
-        catch ( ParseException e )
-        {
-            query = parseFallbackBooleanQuery( multiFieldQueryParser, terms );
-        }
-        return query( query );
+        String concatenatedQuery = String.join( "~ ", terms ) + "~";
+        return innerQuery( concatenatedQuery );
     }
 
     @Override
@@ -122,7 +82,24 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         }
     }
 
-    private PrimitiveLongIterator query( Query query )
+    private PrimitiveLongIterator innerQuery( String concatenatedQuery )
+    {
+        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
+        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
+        Query query;
+        try
+        {
+            query = multiFieldQueryParser.parse( concatenatedQuery );
+        }
+        catch ( ParseException e )
+        {
+            assert false;
+            return PrimitiveLongCollections.emptyIterator();
+        }
+        return indexQuery( query );
+    }
+
+    private PrimitiveLongIterator indexQuery( Query query )
     {
         try
         {

@@ -20,11 +20,11 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -37,23 +37,27 @@ public class FulltextProvider implements AutoCloseable
 {
     private static FulltextProvider instance;
     private final GraphDatabaseService db;
-    private Log log;
+    private final Log log;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
+    private final Set<String> nodeProperties;
+    private final Set<String> relationshipProperties;
+    private final Set<WritableFulltext> writableNodeIndices;
+    private final Set<WritableFulltext> writableRelationshipIndices;
+    private final Map<String,LuceneFulltext> nodeIndices;
+    private final Map<String,LuceneFulltext> relationshipIndices;
     private boolean closed;
-    private Set<String> nodeProperties;
-    private Set<String> relationshipProperties;
-    private Map<String,LuceneFulltext> nodeIndices;
-    private Map<String,LuceneFulltext> relationshipIndices;
 
     private FulltextProvider( GraphDatabaseService db, Log log )
     {
         this.db = db;
         this.log = log;
         closed = false;
-        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this );
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log );
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
+        writableNodeIndices = new HashSet<>();
+        writableRelationshipIndices = new HashSet<>();
         nodeIndices = new HashMap<>();
         relationshipIndices = new HashMap<>();
     }
@@ -114,11 +118,13 @@ public class FulltextProvider implements AutoCloseable
         if ( fulltextIndex.getType() == FulltextIndexType.NODES )
         {
             nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
+            writableNodeIndices.add( new WritableFulltext( (fulltextIndex) ) );
             nodeProperties.addAll( fulltextIndex.getProperties() );
         }
         else
         {
             relationshipIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
+            writableRelationshipIndices.add( new WritableFulltext( (fulltextIndex) ) );
             relationshipProperties.addAll( fulltextIndex.getProperties() );
         }
     }
@@ -135,12 +141,12 @@ public class FulltextProvider implements AutoCloseable
 
     Set<WritableFulltext> writableNodeIndices()
     {
-        return nodeIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
+        return Collections.unmodifiableSet( writableNodeIndices );
     }
 
     Set<WritableFulltext> writableRelationshipIndices()
     {
-        return relationshipIndices.values().stream().map( WritableFulltext::new ).collect( Collectors.toSet() );
+        return Collections.unmodifiableSet( writableRelationshipIndices );
     }
 
     /**

@@ -110,10 +110,8 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig population()
     {
-        IndexWriterConfig writerConfig = standard();
-        writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
-        writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
-        return writerConfig;
+        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
+        return population( analyzer );
     }
 
     public static IndexWriterConfig population( Analyzer analyzer )
