@@ -22,13 +22,11 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <neo4j.java.version>${maven.compiler.source}</neo4j.java.version>
-    <pico.version>2.14.3</pico.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>5.5.0</lucene.version>
     <bouncycastle.version>1.53</bouncycastle.version>
     <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
-    <hsqldb.version>2.3.2</hsqldb.version>
     <test.runner.jvm.settings.additional></test.runner.jvm.settings.additional>
     <test.runner.jvm.settings>-Xmx2G -XX:+UseG1GC -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError
       -XX:HeapDumpPath=target/test-data -Dorg.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.DIRTY_MEMORY=true
@@ -526,12 +524,6 @@
         <version>4.4.5</version>
       </dependency>
       <dependency>
-        <groupId>org.picocontainer</groupId>
-        <artifactId>picocontainer</artifactId>
-        <version>${pico.version}</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
         <groupId>com.google.jimfs</groupId>
         <artifactId>jimfs</artifactId>
         <version>1.1</version>
@@ -573,11 +565,6 @@
           <scope>test</scope>
       </dependency>
 
-      <dependency>
-        <groupId>org.hsqldb</groupId>
-        <artifactId>hsqldb</artifactId>
-        <version>${hsqldb.version}</version>
-      </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
@@ -770,24 +757,6 @@
         <groupId>org.neo4j.3rdparty.javax.ws.rs</groupId>
         <artifactId>jsr311-api</artifactId>
         <version>1.1.2.r612</version>
-      </dependency>
-      <dependency>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctorj</artifactId>
-        <version>1.5.2</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jruby</groupId>
-        <artifactId>jruby-complete</artifactId>
-        <version>1.7.20</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jsoup</groupId>
-        <artifactId>jsoup</artifactId>
-        <version>1.8.1</version>
-        <scope>test</scope>
       </dependency>
       <dependency>
         <groupId>io.dropwizard.metrics</groupId>
