@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -45,6 +46,26 @@ public class DefaultSchemaIndexProviderMapTest
         try
         {
             new DefaultSchemaIndexProviderMap( provider1, asList( provider2 ) );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // then good
+        }
+    }
+
+    @Test
+    public void shouldThrowOnLookupOnUnknownProvider() throws Exception
+    {
+        // given
+        SchemaIndexProvider provider = mock( SchemaIndexProvider.class );
+        when( provider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "provider", "1.2" ) );
+
+        // when
+        SchemaIndexProviderMap map = new DefaultSchemaIndexProviderMap( provider );
+        try
+        {
+            new DefaultSchemaIndexProviderMap( provider ).apply( new SchemaIndexProvider.Descriptor( "provider2", "1.2" ) );
             fail( "Should have failed" );
         }
         catch ( IllegalArgumentException e )
