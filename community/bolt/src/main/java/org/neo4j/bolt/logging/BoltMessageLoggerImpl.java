@@ -109,7 +109,7 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
     @Override
     public void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier )
     {
-        clientEvent( "RUN", () -> format( "%s %s", statement, json( parametersSupplier.get() ) ) );
+        clientEvent( "RUN", () -> format( "%s %s", json(statement), json( parametersSupplier.get() ) ) );
     }
 
     @Override

@@ -169,14 +169,17 @@ public class BoltMessageLoggingIT
     {
         assertTrue( fs.fileExists( boltLogFile ) );
 
-        String query = "CREATE (n:Person {name: 'Beta Ray Bill'}) RETURN 42";
+        String query = "CREATE (n:Person {name: 'Beta Ray Bill'}) \n" +
+                "RETURN 42";
         try ( Session session = driver.session() )
         {
             session.run( query ).consume();
         }
 
         String contents = readFile( boltLogFile );
-        assertThat( contents, containsString( "C RUN " + query + " {}" ) );
+        assertThat( contents, containsString( "C RUN " +
+                "\"CREATE (n:Person {name: 'Beta Ray Bill'}) \\nRETURN 42\""
+                + " {}" ) );
     }
 
     private String readFile( File file ) throws IOException
