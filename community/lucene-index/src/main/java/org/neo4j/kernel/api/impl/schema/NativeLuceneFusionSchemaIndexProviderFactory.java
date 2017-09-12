@@ -26,6 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -36,6 +37,9 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
+
 @Service.Implementation( KernelExtensionFactory.class )
 public class NativeLuceneFusionSchemaIndexProviderFactory
         extends KernelExtensionFactory<NativeLuceneFusionSchemaIndexProviderFactory.Dependencies>
@@ -43,7 +47,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NativeSchemaNumberIndexProvider.KEY;
     private static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "0.1" );
+    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "1.0" );
 
     public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
     {
@@ -74,14 +78,22 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
             LogProvider logProvider, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
+        IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = isReadOnly( config, operationalMode );
         NativeSchemaNumberIndexProvider nativeProvider =
-                new NativeSchemaNumberIndexProvider( pageCache, fs, storeDir, logProvider, recoveryCleanupWorkCollector, readOnly );
-        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config,
+                new NativeSchemaNumberIndexProvider( pageCache, fs, childDirectoryStructure, logProvider, recoveryCleanupWorkCollector, readOnly );
+        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, logProvider, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, priority );
+        return new FusionSchemaIndexProvider( nativeProvider,
+                luceneProvider, new NativeSelector(), DESCRIPTOR, priority, directoriesByProvider( storeDir ), fs );
+    }
+
+    public static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File storeDir )
+    {
+        IndexDirectoryStructure parentDirectoryStructure = directoriesByProvider( storeDir ).forProvider( DESCRIPTOR );
+        return directoriesBySubProvider( parentDirectoryStructure );
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )

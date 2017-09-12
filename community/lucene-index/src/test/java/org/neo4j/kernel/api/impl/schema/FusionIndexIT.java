@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -42,6 +41,8 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory.subProviderDirectoryStructure;
+
 public class FusionIndexIT
 {
     @Rule
@@ -49,8 +50,8 @@ public class FusionIndexIT
             .withSetting( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
 
     private File storeDir;
-    private Label label = Label.label( "label" );
-    private String propKey = "propKey";
+    private final Label label = Label.label( "label" );
+    private final String propKey = "propKey";
     private FileSystemAbstraction fs;
 
     @Before
@@ -121,8 +122,8 @@ public class FusionIndexIT
 
     private void deleteIndexFilesFor( SchemaIndexProvider.Descriptor descriptor )
     {
-        File nativeIndexDirectory = SchemaIndexProvider.getSchemaIndexStoreDirectory( storeDir, descriptor );
-        File[] files = fs.listFiles( nativeIndexDirectory );
+        File rootDirectory = subProviderDirectoryStructure( storeDir ).forProvider( descriptor ).rootDirectory();
+        File[] files = fs.listFiles( rootDirectory );
         for ( File indexFile : files )
         {
             fs.deleteFile( indexFile );
@@ -145,7 +146,7 @@ public class FusionIndexIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            IndexDefinition indexDefinition = db.schema().indexFor( label ).on( propKey ).create();
+            db.schema().indexFor( label ).on( propKey ).create();
             tx.success();
         }
         try ( Transaction tx = db.beginTx() )

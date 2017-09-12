@@ -42,6 +42,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
+
 /**
  * Additional tests for stuff not already covered by {@link LuceneSchemaIndexProviderCompatibilitySuiteTest}
  */
@@ -121,7 +123,7 @@ public class LuceneSchemaIndexProviderTest
     private LuceneSchemaIndexProvider getLuceneSchemaIndexProvider( Config config, DirectoryFactory directoryFactory,
                                                                     FileSystemAbstraction fs, File graphDbDir )
     {
-        return new LuceneSchemaIndexProvider(
-                fs, directoryFactory, graphDbDir, NullLogProvider.getInstance(), config, OperationalMode.single );
+        return new LuceneSchemaIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
+                NullLogProvider.getInstance(), config, OperationalMode.single );
     }
 }

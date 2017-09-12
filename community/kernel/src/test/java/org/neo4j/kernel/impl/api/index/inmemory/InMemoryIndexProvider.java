@@ -24,6 +24,7 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -50,7 +51,7 @@ public class InMemoryIndexProvider extends SchemaIndexProvider
 
     private InMemoryIndexProvider( int prio, Map<Long, InMemoryIndex> indexes )
     {
-        super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, prio );
+        super( InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR, prio, IndexDirectoryStructure.NONE );
         this.indexes = indexes;
     }
 

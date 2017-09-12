@@ -127,8 +127,7 @@ public class LuceneSchemaIndexIT
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( testDir.directory() )
-                .withIndexIdentifier( "partitionedIndexForUpdates" )
+                .withIndexRootFolder( testDir.directory( "partitionedIndexForUpdates" ) )
                 .build() )
         {
             index.create();
@@ -150,8 +149,7 @@ public class LuceneSchemaIndexIT
         File crudOperation = testDir.directory( "indexCRUDOperation" );
         try ( SchemaIndex crudIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( crudOperation )
-                .withIndexIdentifier( "crudIndex" )
+                .withIndexRootFolder( new File( crudOperation, "crudIndex" ) )
                 .build() )
         {
             crudIndex.open();
@@ -174,8 +172,7 @@ public class LuceneSchemaIndexIT
     {
         try ( SchemaIndex failedIndex = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( testDir.directory( "failedIndexFolder" ) )
-                .withIndexIdentifier( "failedIndex" )
+                .withIndexRootFolder( new File( testDir.directory( "failedIndexFolder" ), "failedIndex" ) )
                 .build() )
         {
             failedIndex.open();
@@ -199,8 +196,7 @@ public class LuceneSchemaIndexIT
         {
             reopenIndex = LuceneSchemaIndexBuilder.create( descriptor )
                     .withFileSystem( fileSystemRule.get() )
-                    .withIndexRootFolder( testDir.directory( "reopenIndexFolder" ) )
-                    .withIndexIdentifier( "reopenIndex" )
+                    .withIndexRootFolder( new File( testDir.directory( "reopenIndexFolder" ), "reopenIndex" ) )
                     .build();
             reopenIndex.open();
 
@@ -253,8 +249,7 @@ public class LuceneSchemaIndexIT
     {
         SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( testDir.directory() )
-                .withIndexIdentifier( "testIndex" )
+                .withIndexRootFolder( testDir.directory( "testIndex" ) )
                 .build();
         index.create();
         index.open();

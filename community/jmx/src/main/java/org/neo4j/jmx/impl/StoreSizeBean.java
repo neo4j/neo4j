@@ -195,7 +195,14 @@ public final class StoreSizeBean extends ManagementBeanProvider
             // Add schema index
             MutableLong schemaSize = new MutableLong();
             schemaIndexProviderMap.accept( provider ->
-                    schemaSize.add( FileUtils.size( fs, provider.getSchemaIndexStoreDirectory( storePath ) ) ) );
+            {
+                File rootDirectory = provider.directoryStructure().rootDirectory();
+                if ( rootDirectory != null )
+                {
+                    schemaSize.add( FileUtils.size( fs, rootDirectory ) );
+                }
+                // else this provider didn't have any persistent storage
+            } );
             size += schemaSize.longValue();
 
             // Add label index

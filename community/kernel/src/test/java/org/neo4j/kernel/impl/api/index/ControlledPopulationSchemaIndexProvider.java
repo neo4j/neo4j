@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -55,7 +56,7 @@ public class ControlledPopulationSchemaIndexProvider extends SchemaIndexProvider
 
     public ControlledPopulationSchemaIndexProvider()
     {
-        super( PROVIDER_DESCRIPTOR, 10 );
+        super( PROVIDER_DESCRIPTOR, 10, IndexDirectoryStructure.NONE );
         setInitialIndexState( initialIndexState );
         when( mockedWriter.newReader() ).thenReturn( IndexReader.EMPTY );
     }

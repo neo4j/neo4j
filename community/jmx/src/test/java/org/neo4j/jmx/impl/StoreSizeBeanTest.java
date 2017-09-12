@@ -35,6 +35,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -253,12 +254,16 @@ public class StoreSizeBeanTest
         {
             File schemaIndex = new File( storeDir, "schemaIndex" );
             createFileOfSize( schemaIndex, 2 );
-            when( schemaIndexProvider.getSchemaIndexStoreDirectory( any() ) ).thenReturn( schemaIndex );
+            IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
+            when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
+            when( schemaIndexProvider.directoryStructure() ).thenReturn( directoryStructure );
         }
         {
             File schemaIndex = new File( storeDir, "schemaIndex2" );
             createFileOfSize( schemaIndex, 3 );
-            when( schemaIndexProvider2.getSchemaIndexStoreDirectory( any() ) ).thenReturn( schemaIndex );
+            IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
+            when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
+            when( schemaIndexProvider2.directoryStructure() ).thenReturn( directoryStructure );
         }
 
         // Label scan store

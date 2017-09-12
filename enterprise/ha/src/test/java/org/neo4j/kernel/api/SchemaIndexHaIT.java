@@ -86,6 +86,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.given;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 
@@ -501,7 +502,7 @@ public class SchemaIndexHaIT
 
         ControlledSchemaIndexProvider( SchemaIndexProvider delegate )
         {
-            super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/ );
+            super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/, given( delegate.directoryStructure() ) );
             this.delegate = delegate;
         }
 

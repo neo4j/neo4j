@@ -41,14 +41,13 @@ public class FailureStorageTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private IndexFolderLayout indexFolderLayout;
-    private final String indexIdentifier = "1";
 
     @Before
     public void before()
     {
         File rootDirectory = new File( "dir" );
         fs.get().mkdirs( rootDirectory );
-        indexFolderLayout = new IndexFolderLayout( rootDirectory, indexIdentifier );
+        indexFolderLayout = new IndexFolderLayout( rootDirectory );
     }
 
     @Test

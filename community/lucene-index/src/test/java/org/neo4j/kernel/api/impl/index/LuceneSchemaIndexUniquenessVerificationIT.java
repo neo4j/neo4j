@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,7 +71,7 @@ public class LuceneSchemaIndexUniquenessVerificationIT
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    private int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
+    private final int nodesToCreate = DOCS_PER_PARTITION * 2 + 1;
 
     private SchemaIndex index;
     private static final long MAX_LONG_VALUE = Long.MAX_VALUE >> 10;
@@ -84,10 +85,9 @@ public class LuceneSchemaIndexUniquenessVerificationIT
         Factory<IndexWriterConfig> configFactory = new TestConfigFactory();
         index = LuceneSchemaIndexBuilder.create( descriptor )
                 .withFileSystem( fileSystemRule.get() )
-                .withIndexRootFolder( testDir.directory( "uniquenessVerification" ) )
+                .withIndexRootFolder( new File( testDir.directory( "uniquenessVerification" ), "index" ) )
                 .withWriterConfig( configFactory )
                 .withDirectoryFactory( DirectoryFactory.PERSISTENT )
-                .withIndexIdentifier( "index" )
                 .build();
 
         index.create();

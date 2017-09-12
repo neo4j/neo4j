@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -48,14 +49,17 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     private final SchemaIndexProvider nativeProvider;
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
+    private final DropAction dropAction;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
-            SchemaIndexProvider.Descriptor descriptor, int priority )
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider,
+            SchemaIndexProvider luceneProvider, Selector selector, SchemaIndexProvider.Descriptor descriptor,
+            int priority, IndexDirectoryStructure.Factory directoryStructure, FileSystemAbstraction fs )
     {
-        super( descriptor, priority );
+        super( descriptor, priority, directoryStructure );
         this.nativeProvider = nativeProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;
+        this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
     }
 
     @Override
@@ -63,7 +67,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexPopulator(
                 nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector );
+                luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
     }
 
     @Override
@@ -72,7 +76,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     {
         return new FusionIndexAccessor(
                 nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector );
+                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector, indexId, dropAction );
     }
 
     @Override
@@ -134,5 +138,41 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
                 first.indexSize() + other.indexSize(),
                 first.uniqueValues() + other.uniqueValues(),
                 first.sampleSize() + other.sampleSize() );
+    }
+
+    /**
+     * As an interface because this is actually dependent on whether or not an index lives on a {@link FileSystemAbstraction}
+     * or a page cache. At the time of writing this there's only the possibility to put these on the file system,
+     * but there will be a possibility to put these in the page cache file management instead and having this abstracted
+     * will help when making that switch/decision.
+     */
+    @FunctionalInterface
+    interface DropAction
+    {
+        /**
+         * Deletes the index directory and everything in it, as last part of dropping an index.
+         *
+         * @param indexId the index id, for which directory to drop.
+         * @throws IOException on I/O error.
+         */
+        void drop( long indexId ) throws IOException;
+    }
+
+    private static class FileSystemDropAction implements DropAction
+    {
+        private final FileSystemAbstraction fs;
+        private final IndexDirectoryStructure directoryStructure;
+
+        FileSystemDropAction( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure )
+        {
+            this.fs = fs;
+            this.directoryStructure = directoryStructure;
+        }
+
+        @Override
+        public void drop( long indexId ) throws IOException
+        {
+            fs.deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
+        }
     }
 }
