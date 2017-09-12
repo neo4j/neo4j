@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.junit.Assert.assertEquals;
@@ -30,11 +29,14 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class DatabaseSchemaStateTest
 {
+    private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private DatabaseSchemaState stateStore;
+
     @Test
     public void should_apply_updates_correctly()
     {
         // GIVEN
-        stateStore.apply( MapUtil.stringMap( "key", "created_value" ) );
+        stateStore.put( "key", "created_value" );
 
         // WHEN
         String result = stateStore.get( "key" );
@@ -47,7 +49,7 @@ public class DatabaseSchemaStateTest
     public void should_flush()
     {
         // GIVEN
-        stateStore.apply( MapUtil.stringMap( "key", "created_value" ) );
+        stateStore.put( "key", "created_value" );
 
         // WHEN
         stateStore.clear();
@@ -57,13 +59,8 @@ public class DatabaseSchemaStateTest
         assertEquals( null, result );
 
         // AND ALSO
-        logProvider.assertExactly(
-                inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." )
-        );
+        logProvider.assertExactly( inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." ) );
     }
-
-    private DatabaseSchemaState stateStore;
-    private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
     public void before()

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import org.neo4j.logging.Log;
@@ -36,13 +34,11 @@ import org.neo4j.logging.LogProvider;
 public class DatabaseSchemaState implements SchemaState
 {
     private Map<Object, Object> state;
-
     private final Log log;
-    private final ReadWriteLock lock = new ReentrantReadWriteLock( true );
 
     public DatabaseSchemaState( LogProvider logProvider )
     {
-        this.state = new HashMap<>(  );
+        this.state = new ConcurrentHashMap<>(  );
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -50,90 +46,26 @@ public class DatabaseSchemaState implements SchemaState
     @Override
     public <K, V> V get( K key )
     {
-        lock.readLock().lock();
-        try
-        {
-            return (V) state.get( key );
-        }
-        finally
-        {
-            lock.readLock().unlock();
-        }
+        return (V) state.get( key );
     }
 
     @SuppressWarnings( "unchecked" )
     @Override
     public <K, V> V getOrCreate( K key, Function<K,V> creator )
     {
-        V currentValue = get(key);
-        if ( currentValue == null )
-        {
-            lock.writeLock().lock();
-            try
-            {
-                V lockedValue = (V) state.get( key );
-                if ( lockedValue == null )
-                {
-                    V newValue = creator.apply( key );
-                    state.put( key, newValue );
-                    return newValue;
-                }
-                else
-                {
-                    return lockedValue;
-                }
-            }
-            finally
-            {
-                lock.writeLock().unlock();
-            }
-        }
-        else
-        {
-            return currentValue;
-        }
+        return (V) state.computeIfAbsent( key, (Function<Object, Object>) creator );
     }
 
     @Override
-    public void replace( Map<Object,Object> replacement )
+    public <K, V> void put( K key, V value )
     {
-        lock.writeLock().lock();
-        try
-        {
-            state = replacement;
-        }
-        finally
-        {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override
-    public <K, V> void apply( Map<K,V> updates )
-    {
-        lock.writeLock().lock();
-        try
-        {
-            state.putAll( updates );
-        }
-        finally
-        {
-            lock.writeLock().unlock();
-        }
+        state.put( key, value );
     }
 
     @Override
     public void clear()
     {
-        lock.writeLock().lock();
-        try
-        {
-            state.clear();
-        }
-        finally
-        {
-            lock.writeLock().unlock();
-        }
+        state.clear();
         log.debug( "Schema state store has been cleared." );
     }
 }
