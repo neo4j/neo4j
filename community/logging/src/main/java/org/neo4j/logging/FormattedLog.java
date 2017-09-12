@@ -152,7 +152,7 @@ public class FormattedLog extends AbstractLog
          * @param zonedDateTimeSupplier the log level to use as a default
          * @return this builder
          */
-        public Builder withTimeSupplier( Supplier<ZonedDateTime> zonedDateTimeSupplier )
+        Builder withTimeSupplier( Supplier<ZonedDateTime> zonedDateTimeSupplier )
         {
             this.dateTimeFormatterSupplier = zonedDateTimeSupplier;
             return this;
