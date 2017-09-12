@@ -125,14 +125,25 @@ trait CypherComparisonSupport extends CypherTestSupport {
   protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
                             ignoreResults: TestConfiguration = Configs.Empty,
-                            ignorePlans: TestConfiguration = Configs.AllRulePlanners,
+                            ignorePlans: Option[TestConfiguration] = Some(Configs.AllRulePlanners),
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
-    val compareResults = expectSucceed -  ignoreResults
-    val comparePlans = expectSucceed - ignorePlans
+    val compareResults = expectSucceed - ignoreResults
+    val comparePlans = ignorePlans match {
+      case Some(plans) => Some(expectSucceed - plans)
+      case None => None
+    }
+
     val baseScenario =
-      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults, comparePlans)
-      else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+      if (expectSucceed.scenarios.nonEmpty) {
+        comparePlans match {
+          case Some(plans) => extractBaseScenario(expectSucceed, compareResults, plans)
+          case None => extractBaseScenario(expectSucceed, compareResults, Configs.Empty)
+        }
+      }
+      else {
+        TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+      }
 
     val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
       thisScenario =>
@@ -147,11 +158,16 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     positiveResults.foreach {
       case (scenario, result) =>
-        if (comparePlans.containsScenario(scenario)) {
-          assertPlansSimilar(baseResult, result, s"plan for ${scenario.name} did not equal ${baseScenario.name}")
-        } else {
-          assertPlansNotSimilar(baseResult, result, s"plan for ${scenario.name} was equal to ${baseScenario.name}")
+        comparePlans match {
+            // Only compare plans for equality AND uneqality if Some are given
+          case Some(plans) =>
+            if (plans.containsScenario(scenario)) {
+            assertPlansSimilar(baseResult, result, s"plan for ${scenario.name} did not equal ${baseScenario.name}")
+          } else {
+            assertPlansNotSimilar(baseResult, result, s"plan for ${scenario.name} was equal to ${baseScenario.name}")
+          }
         }
+
         if (compareResults.containsScenario(scenario)) {
           assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
         } else {

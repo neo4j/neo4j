@@ -92,7 +92,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN a, b, COLLECT( DISTINCT c) as c
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query, ignorePlans = Configs.AbsolutelyAll)
+    val result = executeWith(Configs.CommunityInterpreted, query, ignorePlans = Some(Configs.AbsolutelyAll))
     result.size should be(0)
     result.hasNext should be(false)
 
@@ -176,7 +176,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |""".stripMargin
 
     val result = executeWith(Configs.Interpreted, query,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3))
     result.toList should equal(List(Map("n" -> n, "rel1" -> null, "rel2" -> null, "n1" -> null, "n2" -> null)))
   }
 
@@ -246,7 +246,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
                   |RETURN paths""".stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted, query,
-      ignorePlans = Configs.AbsolutelyAll,
+      ignorePlans = Some(Configs.AbsolutelyAll),
       params = Map("0" -> node1.getId, "1" -> node2.getId))
     graph.inTx(
       result.toSet should equal(
@@ -261,7 +261,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
     executeWith(Configs.CommunityInterpreted, q,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3).toList should equal (List(Map("cn" -> 0)))
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3)).toList should equal (List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
@@ -296,7 +296,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // when
     val result = executeWith(Configs.Interpreted,
       "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n",
-      ignorePlans = Configs.AllRulePlanners)
+      ignorePlans = Some(Configs.AllRulePlanners))
 
     // then
     result.toList should equal(List(Map("n" -> jake)))
@@ -339,7 +339,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("id in where leads to empty result") {
     // when
     val result = executeWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n",
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3))
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
@@ -347,7 +347,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("should not fail if asking for a non existent node id with WHERE") {
     executeWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n",
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3).toList
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3)).toList
     // should not throw an exception
   }
 
@@ -394,7 +394,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // when
     val result = executeWith(Configs.Interpreted,
       "match (a:Label), (b:Label) where a.property = b.property return *",
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3))
 
     // then does not throw exceptions
     assert(result.toSet === Set(
@@ -492,7 +492,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN host""".stripMargin
 
     //WHEN
-    val result = executeWith(Configs.Interpreted, query, ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.Interpreted, query, ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3))
     //THEN
     result.toList should equal(List(Map("host" -> host), Map("host" -> null)))
   }
@@ -539,9 +539,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     //WHEN
     val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost3_1)).length
     val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost3_1)).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -575,9 +575,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     //WHEN
 
     val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost3_1)).length
     val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+      ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost3_1)).length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -610,7 +610,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
-    val result = executeWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s", ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s", ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3))
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }
@@ -687,7 +687,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // When
     val res =
       executeWith(Configs.AllExceptSlotted, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c",
-        ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1, params = Map("p" -> List(node1, node2)))
+        ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1), params = Map("p" -> List(node1, node2)))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -707,7 +707,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       executeWith(Configs.AllExceptSlotted, """UNWIND {p1} AS n1
                 |UNWIND {p2} AS n2
                 |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
-        ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1,
+        ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1),
         params = Map("p1" -> List(node1), "p2" -> List(node2)))
 
     //Then

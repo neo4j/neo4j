@@ -85,7 +85,7 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     relate(actor, createLabeledNode(Map("title" -> "Movie 2"), "Movie"))
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, """MATCH (actor:Actor)-->(movie:Movie)
-            |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin, ignorePlans = Configs.AbsolutelyAll)
+            |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin, ignorePlans = Some(Configs.AbsolutelyAll))
     result.toList should equal(
       List(Map("actor" ->
         Map("name" -> "Actor 1", "movies" -> Seq(
