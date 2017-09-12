@@ -118,6 +118,13 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
   }
 
+  test("Warn unsupported runtime with explain and runtime=slotted") {
+    val result = innerExecute("explain cypher runtime=slotted merge (a)-[:X]->(b)")
+
+    result.notifications.toList should equal(List(
+      RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
+  }
+
   test("Warn for cartesian product with runtime=interpreted") {
     val result = innerExecute("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 

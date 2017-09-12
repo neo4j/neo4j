@@ -67,7 +67,7 @@ public enum NotificationCode
     RUNTIME_UNSUPPORTED(
         SeverityLevel.WARNING,
         Status.Statement.RuntimeUnsupportedWarning,
-        "Using COMPILED runtime is unsupported for this query, please use interpreted runtime instead"
+        "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default."
     ),
     INDEX_HINT_UNFULFILLABLE(
         SeverityLevel.WARNING,
