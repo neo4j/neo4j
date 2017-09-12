@@ -105,6 +105,6 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   private def toInteger(orig: Any) = {
-    ToIntegerFunction(Literal(orig))(ExecutionContext.empty)(QueryStateHelper.empty)
+    ToIntegerFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty)
   }
 }

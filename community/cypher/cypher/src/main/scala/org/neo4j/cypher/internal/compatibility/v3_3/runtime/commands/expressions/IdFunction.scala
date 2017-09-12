@@ -28,7 +28,7 @@ import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case node: NodeValue => Values.longValue(node.id())
     case rel: EdgeValue => Values.longValue(rel.id())
     case x => throw new CypherTypeException(

@@ -63,7 +63,7 @@ case class UnwindSlottedPipe(source: Pipe, collection: Expression, offset: Int, 
       } else {
         if (input.hasNext) {
           currentInputRow = input.next()
-          val value: AnyValue = collection(currentInputRow)(state)
+          val value: AnyValue = collection(currentInputRow, state)
           unwindIterator = makeTraversable(value).iterator.asScala
           prefetch()
         }

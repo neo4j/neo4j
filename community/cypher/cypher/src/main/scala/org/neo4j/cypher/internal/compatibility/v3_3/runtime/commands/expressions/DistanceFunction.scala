@@ -32,10 +32,10 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   private val availableCalculators = Seq(HaversinCalculator, CartesianCalculator)
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     // TODO: Support better calculations, like https://en.wikipedia.org/wiki/Vincenty%27s_formulae
     // TODO: Support more coordinate systems
-    (p1(ctx), p2(ctx)) match {
+    (p1(ctx, state), p2(ctx, state)) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (geometry1: PointValue, geometry2: PointValue) => calculateDistance(geometry1, geometry2)
       case (x, y) => throw new CypherTypeException(s"Expected two Points, but got $x and $y")

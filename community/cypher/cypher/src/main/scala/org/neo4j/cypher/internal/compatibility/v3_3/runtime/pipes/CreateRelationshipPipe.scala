@@ -58,7 +58,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
-      expr(context)(state) match {
+      expr(context, state) match {
         case _: NodeValue | _: EdgeValue =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(map) =>

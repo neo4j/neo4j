@@ -52,6 +52,6 @@ class RangeFunctionTest extends CypherFunSuite {
 
   private def range(start: Long, end: Long, step: Long): ListValue = {
     val expr = RangeFunction(Literal(start), Literal(end), Literal(step))
-    expr(ExecutionContext.empty)(QueryStateHelper.empty).asInstanceOf[ListValue]
+    expr(ExecutionContext.empty, QueryStateHelper.empty).asInstanceOf[ListValue]
   }
 }

@@ -108,7 +108,7 @@ class ComparablePredicateTest extends CypherFunSuite {
 
   class compareUsing(left: Any, right: Any, operator: String) extends Matcher[ComparablePredicate] {
     def apply(predicate: ComparablePredicate): MatchResult = {
-      val actual = predicate.isMatch(ExecutionContext.empty)(QueryStateHelper.empty)
+      val actual = predicate.isMatch(ExecutionContext.empty, QueryStateHelper.empty)
 
       if (isIncomparable(left, right))
         buildResult(actual.isEmpty, "null", actual)

@@ -30,7 +30,7 @@ case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
   with ListSupport {
   //NOTE all usage except for paths is deprecated
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case path: PathValue => Values.longValue(path.size())
     case s: TextValue  => Values.longValue(s.length())
     case x          => Values.longValue(makeTraversable(x).size())

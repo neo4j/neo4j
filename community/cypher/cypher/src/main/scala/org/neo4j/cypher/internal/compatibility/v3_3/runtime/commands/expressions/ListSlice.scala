@@ -88,12 +88,12 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
 
 
   def asInt(e: Expression, ctx: ExecutionContext, state: QueryState): Option[Int] = {
-    val index = e(ctx)(state)
+    val index = e(ctx, state)
     if (index == Values.NO_VALUE) None
     else Some(CastSupport.castOrFail[NumberValue](index).longValue().toInt)
   }
 
-  def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue = {
     val collectionValue = makeTraversable(value)
     function(collectionValue, ctx, state)
   }

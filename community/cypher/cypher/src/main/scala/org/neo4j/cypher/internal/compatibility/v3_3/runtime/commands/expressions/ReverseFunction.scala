@@ -27,8 +27,8 @@ import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 case class ReverseFunction(argument: Expression) extends NullInNullOutExpression(argument) {
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    argument(m) match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    argument(m, state) match {
       case x if x == Values.NO_VALUE => Values.NO_VALUE
       case string: TextValue => Values.stringValue(new java.lang.StringBuilder(string.stringValue()).reverse.toString)
       case seq: ListValue => VirtualValues.reverse(seq)

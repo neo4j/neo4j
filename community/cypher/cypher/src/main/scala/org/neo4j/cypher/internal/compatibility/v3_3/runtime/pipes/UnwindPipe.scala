@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValue
-import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = new Id)
@@ -63,7 +63,7 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
       } else {
         if (input.hasNext) {
           context = input.next()
-          unwindIterator = makeTraversable(collection(context)(state)).iterator.asScala
+          unwindIterator = makeTraversable(collection(context, state)).iterator.asScala
           prefetch()
         }
       }

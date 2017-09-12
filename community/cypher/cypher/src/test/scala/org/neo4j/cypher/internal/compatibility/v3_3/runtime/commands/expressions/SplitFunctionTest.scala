@@ -61,6 +61,6 @@ class SplitFunctionTest extends CypherFunSuite {
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))
-    expr(ExecutionContext.empty)(QueryStateHelper.empty)
+    expr(ExecutionContext.empty, QueryStateHelper.empty)
   }
 }

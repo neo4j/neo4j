@@ -41,13 +41,13 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     if (rhsIterator.isEmpty)
       return Iterator.empty
 
-    val table = buildProbeTable(input)
+    val table = buildProbeTable(input, state)
 
     if (table.isEmpty)
       return Iterator.empty
 
     val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey = rhsExpression(context) if joinKey != Values.NO_VALUE}
+                      joinKey = rhsExpression(context, state) if joinKey != Values.NO_VALUE}
       yield {
 
         val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
@@ -57,11 +57,11 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
     result.flatten
   }
 
-  private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
+  private def buildProbeTable(input: Iterator[ExecutionContext], state: QueryState) = {
     val table = new mutable.HashMap[AnyValue, mutable.MutableList[ExecutionContext]]
 
     for (context <- input;
-         joinKey = lhsExpression(context) if joinKey != null) {
+         joinKey = lhsExpression(context, state) if joinKey != null) {
       val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
       seq += context
     }

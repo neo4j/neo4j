@@ -46,7 +46,7 @@ object SetOperation {
   private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression) = {
     /* Make the map expression look like a map */
     val qtx = state.query
-    expression(executionContext)(state) match {
+    expression(executionContext, state) match {
       case IsMap(map) => propertyKeyMap(qtx, map(qtx))
       case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
     }
@@ -82,7 +82,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
     val propertyId = maybePropertyKey
       .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
 
-    val value = makeValueNeoSafe(expression(context)(state))
+    val value = makeValueNeoSafe(expression(context, state))
 
     if (value == Values.NO_VALUE) {
       if (ops.hasProperty(itemId, propertyId)) ops.removeProperty(itemId, propertyId)
@@ -143,7 +143,7 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   override def name: String = "SetProperty"
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val resolvedEntity = entityExpr(executionContext)(state)
+    val resolvedEntity = entityExpr(executionContext, state)
     if (resolvedEntity != Values.NO_VALUE) {
       val (entityId, ops) = resolvedEntity match {
         case node: NodeValue => (node.id(), state.query.nodeOps)

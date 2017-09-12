@@ -41,7 +41,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
 
   type SortDataWithContext = (Array[AnyValue], ExecutionContext)
 
-  class LessThanComparator()(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
+  class LessThanComparator() extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
       val v1 = a._1
       val v2 = b._1
@@ -61,7 +61,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[ColumnOrder])
     java.util.Arrays.binarySearch(array.asInstanceOf[Array[SortDataWithContext]], key, comparator)
   }
 
-  def arrayEntry(ctx : ExecutionContext)(implicit qtx : QueryState) : SortDataWithContext =
+  def arrayEntry(ctx: ExecutionContext, state: QueryState): SortDataWithContext =
     (sortItems.map(column => ctx(column.id)), ctx)
 }
 
@@ -71,7 +71,6 @@ case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpre
   countExpression.registerOwningPipe(this)
 
   protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else if (sortDescription.isEmpty)
@@ -79,19 +78,19 @@ case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpre
     else {
 
       val first = input.next()
-      val count = countExpression(first).asInstanceOf[NumberValue].longValue().toInt
+      val count = countExpression(first, state).asInstanceOf[NumberValue].longValue().toInt
 
       if (count <= 0) {
         Iterator.empty
       } else {
 
         var result = new Array[SortDataWithContext](count)
-        result(0) = arrayEntry(first)
+        result(0) = arrayEntry(first, state)
         var last : Int = 0
 
         while ( last < count - 1 && input.hasNext ) {
           last += 1
-          result(last) = arrayEntry(input.next())
+          result(last) = arrayEntry(input.next(), state)
         }
 
         val lessThan = new LessThanComparator()
@@ -103,7 +102,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[ColumnOrder], countExpre
           val search = binarySearch(result, lessThan) _
           input.foreach {
             ctx =>
-              val next = arrayEntry(ctx)
+              val next = arrayEntry(ctx, state)
               if (lessThan.compare(next, result(last)) < 0) {
                 val idx = search(next)
                 val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
@@ -130,7 +129,6 @@ case class Top1Pipe(source: Pipe, sortDescription: List[ColumnOrder])
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else if (sortDescription.isEmpty)
@@ -140,11 +138,11 @@ case class Top1Pipe(source: Pipe, sortDescription: List[ColumnOrder])
       val lessThan = new LessThanComparator()
 
       val first = input.next()
-      var result = arrayEntry(first)
+      var result = arrayEntry(first, state)
 
       input.foreach {
         ctx =>
-          val next = arrayEntry(ctx)
+          val next = arrayEntry(ctx, state)
           if (lessThan.compare(next, result) < 0) {
             result = next
           }
@@ -163,19 +161,18 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[ColumnOrder])
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else {
       val lessThan = new LessThanComparator()
 
       val first = input.next()
-      var best = arrayEntry(first)
+      var best = arrayEntry(first, state)
       var matchingRows = init(best)
 
       input.foreach {
         ctx =>
-          val next = arrayEntry(ctx)
+          val next = arrayEntry(ctx, state)
           val comparison = lessThan.compare(next, best)
           if (comparison < 0) { // Found a new best
             best = next

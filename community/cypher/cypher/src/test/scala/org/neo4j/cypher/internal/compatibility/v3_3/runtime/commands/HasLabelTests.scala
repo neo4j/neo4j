@@ -33,9 +33,9 @@ class HasLabelTests extends CypherFunSuite {
 
     //when
     val ctx = ExecutionContext.empty
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     //then
-    predicate.isMatch(ctx) should equal(None)
+    predicate.isMatch(ctx, state) should equal(None)
   }
 }

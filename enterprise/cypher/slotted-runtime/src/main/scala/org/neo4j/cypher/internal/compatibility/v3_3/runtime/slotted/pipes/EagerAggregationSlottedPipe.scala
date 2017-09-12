@@ -54,22 +54,22 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     groupingExpressions.size match {
       case 1 =>
         val firstExpression = groupingExpressions.head._2
-        (ctx, state) => firstExpression(ctx)(state)
+        (ctx, state) => firstExpression(ctx, state)
 
       case 2 =>
         val e1 = groupingExpressions.head._2
         val e2 = groupingExpressions.last._2
-        (ctx, state) => VirtualValues.list(e1(ctx)(state), e2(ctx)(state))
+        (ctx, state) => VirtualValues.list(e1(ctx, state), e2(ctx, state))
 
       case 3 =>
         val e1 = groupingExpressions.head._2
         val e2 = groupingExpressions.tail.head._2
         val e3 = groupingExpressions.last._2
-        (ctx, state) => VirtualValues.list(e1(ctx)(state), e2(ctx)(state), e3(ctx)(state))
+        (ctx, state) => VirtualValues.list(e1(ctx, state), e2(ctx, state), e3(ctx, state))
 
       case _ =>
         val expressions = groupingExpressions.values.toSeq
-        (ctx, state) => VirtualValues.list(expressions.map(e => e(ctx)(state)): _*)
+        (ctx, state) => VirtualValues.list(expressions.map(e => e(ctx, state)): _*)
     }
   }
 
@@ -98,15 +98,13 @@ case class EagerAggregationSlottedPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    implicit val s = state
-
     val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
 
     // Used when we have no input and no grouping expressions. In this case, we'll return a single row
     def createEmptyResult(params: MapValue): Iterator[ExecutionContext] = {
       val context = PrimitiveExecutionContext(pipelineInformation)
       val aggregationOffsetsAndFunctions = aggregationOffsets zip aggregations
-        .map(_._2.createAggregationFunction.result)
+        .map(_._2.createAggregationFunction.result(state))
 
       aggregationOffsetsAndFunctions.toMap.foreach {
         case (offset, zeroValue) => context.setRefAt(offset, zeroValue)
@@ -117,7 +115,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     def writeAggregationResultToContext(groupingKey: AnyValue, aggregator: Seq[AggregationFunction]): ExecutionContext = {
       val context = PrimitiveExecutionContext(pipelineInformation)
       addGroupingValuesToResult(context, groupingKey)
-      (aggregationOffsets zip aggregator.map(_.result)).foreach {
+      (aggregationOffsets zip aggregator.map(_.result(state))).foreach {
         case (offset, value) => context.setRefAt(offset, value)
       }
       context
@@ -127,7 +125,7 @@ case class EagerAggregationSlottedPipe(source: Pipe,
     input.foreach(ctx => {
       val groupingValue: AnyValue = groupingFunction(ctx, state)
       val functions = result.getOrElseUpdate(groupingValue, aggregationFunctions.map(_.createAggregationFunction))
-      functions.foreach(func => func(ctx)(state))
+      functions.foreach(func => func(ctx, state))
     })
 
     // Write the produced aggregation map to the output pipeline

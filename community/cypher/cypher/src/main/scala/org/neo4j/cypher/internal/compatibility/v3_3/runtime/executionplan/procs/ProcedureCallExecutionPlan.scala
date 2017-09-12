@@ -110,7 +110,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
     val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-    argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
+    argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
   }
 
   private def createNormalPlan =

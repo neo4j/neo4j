@@ -30,9 +30,9 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def verb = "divide"
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val aVal = a(ctx)
-    val bVal = b(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val aVal = a(ctx, state)
+    val bVal = b(ctx, state)
 
     (aVal, bVal) match {
       case (_, l:IntegralValue) if l.longValue() == 0L  => throw new ArithmeticException("/ by zero")

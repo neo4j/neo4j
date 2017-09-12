@@ -65,7 +65,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue
 
   override def toString = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
@@ -79,7 +79,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
+  def apply(ctx: ExecutionContext, state: QueryState) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
@@ -96,9 +96,9 @@ abstract class Arithmetics(left: Expression, right: Expression)
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val aVal = left(ctx)
-    val bVal = right(ctx)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val aVal = left(ctx, state)
+    val bVal = right(ctx, state)
 
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE

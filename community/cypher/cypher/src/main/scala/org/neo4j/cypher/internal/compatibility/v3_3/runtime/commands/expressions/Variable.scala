@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 
 case class Variable(entityName: String) extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown variable `%s`.".format(entityName)))
 
   override def toString: String = entityName

@@ -29,10 +29,10 @@ Contains an expression that is really a pipe. An inner expression is run for eve
 the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
  */
 case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(owningPipe))
     val results = pipe.createResults(innerState)
-    val map = results.map(ctx => inner(ctx))
+    val map = results.map(ctx => inner(ctx, state))
     VirtualValues.list(map.toArray:_*)
   }
 

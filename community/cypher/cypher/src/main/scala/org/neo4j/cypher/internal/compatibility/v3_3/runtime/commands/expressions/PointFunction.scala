@@ -31,7 +31,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
-  override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue = value match {
     case IsMap(mapCreator) =>
       val map = mapCreator(state.query)
       if (containsNull(map)) Values.NO_VALUE

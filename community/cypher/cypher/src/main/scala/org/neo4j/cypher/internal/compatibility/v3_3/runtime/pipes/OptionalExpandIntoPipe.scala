@@ -55,7 +55,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
                 val filteredRows = ListBuffer.empty[ExecutionContext]
                 while (it.hasNext) {
                   val candidateRow = row.newWith1(relName, it.next())
-                  if (predicate.isTrue(candidateRow)(state)) {
+                  if (predicate.isTrue(candidateRow, state)) {
                     filteredRows.append(candidateRow)
                   }
                 }

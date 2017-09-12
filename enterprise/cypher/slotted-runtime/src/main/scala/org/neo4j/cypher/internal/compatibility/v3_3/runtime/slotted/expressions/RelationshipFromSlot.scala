@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipFromSlot(offset: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): EdgeValue =
+  override def apply(ctx: ExecutionContext, state: QueryState): EdgeValue =
     ValueUtils.fromRelationshipProxy(state.query.relationshipOps.getById(ctx.getLongAt(offset)))
 
 }

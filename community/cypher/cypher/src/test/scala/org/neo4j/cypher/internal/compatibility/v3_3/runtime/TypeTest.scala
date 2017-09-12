@@ -93,5 +93,5 @@ class TypeTest extends CypherFunSuite {
     result shouldBe a [DoubleValue]
   }
 
-  private def calc(e:Expression) = e.apply(ExecutionContext.empty)(QueryStateHelper.empty)
+  private def calc(e:Expression) = e.apply(ExecutionContext.empty, QueryStateHelper.empty)
 }

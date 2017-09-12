@@ -30,13 +30,13 @@ import org.neo4j.values.storable.Values
 
 case class NodeProperty(offset: Int, token: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
 }
 
 case class NodePropertyLate(offset: Int, propKey: String) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
     if (maybeToken.isEmpty)
       Values.NO_VALUE
@@ -48,7 +48,7 @@ case class NodePropertyLate(offset: Int, propKey: String) extends Expression wit
 
 case class NodePropertyExists(offset: Int, token: Int) extends Predicate with SlottedExpression {
 
-  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     Some(state.query.nodeOps.hasProperty(m.getLongAt(offset), token))
   }
 
@@ -57,7 +57,7 @@ case class NodePropertyExists(offset: Int, token: Int) extends Predicate with Sl
 
 case class NodePropertyExistsLate(offset: Int, propKey: String) extends Predicate with SlottedExpression {
 
-  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
     val result = if (maybeToken.isEmpty)
       false

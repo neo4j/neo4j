@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.NodeValue
 
 case class NodeFromSlot(offset: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): NodeValue =
+  override def apply(ctx: ExecutionContext, state: QueryState): NodeValue =
     fromNodeProxy(state.query.nodeOps.getById(ctx.getLongAt(offset)))
 
 }

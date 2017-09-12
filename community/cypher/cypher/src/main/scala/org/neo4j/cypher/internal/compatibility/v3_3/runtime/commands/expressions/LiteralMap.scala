@@ -30,9 +30,9 @@ import scala.collection.Map
 
 case class LiteralMap(data: Map[String, Expression]) extends Expression with GraphElementPropertyFunctions {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     VirtualValues.map(data.map {
-      case (k, e) => (k, e(ctx))
+      case (k, e) => (k, e(ctx, state))
     }.asJava)
 
   def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))

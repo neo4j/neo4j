@@ -101,8 +101,7 @@ case class LoadCSVPipe(source: Pipe,
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      implicit val s = state
-      val urlString: TextValue = urlExpression(context).asInstanceOf[TextValue]
+      val urlString: TextValue = urlExpression(context, state).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)
 
       val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)

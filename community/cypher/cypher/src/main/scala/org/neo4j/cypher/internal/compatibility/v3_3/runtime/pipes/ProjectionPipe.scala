@@ -37,7 +37,7 @@ case class ProjectionPipe(source: Pipe, expressions: Map[String, Expression])
       ctx =>
         expressions.foreach {
           case (name, expression) =>
-            val result = expression(ctx)(state)
+            val result = expression(ctx, state)
             ctx.put(name, result)
         }
 

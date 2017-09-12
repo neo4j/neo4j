@@ -28,29 +28,29 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class AndsTest extends CypherFunSuite {
-  private implicit val state = QueryStateHelper.empty
+  private val state = QueryStateHelper.empty
   private val ctx = ExecutionContext.empty
 
   private val nullPredicate = mock[Predicate]
-  when(nullPredicate.isMatch(ctx)).thenReturn(None)
+  when(nullPredicate.isMatch(ctx, state)).thenReturn(None)
 
   private val explodingPredicate = mock[Predicate]
-  when(explodingPredicate.isMatch(any())(any())).thenThrow(new IllegalStateException("there is something wrong"))
+  when(explodingPredicate.isMatch(any(), any())).thenThrow(new IllegalStateException("there is something wrong"))
 
   test("should return null if there are no false values and one or more nulls") {
-    ands(T, nullPredicate).isMatch(ctx) should equal(None)
+    ands(T, nullPredicate).isMatch(ctx, state) should equal(None)
   }
 
   test("should quit early when finding a false value") {
-    ands(F, explodingPredicate).isMatch(ctx) should equal(Some(false))
+    ands(F, explodingPredicate).isMatch(ctx, state) should equal(Some(false))
   }
 
   test("should return true if all predicates evaluate to true") {
-    ands(T, T).isMatch(ctx) should equal(Some(true))
+    ands(T, T).isMatch(ctx, state) should equal(Some(true))
   }
 
   test("should return false instead of null") {
-    ands(nullPredicate, F).isMatch(ctx) should equal(Some(false))
+    ands(nullPredicate, F).isMatch(ctx, state) should equal(Some(false))
   }
 
   private def ands(predicate: Predicate, predicates: Predicate*) = Ands(NonEmptyList(predicate, predicates: _*))

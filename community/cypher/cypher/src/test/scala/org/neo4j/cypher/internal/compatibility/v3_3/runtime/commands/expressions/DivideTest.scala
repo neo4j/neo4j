@@ -29,9 +29,9 @@ class DivideTest extends CypherFunSuite {
     val ctx = ExecutionContext.empty
     val state = QueryStateHelper.empty
 
-    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0))(ctx)(state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx)(state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx)(state))
-    intercept[v3_3.ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx)(state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx, state))
+    intercept[v3_3.ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx, state))
   }
 }

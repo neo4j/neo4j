@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
+  def apply(ctx: ExecutionContext, state: QueryState) = state.getParam(parameterName)
 
   override def toString(): String = "{" + parameterName + "}"
 

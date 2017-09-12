@@ -34,7 +34,7 @@ case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expressi
       original =>
         val m = MutableMaps.create(columns.size)
         columns.foreach {
-          case (name, exp) => m.put(name, exp(original)(state))
+          case (name, exp) => m.put(name, exp(original, state))
         }
 
         ExecutionContext(m)

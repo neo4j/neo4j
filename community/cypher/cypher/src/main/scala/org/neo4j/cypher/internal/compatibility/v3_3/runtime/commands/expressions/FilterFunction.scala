@@ -31,10 +31,10 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   with ListSupport
   with Closure {
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
     val traversable = makeTraversable(value)
     VirtualValues.filter(traversable, new java.util.function.Function[AnyValue, java.lang.Boolean]() {
-      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(m.newWith1(id, v1)  )
+      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(m.newWith1(id, v1), state)
     })
   }
 

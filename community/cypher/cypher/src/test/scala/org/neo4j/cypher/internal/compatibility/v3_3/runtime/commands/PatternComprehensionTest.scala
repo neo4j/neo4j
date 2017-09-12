@@ -39,7 +39,7 @@ class PatternComprehensionTest extends CypherFunSuite {
 
     val ctx = ExecutionContext.empty.newWith1("a", NO_VALUE)
 
-    val a = patternComprehension.apply(ctx)(state)
+    val a = patternComprehension(ctx, state)
 
     a should equal(NO_VALUE)
   }
@@ -50,7 +50,7 @@ class PatternComprehensionTest extends CypherFunSuite {
     val state = QueryStateHelper.empty
     val ctx = ExecutionContext.empty.newWith1("b", NO_VALUE)
 
-    val a = patternComprehension.apply(ctx)(state)
+    val a = patternComprehension(ctx, state)
 
     a should equal(NO_VALUE)
   }

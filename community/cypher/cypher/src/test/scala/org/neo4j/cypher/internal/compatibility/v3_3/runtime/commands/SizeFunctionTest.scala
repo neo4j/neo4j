@@ -37,7 +37,7 @@ class SizeFunctionTest extends CypherFunSuite {
     val sizeFunction = SizeFunction(Variable("l"))
 
     //when
-    val result = sizeFunction.apply(m)(QueryStateHelper.empty)
+    val result = sizeFunction.apply(m, QueryStateHelper.empty)
 
     //then
     result should equal(longValue(3))
@@ -50,7 +50,7 @@ class SizeFunctionTest extends CypherFunSuite {
     val sizeFunction = SizeFunction(Variable("s"))
 
     //when
-    val result = sizeFunction.apply(m)(QueryStateHelper.empty)
+    val result = sizeFunction.apply(m, QueryStateHelper.empty)
 
     //then
     result should equal(longValue(10))
@@ -63,6 +63,6 @@ class SizeFunctionTest extends CypherFunSuite {
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then
-    intercept[CypherTypeException](sizeFunction.apply(m)(QueryStateHelper.empty))
+    intercept[CypherTypeException](sizeFunction.apply(m, QueryStateHelper.empty))
   }
 }

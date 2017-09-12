@@ -42,7 +42,7 @@ case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, pre
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(ctx => {
-      val result = shortestPathExpression(ctx)(state) match {
+      val result = shortestPathExpression(ctx, state) match {
         case in: ListValue => in
         case v if v == Values.NO_VALUE => VirtualValues.EMPTY_LIST
         case path: PathValue    => VirtualValues.list(path)

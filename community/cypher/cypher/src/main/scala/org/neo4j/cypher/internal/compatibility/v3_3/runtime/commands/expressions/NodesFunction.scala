@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.{PathValue, VirtualValues}
 
 case class NodesFunction(path: Expression) extends NullInNullOutExpression(path) {
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = value match {
     case p: PathValue => VirtualValues.list(p.nodes():_*)
     case x => throw new SyntaxException("Expected " + path + " to be a path.")
   }

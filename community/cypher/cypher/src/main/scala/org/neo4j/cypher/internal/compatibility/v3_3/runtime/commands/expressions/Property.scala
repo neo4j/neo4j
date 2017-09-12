@@ -31,7 +31,7 @@ import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = mapExpr(ctx) match {
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = mapExpr(ctx, state) match {
     case n if n == Values.NO_VALUE => Values.NO_VALUE
     case n: NodeValue =>
       propertyKey.getOptId(state.query) match {

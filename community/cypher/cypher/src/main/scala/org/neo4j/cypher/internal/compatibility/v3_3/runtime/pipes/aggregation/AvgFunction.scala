@@ -40,15 +40,15 @@ class AvgFunction(val value: Expression)
   private var count: Long = 0L
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0)
 
-  def result(implicit state: QueryState) =
+  override def result(state: QueryState): Value =
     if (count > 0) {
       asNumberValue(sum.value)
     } else {
       Values.NO_VALUE
     }
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
+  override def apply(data: ExecutionContext, state: QueryState) {
+    actOnNumber(value(data, state), (number) => {
       count += 1
       val diff = minus(number, asNumberValue(sum.value)) match {
         case v: NumberValue => v

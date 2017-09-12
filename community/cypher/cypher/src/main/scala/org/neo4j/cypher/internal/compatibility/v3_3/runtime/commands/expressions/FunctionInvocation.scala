@@ -30,10 +30,10 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
   extends Expression with GraphElementPropertyFunctions {
   private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val query = state.query
     val argValues = arguments.map(arg => {
-      query.asObject(arg(ctx)(state))
+      query.asObject(arg(ctx, state))
     })
     val result = query.callFunction(signature.name, argValues, signature.allowed)
     valueConverter(result)

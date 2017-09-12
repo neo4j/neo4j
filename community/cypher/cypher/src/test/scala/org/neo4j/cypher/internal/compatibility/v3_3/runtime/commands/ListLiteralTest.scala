@@ -97,7 +97,7 @@ class ListLiteralTest extends CypherFunSuite {
     private def check(expected: Any,
                       collectionFunction: (Expression, String, Predicate) => InList) {
       val function = collectionFunction(Literal(values), "x", CoercedPredicate(Variable("x")))
-      val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
+      val result = function(ExecutionContext.empty, QueryStateHelper.empty)
       result should equal(expected)
     }
   }

@@ -148,7 +148,7 @@ class ProfilerTest extends CypherFunSuite {
   test("count dbhits for NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
-    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
+    when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
     val start1 = SingleRowPipe()()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)
@@ -176,7 +176,7 @@ class ProfilerTest extends CypherFunSuite {
   test("count page cache hits for NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
-    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
+    when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
     val start1 = SingleRowPipe()()
     val statisticProvider = new ConfiguredKernelStatisticProvider()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )
@@ -204,7 +204,7 @@ class ProfilerTest extends CypherFunSuite {
   test("count dbhits for deeply nested NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
-    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
+    when(projectedPath.apply(any(), any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
     val start1 = SingleRowPipe()()
     val start2 = SingleRowPipe()()

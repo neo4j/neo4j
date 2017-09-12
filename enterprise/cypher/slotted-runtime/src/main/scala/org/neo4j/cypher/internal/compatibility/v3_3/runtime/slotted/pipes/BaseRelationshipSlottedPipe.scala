@@ -64,7 +64,7 @@ abstract class BaseRelationshipSlottedPipe(src: Pipe, RelationshipKey: String, s
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
-      expr(context)(state) match {
+      expr(context, state) match {
         case _: Node | _: Relationship =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
         case IsMap(f) =>

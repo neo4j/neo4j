@@ -29,9 +29,9 @@ import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val aVal = a(ctx)
-    val bVal = b(ctx)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val aVal = a(ctx, state)
+    val bVal = b(ctx, state)
 
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE

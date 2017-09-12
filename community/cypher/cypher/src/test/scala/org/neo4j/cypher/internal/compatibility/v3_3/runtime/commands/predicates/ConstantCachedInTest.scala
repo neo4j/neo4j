@@ -41,48 +41,48 @@ abstract class CachedInTest extends CypherFunSuite {
     // given
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(3)))
 
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
     val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(Some(false))
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(Some(false))
   }
 
   test("check with a collection containing null") {
     // given
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
     val v1 = ExecutionContext.empty.newWith1("x",intValue(1))
     val vNull = ExecutionContext.empty.newWith1("x",NO_VALUE)
     val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(None)
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(None)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(None)
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(None)
   }
 
   test("check with a collection that is null") {
     // given
     val predicate = createPredicate(Variable("x"), Literal(null))
 
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
 
     val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
@@ -90,14 +90,14 @@ abstract class CachedInTest extends CypherFunSuite {
     val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1) should equal(None)
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(None)
+    predicate.isMatch(v1, state) should equal(None)
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(None)
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1) should equal(None)
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(None)
+    predicate.isMatch(v1, state) should equal(None)
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(None)
   }
 
   test("check lists") {
@@ -107,20 +107,20 @@ abstract class CachedInTest extends CypherFunSuite {
       ListLiteral(Literal(3), Literal(4)))
     val predicate = createPredicate(Variable("x"), listInList)
 
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     val v1 = ExecutionContext.empty.newWith1("x", toListValue(Seq(1,2)))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
     val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(Some(false))
 
     // and twice, just to check that the cache does not mess things up
-    predicate.isMatch(v1) should equal(Some(true))
-    predicate.isMatch(vNull) should equal(None)
-    predicate.isMatch(v14) should equal(Some(false))
+    predicate.isMatch(v1, state) should equal(Some(true))
+    predicate.isMatch(vNull, state) should equal(None)
+    predicate.isMatch(v14, state) should equal(Some(false))
   }
 }

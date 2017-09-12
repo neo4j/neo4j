@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.GetGraphElements
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ScanQueryExpression
@@ -55,8 +55,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       planContext.checkNodeIndex(idxName)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val keyVal = key(m)(state).toString
-        val valueVal = value(m)(state)
+        val keyVal = key(m, state).toString
+        val valueVal = value(m, state)
         state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
       }
   }
@@ -65,7 +65,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ NodeByIndexQuery(varName, idxName, query, _)) =>
       planContext.checkNodeIndex(idxName)
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val queryText = query(m)(state)
+        val queryText = query(m, state)
         state.query.nodeOps.indexQuery(idxName, queryText)
       }
   }
@@ -122,8 +122,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ RelationshipByIndex(varName, idxName, key, value, _)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val keyVal = key(m)(state).toString
-        val valueVal = value(m)(state)
+        val keyVal = key(m, state).toString
+        val valueVal = value(m, state)
         state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
       }
   }
@@ -132,7 +132,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ RelationshipByIndexQuery(varName, idxName, query, _)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val queryText = query(m)(state)
+        val queryText = query(m, state)
         state.query.relationshipOps.indexQuery(idxName, queryText)
       }
   }
@@ -140,7 +140,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
     case (planContext, startItem @ RelationshipById(varName, ids, _)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Relationship](ids(m)(state), varName, (id) =>
+        GetGraphElements.getElements[Relationship](ids(m, state), varName, (id) =>
           state.query.relationshipOps.getById(id))
       }
   }

@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.PatternException
+import org.neo4j.values.AnyValue
 
 case class SortItem(expression: Expression, ascending: Boolean) {
-  def apply(ctx: ExecutionContext)(implicit qtx: QueryState) =
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     if (!expression.isDeterministic)
       throw new PatternException("ORDER BY expressions must be deterministic. " +
         "For instance, you cannot use the rand() function in the expression")
     else
-      expression.apply(ctx)
+      expression.apply(ctx, state)
 }

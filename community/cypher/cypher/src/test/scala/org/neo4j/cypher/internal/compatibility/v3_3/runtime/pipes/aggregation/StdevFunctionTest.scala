@@ -27,16 +27,16 @@ import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.values.storable.DoubleValue
 
 trait StdevTest {
-  implicit val state = QueryStateHelper.empty
+  val state = QueryStateHelper.empty
 
   def createAggregator(inner: Expression): AggregationFunction
 
   def getStdev(values: List[Any]): Double = {
     val func = createAggregator(Variable("x"))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> ValueUtils.of(value)))(QueryStateHelper.empty)
+      func(ExecutionContext.from("x" -> ValueUtils.of(value)), QueryStateHelper.empty)
     })
-    func.result match {
+    func.result(state) match {
       case x: DoubleValue => x.doubleValue()
       case _ => -99.0
     }

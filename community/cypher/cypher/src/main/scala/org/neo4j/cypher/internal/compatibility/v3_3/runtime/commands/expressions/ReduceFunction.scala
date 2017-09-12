@@ -28,14 +28,14 @@ import org.neo4j.values.AnyValue
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
   extends NullInNullOutExpression(collection) with ListSupport {
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
-    val initMap = m.newWith1(acc, init(m))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
+    val initMap = m.newWith1(acc, init(m, state))
     val list = makeTraversable(value)
     val iterator = list.iterator()
     var computed = initMap
     while(iterator.hasNext) {
       val innerMap = computed.newWith1(id, iterator.next())
-      computed = innerMap.newWith1(acc, expression(innerMap))
+      computed = innerMap.newWith1(acc, expression(innerMap, state))
     }
 
     computed(acc)

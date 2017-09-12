@@ -28,14 +28,14 @@ case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], defaul
 
   require(alternatives.nonEmpty)
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val thisMatch: Option[Expression] = alternatives collectFirst {
-      case (p, res) if p.isTrue(ctx) => res
+      case (p, res) if p.isTrue(ctx, state) => res
     }
 
     thisMatch match {
-      case Some(result) => result(ctx)
-      case None         => default.getOrElse(Null()).apply(ctx)
+      case Some(result) => result(ctx, state)
+      case None         => default.getOrElse(Null()).apply(ctx, state)
     }
   }
 

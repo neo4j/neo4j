@@ -34,7 +34,7 @@ class StringFunctionsTest extends CypherFunSuite {
 
   test("replaceTests") {
     def replace(orig: Any, from: Any, to: Any) =
-      ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+      ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty, QueryStateHelper.empty)
 
     replace("hello", "l", "w") should equal(stringValue("hewwo"))
     replace("hello", "ell", "ipp") should equal(stringValue("hippo"))
@@ -47,7 +47,7 @@ class StringFunctionsTest extends CypherFunSuite {
 
   test("leftTests") {
     def left(from: Any, r: Any) =
-      LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+      LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty, QueryStateHelper.empty)
 
     left("hello", 2) should equal(stringValue("he"))
     left("hello", 4) should equal(stringValue("hell"))
@@ -59,7 +59,7 @@ class StringFunctionsTest extends CypherFunSuite {
 
   test("rightTests") {
     def right(from: Any, r: Any) =
-      RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+      RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty, QueryStateHelper.empty)
 
     right("hello", 2) should equal(stringValue("lo"))
     right("hello", 4) should equal(stringValue("ello"))
@@ -70,10 +70,14 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("substringTests") {
-    def substring(orig: Any, from: Any, to: Any) =
-      SubstringFunction(Literal(orig), Literal(from), Some(Literal(to))).apply(ExecutionContext.empty)(QueryStateHelper.empty)
-    def substringFrom(orig: Any, from: Any) =
-      SubstringFunction(Literal(orig), Literal(from), None).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+    def substring(orig: Any, from: Any, to: Any) = {
+      val function = SubstringFunction(Literal(orig), Literal(from), Some(Literal(to)))
+      function.apply(ExecutionContext.empty, QueryStateHelper.empty)
+    }
+    def substringFrom(orig: Any, from: Any) = {
+      val function = SubstringFunction(Literal(orig), Literal(from), None)
+      function.apply(ExecutionContext.empty, QueryStateHelper.empty)
+    }
 
     substring("hello", 2, 5) should equal(stringValue("llo"))
     substring("hello", 4, 5) should equal(stringValue("o"))
@@ -88,7 +92,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("lowerTests") {
-    def lower(x: Any) = ToLowerFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def lower(x: Any) = ToLowerFunction(Literal(x))(ExecutionContext.empty, QueryStateHelper.empty)
 
     lower("HELLO") should equal(stringValue("hello"))
     lower("Hello") should equal(stringValue("hello"))
@@ -98,7 +102,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("upperTests") {
-    def upper(x: Any) = ToUpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def upper(x: Any) = ToUpperFunction(Literal(x))(ExecutionContext.empty, QueryStateHelper.empty)
 
     upper("HELLO") should equal(stringValue("HELLO"))
     upper("Hello") should equal(stringValue("HELLO"))
@@ -108,7 +112,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("ltrimTests") {
-    def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty, QueryStateHelper.empty)
 
     ltrim("  HELLO") should equal(stringValue("HELLO"))
     ltrim(" Hello") should equal(stringValue("Hello"))
@@ -119,7 +123,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("rtrimTests") {
-    def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty, QueryStateHelper.empty)
 
     rtrim("HELLO  ") should equal(stringValue("HELLO"))
     rtrim("Hello   ") should equal(stringValue("Hello"))
@@ -129,7 +133,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("trimTests") {
-    def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
+    def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty, QueryStateHelper.empty)
 
     trim("  hello  ") should equal(stringValue("hello"))
     trim("  hello ") should equal(stringValue("hello"))
@@ -141,7 +145,7 @@ class StringFunctionsTest extends CypherFunSuite {
   }
 
   test("reverse function test") {
-    def reverse(x: Any) = ReverseFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
+    def reverse(x: Any) = ReverseFunction(Literal(x)).apply(ExecutionContext.empty, QueryStateHelper.empty)
 
     reverse("Foo") should equal(stringValue("ooF"))
     reverse("") should equal(EMPTY_STRING)

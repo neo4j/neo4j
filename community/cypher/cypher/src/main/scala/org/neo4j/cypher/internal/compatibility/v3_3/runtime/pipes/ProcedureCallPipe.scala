@@ -67,7 +67,7 @@ case class ProcedureCallPipe(source: Pipe,
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
     input flatMap { input =>
-      val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
+      val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
       val results = callMode.callProcedure(qtx, signature.name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
@@ -85,7 +85,7 @@ case class ProcedureCallPipe(source: Pipe,
   private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
+      val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
       val results = callMode.callProcedure(qtx, signature.name, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()

@@ -52,7 +52,7 @@ abstract class BaseCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineIn
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     properties.foreach { (expr) =>
-      expr(context)(state) match {
+      expr(context, state) match {
         case _: Node | _: Relationship =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(m) =>

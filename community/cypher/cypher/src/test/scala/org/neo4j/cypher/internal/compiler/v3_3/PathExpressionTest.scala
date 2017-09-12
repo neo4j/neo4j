@@ -57,7 +57,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     val m = ExecutionContext.from("a" -> a, "c" -> c)
 
     val result = withQueryState { state =>
-      expression(m)(state).asInstanceOf[PathValue]
+      expression(m, state).asInstanceOf[PathValue]
     }
 
     result.startNode() should equal(fromNodeProxy(a))
@@ -78,7 +78,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     // WHEN
     val result = withQueryState { state =>
-      expression(m)(state)
+      expression(m, state)
     }
 
     // THEN
@@ -98,7 +98,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
 
     // WHEN
     val result = withQueryState { state =>
-      expression(m)(state)
+      expression(m, state)
     }
 
     // THEN

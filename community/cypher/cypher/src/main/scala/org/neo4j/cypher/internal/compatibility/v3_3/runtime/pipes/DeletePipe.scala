@@ -37,14 +37,14 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
-      expression(row)(state) match {
+      expression(row, state) match {
         case Values.NO_VALUE => // do nothing
         case r: EdgeValue =>
-          deleteRelationship(r)(state)
+          deleteRelationship(r, state)
         case n: NodeValue =>
-          deleteNode(n)(state)
+          deleteNode(n, state)
         case p: PathValue =>
-          deletePath(p)(state)
+          deletePath(p, state)
         case other =>
           throw new CypherTypeException(s"Expected a Node, Relationship or Path, but got a ${other.getClass.getSimpleName}")
       }
@@ -52,19 +52,19 @@ case class DeletePipe(src: Pipe, expression: Expression, forced: Boolean)
     }
   }
 
-  private def deleteNode(n: NodeValue)(implicit state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n.id())) {
+  private def deleteNode(n: NodeValue, state: QueryState) = if (!state.query.nodeOps.isDeletedInThisTx(n.id())) {
     if (forced) state.query.detachDeleteNode(n.id())
     else state.query.nodeOps.delete(n.id())
   }
 
-  private def deleteRelationship(r: EdgeValue)(implicit state: QueryState) =
+  private def deleteRelationship(r: EdgeValue, state: QueryState) =
     if (!state.query.relationshipOps.isDeletedInThisTx(r.id())) state.query.relationshipOps.delete(r.id())
 
-  private def deletePath(p: PathValue)(implicit state: QueryState) = p.asList().iterator().asScala.foreach {
+  private def deletePath(p: PathValue, state: QueryState) = p.asList().iterator().asScala.foreach {
     case n: NodeValue =>
-      deleteNode(n)
+      deleteNode(n, state)
     case r: EdgeValue =>
-      deleteRelationship(r)
+      deleteRelationship(r, state)
     case other =>
       throw new CypherTypeException(s"Expected a Node or Relationship, but got a ${other.getClass.getSimpleName}")
   }

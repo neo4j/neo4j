@@ -40,7 +40,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
-    val value = valueExpr(baseContext)(state)
+    val value = valueExpr(baseContext, state)
 
     val resultNodes = value match {
       case value: TextValue =>

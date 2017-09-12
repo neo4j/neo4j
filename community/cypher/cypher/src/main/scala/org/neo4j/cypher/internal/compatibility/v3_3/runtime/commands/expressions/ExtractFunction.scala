@@ -23,16 +23,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
   with ListSupport
   with Closure {
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): ListValue = {
     val list = makeTraversable(value)
     VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
-      override def apply(v1: AnyValue): AnyValue = expression(m.newWith1(id, v1))
+      override def apply(v1: AnyValue): AnyValue = expression(m.newWith1(id, v1), state)
     })
   }
 

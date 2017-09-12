@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 
 case class ReferenceFromSlot(offset: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
     ctx.getRefAt(offset)
 
 }

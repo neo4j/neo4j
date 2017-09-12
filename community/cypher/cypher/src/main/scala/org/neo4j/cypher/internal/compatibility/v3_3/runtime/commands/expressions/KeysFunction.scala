@@ -24,10 +24,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.ListValue
 
 case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
-  override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState) = value match {
+  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): ListValue = value match {
     case IsMap(map) => map(state.query).keys()
 
     case x =>

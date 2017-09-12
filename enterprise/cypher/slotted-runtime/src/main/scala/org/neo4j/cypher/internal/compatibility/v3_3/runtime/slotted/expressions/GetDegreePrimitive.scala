@@ -30,7 +30,7 @@ case class GetDegreePrimitive(offset: Int, typ: Option[String], direction: Seman
   extends Expression
     with SlottedExpression{
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = typ match {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = typ match {
     case None => Values.longValue(state.query.nodeGetDegree(ctx.getLongAt(offset), direction))
     case Some(t) => state.query.getOptRelTypeId(t) match {
       case None => Values.ZERO_INT

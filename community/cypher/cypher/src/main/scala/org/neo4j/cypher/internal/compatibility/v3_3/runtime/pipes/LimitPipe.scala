@@ -34,7 +34,7 @@ case class LimitPipe(source: Pipe, exp: Expression)
     if(input.isEmpty)
       return Iterator.empty
 
-    val limit = asInt(exp(state.createOrGetInitialContext())(state))
+    val limit = asInt(exp(state.createOrGetInitialContext(), state))
 
     input.take(limit.value())
   }

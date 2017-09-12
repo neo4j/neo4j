@@ -69,6 +69,6 @@ class ToFloatFunctionTest extends CypherFunSuite {
   }
 
   private def toFloat(orig: Any) = {
-    ToFloatFunction(Literal(orig))(ExecutionContext.empty)(QueryStateHelper.empty)
+    ToFloatFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty)
   }
 }

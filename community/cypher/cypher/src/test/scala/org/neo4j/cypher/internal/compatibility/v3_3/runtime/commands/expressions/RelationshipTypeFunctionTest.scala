@@ -35,25 +35,26 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   private val operations = mock[Operations[Relationship]]
   doReturn(operations).when(mockedContext).relationshipOps
 
-  private implicit val state = QueryStateHelper.emptyWith(query = mockedContext)
+  private val state = QueryStateHelper.emptyWith(query = mockedContext)
+  private val function = RelationshipTypeFunction(Variable("r"))
 
   test("should give the type of a relationship") {
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
-    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal(stringValue("T"))
+    function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
   test("should handle deleted relationships since types are inlined") {
     doReturn(true).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
-    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal(stringValue("T"))
+    function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
   test("should throw if encountering anything other than a relationship") {
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
-    a [ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute(1337L, null)
+    a [ParameterWrongTypeException] should be thrownBy function.compute(1337L, null, state)
   }
 }

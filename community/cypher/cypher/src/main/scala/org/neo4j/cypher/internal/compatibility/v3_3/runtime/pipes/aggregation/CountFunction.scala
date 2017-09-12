@@ -28,12 +28,12 @@ import org.neo4j.values.storable.Values
 class CountFunction(value: Expression) extends AggregationFunction {
   var count: Long = 0
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    value(data) match {
+  override def apply(data: ExecutionContext, state: QueryState) {
+    value(data, state) match {
       case Values.NO_VALUE =>
       case _    => count += 1
     }
   }
 
-  def result(implicit state: QueryState): AnyValue = Values.longValue(count)
+  override def result(state: QueryState): AnyValue = Values.longValue(count)
 }
