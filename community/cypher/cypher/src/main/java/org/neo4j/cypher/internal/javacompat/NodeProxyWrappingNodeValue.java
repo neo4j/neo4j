@@ -64,6 +64,12 @@ public class NodeProxyWrappingNodeValue extends NodeValue
             p = VirtualValues.EMPTY_MAP;
 
         }
+
+        if ( id() < 0 )
+        {
+            writer.writeVirtualNodeHack( node );
+        }
+
         writer.writeNode( node.getId(), l, p );
     }
 

@@ -61,6 +61,12 @@ public class RelationshipProxyWrappingEdgeValue extends EdgeValue
             p = VirtualValues.EMPTY_MAP;
 
         }
+
+        if ( id() < 0 )
+        {
+            writer.writeVirtualEdgeHack( relationship );
+        }
+
         writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p );
     }
 

@@ -94,7 +94,16 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     @Override
     public void writeNode( long nodeId, TextArray ignore, MapValue properties ) throws RuntimeException
     {
-        writeValue( newNodeProxyById( nodeId ) );
+        if ( nodeId >= 0 )
+        {
+            writeValue( newNodeProxyById( nodeId ) );
+        }
+    }
+
+    @Override
+    public void writeVirtualNodeHack( Object node )
+    {
+        writeValue( node );
     }
 
     @Override
@@ -107,7 +116,16 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type, MapValue properties )
             throws RuntimeException
     {
-        writeValue( newRelationshipProxyById( edgeId ) );
+        if ( edgeId >= 0 )
+        {
+            writeValue( newRelationshipProxyById( edgeId ) );
+        }
+    }
+
+    @Override
+    public void writeVirtualEdgeHack( Object relationship )
+    {
+        writeValue( relationship );
     }
 
     @Override

@@ -32,7 +32,6 @@ import org.neo4j.values.virtual.NodeValue;
  */
 public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 {
-
     void writeNodeReference( long nodeId ) throws E;
 
     void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E;
@@ -54,4 +53,14 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
     void beginPoint( CoordinateReferenceSystem coordinateReferenceSystem ) throws E;
 
     void endPoint() throws E;
+
+    default void writeVirtualNodeHack( Object node )
+    {
+        // do nothing, this is an ugly hack.
+    }
+
+    default void writeVirtualEdgeHack( Object relationship )
+    {
+        // do nothing, this is an ugly hack.
+    }
 }
