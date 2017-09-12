@@ -71,7 +71,8 @@ public class FulltextProvider implements AutoCloseable
     public void close()
     {
         db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-        nodeIndices.values().forEach( luceneFulltextIndex -> {
+        nodeIndices.values().forEach( luceneFulltextIndex ->
+        {
             try
             {
                 luceneFulltextIndex.close();
@@ -81,7 +82,8 @@ public class FulltextProvider implements AutoCloseable
                 log.error( "Unable to close fulltext node index.", e );
             }
         } );
-        relationshipIndices.values().forEach( luceneFulltextIndex -> {
+        relationshipIndices.values().forEach( luceneFulltextIndex ->
+        {
             try
             {
                 luceneFulltextIndex.close();
@@ -99,13 +101,13 @@ public class FulltextProvider implements AutoCloseable
         if ( fulltextIndex.getType() == FulltextIndexType.NODES )
         {
             nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
-            writableNodeIndices.add( new WritableFulltext( (fulltextIndex) ) );
+            writableNodeIndices.add( new WritableFulltext( fulltextIndex ) );
             nodeProperties.addAll( fulltextIndex.getProperties() );
         }
         else
         {
             relationshipIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
-            writableRelationshipIndices.add( new WritableFulltext( (fulltextIndex) ) );
+            writableRelationshipIndices.add( new WritableFulltext( fulltextIndex ) );
             relationshipProperties.addAll( fulltextIndex.getProperties() );
         }
     }
