@@ -91,7 +91,7 @@ class CatchUpChannelPool<CHANNEL extends CatchUpChannelPool.Channel>
     synchronized void release( CHANNEL channel )
     {
         removeActiveChannel( channel );
-        idleChannels.computeIfAbsent( channel.destination(), ( address ) -> new LinkedList<>() ).add( channel );
+        idleChannels.computeIfAbsent( channel.destination(), address -> new LinkedList<>() ).add( channel );
     }
 
     void close()

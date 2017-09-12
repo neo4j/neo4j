@@ -838,7 +838,7 @@ public class CheckTxLogsTest
     {
         // given
         Function<Long, Command.NodeCommand> newNodeCommandFunction =
-                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
         writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
@@ -863,7 +863,7 @@ public class CheckTxLogsTest
     {
         // given
         Function<Long, Command.NodeCommand> newNodeCommandFunction =
-                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
         writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
@@ -890,7 +890,7 @@ public class CheckTxLogsTest
         // given
 
         Function<Long, Command.NodeCommand> newNodeCommandFunction =
-                ( i ) -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
+                i -> new Command.NodeCommand( new NodeRecord( i, false, false, -1, -1, -1 ),
                         new NodeRecord( i, true, false, -1, -1, -1 ) );
         writeTxContent( logFile( 1 ), 40L, newNodeCommandFunction.apply( 1L ) );
         writeTxContent( logFile( 1 ), 41L, newNodeCommandFunction.apply( 2L ) );
@@ -961,13 +961,13 @@ public class CheckTxLogsTest
     {
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
-        writeContent( log, ( txWriter ) -> txWriter.append( tx, txId ) );
+        writeContent( log, txWriter -> txWriter.append( tx, txId ) );
     }
 
     private void writeCheckPoint( File log, long logVersion, long byteOffset ) throws IOException
     {
         LogPosition logPosition = new LogPosition( logVersion, byteOffset );
-        writeContent( log, ( txWriter ) -> txWriter.checkPoint( logPosition ) );
+        writeContent( log, txWriter -> txWriter.checkPoint( logPosition ) );
     }
 
     private void writeContent( File log, ThrowingConsumer<TransactionLogWriter,IOException> consumer )

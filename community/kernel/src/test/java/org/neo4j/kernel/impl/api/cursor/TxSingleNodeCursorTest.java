@@ -33,7 +33,7 @@ public class TxSingleNodeCursorTest
 {
 
     private final TransactionState state = mock( TransactionState.class );
-    private TxSingleNodeCursor cursor = new TxSingleNodeCursor( state, ( l ) ->
+    private TxSingleNodeCursor cursor = new TxSingleNodeCursor( state, l ->
     {
     } );
 

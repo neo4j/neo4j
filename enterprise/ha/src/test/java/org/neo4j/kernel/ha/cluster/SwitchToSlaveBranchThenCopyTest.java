@@ -277,7 +277,7 @@ public class SwitchToSlaveBranchThenCopyTest
         when( pageCacheMock.map( any( File.class ), anyInt() ) ).thenReturn( pagedFileMock );
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
         when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
-                .thenAnswer( ( f ) -> Stream.empty() );
+                .thenAnswer( f -> Stream.empty() );
         when( pageCacheMock.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );

@@ -50,7 +50,7 @@ public class SegmentedRaftLogDurabilityTest
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
 
-    private final RaftLogFactory logFactory = ( fileSystem ) ->
+    private final RaftLogFactory logFactory = fileSystem ->
     {
         File directory = new File( RAFT_LOG_DIRECTORY_NAME );
         fileSystem.mkdir( directory );

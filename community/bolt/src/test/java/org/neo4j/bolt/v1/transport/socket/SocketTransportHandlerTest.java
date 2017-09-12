@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.v1.transport.socket;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
@@ -48,7 +48,6 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SocketTransportHandlerTest
@@ -205,7 +204,7 @@ public class SocketTransportHandlerTest
     {
         Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> availableVersions = new HashMap<>();
         availableVersions.put( (long) BoltMessagingProtocolV1Handler.VERSION,
-                ( boltChannel ) -> new BoltMessagingProtocolV1Handler( boltChannel, new SynchronousBoltWorker( machine ),
+                boltChannel -> new BoltMessagingProtocolV1Handler( boltChannel, new SynchronousBoltWorker( machine ),
                         NullLogService.getInstance() )
         );
 

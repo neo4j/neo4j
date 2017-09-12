@@ -382,7 +382,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         MyFormat()
         {
-            super( ( x ) -> 4, 8, 32 );
+            super( x -> 4, 8, 32 );
         }
 
         @Override

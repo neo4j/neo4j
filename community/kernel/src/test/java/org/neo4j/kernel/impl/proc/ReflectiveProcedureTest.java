@@ -80,7 +80,7 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, ( ctx ) -> log );
+        components.register( Log.class, ctx -> log );
         CallableProcedure procedure =
                 procedureCompiler.compileProcedure( LoggingProcedure.class, Optional.empty(), true ).get( 0 );
 

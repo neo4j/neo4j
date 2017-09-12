@@ -137,7 +137,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private void updateRelationshipsCountsFromDegrees( PrimitiveIntCollection labels, int type, long outgoing,
             long incoming )
     {
-        labels.visitKeys( ( label ) -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
+        labels.visitKeys( label -> updateRelationshipsCountsFromDegrees( type, label, outgoing, incoming ) );
     }
 
     private boolean updateRelationshipsCountsFromDegrees( int type, int label, long outgoing, long incoming )
@@ -154,8 +154,8 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     private void updateRelationshipCount( long startNode, int type, long endNode, int delta )
     {
         updateRelationshipsCountsFromDegrees( type, ANY_LABEL, delta, 0 );
-        visitLabels( startNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0 ) );
-        visitLabels( endNode, ( labelId ) -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
+        visitLabels( startNode, labelId -> updateRelationshipsCountsFromDegrees( type, labelId, delta, 0 ) );
+        visitLabels( endNode, labelId -> updateRelationshipsCountsFromDegrees( type, labelId, 0, delta ) );
     }
 
     private void visitLabels( long nodeId, PrimitiveIntVisitor<RuntimeException> visitor )

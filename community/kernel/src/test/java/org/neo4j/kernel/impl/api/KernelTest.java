@@ -78,7 +78,7 @@ public class KernelTest
         protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             Function<PlatformModule,EditionModule> factory =
-                    ( platformModule ) -> new CommunityEditionModule( platformModule )
+                    platformModule -> new CommunityEditionModule( platformModule )
                     {
                         @Override
                         protected SchemaWriteGuard createSchemaWriteGuard()

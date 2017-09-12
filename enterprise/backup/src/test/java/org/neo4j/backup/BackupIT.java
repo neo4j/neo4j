@@ -644,7 +644,7 @@ public class BackupIT
                     GraphDatabaseFacadeFactory.Dependencies dependencies )
             {
                 Function<PlatformModule,EditionModule> factory =
-                        ( platformModule ) -> new CommunityEditionModule( platformModule )
+                        platformModule -> new CommunityEditionModule( platformModule )
                         {
 
                             @Override

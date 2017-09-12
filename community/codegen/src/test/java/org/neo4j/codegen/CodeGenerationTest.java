@@ -828,7 +828,7 @@ public class CodeGenerationTest
                     param( boolean.class, "test" ),
                     param( Runnable.class, "runner" ) ) )
             {
-                callEach.tryCatch( ( tryBlock ) ->
+                callEach.tryCatch( tryBlock ->
                         {
                             try ( CodeBlock loop = tryBlock.whileLoop( invoke( callEach.load( "targets" ),
                                     methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
@@ -847,7 +847,7 @@ public class CodeGenerationTest
 
                             }
                         },
-                        ( catchBlock ) -> catchBlock.expression(
+                        catchBlock -> catchBlock.expression(
                                 invoke( catchBlock.load( "runner" ), RUN ) ), param( RuntimeException.class, "e" ) );
             }
 
@@ -1536,14 +1536,14 @@ public class CodeGenerationTest
             {
 
                 run.tryCatch(
-                        ( tryBlock ) ->
+                        tryBlock ->
                         {
                             try ( CodeBlock ifBlock = tryBlock.ifStatement( run.load( "test" ) ) )
                             {
                                 ifBlock.expression( invoke( run.load( "body" ), RUN ) );
                             }
                         },
-                        ( catchBlock ) -> catchBlock.expression( invoke( run.load( "catcher" ), RUN ) ),
+                        catchBlock -> catchBlock.expression( invoke( run.load( "catcher" ), RUN ) ),
                         param( RuntimeException.class, "E" )
                 );
             }
@@ -1574,13 +1574,13 @@ public class CodeGenerationTest
                     param( Runnable.class, "catcher2" ) ) )
             {
 
-                run.tryCatch( ( tryBlock ) ->
+                run.tryCatch( tryBlock ->
                                 tryBlock.tryCatch(
-                                        ( innerTry ) -> innerTry.expression( invoke( run.load( "body" ), RUN ) ),
-                                        ( catchBlock1 ) -> catchBlock1.expression( invoke( run.load( "catcher1" ),
+                                        innerTry -> innerTry.expression( invoke( run.load( "body" ), RUN ) ),
+                                        catchBlock1 -> catchBlock1.expression( invoke( run.load( "catcher1" ),
                                                 RUN ) ),
                                         param( MyFirstException.class, "E" ) ),
-                        ( catchBlock2 ) -> catchBlock2.expression( invoke( run.load( "catcher2" ), RUN ) ),
+                        catchBlock2 -> catchBlock2.expression( invoke( run.load( "catcher2" ), RUN ) ),
                         param( MySecondException.class, "E" ) );
 
             }

@@ -46,7 +46,7 @@ public class NodeLoadingIteratorTest
     public void shouldHandleAnEmptyIterator() throws Exception
     {
         // given
-        NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), ( id ) ->
+        NodeLoadingIterator iterator = new NodeLoadingIterator( emptyIterator(), id ->
         {
             throw new IllegalStateException( "" );
         } );
@@ -115,7 +115,7 @@ public class NodeLoadingIteratorTest
     private ThrowingLongFunction<Cursor<NodeItem>,EntityNotFoundException> createMapping(
             Map<Long,Cursor<NodeItem>> map )
     {
-        return ( id ) ->
+        return id ->
         {
             if ( !map.containsKey( id ) )
             {

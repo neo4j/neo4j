@@ -19,6 +19,9 @@
  */
 package org.neo4j.graphdb;
 
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,11 +32,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
 import javax.annotation.Nonnull;
-
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.cursor.Cursor;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -757,7 +756,7 @@ public class LabelsAcceptanceTest
                                     GraphDatabaseFacadeFactory.Dependencies dependencies )
                             {
                                 Function<PlatformModule,EditionModule> factory =
-                                        ( platformModule ) -> new CommunityEditionModule( platformModule )
+                                        platformModule -> new CommunityEditionModule( platformModule )
                                         {
                                             @Override
                                             protected IdGeneratorFactory createIdGeneratorFactory(

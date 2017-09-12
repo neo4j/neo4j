@@ -533,7 +533,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         try ( InitialNodeLabelCreationVisitor labelUpdateVisitor = new InitialNodeLabelCreationVisitor() )
         {
             StoreScan<IOException> storeScan = indexStoreView.visitNodes( labelIds,
-                    ( propertyKeyId ) -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
+                    propertyKeyId -> PrimitiveIntCollections.contains( propertyKeyIds, propertyKeyId ),
                     propertyUpdateVisitor, labelUpdateVisitor, true );
             storeScan.run();
 

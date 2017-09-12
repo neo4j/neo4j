@@ -252,7 +252,7 @@ public class Predicates
 
     public static <T> Predicate<T> not( Predicate<T> predicate )
     {
-        return ( t ) -> !predicate.test( t );
+        return t -> !predicate.test( t );
     }
 
     public static <T> Predicate<T> in( final Iterable<T> allowed )

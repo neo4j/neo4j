@@ -122,7 +122,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     protected WebServer createWebServer()
     {
         Jetty9WebServer webServer = (Jetty9WebServer) super.createWebServer();
-        webServer.setJettyCreatedCallback( ( jetty ) ->
+        webServer.setJettyCreatedCallback( jetty ->
         {
             ThreadPool threadPool = jetty.getThreadPool();
             assert threadPool != null;

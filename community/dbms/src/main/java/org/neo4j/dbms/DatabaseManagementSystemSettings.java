@@ -50,6 +50,6 @@ public class DatabaseManagementSystemSettings implements LoadableConfig
     @Internal
     public static final Setting<File> auth_store_directory = derivedSetting( "unsupported.dbms.directories.auth",
             data_directory,
-            ( data ) -> new File( data, "dbms" ),
+            data -> new File( data, "dbms" ),
             PATH );
 }

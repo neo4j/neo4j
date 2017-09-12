@@ -38,7 +38,7 @@ public class TransformedListTest
         ListValue inner = list( longValue( 5L ), longValue( 6L ), longValue( 7L ) );
 
         // When
-        ListValue transform = transform( inner, ( a ) ->
+        ListValue transform = transform( inner, a ->
         {
             LongValue l = (LongValue) a;
             return longValue( l.value() + 42L );

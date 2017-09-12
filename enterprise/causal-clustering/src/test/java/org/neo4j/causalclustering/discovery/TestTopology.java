@@ -65,7 +65,7 @@ public class TestTopology
     public static Map<MemberId,ReadReplicaInfo> readReplicaInfoMap( int... ids )
     {
         return Arrays.stream( ids ).mapToObj( TestTopology::readReplicaInfo ).collect( Collectors
-                .toMap( ( p ) -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
+                .toMap( p -> new MemberId( UUID.randomUUID() ), Function.identity() ) );
     }
 
     private static ReadReplicaInfo readReplicaInfo( int id )

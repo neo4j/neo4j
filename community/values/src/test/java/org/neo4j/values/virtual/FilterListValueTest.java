@@ -39,7 +39,7 @@ public class FilterListValueTest
                 longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );
 
         // When
-        ListValue filter = filter( inner, ( v ) -> ((LongValue) v).value() > 7L );
+        ListValue filter = filter( inner, v -> ((LongValue) v).value() > 7L );
 
         // Then
         ListValue expected = list( longValue( 8L ), longValue( 9L ), longValue( 10L ), longValue( 11L ) );

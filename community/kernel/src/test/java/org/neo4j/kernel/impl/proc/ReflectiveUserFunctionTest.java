@@ -76,7 +76,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = spy( Log.class );
-        components.register( Log.class, ( ctx ) -> log );
+        components.register( Log.class, ctx -> log );
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When

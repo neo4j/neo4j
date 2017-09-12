@@ -279,7 +279,7 @@ public class LifeSupport
 
     public List<Lifecycle> getLifecycleInstances()
     {
-        return instances.stream().map( ( l ) -> l.instance ).collect( toList() );
+        return instances.stream().map( l -> l.instance ).collect( toList() );
     }
 
     /**

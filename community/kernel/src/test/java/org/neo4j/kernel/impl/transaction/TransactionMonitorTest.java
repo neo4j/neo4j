@@ -49,7 +49,7 @@ public class TransactionMonitorTest
     public static Collection<Object[]> parameters()
     {
         return Arrays.asList(
-                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) ( db ) -> {}, false, "read"},
+                new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) db -> {}, false, "read"},
                 new Object[]{(ThrowingConsumer<GraphDatabaseService,Exception>) GraphDatabaseService::createNode,
                         true, "write"}
         );

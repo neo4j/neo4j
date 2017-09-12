@@ -88,7 +88,7 @@ public class MonitoredBoltWorkerFactoryTest
         BoltWorker worker = workerFactory.newWorker( boltChannel );
 
         // when
-        worker.enqueue( ( stateMachine ) ->
+        worker.enqueue( stateMachine ->
         {
             stateMachine.run( "hello", null, nullResponseHandler() );
             clock.forward( 1338, TimeUnit.MILLISECONDS );

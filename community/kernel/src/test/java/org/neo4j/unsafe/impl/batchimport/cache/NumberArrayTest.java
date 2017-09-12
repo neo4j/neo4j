@@ -86,35 +86,35 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
             list.add( line(
                     name + "IntArray",
                     factory.newIntArray( INDEXES, -1 ),
-                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
             list.add( line(
                     name + "DynamicIntArray",
                     factory.newDynamicIntArray( INDEXES / 100, -1 ),
-                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Integer) value ), IntArray::get ) );
 
             list.add( line(
                     name + "LongArray",
                     factory.newLongArray( INDEXES, -1 ),
-                    ( random ) -> random.nextLong( 1_000_000_000 ),
+                    random -> random.nextLong( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
             list.add( line(
                     name + "DynamicLongArray",
                     factory.newDynamicLongArray( INDEXES / 100, -1 ),
-                    ( random ) -> random.nextLong( 1_000_000_000 ),
+                    random -> random.nextLong( 1_000_000_000 ),
                     ( array, index, value ) -> array.set( index, (Long) value ), LongArray::get ) );
 
             list.add( line(
                     name + "ByteArray",
                     factory.newByteArray( INDEXES, new byte[] {-1, -1, -1, -1, -1} ),
-                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
             list.add( line(
                     name + "DynamicByteArray",
                     factory.newDynamicByteArray( INDEXES / 100, new byte[] {-1, -1, -1, -1, -1} ),
-                    ( random ) -> random.nextInt( 1_000_000_000 ),
+                    random -> random.nextInt( 1_000_000_000 ),
                     ( array, index, value ) -> array.setInt( index, 1, (Integer) value ),
                     ( array, index ) -> array.getInt( index, 1 ) ) );
         }

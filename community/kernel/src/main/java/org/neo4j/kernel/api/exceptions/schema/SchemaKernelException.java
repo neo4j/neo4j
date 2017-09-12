@@ -63,7 +63,7 @@ public abstract class SchemaKernelException extends KernelException
             String propertyString = propertyIds.length == 1 ?
                                     "property '" + tokenNameLookup.propertyKeyGetName( propertyIds[0]) + "'" :
                                     "properties " + Arrays.stream( propertyIds )
-                                            .mapToObj( ( i ) -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
+                                            .mapToObj( i -> "'" + tokenNameLookup.propertyKeyGetName( i ) + "'" )
                                             .collect( Collectors.joining( " and " ));
             return String.format( formatString,
                     tokenNameLookup.labelGetName( descriptor.getLabelId() ), propertyString);

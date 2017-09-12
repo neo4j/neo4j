@@ -62,7 +62,6 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
@@ -134,7 +133,7 @@ public class BoltCausalClusteringIT
         try ( Driver driver = GraphDatabase.driver( core.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
 
-            return inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            return inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
             {
                 // when
                 session.run( "MERGE (n:Person {name: 'Jim'})" ).consume();
@@ -403,7 +402,7 @@ public class BoltCausalClusteringIT
 
         try ( Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            inExpirableSession( driver, Driver::session, ( session ) ->
+            inExpirableSession( driver, Driver::session, session ->
             {
                 // execute a write/read query
                 session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
@@ -432,7 +431,7 @@ public class BoltCausalClusteringIT
                 return null;
             } );
 
-            inExpirableSession( driver, Driver::session, ( session ) ->
+            inExpirableSession( driver, Driver::session, session ->
             {
                 // execute a write/read query
                 session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
@@ -453,7 +452,7 @@ public class BoltCausalClusteringIT
 
         try ( Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            String bookmark = inExpirableSession( driver, Driver::session, ( session ) ->
+            String bookmark = inExpirableSession( driver, Driver::session, session ->
             {
                 try ( Transaction tx = session.beginTransaction() )
                 {
@@ -484,7 +483,7 @@ public class BoltCausalClusteringIT
 
         try ( Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) ) )
         {
-            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
             {
                 session.run( "CREATE (p:Person {name: {name} })", Values.parameters( "name", "Jim" ) );
                 return null;
@@ -504,7 +503,7 @@ public class BoltCausalClusteringIT
 
             assertNotNull( bookmark );
 
-            inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+            inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
             {
                 try ( Transaction tx = session.beginTransaction( bookmark ) )
                 {
@@ -536,7 +535,7 @@ public class BoltCausalClusteringIT
 
         Driver driver = GraphDatabase.driver( leader.directURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        String bookmark = inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+        String bookmark = inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -577,7 +576,7 @@ public class BoltCausalClusteringIT
         CoreClusterMember leader = cluster.awaitLeader();
         Driver driver = GraphDatabase.driver( leader.routingURI(), AuthTokens.basic( "neo4j", "neo4j" ) );
 
-        String bookmark = inExpirableSession( driver, ( d ) -> d.session( AccessMode.WRITE ), ( session ) ->
+        String bookmark = inExpirableSession( driver, d -> d.session( AccessMode.WRITE ), session ->
         {
             try ( Transaction tx = session.beginTransaction() )
             {
@@ -703,7 +702,7 @@ public class BoltCausalClusteringIT
 
         try ( Session session = driver.session() )
         {
-            session.writeTransaction( ( tx ) ->
+            session.writeTransaction( tx ->
             {
                 tx.run( "MERGE (n:Person {name: 'Jim'})" );
                 return null;

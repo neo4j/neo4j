@@ -45,9 +45,9 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
@@ -98,7 +98,7 @@ public class EnterpriseSecurityModule extends SecurityModule
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
         // Register procedures
-        procedures.registerComponent( SecurityLog.class, ( ctx ) -> securityLog, false );
+        procedures.registerComponent( SecurityLog.class, ctx -> securityLog, false );
         procedures.registerComponent( EnterpriseAuthManager.class, ctx -> authManager, false );
         procedures.registerComponent( EnterpriseSecurityContext.class,
                 ctx -> asEnterprise( ctx.get( SECURITY_CONTEXT ) ), true );
@@ -352,7 +352,7 @@ public class EnterpriseSecurityModule extends SecurityModule
             hasNativeProvider = authProviders.contains( SecuritySettings.NATIVE_REALM_NAME );
             hasLdapProvider = authProviders.contains( SecuritySettings.LDAP_REALM_NAME );
             pluginAuthProviders = authProviders.stream()
-                    .filter( ( r ) -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
+                    .filter( r -> r.startsWith( SecuritySettings.PLUGIN_REALM_NAME_PREFIX ) )
                     .collect( Collectors.toList() );
 
             nativeAuthentication = config.get( SecuritySettings.native_authentication_enabled );

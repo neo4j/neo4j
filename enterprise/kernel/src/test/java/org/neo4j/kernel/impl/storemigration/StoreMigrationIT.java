@@ -108,7 +108,7 @@ public class StoreMigrationIT
         LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
         List<Object[]> data = new ArrayList<>();
         ArrayList<RecordFormats> recordFormatses = new ArrayList<>();
-        RecordFormatSelector.allFormats().forEach( ( f ) -> addIfNotThere( f, recordFormatses ) );
+        RecordFormatSelector.allFormats().forEach( f -> addIfNotThere( f, recordFormatses ) );
         for ( RecordFormats toFormat : recordFormatses )
         {
             UpgradableDatabase upgradableDatabase = new UpgradableDatabase( storeVersionCheck, toFormat, tailScanner );

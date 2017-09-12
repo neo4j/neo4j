@@ -394,7 +394,7 @@ public class ProcedureJarLoaderTest
     private ComponentRegistry registryWithUnsafeAPI()
     {
         ComponentRegistry allComponents = new ComponentRegistry();
-        allComponents.register( UnsafeAPI.class, ( ctx ) -> new UnsafeAPI() );
+        allComponents.register( UnsafeAPI.class, ctx -> new UnsafeAPI() );
         return allComponents;
     }
 

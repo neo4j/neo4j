@@ -40,11 +40,11 @@ public abstract class BaseRecordFormat<RECORD extends AbstractBaseRecord> implem
 {
     public static final int IN_USE_BIT = 0b0000_0001;
     public static final Function<StoreHeader,Integer> INT_STORE_HEADER_READER =
-            ( header ) -> ((IntStoreHeader) header).value();
+            header -> ((IntStoreHeader) header).value();
 
     public static Function<StoreHeader,Integer> fixedRecordSize( int recordSize )
     {
-        return ( header ) -> recordSize;
+        return header -> recordSize;
     }
 
     private final Function<StoreHeader,Integer> recordSize;

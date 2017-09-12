@@ -59,7 +59,7 @@ public class DuplicatedExtensionValidatorTest
     {
         elements = compilation.getElements();
         validator = new DuplicatedExtensionValidator<>( elements, Procedure.class,
-                ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
+                proc -> CustomNameExtractor.getName( proc::name, proc::value ) );
     }
 
     @Test

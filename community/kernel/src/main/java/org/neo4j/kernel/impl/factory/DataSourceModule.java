@@ -368,7 +368,7 @@ public class DataSourceModule
 
         // Register injected public API components
         Log proceduresLog = platform.logging.getUserLog( Procedures.class );
-        procedures.registerComponent( Log.class, ( ctx ) -> proceduresLog, true );
+        procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
 
         Guard guard = platform.dependencies.resolveDependency( Guard.class );
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
@@ -381,9 +381,9 @@ public class DataSourceModule
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, ( ctx ) -> platform.dependencies, false );
-        procedures.registerComponent( KernelTransaction.class, ( ctx ) -> ctx.get( KERNEL_TRANSACTION ), false );
-        procedures.registerComponent( GraphDatabaseAPI.class, ( ctx ) -> platform.graphDatabaseFacade, false );
+        procedures.registerComponent( DependencyResolver.class, ctx -> platform.dependencies, false );
+        procedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        procedures.registerComponent( GraphDatabaseAPI.class, ctx -> platform.graphDatabaseFacade, false );
 
         // Security procedures
         procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );

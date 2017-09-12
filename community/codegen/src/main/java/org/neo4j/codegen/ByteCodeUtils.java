@@ -142,7 +142,7 @@ public final class ByteCodeUtils
         if ( showErasure && throwsList.stream().anyMatch( TypeReference::isTypeParameter ) )
         {
             builder.append( "^" );
-            throwsList.forEach( ( t ) -> internalType( builder, t, false ) );
+            throwsList.forEach( t -> internalType( builder, t, false ) );
         }
         return builder.toString();
     }
@@ -217,7 +217,7 @@ public final class ByteCodeUtils
                 builder.append( "<" );
                 parameters
                         .stream()
-                        .forEach( ( p ) -> internalType( builder, p, true ) );
+                        .forEach( p -> internalType( builder, p, true ) );
                 builder.append( ">" );
             }
             builder.append( ";" );

@@ -223,7 +223,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     {
         if ( "true".equals( req.getHeader( "X-Ajax-Browser-Auth" ) ) )
         {
-            return ( res ) ->
+            return res ->
             {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "None" );
@@ -231,7 +231,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         }
         else
         {
-            return ( res ) ->
+            return res ->
             {
                 responseGen.accept( res );
                 res.addHeader( HttpHeaders.WWW_AUTHENTICATE, "Basic realm=\"Neo4j\"" );

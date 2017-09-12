@@ -135,7 +135,7 @@ public class ServerSettings implements LoadableConfig
 
     @Description( "Path to HTTP request log." )
     public static final Setting<File> http_log_path =
-            derivedSetting( "dbms.logs.http.path", logs_directory, ( logs ) -> new File( logs, "http.log" ),
+            derivedSetting( "dbms.logs.http.path", logs_directory, logs -> new File( logs, "http.log" ),
                     PATH );
 
     @Description( "Number of HTTP logs to keep." )

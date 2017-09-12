@@ -108,9 +108,9 @@ public class ServerPoliciesLoadBalancingIT
     public void shouldFallOverBetweenRules() throws Exception
     {
         Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
-        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> "core" + id + ",core" );
+        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), id -> "core" + id + ",core" );
         Map<String,IntFunction<String>> instanceReplicaParams = new HashMap<>();
-        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> "replica" + id + ",replica" );
+        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), id -> "replica" + id + ",replica" );
 
         String defaultPolicy = "groups(core) -> min(3); groups(replica1,replica2) -> min(2);";
 
@@ -152,9 +152,9 @@ public class ServerPoliciesLoadBalancingIT
     public void shouldSupportSeveralPolicies() throws Exception
     {
         Map<String,IntFunction<String>> instanceCoreParams = new HashMap<>();
-        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> "core" + id + ",core" );
+        instanceCoreParams.put( CausalClusteringSettings.server_groups.name(), id -> "core" + id + ",core" );
         Map<String,IntFunction<String>> instanceReplicaParams = new HashMap<>();
-        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), ( id ) -> "replica" + id + ",replica" );
+        instanceReplicaParams.put( CausalClusteringSettings.server_groups.name(), id -> "replica" + id + ",replica" );
 
         String defaultPolicySpec = "groups(replica0,replica1)";
         String policyOneTwoSpec = "groups(replica1,replica2)";

@@ -84,7 +84,7 @@ public class FieldInjectionsTest
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
-        components.register( int.class, ( ctx ) -> 1337 );
+        components.register( int.class, ctx -> 1337 );
         FieldInjections injections = new FieldInjections( components );
 
         // When
@@ -106,7 +106,7 @@ public class FieldInjectionsTest
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
-        components.register( int.class, ( ctx ) -> 1337 );
+        components.register( int.class, ctx -> 1337 );
         FieldInjections injections = new FieldInjections( components );
 
         // When

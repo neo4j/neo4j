@@ -176,7 +176,7 @@ public class Monitors
     private void recalculateAllMethodListeners()
     {
         // Mark all monitored interfaces as having no listeners
-        monitoredInterfaces.values().forEach( ( b ) -> b.set( false ) );
+        monitoredInterfaces.values().forEach( b -> b.set( false ) );
         for ( Method method : methodMonitorListeners.keySet() )
         {
             recalculateMethodListeners( method );
