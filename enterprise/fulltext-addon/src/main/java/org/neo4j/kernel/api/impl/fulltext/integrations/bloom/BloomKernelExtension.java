@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
@@ -37,6 +38,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 class BloomKernelExtension extends LifecycleAdapter
 {
+    public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
+    public static final String BLOOM_NODES = "bloomNodes";
     private final File storeDir;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
@@ -56,20 +59,18 @@ class BloomKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void init() throws IOException, ProcedureException
+    public void init() throws IOException, KernelException
     {
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
         Analyzer analyzer = getAnalyzer();
 
         FulltextProvider provider = FulltextProvider.instance( db, logService );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-        String bloomNodes = "bloomNodes";
-        fulltextFactory.createFulltextIndex( bloomNodes, FulltextProvider.FulltextIndexType.NODES, properties, provider );
-        String bloomRelationships = "bloomRelationships";
-        fulltextFactory.createFulltextIndex( bloomRelationships, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
+        fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
+        fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
 
-        procedures.register( new BloomProcedure( FulltextProvider.FulltextIndexType.NODES, bloomNodes, provider ) );
-        procedures.register( new BloomProcedure( FulltextProvider.FulltextIndexType.RELATIONSHIPS, bloomRelationships, provider ) );
+        procedures.registerComponent( FulltextProvider.class, context -> provider, true );
+        procedures.registerProcedure( BloomProcedures.class );
     }
 
     private Analyzer getAnalyzer()
