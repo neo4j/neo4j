@@ -51,14 +51,14 @@ import org.neo4j.values.storable.Values.{of => _, _}
   * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
   * @param executionMode                     The execution mode.
   */
-class ProcedureExecutionResult[E <: Exception](context: QueryContext,
-                                               taskCloser: TaskCloser,
-                                               name: QualifiedName,
-                                               callMode: ProcedureCallMode,
-                                               args: Seq[Any],
-                                               indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
-                                               executionPlanDescriptionGenerator: () => InternalPlanDescription,
-                                               val executionMode: ExecutionMode)
+class ProcedureExecutionResult(context: QueryContext,
+                               taskCloser: TaskCloser,
+                               name: QualifiedName,
+                               callMode: ProcedureCallMode,
+                               args: Seq[Any],
+                               indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
+                               executionPlanDescriptionGenerator: () => InternalPlanDescription,
+                               val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
 
   override def fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
