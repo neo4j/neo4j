@@ -53,7 +53,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
     // When
     val query = "CALL db.schema()"
-    val result = succeedWith(Configs.Procs, query).toList
+    val result = executeWith(Configs.Procs, query).toList
 
     // Then
     result.size should equal(1)
@@ -131,7 +131,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   test("db.labels work on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL db.labels")
+    val result = executeWith(Configs.Procs, "CALL db.labels")
 
     // Then
     result.toList shouldBe empty
@@ -143,7 +143,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     execute("MATCH (a:A) REMOVE a:A")
 
     //When
-    val result = execute("CALL db.labels")
+    val result = executeWith(Configs.Procs, "CALL db.labels")
 
     // Then
     result shouldBe empty
@@ -155,7 +155,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     execute("MATCH (a) DETACH DELETE a")
 
     //When
-    val result = execute("CALL db.labels")
+    val result = executeWith(Configs.Procs, "CALL db.labels")
 
     // Then
     result shouldBe empty
@@ -168,7 +168,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     relate(createNode(), createNode(), "C")
 
     // When
-    val result = execute("CALL db.relationshipTypes")
+    val result = executeWith(Configs.Procs, "CALL db.relationshipTypes")
 
     // Then
     result.toList should equal(
@@ -181,7 +181,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   test("db.relationshipType work on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL db.relationshipTypes")
+    val result = executeWith(Configs.Procs, "CALL db.relationshipTypes")
 
     // Then
     result shouldBe empty
@@ -196,7 +196,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     execute("MATCH (a) DETACH DELETE a")
 
     //When
-    val result = execute("CALL db.relationshipTypes")
+    val result = executeWith(Configs.Procs, "CALL db.relationshipTypes")
 
     // Then
     result shouldBe empty
@@ -207,7 +207,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     createNode("A" -> 1, "B" -> 2, "C" -> 3)
 
     // When
-    val result = execute("CALL db.propertyKeys")
+    val result = executeWith(Configs.Procs, "CALL db.propertyKeys")
 
     // Then
     result.toList should equal(
@@ -221,7 +221,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     // Given an empty database
 
     // When
-    val result = execute("CALL db.propertyKeys")
+    val result = executeWith(Configs.Procs, "CALL db.propertyKeys")
 
     // Then
     result shouldBe empty
@@ -233,7 +233,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     execute("MATCH (a)-[r]-(b) REMOVE a.A, r.R, b.B")
 
     // When
-    val result = execute("CALL db.propertyKeys")
+    val result = executeWith(Configs.Procs, "CALL db.propertyKeys")
 
     // Then
     result.toList should equal(
@@ -249,7 +249,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     execute("MATCH (a) DETACH DELETE a")
 
     // When
-    val result = execute("CALL db.propertyKeys")
+    val result = executeWith(Configs.Procs, "CALL db.propertyKeys")
 
     // Then
     result.toList should equal(
@@ -264,7 +264,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     graph.createIndex("A", "prop")
 
     //When
-    val result = execute("CALL db.indexes")
+    val result = executeWith(Configs.Procs, "CALL db.indexes")
 
     // Then
     result.toList should equal(
