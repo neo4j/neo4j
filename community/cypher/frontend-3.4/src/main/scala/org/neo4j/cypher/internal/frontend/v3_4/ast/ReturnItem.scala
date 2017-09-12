@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4._
 

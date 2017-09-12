@@ -16,41 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{Foldable, InputPosition, Rewritable}
-import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.apa.v3_4.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-
-trait ASTNode
-  extends Product
-  with Foldable
-  with Rewritable {
-
-  self =>
-
-  def recordCurrentScope: SemanticCheck = recordCurrentScopeOnly chain recordCurrentContextGraphsOnly
-
-  def recordCurrentScopeOnly: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentScope(this))
-  def recordCurrentContextGraphsOnly: SemanticCheck = s => SemanticCheckResult.success(s.recordCurrentContextGraphs(this))
-
-  def position: InputPosition
-
-  def dup(children: Seq[AnyRef]): this.type =
-    if (children.iterator eqElements this.children)
-      this
-    else {
-      val constructor = this.copyConstructor
-      val params = constructor.getParameterTypes
-      val args = children.toVector
-      val hasExtraParam = params.length == args.length + 1
-      val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
-      val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
-      val duped = constructor.invoke(this, ctorArgs: _*)
-      duped.asInstanceOf[self.type]
-    }
-
-  def asCanonicalStringVal: String = toString
-}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticError}
 
 // Skip/Limit
 trait ASTSlicingPhrase extends SemanticCheckable {

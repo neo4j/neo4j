@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
@@ -88,7 +88,7 @@ final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Opti
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    recordCurrentScope
+    SemanticState.recordCurrentScope(this)
 }
 
 final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
@@ -114,7 +114,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     graphs.foldSemanticCheck(_.ensureGraphDefined()) chain
-    recordCurrentScope
+    SemanticState.recordCurrentScope(this)
 }
 
 final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -125,7 +125,7 @@ final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputP
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -136,7 +136,7 @@ final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -147,7 +147,7 @@ final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
@@ -199,7 +199,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts chain
-    recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.variables.toIndexedSeq).collect {
@@ -456,7 +456,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 }
 
 sealed trait HorizonClause extends Clause with SemanticChecking {
-  override def semanticCheck: SemanticCheck = recordCurrentScope
+  override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 

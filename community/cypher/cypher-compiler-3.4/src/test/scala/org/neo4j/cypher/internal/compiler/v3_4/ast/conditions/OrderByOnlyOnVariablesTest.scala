@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, DummyPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.orderByOnlyOnVariables
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite

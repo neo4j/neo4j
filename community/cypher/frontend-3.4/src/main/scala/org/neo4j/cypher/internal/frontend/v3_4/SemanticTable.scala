@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
-import org.neo4j.cypher.internal.apa.v3_4.InternalException
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, ASTNode, Expression, Variable}
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.TypeSpec
 
 import scala.collection.mutable

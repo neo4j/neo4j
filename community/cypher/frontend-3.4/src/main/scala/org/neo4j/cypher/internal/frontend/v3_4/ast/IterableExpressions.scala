@@ -168,7 +168,7 @@ case class PatternComprehension(namedPath: Option[Variable], pattern: Relationsh
     copy(outerScope = outerScope)(position)
 
   override def semanticCheck(ctx: SemanticContext) =
-    recordCurrentScope chain
+    SemanticState.recordCurrentScope(this) chain
     withScopedState {
       pattern.semanticCheck(Pattern.SemanticContext.Match) chain
       namedPath.map(_.declareVariable(CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{SemanticContext, _}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4._
@@ -30,7 +30,7 @@ case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outer
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     items.semanticCheck(ctx) chain
     super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
-    recordCurrentScope
+    SemanticState.recordCurrentScope(this)
 
   def withOuterScope(outerScope: Scope): MapProjection =
     copy(outerScope = outerScope)(position)

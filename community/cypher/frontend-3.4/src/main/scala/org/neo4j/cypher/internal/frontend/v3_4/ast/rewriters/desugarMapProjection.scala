@@ -69,5 +69,5 @@ case class DesugaredMapProjection(name: Variable, items: Seq[LiteralEntry], incl
     items.semanticCheck(ctx) chain
       name.ensureVariableDefined() chain
       super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
