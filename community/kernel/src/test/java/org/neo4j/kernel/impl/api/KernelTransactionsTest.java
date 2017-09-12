@@ -615,13 +615,13 @@ public class KernelTransactionsTest
                 ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore,
-                LegacyIndexProviderLookup legacyIndexProviderLookup, TransactionHooks hooks,
+                ExplicitIndexProviderLookup explicitIndexProviderLookup, TransactionHooks hooks,
                 TransactionMonitor transactionMonitor, AvailabilityGuard availabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, Clock clock,
                 AccessCapability accessCapability )
         {
             super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard,
-                    txHeaderFactory, transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks,
+                    txHeaderFactory, transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks,
                     transactionMonitor, availabilityGuard, tracers, storageEngine, procedures, transactionIdStore,
                     clock,
                     accessCapability );

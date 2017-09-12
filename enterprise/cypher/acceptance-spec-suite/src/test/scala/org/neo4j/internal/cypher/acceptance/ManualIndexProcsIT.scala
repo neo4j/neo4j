@@ -67,7 +67,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       execute("""CALL db.index.explicit.searchNodes('index', 'key:value') YIELD node AS n RETURN n""")
   }
 
-  test("legacy index + where") {
+  test("explicit index + where") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val thirdNode = createNode(Map("prop" -> 37))

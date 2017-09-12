@@ -26,11 +26,11 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 final class IndexCommandDetector implements org.neo4j.helpers.collection.Visitor<StorageCommand,IOException>
 {
-    private boolean hasWrittenAnyLegacyIndexCommand;
+    private boolean hasWrittenAnyExplicitIndexCommand;
 
     public void reset()
     {
-        hasWrittenAnyLegacyIndexCommand = false;
+        hasWrittenAnyExplicitIndexCommand = false;
     }
 
     @Override
@@ -38,13 +38,13 @@ final class IndexCommandDetector implements org.neo4j.helpers.collection.Visitor
     {
         if ( element instanceof IndexCommand )
         {
-            hasWrittenAnyLegacyIndexCommand = true;
+            hasWrittenAnyExplicitIndexCommand = true;
         }
         return false;
     }
 
-    public boolean hasWrittenAnyLegacyIndexCommand()
+    public boolean hasWrittenAnyExplicitIndexCommand()
     {
-        return hasWrittenAnyLegacyIndexCommand;
+        return hasWrittenAnyExplicitIndexCommand;
     }
 }

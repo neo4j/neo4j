@@ -51,7 +51,7 @@ public interface StorageEngine
 
     /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
-     * ({@code state} and {@code legacyIndexTransactionState}.
+     * ({@code state}.
      * The returned commands can be used to form {@link CommandsToApply} batches, which can be applied to this
      * storage using {@link #apply(CommandsToApply, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things

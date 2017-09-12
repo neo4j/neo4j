@@ -144,7 +144,7 @@ object InternalPlanDescription {
 
     case class MergePattern(startPoint: String) extends Argument
 
-    case class LegacyIndex(value: String) extends Argument
+    case class ExplicitIndex(value: String) extends Argument
 
     case class Index(label: String, propertyKeys: Seq[String]) extends Argument
 

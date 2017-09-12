@@ -26,12 +26,12 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.legacyindex.AutoIndexing;
+import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexOperations;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
@@ -60,7 +60,7 @@ public class StateOperationsAutoIndexingTest
     private final KernelStatement stmt = mock( KernelStatement.class, RETURNS_MOCKS );
     private final StoreReadLayer storeLayer = mock( StoreReadLayer.class, RETURNS_MOCKS );
     private final StateHandlingStatementOperations context = new StateHandlingStatementOperations(
-            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(LegacyIndexStore.class) );
+            storeLayer, idx, mock(ConstraintIndexCreator.class), mock(ExplicitIndexStore.class) );
 
     @Before
     public void setup() throws InvalidTransactionTypeKernelException

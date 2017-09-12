@@ -59,7 +59,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("n"-> node)))
   }
 
-  test("Relationship legacy index") {
+  test("Relationship explicit index") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
@@ -190,7 +190,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
   }
 
-  test("Relationship legacy index mk II") {
+  test("Relationship explicit index mk II") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
@@ -209,7 +209,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     ))
   }
 
-  test("Relationship legacy index mk III") {
+  test("Relationship explicit index mk III") {
     val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)

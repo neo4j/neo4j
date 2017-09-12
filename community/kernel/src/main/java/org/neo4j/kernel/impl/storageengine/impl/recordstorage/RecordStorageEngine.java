@@ -46,10 +46,10 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
+import org.neo4j.kernel.impl.api.ExplicitBatchIndexApplier;
+import org.neo4j.kernel.impl.api.ExplicitIndexApplierLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.IndexReaderFactory;
-import org.neo4j.kernel.impl.api.LegacyBatchIndexApplier;
-import org.neo4j.kernel.impl.api.LegacyIndexApplierLookup;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
@@ -98,7 +98,7 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -137,17 +137,17 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
     private final SchemaIndexProviderMap schemaIndexProviderMap;
-    private final LegacyIndexApplierLookup legacyIndexApplierLookup;
+    private final ExplicitIndexApplierLookup explicitIndexApplierLookup;
     private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
     private final ConstraintSemantics constraintSemantics;
-    private final IdOrderingQueue legacyIndexTransactionOrdering;
+    private final IdOrderingQueue explicitIndexTransactionOrdering;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final IndexStoreView indexStoreView;
-    private final LegacyIndexProviderLookup legacyIndexProviderLookup;
+    private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
@@ -171,9 +171,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             SchemaIndexProviderMap indexProviderMap,
             IndexingService.Monitor indexingServiceMonitor,
             DatabaseHealth databaseHealth,
-            LegacyIndexProviderLookup legacyIndexProviderLookup,
+            ExplicitIndexProviderLookup explicitIndexProviderLookup,
             IndexConfigStore indexConfigStore,
-            IdOrderingQueue legacyIndexTransactionOrdering,
+            IdOrderingQueue explicitIndexTransactionOrdering,
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             Monitors monitors,
@@ -186,10 +186,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.schemaState = schemaState;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
-        this.legacyIndexProviderLookup = legacyIndexProviderLookup;
+        this.explicitIndexProviderLookup = explicitIndexProviderLookup;
         this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
-        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
 
         this.idController = idController;
         StoreFactory factory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCache, fs, logProvider );
@@ -223,7 +223,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     schemaStorage, neoStores, indexingService,
                     storeStatementSupplier, schemaCache );
 
-            legacyIndexApplierLookup = new LegacyIndexApplierLookup.Direct( legacyIndexProviderLookup );
+            explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProviderLookup );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
@@ -366,9 +366,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     neoStores.getNodeStore(),
                     indexUpdatesConverter ) );
 
-            // Legacy index application
+            // Explicit index application
             appliers.add(
-                    new LegacyBatchIndexApplier( indexConfigStore, legacyIndexApplierLookup, legacyIndexTransactionOrdering,
+                    new ExplicitBatchIndexApplier( indexConfigStore, explicitIndexApplierLookup,
+                            explicitIndexTransactionOrdering,
                             mode ) );
         }
 
@@ -384,7 +385,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     public void satisfyDependencies( DependencySatisfier satisfier )
     {
-        satisfier.satisfyDependency( legacyIndexApplierLookup );
+        satisfier.satisfyDependency( explicitIndexApplierLookup );
         satisfier.satisfyDependency( cacheAccess );
         satisfier.satisfyDependency( schemaIndexProviderMap );
         satisfier.satisfyDependency( integrityValidator );
@@ -455,7 +456,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         indexingService.forceAll();
         labelScanStore.force( limiter );
-        for ( IndexImplementation index : legacyIndexProviderLookup.all() )
+        for ( IndexImplementation index : explicitIndexProviderLookup.all() )
         {
             index.force();
         }

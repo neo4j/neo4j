@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -98,7 +98,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
-    private final Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier;
+    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -111,7 +111,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TransactionState txState;
-    private LegacyIndexTransactionState legacyIndexTransactionState;
+    private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
@@ -153,7 +153,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionHeaderInformationFactory headerInformationFactory,
                                             TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            Supplier<LegacyIndexTransactionState> legacyIndexTxStateSupplier,
+                                            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
                                             Pool<KernelTransactionImplementation> pool,
                                             Clock clock,
                                             TransactionTracer transactionTracer,
@@ -171,7 +171,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionMonitor = transactionMonitor;
         this.storeLayer = storageEngine.storeReadLayer();
         this.storageEngine = storageEngine;
-        this.legacyIndexTxStateSupplier = legacyIndexTxStateSupplier;
+        this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.pool = pool;
         this.clock = clock;
         this.transactionTracer = transactionTracer;
@@ -385,10 +385,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public LegacyIndexTransactionState legacyIndexTxState()
+    public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return legacyIndexTransactionState != null ? legacyIndexTransactionState :
-            (legacyIndexTransactionState = legacyIndexTxStateSupplier.get());
+        return explicitIndexTransactionState != null ? explicitIndexTransactionState :
+               (explicitIndexTransactionState = explicitIndexTxStateSupplier.get());
     }
 
     @Override
@@ -436,12 +436,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasChanges()
     {
-        return hasTxStateWithChanges() || hasLegacyIndexChanges();
+        return hasTxStateWithChanges() || hasExplicitIndexChanges();
     }
 
-    private boolean hasLegacyIndexChanges()
+    private boolean hasExplicitIndexChanges()
     {
-        return legacyIndexTransactionState != null && legacyIndexTransactionState.hasChanges();
+        return explicitIndexTransactionState != null && explicitIndexTransactionState.hasChanges();
     }
 
     private boolean hasDataChanges()
@@ -564,9 +564,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         storageStatement,
                         commitLocks,
                         lastTransactionIdWhenStarted );
-                if ( hasLegacyIndexChanges() )
+                if ( hasExplicitIndexChanges() )
                 {
-                    legacyIndexTransactionState.extractCommands( extractedCommands );
+                    explicitIndexTransactionState.extractCommands( extractedCommands );
                 }
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
@@ -715,7 +715,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             type = null;
             securityContext = null;
             transactionEvent = null;
-            legacyIndexTransactionState = null;
+            explicitIndexTransactionState = null;
             txState = null;
             hooksState = null;
             closeListeners.clear();

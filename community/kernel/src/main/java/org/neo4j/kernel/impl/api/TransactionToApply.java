@@ -123,7 +123,7 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
     @Override
     public boolean requiresApplicationOrdering()
     {
-        return commitment.hasLegacyIndexChanges();
+        return commitment.hasExplicitIndexChanges();
     }
 
     public void commitment( Commitment commitment, long transactionId )

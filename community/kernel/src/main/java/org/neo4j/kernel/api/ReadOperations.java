@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -293,68 +293,68 @@ public interface ReadOperations
     void releaseShared( ResourceType type, long... ids );
 
     //===========================================
-    //== LEGACY INDEX OPERATIONS ================
+    //== EXPLICIT INDEX OPERATIONS ================
     //===========================================
 
     /**
      * @param indexName name of node index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
-     * @return whether or not node legacy index with name {@code indexName} exists.
+     * @return whether or not node explicit index with name {@code indexName} exists.
      * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
      */
-    boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+    boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
     /**
      * @param indexName name of relationship index to check for existence.
      * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
      * be matched and a mismatch will throw {@link IllegalArgumentException}.
-     * @return whether or not relationship legacy index with name {@code indexName} exists.
+     * @return whether or not relationship explicit index with name {@code indexName} exists.
      * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
      */
-    boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+    boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration );
 
-    Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException;
+    Map<String, String> nodeExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
 
-    Map<String, String> relationshipLegacyIndexGetConfiguration( String indexName )
-            throws LegacyIndexNotFoundKernelException;
+    Map<String, String> relationshipExplicitIndexGetConfiguration( String indexName )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
-            throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexGet( String indexName, String key, Object value )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException;
-
-    /**
-     * @param startNode -1 if ignored.
-     * @param endNode -1 if ignored.
-     */
-    LegacyIndexHits relationshipLegacyIndexGet( String name, String key, Object valueOrNull, long startNode,
-            long endNode ) throws LegacyIndexNotFoundKernelException;
+    ExplicitIndexHits nodeExplicitIndexQuery( String indexName, Object queryOrQueryObject )
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * @param startNode -1 if ignored.
      * @param endNode -1 if ignored.
      */
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject,
+    ExplicitIndexHits relationshipExplicitIndexGet( String name, String key, Object valueOrNull, long startNode,
+            long endNode ) throws ExplicitIndexNotFoundKernelException;
+
+    /**
+     * @param startNode -1 if ignored.
+     * @param endNode -1 if ignored.
+     */
+    ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, String key, Object queryOrQueryObject,
             long startNode, long endNode )
-            throws LegacyIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
     /**
      * @param startNode -1 if ignored.
      * @param endNode -1 if ignored.
      */
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject,
+    ExplicitIndexHits relationshipExplicitIndexQuery( String indexName, Object queryOrQueryObject,
             long startNode, long endNode )
-            throws LegacyIndexNotFoundKernelException;
+            throws ExplicitIndexNotFoundKernelException;
 
-    String[] nodeLegacyIndexesGetAll();
+    String[] nodeExplicitIndexesGetAll();
 
-    String[] relationshipLegacyIndexesGetAll();
+    String[] relationshipExplicitIndexesGetAll();
 
     //===========================================
     //== COUNTS OPERATIONS ======================

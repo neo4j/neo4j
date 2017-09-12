@@ -53,9 +53,9 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 {
     // For the graph store and schema indexes order-of-updates are managed by the high level entity locks
     // such that changes are applied to the affected records in the same order that they are written to the
-    // log. For the legacy indexes there are no such locks, and hence no such ordering. This queue below
-    // is introduced to manage just that and is only used for transactions that contain any legacy index changes.
-    private final IdOrderingQueue legacyIndexTransactionOrdering;
+    // log. For the explicit indexes there are no such locks, and hence no such ordering. This queue below
+    // is introduced to manage just that and is only used for transactions that contain any explicit index changes.
+    private final IdOrderingQueue explicitIndexTransactionOrdering;
 
     private final AtomicReference<ThreadLink> threadLinkHead = new AtomicReference<>( ThreadLink.END );
     private final TransactionMetadataCache transactionMetadataCache;
@@ -72,12 +72,12 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     public BatchingTransactionAppender( LogFile logFile, LogRotation logRotation,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            IdOrderingQueue legacyIndexTransactionOrdering, DatabaseHealth databaseHealth )
+            IdOrderingQueue explicitIndexTransactionOrdering, DatabaseHealth databaseHealth )
     {
         this.logFile = logFile;
         this.logRotation = logRotation;
         this.transactionIdStore = transactionIdStore;
-        this.legacyIndexTransactionOrdering = legacyIndexTransactionOrdering;
+        this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
         this.databaseHealth = databaseHealth;
         this.transactionMetadataCache = transactionMetadataCache;
     }
@@ -189,13 +189,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
 
     /**
      * @return A TransactionCommitment instance with metadata about the committed transaction, such as whether or not
-     * this transaction contains any legacy index changes.
+     * this transaction contains any explicit index changes.
      */
     private TransactionCommitment appendToLog( TransactionRepresentation transaction, long transactionId )
             throws IOException
     {
         // Reset command writer so that we, after we've written the transaction, can ask it whether or
-        // not any legacy index command was written. If so then there's additional ordering to care about below.
+        // not any explicit index command was written. If so then there's additional ordering to care about below.
         indexCommandDetector.reset();
 
         // The outcome of this try block is either of:
@@ -217,13 +217,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                             transaction.getAuthorId(), transactionChecksum, transaction.getTimeCommitted() );
 
             transaction.accept( indexCommandDetector );
-            boolean hasLegacyIndexChanges = indexCommandDetector.hasWrittenAnyLegacyIndexCommand();
-            if ( hasLegacyIndexChanges )
+            boolean hasExplicitIndexChanges = indexCommandDetector.hasWrittenAnyExplicitIndexCommand();
+            if ( hasExplicitIndexChanges )
             {
-                // Offer this transaction id to the queue so that the legacy index applier can take part in the ordering
-                legacyIndexTransactionOrdering.offer( transactionId );
+                // Offer this transaction id to the queue so that the explicit index applier can take part in the ordering
+                explicitIndexTransactionOrdering.offer( transactionId );
             }
-            return new TransactionCommitment( hasLegacyIndexChanges, transactionId, transactionChecksum,
+            return new TransactionCommitment( hasExplicitIndexChanges, transactionId, transactionChecksum,
                     transaction.getTimeCommitted(), logPositionAfterCommit, transactionIdStore );
         }
         catch ( final Throwable panic )

@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
+import org.neo4j.kernel.impl.api.ExplicitIndexProviderLookup;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
+import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -80,7 +80,7 @@ public class StoreSizeBeanTest
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final File storeDir = new File( "" );
     private final PhysicalLogFiles physicalLogFiles = new PhysicalLogFiles( storeDir, fs );
-    private final LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
+    private final ExplicitIndexProviderLookup explicitIndexProviderLookup = mock( ExplicitIndexProviderLookup.class );
     private final SchemaIndexProvider schemaIndexProvider = mockedSchemaIndexProvider( "providah1" );
     private final SchemaIndexProvider schemaIndexProvider2 = mockedSchemaIndexProvider( "providah" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -101,7 +101,7 @@ public class StoreSizeBeanTest
         dependencies.satisfyDependency( fs );
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( physicalLogFiles );
-        dependencies.satisfyDependency( legacyIndexProviderLookup );
+        dependencies.satisfyDependency( explicitIndexProviderLookup );
         dependencies.satisfyDependency( schemaIndexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
@@ -242,13 +242,13 @@ public class StoreSizeBeanTest
     @Test
     public void shouldCountAllIndexFiles() throws Exception
     {
-        // Legacy index file
-        File legacyIndex = new File( storeDir, "legacyIndex" );
-        createFileOfSize( legacyIndex, 1 );
+        // Explicit index file
+        File explicitIndex = new File( storeDir, "explicitIndex" );
+        createFileOfSize( explicitIndex, 1 );
 
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
-        when( indexImplementation.getIndexImplementationDirectory( any() ) ).thenReturn( legacyIndex );
-        when( legacyIndexProviderLookup.all() ).thenReturn( iterable( indexImplementation ) );
+        when( indexImplementation.getIndexImplementationDirectory( any() ) ).thenReturn( explicitIndex );
+        when( explicitIndexProviderLookup.all() ).thenReturn( iterable( indexImplementation ) );
 
         // Schema index files
         {

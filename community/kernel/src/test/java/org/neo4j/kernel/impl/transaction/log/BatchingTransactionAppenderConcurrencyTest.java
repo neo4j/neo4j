@@ -113,7 +113,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10 );
     private final LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore();
-    private final IdOrderingQueue legacyIndexTransactionOrdering = IdOrderingQueue.BYPASS;
+    private final IdOrderingQueue explicitIndexTransactionOrdering = IdOrderingQueue.BYPASS;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
 
@@ -275,7 +275,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 new DeadSimpleLogVersionRepository( 0 ), new PhysicalLogFile.Monitor.Adapter(), logHeaderCache ) );
         final BatchingTransactionAppender appender = life.add(
                 new BatchingTransactionAppender( logFile, logRotation, transactionMetadataCache, transactionIdStore,
-                        legacyIndexTransactionOrdering, databaseHealth ) );
+                        explicitIndexTransactionOrdering, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -338,6 +338,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private BatchingTransactionAppender createTransactionAppender()
     {
         return new BatchingTransactionAppender( logFile, logRotation,
-                transactionMetadataCache, transactionIdStore, legacyIndexTransactionOrdering, databaseHealth );
+                transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering, databaseHealth );
     }
 }

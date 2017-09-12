@@ -41,10 +41,10 @@ import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -106,7 +106,7 @@ public class IndexQueryTransactionStateTest
                 store,
                 new InternalAutoIndexing( Config.defaults(), null ),
                 mock( ConstraintIndexCreator.class ),
-                mock( LegacyIndexStore.class ) );
+                mock( ExplicitIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), stateHandlingOperations,
                 stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );
     }

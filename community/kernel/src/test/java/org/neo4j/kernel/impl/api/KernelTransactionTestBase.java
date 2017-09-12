@@ -30,7 +30,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -73,8 +73,8 @@ public class KernelTransactionTestBase
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     protected final StoreReadLayer readLayer = mock( StoreReadLayer.class );
     protected final TransactionHooks hooks = new TransactionHooks();
-    protected final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
-    protected final Supplier<LegacyIndexTransactionState> legacyIndexStateSupplier = () -> legacyIndexState;
+    protected final ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
+    protected final Supplier<ExplicitIndexTransactionState> explicitIndexStateSupplier = () -> explicitIndexState;
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
@@ -141,9 +141,9 @@ public class KernelTransactionTestBase
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
         return new KernelTransactionImplementation( statementOperations, schemaWriteGuard,
-                hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor, legacyIndexStateSupplier,
-                txPool, clock, TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
-                new CanWrite() );
+                hooks, null, null, headerInformationFactory, commitProcess, transactionMonitor,
+                explicitIndexStateSupplier, txPool, clock, TransactionTracer.NULL, LockTracer.NONE,
+                PageCursorTracerSupplier.NULL, storageEngine, new CanWrite() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

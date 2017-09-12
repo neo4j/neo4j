@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.state;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
@@ -41,8 +40,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
-import org.neo4j.kernel.impl.index.LegacyIndexStore;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
+import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 
@@ -247,7 +246,7 @@ public class SchemaTransactionStateTest
         when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( InternalAutoIndexing.class ),
-                mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
+                mock( ConstraintIndexCreator.class ), mock( ExplicitIndexStore.class ) );
 
         storeStatement = mock(StoreStatement.class);
         when( state.getStoreStatement() ).thenReturn( storeStatement );
@@ -286,12 +285,7 @@ public class SchemaTransactionStateTest
             for ( int label : nodeLabels.labelIds )
             {
 
-                Collection<Long> nodes = allLabels.get( label );
-                if ( nodes == null )
-                {
-                    nodes = new ArrayList<>();
-                    allLabels.put( label, nodes );
-                }
+                Collection<Long> nodes = allLabels.computeIfAbsent( label, k -> new ArrayList<>() );
                 nodes.add( nodeLabels.nodeId );
             }
         }

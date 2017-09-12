@@ -108,7 +108,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, min, max)
 
     case Arguments.Index(label, propertyKey) => InternalPlanDescription3_3.Arguments.Index(label, Seq(propertyKey))
-    case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.LegacyIndex(value)
+    case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.ExplicitIndex(value)
     case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments.InequalityIndex(label, propertyKey, bounds)
     case Arguments.Planner(value) => InternalPlanDescription3_3.Arguments.Planner(value)
     case Arguments.PlannerImpl(value) => InternalPlanDescription3_3.Arguments.PlannerImpl(value)

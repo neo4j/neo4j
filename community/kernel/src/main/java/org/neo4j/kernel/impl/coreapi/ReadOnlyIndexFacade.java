@@ -26,7 +26,7 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableIndex;
 
 /**
- * Wraps a legacy index to prevent writes to it - exposing it as a read-only index.
+ * Wraps a explicit index to prevent writes to it - exposing it as a read-only index.
  */
 public class ReadOnlyIndexFacade<T extends PropertyContainer> implements Index<T>
 {

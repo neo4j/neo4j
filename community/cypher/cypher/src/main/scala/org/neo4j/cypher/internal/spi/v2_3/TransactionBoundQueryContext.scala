@@ -341,10 +341,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetAll())(getById)
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexGet(name, key, value))(getById)
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeExplicitIndexQuery(name, query))(getById)
 
     def isDeleted(n: Node): Boolean =
       tc.stateView.hasTxStateWithChanges && tc.stateView.txState().nodeIsDeletedInThisTx(n.getId)
@@ -412,10 +412,10 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexGet(name, key, value, -1, -1))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipExplicitIndexQuery(name, query, -1, -1))(getById)
 
     override def isDeleted(r: Relationship): Boolean =
       tc.stateView.hasTxStateWithChanges && tc.stateView.txState().relationshipIsDeletedInThisTx(r.getId)

@@ -34,8 +34,8 @@ import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
-import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
+import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 
 public class IndexManagerImpl implements IndexManager
 {
@@ -60,10 +60,10 @@ public class IndexManagerImpl implements IndexManager
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            statement.readOperations().nodeLegacyIndexGetConfiguration( indexName );
+            statement.readOperations().nodeExplicitIndexGetConfiguration( indexName );
             return true;
         }
-        catch ( LegacyIndexNotFoundKernelException e )
+        catch ( ExplicitIndexNotFoundKernelException e )
         {
             return false;
         }
@@ -93,7 +93,7 @@ public class IndexManagerImpl implements IndexManager
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            return statement.readOperations().nodeLegacyIndexesGetAll();
+            return statement.readOperations().nodeExplicitIndexesGetAll();
         }
     }
 
@@ -102,10 +102,10 @@ public class IndexManagerImpl implements IndexManager
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            statement.readOperations().relationshipLegacyIndexGetConfiguration( indexName );
+            statement.readOperations().relationshipExplicitIndexGetConfiguration( indexName );
             return true;
         }
-        catch ( LegacyIndexNotFoundKernelException e )
+        catch ( ExplicitIndexNotFoundKernelException e )
         {
             return false;
         }
@@ -136,7 +136,7 @@ public class IndexManagerImpl implements IndexManager
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            return statement.readOperations().relationshipLegacyIndexesGetAll();
+            return statement.readOperations().relationshipExplicitIndexesGetAll();
         }
     }
 
@@ -147,15 +147,15 @@ public class IndexManagerImpl implements IndexManager
         {
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.readOperations().nodeLegacyIndexGetConfiguration( index.getName() );
+                return statement.readOperations().nodeExplicitIndexGetConfiguration( index.getName() );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.readOperations().relationshipLegacyIndexGetConfiguration( index.getName() );
+                return statement.readOperations().relationshipExplicitIndexGetConfiguration( index.getName() );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );
         }
-        catch ( LegacyIndexNotFoundKernelException e )
+        catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( "No node index '" + index.getName() + "' found" );
         }
@@ -170,11 +170,11 @@ public class IndexManagerImpl implements IndexManager
         {
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.dataWriteOperations().nodeLegacyIndexSetConfiguration( index.getName(), key, value );
+                return statement.dataWriteOperations().nodeExplicitIndexSetConfiguration( index.getName(), key, value );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.dataWriteOperations().relationshipLegacyIndexSetConfiguration(
+                return statement.dataWriteOperations().relationshipExplicitIndexSetConfiguration(
                         index.getName(), key, value );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );
@@ -183,7 +183,7 @@ public class IndexManagerImpl implements IndexManager
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( LegacyIndexNotFoundKernelException e )
+        catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( e );
         }
@@ -198,11 +198,11 @@ public class IndexManagerImpl implements IndexManager
         {
             if ( index.getEntityType().equals( Node.class ) )
             {
-                return statement.dataWriteOperations().nodeLegacyIndexRemoveConfiguration( index.getName(), key );
+                return statement.dataWriteOperations().nodeExplicitIndexRemoveConfiguration( index.getName(), key );
             }
             if ( index.getEntityType().equals( Relationship.class ) )
             {
-                return statement.dataWriteOperations().relationshipLegacyIndexRemoveConfiguration(
+                return statement.dataWriteOperations().relationshipExplicitIndexRemoveConfiguration(
                         index.getName(), key );
             }
             throw new IllegalArgumentException( "Unknown entity type " + index.getEntityType().getSimpleName() );
@@ -211,7 +211,7 @@ public class IndexManagerImpl implements IndexManager
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( LegacyIndexNotFoundKernelException e )
+        catch ( ExplicitIndexNotFoundKernelException e )
         {
             throw new NotFoundException( e );
         }

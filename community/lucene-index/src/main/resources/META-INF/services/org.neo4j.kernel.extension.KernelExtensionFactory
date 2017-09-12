@@ -1,3 +1,3 @@
-org.neo4j.index.lucene.LuceneKernelExtensionFactory
+org.neo4j.kernel.api.impl.index.LuceneKernelExtensionFactory
 org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory
 org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory

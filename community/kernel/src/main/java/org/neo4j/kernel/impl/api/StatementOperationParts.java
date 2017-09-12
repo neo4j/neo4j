@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.api;
 import org.neo4j.kernel.impl.api.operations.CountsOperations;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.ExplicitIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
-import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -43,8 +43,8 @@ public class StatementOperationParts
     private final SchemaStateOperations schemaStateOperations;
     private final LockOperations lockingStatementOperations;
     private final CountsOperations countsStatementOperations;
-    private final LegacyIndexReadOperations legacyIndexReadOperations;
-    private final LegacyIndexWriteOperations legacyIndexWriteOperations;
+    private final ExplicitIndexReadOperations explicitIndexReadOperations;
+    private final ExplicitIndexWriteOperations explicitIndexWriteOperations;
     private final QueryRegistrationOperations queryRegistrationOperations;
 
     public StatementOperationParts(
@@ -57,8 +57,8 @@ public class StatementOperationParts
             SchemaStateOperations schemaStateOperations,
             LockOperations lockingStatementOperations,
             CountsOperations countsStatementOperations,
-            LegacyIndexReadOperations legacyIndexReadOperations,
-            LegacyIndexWriteOperations legacyIndexWriteOperations,
+            ExplicitIndexReadOperations explicitIndexReadOperations,
+            ExplicitIndexWriteOperations explicitIndexWriteOperations,
             QueryRegistrationOperations queryRegistrationOperations )
     {
         this.keyReadOperations = keyReadOperations;
@@ -70,8 +70,8 @@ public class StatementOperationParts
         this.schemaStateOperations = schemaStateOperations;
         this.lockingStatementOperations = lockingStatementOperations;
         this.countsStatementOperations = countsStatementOperations;
-        this.legacyIndexReadOperations = legacyIndexReadOperations;
-        this.legacyIndexWriteOperations = legacyIndexWriteOperations;
+        this.explicitIndexReadOperations = explicitIndexReadOperations;
+        this.explicitIndexWriteOperations = explicitIndexWriteOperations;
         this.queryRegistrationOperations = queryRegistrationOperations;
     }
 
@@ -115,14 +115,14 @@ public class StatementOperationParts
         return checkNotNull( lockingStatementOperations, LockOperations.class );
     }
 
-    public LegacyIndexReadOperations legacyIndexReadOperations()
+    public ExplicitIndexReadOperations explicitIndexReadOperations()
     {
-        return checkNotNull( legacyIndexReadOperations, LegacyIndexReadOperations.class );
+        return checkNotNull( explicitIndexReadOperations, ExplicitIndexReadOperations.class );
     }
 
-    public LegacyIndexWriteOperations legacyIndexWriteOperations()
+    public ExplicitIndexWriteOperations explicitIndexWriteOperations()
     {
-        return checkNotNull( legacyIndexWriteOperations, LegacyIndexWriteOperations.class );
+        return checkNotNull( explicitIndexWriteOperations, ExplicitIndexWriteOperations.class );
     }
 
     public CountsOperations counting()
@@ -145,8 +145,8 @@ public class StatementOperationParts
             SchemaStateOperations schemaStateOperations,
             LockOperations lockingStatementOperations,
             CountsOperations countsStatementOperations,
-            LegacyIndexReadOperations legacyIndexReadOperations,
-            LegacyIndexWriteOperations legacyIndexWriteOperations,
+            ExplicitIndexReadOperations explicitIndexReadOperations,
+            ExplicitIndexWriteOperations explicitIndexWriteOperations,
             QueryRegistrationOperations queryRegistrationOperations )
     {
         return new StatementOperationParts(
@@ -159,8 +159,8 @@ public class StatementOperationParts
             eitherOr( schemaStateOperations, this.schemaStateOperations, SchemaStateOperations.class ),
             eitherOr( lockingStatementOperations, this.lockingStatementOperations, LockOperations.class ),
             eitherOr( countsStatementOperations, this.countsStatementOperations, CountsOperations.class ),
-            eitherOr( legacyIndexReadOperations, this.legacyIndexReadOperations, LegacyIndexReadOperations.class ),
-            eitherOr( legacyIndexWriteOperations, this.legacyIndexWriteOperations, LegacyIndexWriteOperations.class ),
+            eitherOr( explicitIndexReadOperations, this.explicitIndexReadOperations, ExplicitIndexReadOperations.class ),
+            eitherOr( explicitIndexWriteOperations, this.explicitIndexWriteOperations, ExplicitIndexWriteOperations.class ),
             eitherOr( queryRegistrationOperations, this.queryRegistrationOperations, QueryRegistrationOperations.class ) );
     }
 

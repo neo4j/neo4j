@@ -125,16 +125,16 @@ public class IndexValuesValidationTest
     }
 
     @Test
-    public void validateLegacyIndexedNodeProperties()
+    public void validateExplicitIndexedNodeProperties()
     {
-        Label label = Label.label( "legacyIndexedNodePropertiesTestLabel" );
-        String propertyName = "legacyIndexedNodeProperties";
-        String legacyIndexedNodeIndex = "legacyIndexedNodeIndex";
+        Label label = Label.label( "explicitIndexedNodePropertiesTestLabel" );
+        String propertyName = "explicitIndexedNodeProperties";
+        String explicitIndexedNodeIndex = "explicitIndexedNodeIndex";
 
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode( label );
-            database.index().forNodes( legacyIndexedNodeIndex )
+            database.index().forNodes( explicitIndexedNodeIndex )
                     .add( node, propertyName, "shortString" );
             transaction.success();
         }
@@ -146,26 +146,26 @@ public class IndexValuesValidationTest
         {
             Node node = database.createNode( label );
             String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-            database.index().forNodes( legacyIndexedNodeIndex )
+            database.index().forNodes( explicitIndexedNodeIndex )
                     .add( node, propertyName, longValue );
             transaction.success();
         }
     }
 
     @Test
-    public void validateLegacyIndexedRelationshipProperties()
+    public void validateExplicitIndexedRelationshipProperties()
     {
-        Label label = Label.label( "legacyIndexedRelationshipPropertiesTestLabel" );
-        String propertyName = "legacyIndexedRelationshipProperties";
-        String legacyIndexedRelationshipIndex = "legacyIndexedRelationshipIndex";
-        RelationshipType indexType = RelationshipType.withName( "legacyIndexType" );
+        Label label = Label.label( "explicitIndexedRelationshipPropertiesTestLabel" );
+        String propertyName = "explicitIndexedRelationshipProperties";
+        String explicitIndexedRelationshipIndex = "explicitIndexedRelationshipIndex";
+        RelationshipType indexType = RelationshipType.withName( "explicitIndexType" );
 
         try ( Transaction transaction = database.beginTx() )
         {
             Node source = database.createNode( label );
             Node destination = database.createNode( label );
             Relationship relationship = source.createRelationshipTo( destination, indexType );
-            database.index().forRelationships( legacyIndexedRelationshipIndex )
+            database.index().forRelationships( explicitIndexedRelationshipIndex )
                     .add( relationship, propertyName, "shortString" );
             transaction.success();
         }
@@ -179,7 +179,7 @@ public class IndexValuesValidationTest
             Node destination = database.createNode( label );
             Relationship relationship = source.createRelationshipTo( destination, indexType );
             String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-            database.index().forRelationships( legacyIndexedRelationshipIndex )
+            database.index().forRelationships( explicitIndexedRelationshipIndex )
                     .add( relationship, propertyName, longValue );
             transaction.success();
         }

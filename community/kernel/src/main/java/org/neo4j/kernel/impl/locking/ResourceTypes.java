@@ -23,15 +23,15 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.helpers.Strings;
 import org.neo4j.hashing.HashFunction;
+import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 public enum ResourceTypes implements ResourceType
 {
@@ -40,7 +40,7 @@ public enum ResourceTypes implements ResourceType
     GRAPH_PROPS( 2, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     // SCHEMA resource type had typeId 3 - skip it to avoid resource types conflicts
     INDEX_ENTRY( 4, LockWaitStrategies.INCREMENTAL_BACKOFF ),
-    LEGACY_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
+    EXPLICIT_INDEX( 5, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
@@ -82,9 +82,9 @@ public enum ResourceTypes implements ResourceType
     }
 
     /**
-     * The index entry hashing method used for entries in legacy indexes.
+     * The index entry hashing method used for entries in explicit indexes.
      */
-    public static long legacyIndexResourceId( String name, String key )
+    public static long explicitIndexResourceId( String name, String key )
     {
         return (long) name.hashCode() << 32 | key.hashCode();
     }

@@ -28,9 +28,9 @@ public abstract class IndexUsage
         return new SchemaIndexUsage( identifier, labelId, label, propertyKeys );
     }
 
-    public static IndexUsage legacyIndexUsage( String identifier, String entityType, String index )
+    public static IndexUsage explicitIndexUsage( String identifier, String entityType, String index )
     {
-        return new LegacyIndexUsage( identifier, index, entityType );
+        return new ExplicitIndexUsage( identifier, index, entityType );
     }
 
     public abstract Map<String,String> asMap();
