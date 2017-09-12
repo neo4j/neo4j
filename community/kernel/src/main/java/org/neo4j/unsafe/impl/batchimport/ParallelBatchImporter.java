@@ -144,7 +144,6 @@ public class ParallelBatchImporter implements BatchImporter
         NodeLabelsCache nodeLabelsCache = null;
         long startTime = currentTimeMillis();
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
-        boolean success = false;
         long totalTimeMillis;
         try ( BatchingNeoStores neoStore = getBatchingNeoStores();
               CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
@@ -235,7 +234,6 @@ public class ParallelBatchImporter implements BatchImporter
                     storeUpdateMonitor.toString() +
                     format( "%n" ) +
                     "Peak memory usage: " + bytes( peakMemoryUsage ) );
-            success = true;
         }
         catch ( Throwable t )
         {
@@ -254,10 +252,7 @@ public class ParallelBatchImporter implements BatchImporter
             }
         }
 
-        if ( success )
-        {
-            log.info( "Import completed successfully, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
-        }
+        log.info( "Import completed successfully, took " + Format.duration( totalTimeMillis ) + ". " + storeUpdateMonitor );
     }
 
     private BatchingNeoStores getBatchingNeoStores()
