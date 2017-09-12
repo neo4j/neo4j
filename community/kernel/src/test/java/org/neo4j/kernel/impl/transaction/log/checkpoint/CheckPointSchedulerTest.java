@@ -34,6 +34,8 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
+import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -137,13 +139,15 @@ public class CheckPointSchedulerTest
         verifyNoMoreInteractions( checkPointer );
     }
 
-    @Test
+    // Timeout as fallback safety if test deadlocks
+    @Test( timeout = 60_000 )
     public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
     {
         // given
         final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
+        OtherThreadExecutor<Void> otherThreadExecutor = new OtherThreadExecutor<>( "scheduler stopper", null );
         CheckPointer checkPointer = new CheckPointer()
         {
             @Override
@@ -178,38 +182,25 @@ public class CheckPointSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread()
-        {
-            @Override
-            public void run()
-            {
-                jobScheduler.runJob();
-            }
-        };
+        Thread runCheckPointer = new Thread( jobScheduler::runJob );
         runCheckPointer.start();
 
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread()
+        otherThreadExecutor.executeDontWait( (WorkerCommand<Void,Void>) state ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    scheduler.stop();
-                    stoppedCompleted.set( true );
-                }
-                catch ( Throwable throwable )
-                {
-                    ex.set( throwable );
-                }
+                scheduler.stop();
+                stoppedCompleted.set( true );
             }
-        };
-
-        stopper.start();
-
-        Thread.sleep( 10 );
+            catch ( Throwable throwable )
+            {
+                ex.set( throwable );
+            }
+            return null;
+        } );
+        otherThreadExecutor.waitUntilWaiting( details -> details.isAt( CheckPointScheduler.class, "waitOngoingCheckpointCompletion" ) );
 
         // then
         assertFalse( stoppedCompleted.get() );
@@ -217,10 +208,11 @@ public class CheckPointSchedulerTest
         checkPointerLatch.finish();
         runCheckPointer.join();
 
-        Thread.sleep( 150 );
-
-        assertTrue( stoppedCompleted.get() );
-        stopper.join(); // just in case
+        while ( !stoppedCompleted.get() )
+        {
+            Thread.sleep( 1 );
+        }
+        otherThreadExecutor.close();
 
         assertNull( ex.get() );
     }
