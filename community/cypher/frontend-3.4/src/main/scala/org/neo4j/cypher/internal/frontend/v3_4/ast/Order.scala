@@ -19,14 +19,14 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
-case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 
   def dependencies: Set[Variable] =
     sortItems.foldLeft(Set.empty[Variable]) { case (acc, item) => acc ++ item.expression.dependencies }
 }
 
-sealed trait SortItem extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 

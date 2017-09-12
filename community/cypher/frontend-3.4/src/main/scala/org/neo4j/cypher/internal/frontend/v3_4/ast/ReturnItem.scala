@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4._
 
-sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticChecking {
   /**
     * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
     * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
@@ -84,7 +84,7 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
   override def containsAggregate = items.exists(_.expression.containsAggregate)
 }
 
-sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def alias: Option[Variable]
   def name: String

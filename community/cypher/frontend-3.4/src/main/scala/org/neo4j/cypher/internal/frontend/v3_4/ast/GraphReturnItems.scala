@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState, _}
 
-sealed trait GraphReturnItem extends ASTNode with ASTParticle {
+sealed trait GraphReturnItem extends ASTNode {
   def graphs: Set[SingleGraphAs]
 
   def newSource: Option[SingleGraphAs] = None
@@ -69,7 +69,7 @@ object PassAllGraphReturnItems {
 
 final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
-  extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+  extends ASTNode with SemanticCheckable with SemanticChecking {
 
   def isGraphsStarOnly: Boolean = includeExisting && items.isEmpty
 

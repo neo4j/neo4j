@@ -78,7 +78,7 @@ trait SemanticCheckableWithContext {
 }
 
 
-abstract class Expression extends ASTNode with ASTExpression with SemanticChecking with SemanticCheckableWithContext {
+abstract class Expression extends ASTNode with SemanticChecking with SemanticCheckableWithContext {
 
   self =>
 

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckable}
 
-sealed trait MergeAction extends ASTNode with ASTPhrase with SemanticCheckable
+sealed trait MergeAction extends ASTNode with SemanticCheckable
 
 case class OnCreate(action: SetClause)(val position: InputPosition) extends MergeAction {
   def semanticCheck: SemanticCheck = action.semanticCheck

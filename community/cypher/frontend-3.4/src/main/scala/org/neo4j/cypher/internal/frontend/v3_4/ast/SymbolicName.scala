@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
 
-trait SymbolicName extends ASTNode with ASTParticle {
+trait SymbolicName extends ASTNode {
   def name: String
   def position: InputPosition
   override def asCanonicalStringVal: String = name

@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
-sealed trait SetItem extends ASTNode with ASTPhrase with SemanticCheckable
+sealed trait SetItem extends ASTNode with SemanticCheckable
 
 case class SetLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
   def semanticCheck =

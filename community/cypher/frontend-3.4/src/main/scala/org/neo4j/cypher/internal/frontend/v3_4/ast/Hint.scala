@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
-sealed trait Hint extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait Hint extends ASTNode with SemanticCheckable {
   def variables: NonEmptyList[Variable]
 }
 
@@ -80,7 +80,7 @@ case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputP
 
 // start items
 
-sealed trait StartItem extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait StartItem extends ASTNode with SemanticCheckable {
   def variable: Variable
   def name = variable.name
 }

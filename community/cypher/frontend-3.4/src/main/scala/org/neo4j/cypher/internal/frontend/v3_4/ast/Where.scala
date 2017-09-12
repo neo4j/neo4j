@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
 case class Where(expression: Expression)(val position: InputPosition)
-  extends ASTNode with ASTPhrase with SemanticCheckable {
+  extends ASTNode with SemanticCheckable {
 
   def dependencies = expression.dependencies
 

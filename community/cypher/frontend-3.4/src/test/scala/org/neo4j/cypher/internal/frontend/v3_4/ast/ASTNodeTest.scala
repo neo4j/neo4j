@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class ASTNodeTest extends CypherFunSuite {
 
-  trait Exp extends ASTNode with ASTExpression {
+  trait Exp extends ASTNode {
     val position = DummyPosition(0)
   }
 

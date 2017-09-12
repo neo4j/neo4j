@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
-sealed trait RemoveItem extends ASTNode with ASTPhrase with SemanticCheckable
+sealed trait RemoveItem extends ASTNode with SemanticCheckable
 
 case class RemoveLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
   def semanticCheck =

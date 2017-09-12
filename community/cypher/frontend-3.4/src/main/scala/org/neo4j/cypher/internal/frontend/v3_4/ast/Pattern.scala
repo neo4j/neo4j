@@ -63,7 +63,7 @@ object Pattern {
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Pattern._
 
-case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
+case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
 
   lazy val length = this.fold(0) {
     case RelationshipChain(_, _, _) => _ + 1
@@ -86,14 +86,14 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
   }
 }
 
-case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode with ASTParticle {
+case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareVariables(ctx) chain
       element.semanticCheck(ctx)
 }
 
 
-sealed abstract class PatternPart extends ASTNode with ASTParticle {
+sealed abstract class PatternPart extends ASTNode {
   def declareVariables(ctx: SemanticContext): SemanticCheck
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 
@@ -203,7 +203,7 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   }
 }
 
-sealed abstract class PatternElement extends ASTNode with ASTParticle {
+sealed abstract class PatternElement extends ASTNode {
   def allVariables: Set[Variable]
   def variable: Option[Variable]
   def declareVariables(ctx: SemanticContext): SemanticCheck
@@ -294,7 +294,7 @@ case class RelationshipPattern(
                                 length: Option[Option[Range]],
                                 properties: Option[Expression],
                                 direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
+                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode with SemanticChecking {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {

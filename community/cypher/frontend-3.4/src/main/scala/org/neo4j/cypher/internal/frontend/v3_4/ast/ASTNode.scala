@@ -50,17 +50,10 @@ trait ASTNode
     }
 
   def asCanonicalStringVal: String = toString
-
 }
 
-sealed trait ASTNodeType { self: ASTNode => }
-
-trait ASTExpression extends ASTNodeType { self: ASTNode => }
-trait ASTParticle extends ASTNodeType { self: ASTNode => }
-trait ASTPhrase extends ASTNodeType { self: ASTNode => }
-
 // Skip/Limit
-trait ASTSlicingPhrase extends ASTPhrase with SemanticCheckable {
+trait ASTSlicingPhrase extends SemanticCheckable {
   self: ASTNode =>
   def name: String
   def dependencies: Set[Variable] = expression.dependencies

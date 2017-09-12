@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
 
 final case class GraphRef(name: Variable)(val position: InputPosition)
-  extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+  extends ASTNode with SemanticCheckable with SemanticChecking {
 
   override def semanticCheck: SemanticCheck =
     name.semanticCheck(Expression.SemanticContext.Simple)

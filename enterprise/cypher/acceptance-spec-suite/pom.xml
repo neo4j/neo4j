@@ -241,6 +241,14 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-util-3.3</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-spec-suite-tools</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

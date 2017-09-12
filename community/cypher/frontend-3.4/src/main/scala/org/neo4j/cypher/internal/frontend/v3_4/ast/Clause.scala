@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{CartesianProductNotification, DeprecatedStartNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 
   def returnColumns: List[String] =
