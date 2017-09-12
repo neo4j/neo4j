@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.logging.Log;
 
 /**
@@ -45,13 +44,16 @@ public class FulltextProvider implements AutoCloseable
     private final Set<WritableFulltext> writableRelationshipIndices;
     private final Map<String,LuceneFulltext> nodeIndices;
     private final Map<String,LuceneFulltext> relationshipIndices;
-    private boolean closed;
 
-    private FulltextProvider( GraphDatabaseService db, Log log )
+    /**
+     * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
+     * @param db Database that this provider should work with.
+     * @param log For logging errors.
+     */
+    public FulltextProvider( GraphDatabaseService db, Log log )
     {
         this.db = db;
         this.log = log;
-        closed = false;
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log );
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
         nodeProperties = new HashSet<>();
@@ -63,53 +65,32 @@ public class FulltextProvider implements AutoCloseable
     }
 
     /**
-     * Fetch the current instance of the provider. If there is none, create one associated with the given database.
-     * @param db Database used for eventual creation of the provider.
-     * @param logService
-     * @return The instance for the given database.
-     */
-    public static synchronized FulltextProvider instance( GraphDatabaseService db, LogService logService )
-    {
-        if ( instance == null || instance.closed )
-        {
-            instance = new FulltextProvider( db, logService.getInternalLog( FulltextProvider.class ) );
-        }
-        return instance;
-    }
-
-    /**
      * Closes the provider and all associated resources.
      */
     @Override
-    public synchronized void close()
+    public void close()
     {
-        if ( !closed )
-        {
-            closed = true;
-            db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
-            nodeIndices.values().forEach( luceneFulltextIndex ->
+        db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
+        nodeIndices.values().forEach( luceneFulltextIndex -> {
+            try
             {
-                try
-                {
-                    luceneFulltextIndex.close();
-                }
-                catch ( IOException e )
-                {
-                    log.error( "Unable to close fulltext node index.", e );
-                }
-            } );
-            relationshipIndices.values().forEach( luceneFulltextIndex ->
+                luceneFulltextIndex.close();
+            }
+            catch ( IOException e )
             {
-                try
-                {
-                    luceneFulltextIndex.close();
-                }
-                catch ( IOException e )
-                {
-                    log.error( "Unable to close fulltext relationship index.", e );
-                }
-            } );
-        }
+                log.error( "Unable to close fulltext node index.", e );
+            }
+        } );
+        relationshipIndices.values().forEach( luceneFulltextIndex -> {
+            try
+            {
+                luceneFulltextIndex.close();
+            }
+            catch ( IOException e )
+            {
+                log.error( "Unable to close fulltext relationship index.", e );
+            }
+        } );
     }
 
     synchronized void register( LuceneFulltext fulltextIndex ) throws IOException
@@ -151,6 +132,7 @@ public class FulltextProvider implements AutoCloseable
 
     /**
      * Returns a reader for the specified index.
+     *
      * @param identifier Identifier for the index.
      * @param type Type of the index.
      * @return A {@link ReadOnlyFulltext} for the index, or null if no such index is found.

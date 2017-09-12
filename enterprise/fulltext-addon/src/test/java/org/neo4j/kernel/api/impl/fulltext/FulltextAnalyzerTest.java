@@ -59,7 +59,8 @@ public class FulltextAnalyzerTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -95,7 +96,8 @@ public class FulltextAnalyzerTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 

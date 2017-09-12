@@ -28,7 +28,6 @@ import java.util.List;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -46,6 +45,7 @@ class BloomKernelExtension extends LifecycleAdapter
     private final GraphDatabaseService db;
     private final Procedures procedures;
     private LogService logService;
+    private FulltextProvider provider;
 
     BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures,
             LogService logService )
@@ -64,7 +64,7 @@ class BloomKernelExtension extends LifecycleAdapter
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
         Analyzer analyzer = getAnalyzer();
 
-        FulltextProvider provider = FulltextProvider.instance( db, logService );
+        provider = new FulltextProvider( db, logService.getInternalLog( FulltextProvider.class ) );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
         fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
         fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
@@ -91,6 +91,6 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void shutdown() throws Exception
     {
-        FulltextProvider.instance( db, logService ).close();
+        provider.close();
     }
 }

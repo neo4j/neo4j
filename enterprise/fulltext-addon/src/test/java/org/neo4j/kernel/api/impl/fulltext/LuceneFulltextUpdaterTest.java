@@ -65,7 +65,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -100,7 +101,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -135,7 +137,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -170,7 +173,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -213,7 +217,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -262,7 +267,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -305,7 +311,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
 
@@ -368,7 +375,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -402,7 +410,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
 
@@ -442,7 +451,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "first", "last" ), provider );
 
@@ -489,7 +499,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
@@ -549,7 +560,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -588,7 +600,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
 
@@ -632,7 +645,8 @@ public class LuceneFulltextUpdaterTest
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
-        try ( FulltextProvider provider = FulltextProvider.instance( db, LOG_SERVICE ) )
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
