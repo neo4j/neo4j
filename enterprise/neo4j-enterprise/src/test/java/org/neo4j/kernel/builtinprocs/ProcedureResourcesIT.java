@@ -70,12 +70,21 @@ public class ProcedureResourcesIT
         Map<String,List<Object>> allProceduresWithParameters = allProceduresWithParameters();
 
         // when
+        String procedureQuery = null;
         createIndex();
         for ( Map.Entry<String,List<Object>> procedureWithParams : allProceduresWithParameters.entrySet() )
         {
             // then
             initialData();
-            verifyProcedureCloseAllAcquiredKernelStatements( procedureWithParams.getKey(), procedureWithParams.getValue() );
+            try
+            {
+                procedureQuery = buildProcedureQuery( procedureWithParams.getKey(), procedureWithParams.getValue() );
+                verifyProcedureCloseAllAcquiredKernelStatements( procedureQuery );
+            }
+            catch ( Exception e )
+            {
+                throw new Exception( "Failed on procedure query: \"" + procedureQuery + "\"", e );
+            }
             clearDb();
         }
     }
@@ -96,13 +105,12 @@ public class ProcedureResourcesIT
         }
     }
 
-    private void verifyProcedureCloseAllAcquiredKernelStatements( String procedureName, List<Object> parameters )
+    private void verifyProcedureCloseAllAcquiredKernelStatements( String procedureQuery )
             throws ExecutionException, InterruptedException
     {
-        String failureMessage = "Failed on procedure " + procedureName;
+        String failureMessage = "Failed on procedure " + procedureQuery;
         try ( Transaction outer = db.beginTx() )
         {
-            String procedureQuery = buildProcedureQuery( procedureName, parameters );
             exhaust( db.execute( procedureQuery ) ).close();
             exhaust( db.execute( "MATCH (mo:Label) WHERE mo.prop = 'n/a' RETURN mo" ) ).close();
             executeInOtherThread( "CREATE(mo:Label) SET mo.prop = 'val' RETURN mo" );
