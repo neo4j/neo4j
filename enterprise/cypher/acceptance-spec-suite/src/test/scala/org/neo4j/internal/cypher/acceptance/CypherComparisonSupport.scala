@@ -117,19 +117,23 @@ trait CypherComparisonSupport extends CypherTestSupport {
             }
             // It failed like expected, and we did not specify any message for this config
           }
-        case Failure(e: Throwable) => throw e
+        case Failure(e: Throwable) => {
+          if (expectedToFailWithSpecificMessage) {
+            fail(s"Unexpected exception in ${thisScenario.name}", e)
+          }
+        }
       }
     }
   }
 
   protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
-                            ignoreResults: TestConfiguration = Configs.Empty,
-                            ignorePlans: TestConfiguration = Configs.AllRulePlanners,
+                            expectedDifferentResults: TestConfiguration = Configs.Empty,
+                            expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners,
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
-    val compareResults = expectSucceed -  ignoreResults
-    val comparePlans = expectSucceed - ignorePlans
+    val compareResults = expectSucceed -  expectedDifferentResults
+    val comparePlans = expectSucceed - expectedDifferentPlans
     val baseScenario =
       if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults, comparePlans)
       else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
@@ -142,7 +146,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     baseScenario.prepare()
     executeBefore()
     val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
-    baseScenario.checkStateForSuccess(query)
     baseScenario.checkResultForSuccess(query, baseResult)
 
     positiveResults.foreach {
@@ -190,14 +193,12 @@ trait CypherComparisonSupport extends CypherTestSupport {
     if (expectedToSucceed) {
       tryResult match {
         case Success(thisResult) =>
-          scenario.checkStateForSuccess(query)
           scenario.checkResultForSuccess(query, thisResult)
           Some(scenario -> thisResult)
         case Failure(e) =>
           fail(s"Expected to succeed in ${scenario.name} but got exception", e)
       }
     } else {
-      scenario.checkStateForFailure(query)
       scenario.checkResultForFailure(query, tryResult)
       None
     }
@@ -206,7 +207,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
   private def assertPlansSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
     val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
     val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue(hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult.executionPlanDescription()) {
+    withClue(hint + "\n" + thisResult.executionPlanString() + "\n Did not equal \n" + firstResult.executionPlanString()) {
       assert(currentOps equals otherOps)
     }
   }
@@ -214,12 +215,16 @@ trait CypherComparisonSupport extends CypherTestSupport {
   private def assertPlansNotSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
     val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
     val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue("Unexpectedly (but correctly!)\n" + hint + "\n" + thisResult.executionPlanDescription() + "\n equaled \n" + firstResult.executionPlanDescription()) {
+    withClue("Unexpectedly (but correctly!)\n" + hint + "\n" + thisResult.executionPlanString() + "\n equaled \n" + firstResult.executionPlanString()) {
       assert(!(currentOps equals otherOps))
     }
   }
 
   private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
+
+  @deprecated("Rewrite to use executeWith instead")
+  protected def assertResultsSameDeprecated(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
+    assertResultsSame(result1, result2, queryText, errorMsg, replaceNaNs)
 
   private def assertResultsSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
     withClue(errorMsg) {
@@ -241,87 +246,13 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
+  @deprecated("Rewrite to use executeWith instead")
+  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any]): InternalExecutionResult =
+    innerExecute(queryText, params)
+
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
     val innerResult = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
-    rewindableResult(innerResult)
-  }
-
-  private def rewindableResult(result: Result): InternalExecutionResult = RewindableExecutionResult(result)
-
-  object Configs {
-
-    def Compiled: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
-
-    def Interpreted: TestConfiguration =
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def CommunityInterpreted: TestConfiguration =
-      TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
-
-    def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
-
-    def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
-
-    def Cost3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
-
-    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
-
-    def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
-
-    def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
-
-    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
-
-    def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
-
-    def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
-
-    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.all, Runtimes.Default)
-
-    def Version3_3: TestConfiguration =
-      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.V3_2, Versions.Default), Planners.Rule, Runtimes.Default)
-
-    def Cost: TestConfiguration =
-      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
-
-    def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default)
-
-    def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
-
-    /*
-    If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
-    interesting scenarios.
-     */
-    def All: TestConfiguration =
-      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def AllExceptSlotted: TestConfiguration =
-      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def AbsolutelyAll: TestConfiguration =
-      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-
-    def Empty: TestConfiguration = TestConfiguration.empty
+    RewindableExecutionResult(innerResult)
 
   }
 
@@ -430,7 +361,11 @@ object CypherComparisonSupport {
     def name: String = {
       val versionName = if (version == Versions.Default) "<default version>" else version.name
       val plannerName = if (planner == Planners.Default) "<default planner>" else planner.preparserOption
-      val runtimeName = if (runtime == Runtimes.Default) "<default runtime>" else runtime.preparserOption
+      val runtimeName = runtime match {
+        case Runtimes.Default => "<default runtime>"
+        case Runtimes.ProcedureOrSchema => "<procedure or schema runtime>"
+        case _ => runtime.preparserOption
+      }
       s"${versionName} ${plannerName} ${runtimeName}"
     }
 
@@ -448,7 +383,6 @@ object CypherComparisonSupport {
     }
 
     def checkResultForFailure(query: String, internalExecutionResult: Try[InternalExecutionResult]): Unit = {
-
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
@@ -459,30 +393,10 @@ object CypherComparisonSupport {
             case IPDPlanner(reportedPlanner) if planner.acceptedPlannerNames.contains(reportedPlanner) => reportedPlanner
           }
           if (maybeRuntime.isDefined && maybePlanner.isDefined) {
-            fail(s"unexpectedly succeeded using $name for query $query, with ${maybeRuntime.get} & ${maybePlanner.get}")
+            // We did not fall back
+            fail(s"Unexpectedly succeeded using $name for query $query, with ${maybeRuntime.get} & ${maybePlanner.get}")
           }
       }
-    }
-
-    def checkStateForSuccess(query: String): Unit = newRuntimeMonitor.trace.collect {
-      case UnableToCompileQuery(stackTrace) => fail(s"Failed to use the ${runtime.acceptedRuntimeName} runtime on: $query\n$stackTrace")
-    }
-
-    def checkStateForFailure(query: String): Unit = {
-      // Default and Procedure scenarios do not specify a particular runtime.
-      // We therefore expect a fallback, so do NOT check for a failure here
-      if (runtime == Runtimes.ProcedureOrSchema || runtime == Runtimes.Default)
-        return
-
-      val attempts: Option[NewPlanSeen] = newRuntimeMonitor.trace.collectFirst {
-        case event: NewPlanSeen => event
-      }
-      attempts.foreach(_ => {
-        val failures = newRuntimeMonitor.trace.collectFirst {
-          case failure: UnableToCompileQuery => failure
-        }
-        failures.orElse(fail(s"Unexpectedly used the ${runtime.acceptedRuntimeName} runtime on: $query"))
-      })
     }
 
     def +(other: TestConfiguration): TestConfiguration = other + this
@@ -518,6 +432,83 @@ object CypherComparisonSupport {
     }
 
     implicit def scenarioToTestConfiguration(scenario: TestScenario): TestConfiguration = TestConfiguration(scenario)
+  }
+
+  object Configs {
+
+    def Compiled: TestConfiguration = TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
+
+    def Interpreted: TestConfiguration =
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def CommunityInterpreted: TestConfiguration =
+      TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
+
+    def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
+
+    def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
+
+    def Cost3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Cost, Runtimes.Default)
+
+    def Cost3_3: TestConfiguration = TestScenario(Versions.V3_3, Planners.Cost, Runtimes.Default)
+
+    def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
+
+    def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
+
+    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
+
+    def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
+
+    def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
+
+    def Version3_2: TestConfiguration = TestConfiguration(Versions.V3_2, Planners.all, Runtimes.Default)
+
+    def Version3_3: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.V3_2, Versions.Default), Planners.Rule, Runtimes.Default)
+
+    def Cost: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Cost, Runtimes.Default)
+
+    def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default)
+
+    def Procs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
+
+    /*
+    If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
+    interesting scenarios.
+     */
+    def All: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def AllExceptSlotted: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def AbsolutelyAll: TestConfiguration =
+      TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema)) +
+        TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+
+    def Empty: TestConfiguration = TestConfiguration.empty
+
   }
 
 }

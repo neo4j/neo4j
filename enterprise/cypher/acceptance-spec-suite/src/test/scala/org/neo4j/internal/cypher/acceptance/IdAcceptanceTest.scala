@@ -21,6 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.Relationship
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class IdAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 

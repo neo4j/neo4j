@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Planners, Runtimes, TestScenario, Versions}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 /**
   * These tests are testing the actual index implementation, thus they should all check the actual result.

@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
-class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
+class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
 
   test("should understand symbols introduced by FOREACH") {
     createLabeledNode("Label")
@@ -43,21 +44,22 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     createLabeledNode("Root")
 
     // when
-    val query = """MATCH (r:Root)
-                  |FOREACH (i IN range(1, 10) |
-                  | CREATE (r)-[:PARENT]->(c:Child { id:i })
-                  | FOREACH (j IN range(1, 10) |
-                  |   CREATE (c)-[:PARENT]->(:Child { id: c.id * 10 + j })
-                  | )
-                  |)""".stripMargin
+    val query =
+      """MATCH (r:Root)
+        |FOREACH (i IN range(1, 10) |
+        | CREATE (r)-[:PARENT]->(c:Child { id:i })
+        | FOREACH (j IN range(1, 10) |
+        |   CREATE (c)-[:PARENT]->(:Child { id: c.id * 10 + j })
+        | )
+        |)""".stripMargin
 
-    val result = updateWithBothPlanners(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 110, relationshipsCreated = 110, propertiesWritten = 110, labelsAdded = 110)
     val rows = executeScalar[Number]("MATCH (:Root)-[:PARENT]->(:Child) RETURN count(*)")
     rows should equal(10)
-    val ids = updateWithBothPlanners("MATCH (:Root)-[:PARENT*]->(c:Child) RETURN c.id AS id ORDER BY c.id").toList
+    val ids = executeWith(Configs.CommunityInterpreted, "MATCH (:Root)-[:PARENT*]->(c:Child) RETURN c.id AS id ORDER BY c.id").toList
     ids should equal((1 to 110).map(i => Map("id" -> i)))
   }
 
@@ -66,7 +68,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     val query = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
 
     // when
-    val result = updateWithBothPlanners(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, labelsAdded = 2)
@@ -75,29 +77,32 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
   }
 
   test("foreach should not expose inner variables") {
-    val query = """MATCH (n)
-                  |FOREACH (i IN [0, 1, 2]
-                  |  CREATE (m)
-                  |)
-                  |SET m.prop = 0
-                """.stripMargin
+    val query =
+      """MATCH (n)
+        |FOREACH (i IN [0, 1, 2]
+        |  CREATE (m)
+        |)
+        |SET m.prop = 0
+      """.stripMargin
 
-    a [SyntaxException] should be thrownBy updateWithBothPlanners(query)
+    a[SyntaxException] should be thrownBy executeWith(Configs.Empty, query)
   }
 
   test("foreach should let you use inner variables from create relationship patterns") {
     // given
-    val query = """FOREACH (x in [1] |
-                  |CREATE (e:Event)-[i:IN]->(p:Place)
-                  |SET e.foo='e_bar'
-                  |SET i.foo='i_bar'
-                  |SET p.foo='p_bar')
-                  |WITH 0 as dummy
-                  |MATCH (e:Event)-[i:IN]->(p:Place)
-                  |RETURN e.foo, i.foo, p.foo""".stripMargin
+    val query =
+      """FOREACH (x in [1] |
+        |CREATE (e:Event)-[i:IN]->(p:Place)
+        |SET e.foo='e_bar'
+        |SET i.foo='i_bar'
+        |SET p.foo='p_bar')
+        |WITH 0 as dummy
+        |MATCH (e:Event)-[i:IN]->(p:Place)
+        |RETURN e.foo, i.foo, p.foo""".stripMargin
 
     // when
-    val result = updateWithBothPlanners(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 2, propertiesWritten = 3)
@@ -118,7 +123,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |FOREACH (r IN CASE WHEN rel IS NOT NULL THEN [rel] ELSE [] END | DELETE r )""".stripMargin
 
     // when
-    val result = updateWithBothPlanners(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, relationshipsDeleted = 1)
@@ -133,7 +138,8 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
          |  MERGE (a)-[:FOO]->(b))""".stripMargin
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -147,7 +153,8 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |FOREACH (x IN CASE WHEN condition THEN nodes ELSE [] END | CREATE (a)-[:X]->(x) );""".stripMargin
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1 + Configs.Cost3_2)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -164,7 +171,8 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |   MERGE (x)-[:FOOBAR]->(m) );""".stripMargin
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // then
     assertStats(result, relationshipsCreated = 1)
@@ -181,17 +189,14 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
         |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
 
     // when
-    val explain = executeWithCostPlannerAndInterpretedRuntimeOnly(s"EXPLAIN $query")
+    val explain = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, s"EXPLAIN $query")
 
     // then
     explain.executionPlanDescription().toString shouldNot include("CreateNode")
 
     // when
-    try {
-      val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    }
-    catch {
-      case e: Exception => e.getMessage should startWith("Expected to find a node at x but")
-    }
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.ProcedureOrSchema)) +
+      TestConfiguration(Versions.V3_1 -> Versions.V3_2, Planners.Cost, Runtimes.Default)
+    failWithError(config, query, "Expected to find a node at x but")
   }
 }

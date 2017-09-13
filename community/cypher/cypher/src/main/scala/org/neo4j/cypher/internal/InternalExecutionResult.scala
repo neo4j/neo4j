@@ -47,6 +47,7 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResul
 
   def planDescriptionRequested: Boolean
   def executionPlanDescription(): InternalPlanDescription
+  def executionPlanString(): String = executionPlanDescription().toString
 
   def queryType: InternalQueryType
 

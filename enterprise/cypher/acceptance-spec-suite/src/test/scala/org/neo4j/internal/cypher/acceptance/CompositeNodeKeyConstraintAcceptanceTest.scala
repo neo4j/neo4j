@@ -288,7 +288,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     graph.inTx {
@@ -306,14 +306,14 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
     executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
   }
 
   test("Should be able to remove label when node key constraint") {
@@ -326,13 +326,13 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
     executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
-      ignorePlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
+      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
   }
 }

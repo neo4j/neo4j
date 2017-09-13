@@ -22,6 +22,8 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
@@ -33,7 +35,7 @@ import scala.util.{Failure, Success, Try}
  * Tests so that the compiled runtime behaves in the same way as the interpreted runtime for randomized Cypher
  * statements
  */
-class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with NewPlannerTestSupport {
+class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with CypherComparisonSupport {
 
   //Since we can create pretty tricky patterns we add a timeout
   //to keep the running time of the test down
@@ -306,10 +308,13 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       val runtimeUsed = graph.execute(s"EXPLAIN CYPHER runtime=compiled $query")
         .getExecutionPlanDescription.getArguments.get("runtime").asInstanceOf[String]
       if (runtimeUsed == "COMPILED") {
-        val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
-        val resultCompiled = innerExecute(s"CYPHER runtime=compiled $query")
-        assertResultsAreSame(resultCompiled, resultInterpreted, query,
-                             "Diverging results between interpreted and compiled runtime")
+        // We resort to using internals of CypherComparisonSupport,
+        // since with randomized patterns we cannot know at compile time, for which
+        // of those we expect plans to be equal or not.
+        val resultInterpreted = innerExecuteDeprecated(s"CYPHER runtime=interpreted $query", Map.empty)
+        val resultCompiled = innerExecuteDeprecated(s"CYPHER runtime=compiled $query", Map.empty)
+        assertResultsSameDeprecated(resultCompiled, resultInterpreted, query,
+          "Diverging results between interpreted and compiled runtime")
         resultCompiled
       } else None
     }
@@ -346,4 +351,9 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   def mapLiteral(d: Int): Gen[String] = Gen.mapOf(Gen.zip(keyLiteral, literal(d - 1)))
     .map(_.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
 
+
+  // Need to override so that grpah.execute will not throw an exception
+  override def databaseConfig(): collection.Map[Setting[_], String] = {
+    Map(GraphDatabaseSettings.cypher_hints_error -> "false")
+  }
 }

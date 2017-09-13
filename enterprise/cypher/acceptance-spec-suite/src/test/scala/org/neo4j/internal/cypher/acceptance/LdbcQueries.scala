@@ -5,21 +5,22 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.internal.cypher.acceptance
 
 import org.joda.time.{DateTime, DateTimeZone}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
 
 /**
  * These are the 14 LDBC stream that runs in the LDBC projects. The stream are (semi-)generated so the idea is rather
@@ -58,7 +59,8 @@ object LdbcQueries {
       "CREATE INDEX ON :Person(birthday_day)"
     )
 
-    def supportedInCompiledRuntime: Boolean = false
+    def expectedToSucceedIn: TestConfiguration
+    def expectedDifferentPlans: TestConfiguration
   }
 
   object Query1 extends LdbcQuery {
@@ -197,6 +199,10 @@ object LdbcQueries {
           "emails" -> Seq.empty, "browser" -> "browser31", "companies" -> Seq.empty)
       )
     }
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query2 extends LdbcQuery {
@@ -290,6 +296,10 @@ object LdbcQueries {
         "messageContent" -> "[f2Post3] content", "messageDate" -> 2, "personFirstName" -> "f2"),
       Map("personId" -> 2, "messageId" -> 13, "personLastName" -> "last2-ᚠさ丵פش",
         "messageContent" -> "[f2Comment1] content", "messageDate" -> 2, "personFirstName" -> "f2"))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
   }
 
   object Query3 extends LdbcQuery {
@@ -423,6 +433,10 @@ object LdbcQueries {
     def expectedResult = List(
       Map("friendLastName" -> "last2-ᚠさ丵פش", "friendId" -> 2, "friendFirstName" -> "f2", "yCount" -> 1, "xyCount" -> 2, "xCount" -> 1),
       Map("friendLastName" -> "last6-ᚠさ丵פش", "friendId" -> 6, "friendFirstName" -> "ff6", "yCount" -> 1, "xyCount" -> 2, "xCount" -> 1))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query4 extends LdbcQuery {
@@ -511,6 +525,10 @@ object LdbcQueries {
       Map("tagName" -> "tag2-ᚠさ丵פش", "postCount" -> 3),
       Map("tagName" -> "tag3-ᚠさ丵פش", "postCount" -> 2),
       Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 1))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query5 extends LdbcQuery {
@@ -610,6 +628,9 @@ object LdbcQueries {
 
     def expectedResult = List(Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum3-ᚠさ丵פش", "postCount" -> 1), Map("forumName" -> "forum1-ᚠさ丵פش", "postCount" -> 0))
 
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query6 extends LdbcQuery {
@@ -686,7 +707,9 @@ object LdbcQueries {
 
     def expectedResult = List(Map("tagName" -> "tag2-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag5-ᚠさ丵פش", "postCount" -> 2), Map("tagName" -> "tag1-ᚠさ丵פش", "postCount" -> 1))
 
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query7 extends LdbcQuery {
@@ -800,6 +823,10 @@ object LdbcQueries {
     def expectedResult = List(
       Map("isNew" -> true, "likeTime" -> 946681800000L, "personId" -> 8, "latencyAsMilli" -> 480000, "messageId" -> 2,
         "personLastName" -> "last8-ᚠさ丵פش", "messageContent" -> "person1post2", "personFirstName" -> "s8"))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query8 extends LdbcQuery {
@@ -895,7 +922,9 @@ object LdbcQueries {
       Map("personId" -> 3, "commentContent" -> "C01", "commentId" -> 10, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"),
       Map("personId" -> 3, "commentContent" -> "C11", "commentId" -> 11, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"))
 
-    override def supportedInCompiledRuntime = true
+    override def expectedToSucceedIn: TestConfiguration = Configs.AllExceptSlotted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
   }
 
   object Query9 extends LdbcQuery {
@@ -992,6 +1021,10 @@ object LdbcQueries {
         "personFirstName" -> "friend", "messageCreationDate" -> 4),
       Map("personId" -> 2, "messageId" -> 311,
         "personLastName" -> "two-ᚠさ丵פش", "messageContent" -> "C311", "personFirstName" -> "friend", "messageCreationDate" -> 4))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query10 extends LdbcQuery {
@@ -1113,6 +1146,10 @@ object LdbcQueries {
       Map("personId" -> 21, "personGender" -> "male",
         "personLastName" -> "two one-ᚠさ丵פش", "commonInterestScore" -> -1, "personFirstName" -> "friendfriend",
         "personCityName" -> "city0"))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query11 extends LdbcQuery {
@@ -1182,6 +1219,10 @@ object LdbcQueries {
         "friendFirstName" -> "friend", "workFromYear" -> 2),
       Map("friendLastName" -> "one one-ᚠさ丵פش", "friendId" -> 11, "companyName" -> "company zero",
         "friendFirstName" -> "friend friend", "workFromYear" -> 3))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query12 extends LdbcQuery {
@@ -1323,6 +1364,10 @@ object LdbcQueries {
       Map("friendLastName" -> "2", "tagNames" -> Seq.empty, "friendId" -> 2, "count" -> 0, "friendFirstName" -> "f"),
       Map("friendLastName" -> "3", "tagNames" -> Seq.empty, "friendId" -> 3, "count" -> 0, "friendFirstName" -> "f"),
       Map("friendLastName" -> "4", "tagNames" -> Seq.empty, "friendId" -> 4, "count" -> 0, "friendFirstName" -> "f"))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query13 extends LdbcQuery {
@@ -1364,6 +1409,10 @@ object LdbcQueries {
     def params = Map("1" -> 0, "2" -> 5)
 
     def expectedResult = List(Map("pathLength" -> 5))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query14 extends LdbcQuery {
@@ -1467,6 +1516,10 @@ object LdbcQueries {
       Map("weight" -> 4.5, "pathNodeIds" -> List(0, 1, 7, 4, 6, 5)),
       Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query14_v2 extends LdbcQuery {
@@ -1495,6 +1548,10 @@ object LdbcQueries {
       Map("weight" -> 4.5, "pathNodeIds" -> List(0, 1, 7, 4, 6, 5)),
       Map("weight" -> 4.0, "pathNodeIds" -> List(0, 1, 2, 4, 8, 5)),
       Map("weight" -> 3.0, "pathNodeIds" -> List(0, 1, 2, 4, 6, 5)))
+
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+
+    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   val LDBC_QUERIES = Seq(

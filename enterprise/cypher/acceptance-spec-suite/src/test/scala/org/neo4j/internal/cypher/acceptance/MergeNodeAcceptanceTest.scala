@@ -20,6 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
