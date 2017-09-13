@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessCo
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -134,11 +134,12 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
-
-      //THEN
-      result shouldNot use("NodeIndexSeek")
-      result should use("NodeUniqueIndexSeek(Locking)")
+      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
+        planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+          //THEN
+          plan shouldNot useOperators("NodeIndexSeek")
+          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+        }, Configs.AllRulePlanners))
     }
 
     test(s"$constraintCreator: should use locking unique index for merge relationship queries") {
@@ -149,14 +150,14 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
         "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name",
-        expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
-
-      //THEN
-      result shouldNot use("NodeIndexSeek")
-      result shouldNot use("NodeByLabelScan")
-      result should use("NodeUniqueIndexSeek(Locking)")
+        planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+          // THEN
+          plan shouldNot useOperators("NodeIndexSeek")
+          plan shouldNot useOperators("NodeByLabelScan")
+          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+        }, Configs.AllRulePlanners + Configs.Cost3_1))
     }
 
     test(s"$constraintCreator: should use locking unique index for mixed read write queries") {
@@ -168,11 +169,12 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
       val query = "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name"
       //WHEN
-      val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")))
-
-      //THEN
-      result shouldNot use("NodeIndexSeek")
-      result should use("NodeUniqueIndexSeek(Locking)")
+      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
+        planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+          //THEN
+          plan shouldNot useOperators("NodeIndexSeek")
+          plan should useOperators("NodeUniqueIndexSeek(Locking)")
+        }, Configs.AllRulePlanners))
     }
   }
 }

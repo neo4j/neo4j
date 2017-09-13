@@ -45,14 +45,17 @@ trait QueryPlanTestSupport {
     }
   }
 
-  def use(operators: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
+  def useOperators(operators: String*): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
+    override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(
         matches = operators.forall(plan.find(_).nonEmpty),
         rawFailureMessage = s"Metadata: ${plan.arguments}\nPlan should use ${operators.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
     }
+  }
+
+  def use(operators: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = useOperators(operators:_*)(result.executionPlanDescription())
   }
 
   def useIndex(otherText: String*): Matcher[InternalExecutionResult] = useOperationWith("NodeIndexSeek", otherText: _*)

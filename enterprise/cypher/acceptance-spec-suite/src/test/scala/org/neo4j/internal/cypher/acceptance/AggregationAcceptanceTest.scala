@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, Planners, Runtimes, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_2}
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -42,8 +42,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     val params = Map("param" -> 3)
 
-    val result1 = executeWith(Configs.CommunityInterpreted, query1,
-      expectedDifferentPlans = Configs.AbsolutelyAll - Configs.Cost3_3, params = params).toList
+    val result1 = executeWith(Configs.CommunityInterpreted, query1, params = params).toList
     val result2 = executeWith(Configs.CommunityInterpreted, query2, params = params).toList
 
     result1.size should equal(result2.size)
@@ -63,7 +62,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(1337))
-    val result = executeWith(Configs.All, "MATCH (a) RETURN DISTINCT a.prop", expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_2)
+    val result = executeWith(Configs.All, "MATCH (a) RETURN DISTINCT a.prop")
 
     result.toComparableResult.toSet should equal(Set(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
@@ -72,8 +71,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH count(a) as c RETURN c",
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 )
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -101,8 +99,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createNode(Map("prop" -> 2))
     val r1 = relate(node1, node2)
 
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop",
-      expectedDifferentPlans = Configs.AllRulePlanners + TestConfiguration(V2_3 -> V3_2, Planners.all, Runtimes.all))
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 
@@ -123,7 +120,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
   test("combine simple aggregation with sorting (can use node count store)") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a) ORDER BY count(a)", expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a) ORDER BY count(a)")
     result.toList should equal(List(Map("count(a)" -> 2)))
   }
 

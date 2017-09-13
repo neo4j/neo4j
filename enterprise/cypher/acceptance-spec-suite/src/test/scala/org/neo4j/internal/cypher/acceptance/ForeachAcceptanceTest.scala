@@ -101,8 +101,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |RETURN e.foo, i.foo, p.foo""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, labelsAdded = 2, propertiesWritten = 3)
@@ -138,8 +137,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
          |  MERGE (a)-[:FOO]->(b))""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -153,8 +151,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |FOREACH (x IN CASE WHEN condition THEN nodes ELSE [] END | CREATE (a)-[:X]->(x) );""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1 + Configs.Cost3_2)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
@@ -171,8 +168,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |   MERGE (x)-[:FOOBAR]->(m) );""".stripMargin
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     // then
     assertStats(result, relationshipsCreated = 1)

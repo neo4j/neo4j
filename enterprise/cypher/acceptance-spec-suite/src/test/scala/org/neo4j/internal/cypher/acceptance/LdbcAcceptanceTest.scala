@@ -38,8 +38,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
       // when
       val result =
-        executeWith(ldbcQuery.expectedToSucceedIn, ldbcQuery.query, params = ldbcQuery.params,
-          expectedDifferentPlans = ldbcQuery.expectedDifferentPlans)
+        executeWith(ldbcQuery.expectedToSucceedIn, ldbcQuery.query, params = ldbcQuery.params)
           .toComparableResult
 
       //then
@@ -66,7 +65,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val result =
     // when
-      executeWith(ldbcQuery.expectedToSucceedIn, ldbcQuery.query, params = params, expectedDifferentPlans = ldbcQuery.expectedDifferentPlans)
+      executeWith(ldbcQuery.expectedToSucceedIn, ldbcQuery.query, params = params)
 
     // no precision loss resulting in insane numbers
     all(collectEstimations(result.executionPlanDescription())) should be > 0.0

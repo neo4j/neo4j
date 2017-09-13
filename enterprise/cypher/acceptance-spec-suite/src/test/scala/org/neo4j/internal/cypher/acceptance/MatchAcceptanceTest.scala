@@ -74,11 +74,12 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, """
-            |MATCH (start:Start),(end:End)
-            |OPTIONAL MATCH (start)-[rel]->(end)
-            |DELETE rel
-            |RETURN DISTINCT start""".stripMargin)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
+      """
+        |MATCH (start:Start),(end:End)
+        |OPTIONAL MATCH (start)-[rel]->(end)
+        |DELETE rel
+        |RETURN DISTINCT start""".stripMargin)
 
     result.toList should equal(List(Map("start" -> start)))
   }
@@ -93,7 +94,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN a, b, COLLECT( DISTINCT c) as c
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query, expectedDifferentPlans = Configs.AbsolutelyAll)
+    val result = executeWith(Configs.CommunityInterpreted, query)
     result.size should be(0)
     result.hasNext should be(false)
 
@@ -176,8 +177,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         | RETURN n, rel1, n1, rel2, n2;
         |""".stripMargin
 
-    val result = executeWith(Configs.Interpreted, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.Interpreted, query)
     result.toList should equal(List(Map("n" -> n, "rel1" -> null, "rel2" -> null, "n1" -> null, "n2" -> null)))
   }
 
@@ -187,7 +187,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = executeWith(Configs.CommunityInterpreted, """
+    val result = executeWith(Configs.CommunityInterpreted,
+      """
     match (a {name:'A'}), (x) where x.name in ['B', 'C']
     optional match p = shortestPath((a)-[*]->(x))
     return x, p""").toSet
@@ -201,7 +202,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("should handle all shortest paths") {
     createDiamond()
 
-    val result = executeWith(Configs.CommunityInterpreted, """
+    val result = executeWith(Configs.CommunityInterpreted,
+      """
     match (a), (d) where id(a) = 0 and id(d) = 3
     match p = allShortestPaths( (a)-[*]->(d) )
     return p""")
@@ -240,14 +242,15 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val node2 = createNode()
     val r = relate(node1, node2)
 
-    val query = """WITH [{0}, {1}] AS x, count(*) as y
-                  |MATCH (n) WHERE ID(n) IN x
-                  |MATCH (m) WHERE ID(m) IN x
-                  |MATCH paths = (n)-[*..1]-(m)
-                  |RETURN paths""".stripMargin
+    val query =
+      """WITH [{0}, {1}] AS x, count(*) as y
+        |MATCH (n) WHERE ID(n) IN x
+        |MATCH (m) WHERE ID(m) IN x
+        |MATCH paths = (n)-[*..1]-(m)
+        |RETURN paths""".stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted, query,
-      expectedDifferentPlans = Configs.AbsolutelyAll,
+      //      expectedDifferentPlans = Configs.AbsolutelyAll,
       params = Map("0" -> node1.getId, "1" -> node2.getId))
     graph.inTx(
       result.toSet should equal(
@@ -261,8 +264,8 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("length on filter") {
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
-    executeWith(Configs.CommunityInterpreted, q,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3).toList should equal (List(Map("cn" -> 0)))
+    executeWith(Configs.CommunityInterpreted, q)
+      .toList should equal(List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
@@ -296,8 +299,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // when
     val result = executeWith(Configs.Interpreted,
-      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n",
-      expectedDifferentPlans = Configs.AllRulePlanners)
+      "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> jake)))
@@ -339,16 +341,15 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = executeWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n",
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    executeWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n",
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3).toList
+    executeWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n")
+      .toList
     // should not throw an exception
   }
 
@@ -394,8 +395,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // when
     val result = executeWith(Configs.Interpreted,
-      "match (a:Label), (b:Label) where a.property = b.property return *",
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+      "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
     assert(result.toSet === Set(
@@ -493,7 +493,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN host""".stripMargin
 
     //WHEN
-    val result = executeWith(Configs.Interpreted, query, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.Interpreted, query)
     //THEN
     result.toList should equal(List(Map("host" -> host), Map("host" -> null)))
   }
@@ -522,27 +522,28 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     //GIVEN
     createLabeledNode("User")
 
-    val query = """MATCH (user:User)
-                  |MERGE (project:Project {p: 'Test'})
-                  |MERGE (user)-[:HAS_PROJECT]->(project)
-                  |WITH project
-                  |    // delete the current relations to be able to replace them with new ones
-                  |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->(:Folder)
-                  |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder:Folder)
-                  |DELETE folder, hasFolder
-                  |WITH project
-                  |   // add the new relations and objects
-                  |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
-                  |  MERGE (folder:Folder{ name: el.name })
-                  |  MERGE (project)–[:HAS_FOLDER]->(folder))
-                  |WITH DISTINCT project
-                  |RETURN project.p""".stripMargin
+    val query =
+      """MATCH (user:User)
+        |MERGE (project:Project {p: 'Test'})
+        |MERGE (user)-[:HAS_PROJECT]->(project)
+        |WITH project
+        |    // delete the current relations to be able to replace them with new ones
+        |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->(:Folder)
+        |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder:Folder)
+        |DELETE folder, hasFolder
+        |WITH project
+        |   // add the new relations and objects
+        |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
+        |  MERGE (folder:Folder{ name: el.name })
+        |  MERGE (project)–[:HAS_FOLDER]->(folder))
+        |WITH DISTINCT project
+        |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1).length
-    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+      .length
+    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+      .length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -556,29 +557,30 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("User")
 
 
-    val query = """MATCH (user:User)
-                  |MERGE (project:Project {p: 'Test'})
-                  |MERGE (user)-[:HAS_PROJECT]->(project)
-                  |WITH project
-                  |    // delete the current relations to be able to replace them with new ones
-                  |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->({name: "Dir2"})
-                  |OPTIONAL MATCH (project)-[hasFolder2:HAS_FOLDER]->({name: "Dir1"})
-                  |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder {name: "Dir1"})
-                  |DELETE folder, hasFolder, hasFolder2
-                  |WITH project
-                  |   // add the new relations and objects
-                  |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
-                  |  MERGE (folder:Folder{ name: el.name })
-                  |  MERGE (project)–[:HAS_FOLDER]->(folder))
-                  |WITH DISTINCT project
-                  |RETURN project.p""".stripMargin
+    val query =
+      """MATCH (user:User)
+        |MERGE (project:Project {p: 'Test'})
+        |MERGE (user)-[:HAS_PROJECT]->(project)
+        |WITH project
+        |    // delete the current relations to be able to replace them with new ones
+        |OPTIONAL MATCH (project)-[hasFolder:HAS_FOLDER]->({name: "Dir2"})
+        |OPTIONAL MATCH (project)-[hasFolder2:HAS_FOLDER]->({name: "Dir1"})
+        |OPTIONAL MATCH (project)-[:HAS_FOLDER]->(folder {name: "Dir1"})
+        |DELETE folder, hasFolder, hasFolder2
+        |WITH project
+        |   // add the new relations and objects
+        |FOREACH (el in[{name:"Dir1"}, {name:"Dir2"}] |
+        |  MERGE (folder:Folder{ name: el.name })
+        |  MERGE (project)–[:HAS_FOLDER]->(folder))
+        |WITH DISTINCT project
+        |RETURN project.p""".stripMargin
 
     //WHEN
 
-    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1).length
-    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1).length
+    val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+ .length
+    val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+ .length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -611,7 +613,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
-    val result = executeWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s", expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3)
+    val result = executeWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }
@@ -687,8 +689,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // When
     val res =
-      executeWith(Configs.AllExceptSlotted, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c",
-        expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1, params = Map("p" -> List(node1, node2)))
+      executeWith(Configs.AllExceptSlotted, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", params = Map("p" -> List(node1, node2)))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -705,10 +706,10 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // When
     val res =
-      executeWith(Configs.AllExceptSlotted, """UNWIND {p1} AS n1
-                |UNWIND {p2} AS n2
-                |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
-        expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1,
+      executeWith(Configs.AllExceptSlotted,
+        """UNWIND {p1} AS n1
+          |UNWIND {p2} AS n2
+          |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
         params = Map("p1" -> List(node1), "p2" -> List(node2)))
 
     //Then

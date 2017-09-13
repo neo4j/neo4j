@@ -65,7 +65,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     // TODO we expect this test to succeed with 3.2.4
     val expectedToWorkIn = Configs.CommunityInterpreted -
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.Cost, Runtimes.Default)
-    val result = executeWith(expectedToWorkIn, query, expectedDifferentPlans = Configs.AbsolutelyAll)
+    val result = executeWith(expectedToWorkIn, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
 
     result.toList should equal(expected)
