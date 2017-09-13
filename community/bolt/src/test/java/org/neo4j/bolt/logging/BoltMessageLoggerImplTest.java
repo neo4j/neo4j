@@ -120,7 +120,7 @@ public class BoltMessageLoggerImplTest
         // when
         boltMessageLogger.logRun( "RETURN 42", () -> singletonMap( "param1", "value" ) );
         // then
-        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN RETURN 42 {\"param1\":\"value\"}" );
+        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN \"RETURN 42\" {\"param1\":\"value\"}" );
     }
 
     @Test
