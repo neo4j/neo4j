@@ -27,11 +27,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
@@ -60,6 +64,7 @@ class FulltextUpdateApplier
         BinaryLatch completedLatch = new BinaryLatch();
         FulltextIndexUpdate update = () ->
         {
+            PartitionedIndexWriter indexWriter = index.getIndexWriter();
             for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
             {
                 Set<String> indexedProperties = index.properties();
@@ -74,9 +79,7 @@ class FulltextUpdateApplier
 
                     if ( !allProperties.isEmpty() )
                     {
-                        Document document = documentRepresentingProperties( entityId, allProperties );
-                        PartitionedIndexWriter indexWriter = index.getIndexWriter();
-                        indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
+                        updateDocument( indexWriter, entityId, allProperties );
                     }
                 }
             }
@@ -85,6 +88,13 @@ class FulltextUpdateApplier
 
         enqueueUpdate( update );
         return completedLatch;
+    }
+
+    private static void updateDocument( PartitionedIndexWriter indexWriter, long entityId,
+                                        Map<String,Object> properties ) throws IOException
+    {
+        Document document = documentRepresentingProperties( entityId, properties );
+        indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
     }
 
     <E extends Entity> BinaryLatch removePropertyData( Iterable<PropertyEntry<E>> propertyEntries,
@@ -113,6 +123,46 @@ class FulltextUpdateApplier
         return completedLatch;
     }
 
+    BinaryLatch populateNodes( WritableFulltext index, GraphDatabaseService db ) throws IOException
+    {
+        return enqueuePopulateIndex( index, db, db::getAllNodes );
+    }
+
+    BinaryLatch populateRelationships( WritableFulltext index, GraphDatabaseService db ) throws IOException
+    {
+        return enqueuePopulateIndex( index, db, db::getAllRelationships );
+    }
+
+    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db,
+                                              Supplier<ResourceIterable<? extends Entity>> entitySupplier )
+            throws IOException
+    {
+        BinaryLatch completedLatch = new BinaryLatch();
+        FulltextIndexUpdate population = () ->
+        {
+            PartitionedIndexWriter indexWriter = index.getIndexWriter();
+            String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
+            try ( Transaction tx = db.beginTx() )
+            {
+                ResourceIterable<? extends Entity> entities = entitySupplier.get();
+                for ( Entity entity : entities )
+                {
+                    long entityId = entity.getId();
+                    Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
+                    if ( !properties.isEmpty() )
+                    {
+                        updateDocument( indexWriter, entityId, properties );
+                    }
+                }
+            }
+
+            return Pair.of( index, completedLatch );
+        };
+
+        enqueueUpdate( population );
+        return completedLatch;
+    }
+
     private void enqueueUpdate( FulltextIndexUpdate update ) throws IOException
     {
         try
@@ -125,12 +175,12 @@ class FulltextUpdateApplier
         }
     }
 
-    public void start()
+    void start()
     {
         workerThread.start();
     }
 
-    public void stop()
+    void stop()
     {
         boolean enqueued;
         do

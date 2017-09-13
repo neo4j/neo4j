@@ -58,13 +58,25 @@ public class FulltextProvider implements AutoCloseable
         applier = new FulltextUpdateApplier( log );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
-        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
         writableNodeIndices = new HashSet<>();
         writableRelationshipIndices = new HashSet<>();
         nodeIndices = new HashMap<>();
         relationshipIndices = new HashMap<>();
+    }
+
+    public void init() throws IOException
+    {
+        for ( WritableFulltext index : writableNodeIndices )
+        {
+            applier.populateNodes( index, db );
+        }
+        for ( WritableFulltext index : writableRelationshipIndices )
+        {
+            applier.populateRelationships( index, db );
+        }
+        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
 
     /**

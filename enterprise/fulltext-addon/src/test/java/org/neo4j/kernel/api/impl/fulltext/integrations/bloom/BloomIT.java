@@ -136,6 +136,40 @@ public class BloomIT
     }
 
     @Test
+    public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
+    {
+        createTestGraphDatabaseFactory();
+        db = factory.newEmbeddedDatabase( testDirectory.graphDbDir() );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "prop", "Roskildevej 32" ); // Copenhagen Zoo is important to find.
+            nodeId = node.getId();
+            tx.success();
+        }
+        db.shutdown();
+
+        configureBloomExtension();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "prop", "Something else" ); // To wait for fulltext index population to finish
+            tx.success();
+        }
+
+        Result result = db.execute( String.format( NODES, "Roskildevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
     public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
     {
         Map<Setting<?>,String> config = new HashMap<>();

@@ -63,6 +63,7 @@ public class FulltextAnalyzerTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -100,6 +101,7 @@ public class FulltextAnalyzerTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;

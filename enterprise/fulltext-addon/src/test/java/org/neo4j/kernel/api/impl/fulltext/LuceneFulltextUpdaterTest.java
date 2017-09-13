@@ -69,6 +69,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -105,6 +106,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -141,6 +143,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -177,6 +180,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -221,6 +225,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -271,6 +276,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -315,6 +321,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -379,6 +386,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -414,6 +422,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -455,6 +464,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "first", "last" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -504,6 +514,7 @@ public class LuceneFulltextUpdaterTest
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstNodeID;
             long secondNodeID;
@@ -564,6 +575,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -604,6 +616,7 @@ public class LuceneFulltextUpdaterTest
         try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -650,6 +663,7 @@ public class LuceneFulltextUpdaterTest
         {
             fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
+            provider.init();
 
             try ( Transaction tx = db.beginTx() )
             {

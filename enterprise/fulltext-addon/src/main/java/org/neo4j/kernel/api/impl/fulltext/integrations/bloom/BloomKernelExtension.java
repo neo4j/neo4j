@@ -69,6 +69,7 @@ class BloomKernelExtension extends LifecycleAdapter
         fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
         fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
 
+        provider.init();
         procedures.registerComponent( FulltextProvider.class, context -> provider, true );
         procedures.registerProcedure( BloomProcedures.class );
     }
