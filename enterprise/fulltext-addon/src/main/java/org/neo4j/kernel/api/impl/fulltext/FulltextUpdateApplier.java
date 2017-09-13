@@ -51,7 +51,7 @@ class FulltextUpdateApplier
     private final ApplierThread workerThread;
     private final Log log;
 
-    public FulltextUpdateApplier( Log log )
+    FulltextUpdateApplier( Log log )
     {
         this.log = log;
         workQueue = new LinkedBlockingQueue<>();
@@ -216,7 +216,7 @@ class FulltextUpdateApplier
         private LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
         private final Log log;
 
-        public ApplierThread( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log )
+        ApplierThread( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log )
         {
             super( "Fulltext Index Add-On Applier Thread" );
             this.workQueue = workQueue;
