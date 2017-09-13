@@ -63,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -105,7 +106,8 @@ public class RecoveryTest
     @Test
     public void shouldRecoverExistingData() throws Exception
     {
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File storeDir = this.directory.directory();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
@@ -154,8 +156,8 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 private int nr;
 
@@ -203,7 +205,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, monitor, new StartupStatisticsProvider(), new SimpleLogService( logProvider ) ) );
+            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ), monitor ) );
 
             life.start();
 
@@ -221,7 +223,8 @@ public class RecoveryTest
     @Test
     public void shouldSeeThatACleanDatabaseShouldNotRequireRecovery() throws Exception
     {
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File storeDir = this.directory.directory();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
 
         writeSomeData( file, pair ->
@@ -258,15 +261,16 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, monitor, new StartupStatisticsProvider(), new SimpleLogService( logProvider ) ));
+            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ),
+                    monitor ));
 
             life.start();
 
@@ -282,7 +286,8 @@ public class RecoveryTest
     public void shouldTruncateLogAfterSinglePartialTransaction() throws Exception
     {
         // GIVEN
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File storeDir = this.directory.directory();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -299,7 +304,7 @@ public class RecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( logFiles );
+        boolean recoveryRequired = recover( storeDir, logFiles );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -310,7 +315,8 @@ public class RecoveryTest
     public void shouldTruncateLogAfterLastCompleteTransactionAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File storeDir = this.directory.directory();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -331,7 +337,7 @@ public class RecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( logFiles );
+        boolean recoveryRequired = recover( storeDir, logFiles );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -342,7 +348,8 @@ public class RecoveryTest
     public void shouldTellTransactionIdStoreAfterSuccessfullRecovery() throws Exception
     {
         // GIVEN
-        final PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), "log", fileSystemRule.get() );
+        File storeDir = this.directory.directory();
+        final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, "log", fileSystemRule.get() );
         File file = logFiles.getLogFileForVersion( logVersion );
         final LogPositionMarker marker = new LogPositionMarker();
 
@@ -365,7 +372,7 @@ public class RecoveryTest
         } );
 
         // WHEN
-        boolean recoveryRequired = recover( logFiles );
+        boolean recoveryRequired = recover( storeDir, logFiles );
 
         // THEN
         assertTrue( recoveryRequired );
@@ -378,7 +385,7 @@ public class RecoveryTest
         assertEquals( marker.getByteOffset(), lastClosedTransaction[2] );
     }
 
-    private boolean recover( PhysicalLogFiles logFiles )
+    private boolean recover( File storeDir, PhysicalLogFiles logFiles )
     {
         LifeSupport life = new LifeSupport();
         Recovery.Monitor monitor = mock( Recovery.Monitor.class );
@@ -397,15 +404,16 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, logFiles, fileSystemRule.get(),
-                    tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
                 {
                     recoveryRequired.set( true );
                 }
-            }, monitor, new StartupStatisticsProvider(), new SimpleLogService( logProvider ) ) );
+            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ),
+                    monitor ) );
 
             life.start();
         }

@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -29,9 +28,9 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -42,22 +41,17 @@ import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 public class DefaultRecoverySPI implements Recovery.SPI
 {
     private final PositionToRecoverFrom positionToRecoverFrom;
-    private final PhysicalLogFiles logFiles;
-    private final FileSystemAbstraction fs;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
 
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
-            PhysicalLogFiles logFiles, FileSystemAbstraction fs,
             LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
             PositionToRecoverFrom.Monitor monitor )
     {
         this.storageEngine = storageEngine;
-        this.logFiles = logFiles;
-        this.fs = fs;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.positionToRecoverFrom = new PositionToRecoverFrom( logTailScanner, monitor );
@@ -100,20 +94,20 @@ public class DefaultRecoverySPI implements Recovery.SPI
 
     @Override
     public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-            LogPosition positionAfterLastRecoveredTransaction ) throws Exception
+            LogPosition positionAfterLastRecoveredTransaction )
     {
+        long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
+        long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();
         if ( lastRecoveredTransaction != null )
         {
+            LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
             transactionIdStore.setLastCommittedAndClosedTransactionId(
-                    lastRecoveredTransaction.getCommitEntry().getTxId(),
+                    commitEntry.getTxId(),
                     LogEntryStart.checksum( lastRecoveredTransaction.getStartEntry() ),
-                    lastRecoveredTransaction.getCommitEntry().getTimeWritten(),
-                    positionAfterLastRecoveredTransaction.getByteOffset(),
-                    positionAfterLastRecoveredTransaction.getLogVersion() );
+                    commitEntry.getTimeWritten(),
+                    recoveredTransactionOffset,
+                    recoveredTransactionLogVersion );
         }
-
-        fs.truncate( logFiles.getLogFileForVersion( positionAfterLastRecoveredTransaction.getLogVersion() ),
-                positionAfterLastRecoveredTransaction.getByteOffset() );
     }
 
     static class RecoveryVisitor implements RecoveryApplier

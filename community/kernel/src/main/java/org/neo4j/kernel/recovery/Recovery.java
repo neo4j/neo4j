@@ -79,20 +79,23 @@ public class Recovery extends LifecycleAdapter
         RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception;
 
         void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-                LogPosition positionAfterLastRecoveredTransaction ) throws Exception;
+                LogPosition positionAfterLastRecoveredTransaction );
     }
 
     private final SPI spi;
     private final Monitor monitor;
     private final StartupStatisticsProvider startupStatistics;
+    private final TransactionLogPruner logPruner;
     private final Log log;
     private int numberOfRecoveredTransactions;
 
-    public Recovery( SPI spi, Monitor monitor, StartupStatisticsProvider startupStatistics, LogService logService )
+    public Recovery( SPI spi, StartupStatisticsProvider startupStatistics, TransactionLogPruner logPruner,
+            LogService logService, Monitor monitor )
     {
         this.spi = spi;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
+        this.logPruner = logPruner;
         this.log = logService.getInternalLog( Recovery.class );
     }
 
@@ -161,6 +164,7 @@ public class Recovery extends LifecycleAdapter
                 recoveryToPosition = recoveryFromPosition;
             }
         }
+        logPruner.prune( recoveryToPosition );
 
         spi.transactionsRecovered( lastTransaction, recoveryToPosition );
         startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );

@@ -152,6 +152,7 @@ import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.Log;
@@ -688,9 +689,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore )
     {
-        Recovery.SPI spi = new DefaultRecoverySPI( storageEngine, logFiles, fileSystemAbstraction, tailScanner,
-                transactionIdStore, logicalTransactionStore, positionMonitor );
-        Recovery recovery = new Recovery( spi, recoveryMonitor, startupStatistics, logService );
+        Recovery.SPI spi = new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
+        TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
+        Recovery recovery = new Recovery( spi, startupStatistics, logPruner, logService, recoveryMonitor );
         life.add( recovery );
     }
 
