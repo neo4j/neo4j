@@ -165,6 +165,116 @@ public class BloomIT
     }
 
     @Test
+    public void startupPopulationShouldNotCauseDuplicates() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Jyllingevej" );
+            tx.success();
+        }
+
+        // Verify it's indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Jyllingevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+
+        db.shutdown();
+        db = builder.newGraphDatabase();
+
+        // Verify it's STILL indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        result = db.execute( String.format( NODES, "Jyllingevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Esplanaden" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This should no longer be indexed
+            db.getNodeById( nodeId ).delete();
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        // Verify that the node is no longer indexed
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Esplanaden" ) );
+        assertFalse( result.hasNext() );
+        result.close();
+    }
+
+    @Test
+    public void staleDataFromPropertyRemovalShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Esplanaden" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This should no longer be indexed
+            db.getNodeById( nodeId ).removeProperty( "prop" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        // Verify that the node is no longer indexed
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Esplanaden" ) );
+        assertFalse( result.hasNext() );
+        result.close();
+    }
+
+    @Test
     public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
     {
         Map<Setting<?>,String> config = new HashMap<>();
