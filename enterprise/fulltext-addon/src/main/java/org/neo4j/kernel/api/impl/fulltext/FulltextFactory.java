@@ -71,7 +71,7 @@ public class FulltextFactory
             throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( identifier ).withIndexRootFolder( indexDir );
+        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( new File( indexDir, identifier ) );
         provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
     }
 }
