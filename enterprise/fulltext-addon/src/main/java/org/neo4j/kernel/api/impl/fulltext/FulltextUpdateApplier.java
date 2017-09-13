@@ -123,6 +123,13 @@ class FulltextUpdateApplier
         return completedLatch;
     }
 
+    BinaryLatch writeBarrier() throws IOException
+    {
+        BinaryLatch barrierLatch = new BinaryLatch();
+        enqueueUpdate( () -> Pair.of( null, barrierLatch ) );
+        return barrierLatch;
+    }
+
     BinaryLatch populateNodes( WritableFulltext index, GraphDatabaseService db ) throws IOException
     {
         return enqueuePopulateIndex( index, db, db::getAllNodes );

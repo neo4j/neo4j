@@ -156,12 +156,7 @@ public class BloomIT
         builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = builder.newGraphDatabase();
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.createNode();
-            node.setProperty( "prop", "Something else" ); // To wait for fulltext index population to finish
-            tx.success();
-        }
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
         Result result = db.execute( String.format( NODES, "Roskildevej" ) );
         assertTrue( result.hasNext() );

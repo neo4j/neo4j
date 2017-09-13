@@ -79,6 +79,11 @@ public class FulltextProvider implements AutoCloseable
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
 
+    public void awaitPopulation() throws IOException
+    {
+        applier.writeBarrier().await();
+    }
+
     /**
      * Closes the provider and all associated resources.
      */
