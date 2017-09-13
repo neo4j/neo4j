@@ -150,7 +150,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       //WHEN
       val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
         "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name",
-        ignorePlans = Configs.AllRulePlanners + Configs.Cost3_1)
+        ignorePlans = Some(Configs.AllRulePlanners + Configs.Cost3_1))
 
       //THEN
       result shouldNot use("NodeIndexSeek")
