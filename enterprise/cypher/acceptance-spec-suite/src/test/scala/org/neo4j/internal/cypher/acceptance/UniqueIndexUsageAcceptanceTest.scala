@@ -118,7 +118,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlanners(query)
+    val result = executeWithAllPlannersAndRuntimes(query)
 
     // Then
     result.toList should equal(List(

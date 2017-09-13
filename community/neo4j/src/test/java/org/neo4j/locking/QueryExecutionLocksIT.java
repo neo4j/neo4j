@@ -130,8 +130,11 @@ public class QueryExecutionLocksIT
 
         try ( Transaction transaction = databaseRule.beginTx() )
         {
-            Node node = databaseRule.createNode( human );
-            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+            for ( int i = 0; i < 10; i++ )
+            {
+                Node node = databaseRule.createNode( human );
+                node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+            }
             transaction.success();
         }
 
@@ -157,8 +160,11 @@ public class QueryExecutionLocksIT
 
         try ( Transaction transaction = databaseRule.beginTx() )
         {
-            Node node = databaseRule.createNode( robot );
-            node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+            for ( int i = 0; i < 10; i++ )
+            {
+                Node node = databaseRule.createNode( robot );
+                node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
+            }
             transaction.success();
         }
 

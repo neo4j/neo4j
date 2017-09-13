@@ -89,7 +89,10 @@ object CardinalityCostModel extends CostModel {
          _: ProcedureCall
     => DEFAULT_COST_PER_ROW
 
-    case _: FindShortestPaths => 12.0
+    case _: FindShortestPaths |
+         _: DirectedRelationshipByIdSeek |
+         _: UndirectedRelationshipByIdSeek
+    => 12.0
 
     case _ // Default
     => DEFAULT_COST_PER_ROW

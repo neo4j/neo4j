@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Planners, Runtimes, TestScenario, Versions}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer

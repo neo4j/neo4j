@@ -207,9 +207,6 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
           val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
-          val counts = countExpandsAndJoins(result.executionPlanDescription())
-          counts("joins") should be > 1
-          counts("joins") should be < numberOfPatternRelationships / 2
           acc(configValue) = monitor.maxStartIteration
       }
       acc
