@@ -128,7 +128,7 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     @Test
     public void slavesTerminateOrReadConsistentDataWhenApplyingBatchLargerThanSafeZone() throws Throwable
     {
-        long safeZone = TimeUnit.MILLISECONDS.toMillis( 0 );
+        long safeZone = TimeUnit.MILLISECONDS.toSeconds( 0 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
@@ -162,7 +162,7 @@ public class TerminationOfSlavesDuringPullUpdatesIT
     @Test
     public void slavesDontTerminateAndReadConsistentDataWhenApplyingBatchSmallerThanSafeZone() throws Throwable
     {
-        long safeZone = TimeUnit.MINUTES.toMillis( 1 );
+        long safeZone = TimeUnit.MINUTES.toSeconds( 1 );
         clusterRule.withSharedSetting( HaSettings.id_reuse_safe_zone_time, String.valueOf( safeZone ) );
         // given
         final ClusterManager.ManagedCluster cluster = clusterRule.startCluster();
