@@ -47,7 +47,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BoltMessageLoggerImplTest
 {
 
-    private static final String REMOTE_ADDRESS = "localhost/127.0.0.1:60297";
+    private static final String REMOTE_ADDRESS = "127.0.0.1:60297";
     private static final String CORRELATION_ID = "Bolt-CorrelationId-1234";
     private static String errorMessage = "Oh my woes!";
     private static Neo4jError error = Neo4jError.from( new DeadlockDetectedException( errorMessage ) );
