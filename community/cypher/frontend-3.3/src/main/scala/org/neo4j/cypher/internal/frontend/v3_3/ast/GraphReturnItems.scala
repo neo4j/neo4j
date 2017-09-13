@@ -99,7 +99,8 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
           newSourceName.map(source => newTargetName.map(target => ContextGraphs(source, target)).getOrElse(ContextGraphs(source, source)))
         optNewContextGraphs match {
           case Some(newContextGraphs) => s.updateContextGraphs(newContextGraphs)
-          case None => Left(SemanticError("No context graphs available", position))
+            // If there are no context graphs that's fine -- use the ambient graph
+          case None => Right(s)
         }
       }
     }

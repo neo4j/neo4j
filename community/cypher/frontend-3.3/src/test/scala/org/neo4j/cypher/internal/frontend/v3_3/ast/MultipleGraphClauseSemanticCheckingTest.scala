@@ -32,6 +32,53 @@ class MultipleGraphClauseSemanticCheckingTest
 
   implicit val parser: Rule1[Query] = Query
 
+  test("Weird no context graphs error") {
+    parsing(
+      """MATCH (n)-->(b:B)
+        |WITH count(b) AS nodes
+        |RETURN nodes""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errors shouldBe empty
+
+      result.formattedContexts shouldEqualFixNewlines
+        """// Start
+          |--
+          |// (Match(false,Pattern(List(EveryPath(RelationshipChain(NodePattern(Some(Variable(n)),List(),None),RelationshipPattern(None,List(),None,None,OUTGOING,false),NodePattern(Some(Variable(b)),List(LabelName(B)),None))))),List(),None),line 1, column 1 (offset: 0))
+          |--
+          |// (With(false,ReturnItems(false,Vector(AliasedReturnItem(FunctionInvocation(Namespace(List()),FunctionName(count),false,Vector(Variable(b))),Variable(nodes)))),GraphReturnItems(true,List()),None,None,None,None),line 2, column 1 (offset: 18))
+          |--
+          |// (Return(false,ReturnItems(false,List(AliasedReturnItem(Variable(nodes),Variable(nodes)))),None,None,None,None,Set()),line 3, column 1 (offset: 41))
+          |--
+          |// End
+        """
+
+      result.formattedScopes shouldEqualFixNewlines
+        """{
+          |  {
+          |    b: 13 29
+          |    n: 7
+          |  }
+          |  {
+          |    nodes: 35 48
+          |  }
+          |  {
+          |    nodes: 35 48 49
+          |  }
+          |}"""
+    }
+  }
+
+  test("Should fail due to no context graphs") {
+    parsing(
+      """WITH GRAPHS foo
+        |MATCH (n)-->(b:B)
+        |WITH count(b) AS nodes GRAPH AT 'uri1' AS bar, GRAPH AT 'uri2' AS baz
+        |RETURN nodes""".stripMargin) shouldVerify { result: SemanticCheckResult =>
+
+      result.errorMessages should equal(Set("No source graph is available in scope"))
+    }
+  }
+
   test("GRAPHS * keeps existing graphs in scope (1)") {
     parsing(
       """WITH 1 AS a GRAPH source AT 'src' >> GRAPH target AT 'tgt'
