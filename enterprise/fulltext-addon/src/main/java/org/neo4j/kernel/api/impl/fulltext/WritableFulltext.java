@@ -20,11 +20,9 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
-import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
 class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>

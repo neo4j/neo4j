@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -46,6 +47,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class BloomIT
 {
@@ -65,8 +67,18 @@ public class BloomIT
     @Before
     public void before() throws Exception
     {
+        createTestGraphDatabaseFactory();
+        configureBloomExtension();
+    }
+
+    private void createTestGraphDatabaseFactory()
+    {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
+    }
+
+    private void configureBloomExtension()
+    {
         factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
     }
 

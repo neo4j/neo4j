@@ -35,7 +35,6 @@ import org.neo4j.logging.Log;
 public class FulltextProvider implements AutoCloseable
 {
     public static final String LUCENE_FULLTEXT_ADDON_INTERNAL_ID = "__lucene__fulltext__addon__internal__id__";
-    private static FulltextProvider instance;
     private final GraphDatabaseService db;
     private final Log log;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
@@ -45,6 +44,7 @@ public class FulltextProvider implements AutoCloseable
     private final Set<WritableFulltext> writableRelationshipIndices;
     private final Map<String,LuceneFulltext> nodeIndices;
     private final Map<String,LuceneFulltext> relationshipIndices;
+    private final FulltextUpdateApplier applier;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
@@ -55,7 +55,9 @@ public class FulltextProvider implements AutoCloseable
     {
         this.db = db;
         this.log = log;
-        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log );
+        applier = new FulltextUpdateApplier( log );
+        applier.start();
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
@@ -72,6 +74,7 @@ public class FulltextProvider implements AutoCloseable
     public void close()
     {
         db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
+        applier.stop();
         nodeIndices.values().forEach( luceneFulltextIndex ->
         {
             try
