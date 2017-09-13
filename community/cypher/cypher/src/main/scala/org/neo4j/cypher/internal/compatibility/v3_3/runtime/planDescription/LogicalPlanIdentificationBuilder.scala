@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, TreeBuilder}
 import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, TreeBuilder}
 
 /*
 The map of logical plan and ids is used to allow profiling to connect to the right part in the logical plan

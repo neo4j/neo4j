@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.v3_3.logical.plans
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, ResolvedCall}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands

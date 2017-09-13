@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 class FakeIdMap extends Map[LogicalPlan, Id] {
   override def +[B1 >: Id](kv: (LogicalPlan, B1)): Map[LogicalPlan, B1] = ???

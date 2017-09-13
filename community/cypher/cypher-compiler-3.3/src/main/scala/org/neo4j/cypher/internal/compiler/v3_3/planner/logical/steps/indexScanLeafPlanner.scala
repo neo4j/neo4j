@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureReadOnlyAccess, ResolvedCall}
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds ++ call.callResults.map { result => IdName.fromVariable(result.variable) }

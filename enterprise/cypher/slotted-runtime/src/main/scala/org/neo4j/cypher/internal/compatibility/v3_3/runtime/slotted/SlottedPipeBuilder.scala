@@ -29,14 +29,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.v3_3.logical.plans
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
@@ -258,14 +259,14 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  private def translateColumnOrder(pipeline: PipelineInformation, s: logical.SortDescription): ColumnOrder = s match {
-    case logical.Ascending(IdName(name)) => {
+  private def translateColumnOrder(pipeline: PipelineInformation, s: SortDescription): ColumnOrder = s match {
+    case plans.Ascending(IdName(name)) => {
       pipeline.get(name) match {
         case Some(slot) => pipes.Ascending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")
       }
     }
-    case logical.Descending(IdName(name)) => {
+    case plans.Descending(IdName(name)) => {
       pipeline.get(name) match {
         case Some(slot) => pipes.Descending(slot)
         case None => throw new InternalException(s"Did not find `$name` in the pipeline information")

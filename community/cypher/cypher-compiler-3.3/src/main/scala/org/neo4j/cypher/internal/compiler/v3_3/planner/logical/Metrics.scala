@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Rand, Timestamp}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation, LabelName, Parameter}
 import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, _}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 import scala.language.implicitConversions
 

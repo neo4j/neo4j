@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{TaskCloser, _}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -38,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
+import org.neo4j.cypher.internal.v3_3.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue
 
 object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {

@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{Many, One, Zero, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast}
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 import org.neo4j.graphdb.Direction
 
 

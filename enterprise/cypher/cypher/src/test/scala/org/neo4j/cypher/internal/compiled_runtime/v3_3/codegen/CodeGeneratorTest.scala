@@ -33,8 +33,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{By
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, Descending, plans}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -43,6 +41,8 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.v3_3.logical.plans
+import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, Descending, _}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.ReadOperations

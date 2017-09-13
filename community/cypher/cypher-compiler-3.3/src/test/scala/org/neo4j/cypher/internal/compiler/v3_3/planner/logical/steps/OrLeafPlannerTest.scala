@@ -23,11 +23,11 @@ import org.mockito.Matchers
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Ors, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph, Selections}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{Distinct, Union}
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

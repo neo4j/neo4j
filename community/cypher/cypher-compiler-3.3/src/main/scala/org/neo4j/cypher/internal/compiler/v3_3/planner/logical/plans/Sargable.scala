@@ -21,17 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound}
-
-object WithSeekableArgs {
-  def unapply(v: Any) = v match {
-    case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
-    case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
-    case _ => None
-  }
-}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{QueryExpression, RangeQueryExpression, SeekableArgs, WithSeekableArgs}
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {
@@ -112,42 +104,6 @@ object AsValueRangeSeekable {
   }
 }
 
-trait QueryExpression[+T] {
-
-  def expressions: Seq[T]
-
-  def map[R](f: T => R): QueryExpression[R]
-}
-
-trait SingleExpression[+T] {
-
-  def expression: T
-
-  def expressions = Seq(expression)
-}
-
-case class ScanQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  def map[R](f: T => R) = ScanQueryExpression(f(expression))
-}
-
-case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  def map[R](f: T => R) = SingleQueryExpression(f(expression))
-}
-
-case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  def map[R](f: T => R) = ManyQueryExpression(f(expression))
-}
-
-case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  override def map[R](f: T => R) = RangeQueryExpression(f(expression))
-}
-
-case class CompositeQueryExpression[T](inner: Seq[QueryExpression[T]]) extends QueryExpression[T] {
-  def map[R](f: T => R) = CompositeQueryExpression(inner.map(_.map(f)))
-
-  override def expressions: Seq[T] = inner.flatMap(_.expressions)
-}
-
 sealed trait Sargable[+T <: Expression] {
   def expr: T
   def ident: Variable
@@ -220,46 +176,3 @@ case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: Variable
 
 case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: Variable, property: Property)
   extends Scannable[PartialPredicate[T]]
-
-sealed trait SeekableArgs {
-  def expr: Expression
-  def sizeHint: Option[Int]
-
-  def dependencies: Set[Variable] = expr.dependencies
-
-  def mapValues(f: Expression => Expression): SeekableArgs
-  def asQueryExpression: QueryExpression[Expression]
-}
-
-case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
-  def sizeHint = Some(1)
-
-  override def mapValues(f: Expression => Expression): SingleSeekableArg = copy(f(expr))
-
-  def asQueryExpression: SingleQueryExpression[Expression] = SingleQueryExpression(expr)
-}
-
-case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
-  val sizeHint: Option[Int] = expr match {
-    case coll: ListLiteral => Some(coll.expressions.size)
-    case _ => None
-  }
-
-  override def mapValues(f: Expression => Expression): ManySeekableArgs = expr match {
-    case coll: ListLiteral => copy(expr = coll.map(f))
-    case _ => copy(expr = f(expr))
-  }
-
-  def asQueryExpression: QueryExpression[Expression] = expr match {
-    case coll: ListLiteral =>
-      ZeroOneOrMany(coll.expressions) match {
-        case One(value) => SingleQueryExpression(value)
-        case _ => ManyQueryExpression(coll)
-      }
-
-    case _ =>
-      ManyQueryExpression(expr)
-  }
-}
-
-

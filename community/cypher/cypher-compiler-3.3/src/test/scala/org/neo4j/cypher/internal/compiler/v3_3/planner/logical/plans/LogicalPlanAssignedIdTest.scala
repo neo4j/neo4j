@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{Apply, Projection, SingleRow}
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("assignedId survives rewriting") {

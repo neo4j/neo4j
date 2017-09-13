@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.PatternExpressionPatternElementNamer
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan

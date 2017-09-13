@@ -45,6 +45,7 @@
         <module>ir-3.3</module>
         <module>cypher-compiler-3.3</module>
         <module>cypher</module>
+        <module>cypher-logical-plans-3.3</module>
       </modules>
     </profile>
   </profiles>
