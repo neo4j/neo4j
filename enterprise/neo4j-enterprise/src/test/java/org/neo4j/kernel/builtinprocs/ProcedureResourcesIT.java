@@ -76,7 +76,16 @@ public class ProcedureResourcesIT
         {
             // then
             initialData();
-            verifyProcedureCloseAllAcquiredKernelStatements( procedureDataFor( procedure ) );
+            ProcedureData procedureData = null;
+            try
+            {
+                procedureData = procedureDataFor( procedure );
+                verifyProcedureCloseAllAcquiredKernelStatements( procedureData );
+            }
+            catch ( Exception e )
+            {
+                throw new Exception( "Failed on procedure: \"" + procedureData + "\"", e );
+            }
             clearDb();
         }
     }
@@ -196,6 +205,12 @@ public class ProcedureResourcesIT
             {
                 return stringJoiner.toString();
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return buildProcedureQuery();
         }
     }
 
