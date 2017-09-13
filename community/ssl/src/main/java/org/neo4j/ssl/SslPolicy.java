@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.SslProvider;
 
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -46,10 +47,11 @@ public class SslPolicy
     private final ClientAuth clientAuth;
 
     private final TrustManagerFactory trustManagerFactory;
+    private final SslProvider sslProvider;
 
     public SslPolicy( PrivateKey privateKey, X509Certificate[] keyCertChain,
             List<String> tlsVersions, List<String> ciphers, ClientAuth clientAuth,
-            TrustManagerFactory trustManagerFactory )
+            TrustManagerFactory trustManagerFactory, SslProvider sslProvider )
     {
         this.privateKey = privateKey;
         this.keyCertChain = keyCertChain;
@@ -57,11 +59,13 @@ public class SslPolicy
         this.ciphers = ciphers;
         this.clientAuth = clientAuth;
         this.trustManagerFactory = trustManagerFactory;
+        this.sslProvider = sslProvider;
     }
 
     public SslContext nettyServerContext() throws SSLException
     {
         return SslContextBuilder.forServer( privateKey, keyCertChain )
+                .sslProvider( sslProvider )
                 .clientAuth( forNetty( clientAuth ) )
                 .ciphers( ciphers )
                 .trustManager( trustManagerFactory )
@@ -71,6 +75,7 @@ public class SslPolicy
     public SslContext nettyClientContext() throws SSLException
     {
         return SslContextBuilder.forClient()
+                .sslProvider( sslProvider )
                 .keyManager( privateKey, keyCertChain )
                 .ciphers( ciphers )
                 .trustManager( trustManagerFactory )
