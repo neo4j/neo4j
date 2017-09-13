@@ -19,20 +19,19 @@
  */
 package org.neo4j.bolt;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 
+import org.apache.commons.io.IOUtils;
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
-import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.HostnamePort;
@@ -50,6 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_log_filename;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;
@@ -158,10 +158,10 @@ public class BoltMessageLoggingIT
             session.run( query ).consume();
             fail( "Should have failed" );
         }
-        catch ( ClientException e )
+        catch ( Exception e )
         {
             String contents = readFile( customBoltLogFile );
-            assertThat( contents, containsString( "S: FAILURE" ) );
+            assertThat( contents, containsString( "S FAILURE" ) );
         }
     }
 
@@ -169,14 +169,17 @@ public class BoltMessageLoggingIT
     {
         assertTrue( fs.fileExists( boltLogFile ) );
 
-        String query = "CREATE (n:Person {name: 'Beta Ray Bill'}) RETURN 42";
+        String query = "CREATE (n:Person {name: 'Beta Ray Bill'}) \n" +
+                "RETURN 42";
         try ( Session session = driver.session() )
         {
             session.run( query ).consume();
         }
 
         String contents = readFile( boltLogFile );
-        assertThat( contents, containsString( "C: RUN " + query + " {}" ) );
+        assertThat( contents, containsString( "C RUN " +
+                "\"CREATE (n:Person {name: 'Beta Ray Bill'}) \\nRETURN 42\""
+                + " {}" ) );
     }
 
     private String readFile( File file ) throws IOException

@@ -40,7 +40,7 @@ public interface BoltMessageLogger
 
     void serverError( String eventName, Status status );
 
-    void logInit( String userAgent, Map<String,Object> authToken );
+    void logInit( String userAgent );
 
     void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier );
 

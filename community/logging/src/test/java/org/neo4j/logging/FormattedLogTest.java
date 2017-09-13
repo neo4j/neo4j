@@ -21,8 +21,10 @@ package org.neo4j.logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Date;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.IllegalFormatException;
+import java.util.function.Supplier;
 
 import org.junit.Test;
 
@@ -36,7 +38,8 @@ import static org.junit.Assert.fail;
 
 public class FormattedLogTest
 {
-    private static final Date FIXED_DATE = new Date( 467612604343L );
+    private static final Supplier<ZonedDateTime> DATE_TIME_SUPPLIER = () ->
+            ZonedDateTime.of( 1984, 10, 26, 4, 23, 24, 343000000, ZoneOffset.UTC );
 
     @Test
     public void logShouldWriteMessage()
@@ -191,9 +194,12 @@ public class FormattedLogTest
 
     private static FormattedLog newFormattedLog( StringWriter writer, Level level )
     {
-        return new FormattedLog(
-                Suppliers.singleton( FIXED_DATE ), Suppliers.singleton( new PrintWriter( writer ) ),
-                FormattedLog.UTC, FormattedLog.SIMPLE_DATE_FORMAT, null, "test", level, true );
+        return FormattedLog
+                .withUTCTimeZone()
+                .withCategory( "test" )
+                .withLogLevel( level )
+                .withTimeSupplier( DATE_TIME_SUPPLIER )
+                .toPrintWriter( Suppliers.singleton( new PrintWriter( writer ) ) );
     }
 
     private static Throwable newThrowable( final String message, final String stackTrace )
