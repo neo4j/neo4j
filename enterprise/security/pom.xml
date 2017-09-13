@@ -178,10 +178,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.google.jimfs</groupId>
-      <artifactId>jimfs</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.apache.directory.server</groupId>
       <artifactId>apacheds-server-integ</artifactId>
       <scope>test</scope>

@@ -19,24 +19,19 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.fs.DelegateFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.junit.Assert.assertTrue;
@@ -45,13 +40,15 @@ public class ConfigurableStandalonePageCacheFactoryTest
 {
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, TimeUnit.SECONDS ).build();
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     @Test
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
-        try ( FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( jimConfig() ) ) )
+        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File file = new File( "/a" ).getCanonicalFile();
+            File file = new File( testDirectory.directory(), "a" ).getCanonicalFile();
             fs.create( file ).close();
 
             try ( PageCache cache = ConfigurableStandalonePageCacheFactory.createPageCache( fs );
@@ -68,28 +65,5 @@ public class ConfigurableStandalonePageCacheFactoryTest
                 }
             }
         }
-    }
-
-    private Configuration jimConfig()
-    {
-        if ( SystemUtils.IS_OS_WINDOWS )
-        {
-            List<String> rootList = new ArrayList<>();
-            FileSystems.getDefault().getRootDirectories().forEach( path -> rootList.add( path.toString() ) );
-            Configuration.Builder builder = Configuration.windows().toBuilder();
-            if ( rootList.size() > 1 )
-            {
-                builder.setRoots( rootList.get( 0 ), rootList.subList( 1, rootList.size() ).toArray(new String[0] ) );
-            }
-            else
-            {
-                builder.setRoots( rootList.get( 0 ) );
-            }
-        }
-        else if ( SystemUtils.IS_OS_MAC_OSX )
-        {
-            return Configuration.osX();
-        }
-        return Configuration.unix();
     }
 }
