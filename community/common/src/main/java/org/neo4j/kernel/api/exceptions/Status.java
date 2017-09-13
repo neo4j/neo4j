@@ -264,7 +264,7 @@ public interface Status
         PlannerUnsupportedWarning( ClientNotification,
                 "This query is not supported by the COST planner." ),
         RuntimeUnsupportedWarning( ClientNotification,
-                "This query is not supported by the compiled runtime." ),
+                "This query is not supported by the chosen runtime." ),
         FeatureDeprecationWarning( ClientNotification,
                 "This feature is deprecated and will be removed in future versions." ),
         JoinHintUnsupportedWarning( ClientNotification,
