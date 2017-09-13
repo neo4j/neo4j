@@ -67,7 +67,8 @@ public class ToggleableInfoStream extends InfoStream
     }
 
     /** Returns the current time as string for insertion into log messages. */
-    protected String getTimestamp() {
+    protected String getTimestamp()
+    {
         // We "misuse" Java 7 FileTime API here, because it returns a nice ISO-8601 string with milliseconds (UTC timezone).
         // The alternative, SimpleDateFormat is not thread safe!
         return FileTime.fromMillis(System.currentTimeMillis()).toString();
