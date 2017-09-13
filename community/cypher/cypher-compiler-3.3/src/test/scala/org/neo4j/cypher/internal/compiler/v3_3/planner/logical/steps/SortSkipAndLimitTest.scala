@@ -32,7 +32,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
   val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
-  val sortDescription: SortDescription = Ascending("n")
+  val columnOrder: ColumnOrder = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
@@ -89,7 +89,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Sort(startPlan, Seq(sortDescription))(solved))
+    result should equal(Sort(startPlan, Seq(columnOrder))(solved))
 
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
@@ -106,7 +106,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    val sorted = Sort(startPlan, Seq(sortDescription))(solved)
+    val sorted = Sort(startPlan, Seq(columnOrder))(solved)
     val skipped = Skip(sorted, y)(solved)
     val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
 

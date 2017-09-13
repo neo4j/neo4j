@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValue
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast, symbols}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans
-import org.neo4j.cypher.internal.v3_3.logical.plans.{One, SortDescription, ZeroOneOrMany}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, One, ZeroOneOrMany}
 
 object LogicalPlanConverter {
 
@@ -649,7 +649,7 @@ object LogicalPlanConverter {
   }
 
   // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
-  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[SortDescription]):
+  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[ColumnOrder]):
   (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
 
     val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)

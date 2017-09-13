@@ -450,7 +450,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     LimitPlan(inner, count, ties)(solved)
   }
 
-  def planSort(inner: LogicalPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem])
+  def planSort(inner: LogicalPlan, descriptions: Seq[ColumnOrder], items: Seq[ast.SortItem])
               (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
     Sort(inner, descriptions)(solved)
