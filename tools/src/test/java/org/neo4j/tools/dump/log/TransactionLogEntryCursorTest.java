@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.hamcrest.Matchers.arrayWithSize;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -98,8 +99,12 @@ public class TransactionLogEntryCursorTest
         List<LogEntry> recordSet2 = makeTransaction( CHECK_POINT );
         TransactionLogEntryCursor transactionCursor = getTransactionLogEntryCursor( recordSet1, recordSet2 );
 
-        assertTrue( transactionCursor.next() );
-        assertThat( "All 4 checkpoints should be provided.", transactionCursor.get(), arrayWithSize( 4 ) );
+        for ( int i = 0; i < 4; i++ )
+        {
+            assertTrue( transactionCursor.next() );
+            assertThat( transactionCursor.get(), arrayWithSize( 1 ) );
+            assertThat( transactionCursor.get()[0].getType(), equalTo( CHECK_POINT ) );
+        }
     }
 
     private TransactionLogEntryCursor getTransactionLogEntryCursor( List<LogEntry>...txEntries )
