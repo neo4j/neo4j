@@ -39,7 +39,7 @@ case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
 
   def filter(f: String => Boolean): SymbolTable = SymbolTable(variables.filterKeys(f))
   def keys: Seq[String] = variables.keys.toIndexedSeq
-  def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => variables.exists(_._1 == dep))
+  def missingSymbolTableDependencies(x: TypeSafe): Set[String] = x.symbolTableDependencies.filterNot(dep => variables.exists(_._1 == dep))
 
   def evaluateType(name: String, expectedType: CypherType): CypherType = variables.get(name) match {
     case Some(typ) if expectedType.isAssignableFrom(typ) => typ
@@ -62,7 +62,7 @@ case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
       key => key -> variables(key).leastUpperBound(other.variables(key))
     }).toMap
 
-    new SymbolTable(mergedVariables)
+    SymbolTable(mergedVariables)
   }
 }
 
@@ -70,24 +70,5 @@ case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
 TypeSafe is everything that needs to check it's types
  */
 trait TypeSafe {
-  def symbolDependenciesMet(symbols: SymbolTable): Boolean =
-    symbolTableDependencies.forall(symbols.variables.contains)
-
   def symbolTableDependencies: Set[String]
-}
-
-/*
-Typed is the trait all classes that have a return type, or have dependencies on an expressions' type.
- */
-trait Typed {
-  /*
-  Checks if internal type dependencies are met, checks if the expected type is valid,
-  and returns the actual type of the expression. Will throw an exception if the check fails
-   */
-  def evaluateType(expectedType: CypherType, symbols: SymbolTable): CypherType
-
-  /*
-  Checks if internal type dependencies are met and returns the actual type of the expression
-  */
-  def getType(symbols: SymbolTable): CypherType = evaluateType(CTAny, symbols)
 }
