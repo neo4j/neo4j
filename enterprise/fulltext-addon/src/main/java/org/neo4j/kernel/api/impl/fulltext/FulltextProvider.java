@@ -95,7 +95,7 @@ public class FulltextProvider implements AutoCloseable
         } );
     }
 
-    synchronized void register( LuceneFulltext fulltextIndex ) throws IOException
+    void register( LuceneFulltext fulltextIndex ) throws IOException
     {
         fulltextIndex.open();
         if ( fulltextIndex.getType() == FulltextIndexType.NODES )

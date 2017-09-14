@@ -21,9 +21,12 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
@@ -48,47 +51,28 @@ public class BloomProcedures
     @Procedure( name = "db.fulltext.bloomFulltextNodes", mode = READ )
     public Stream<Output> bloomFulltextNodes( @Name( "terms" ) List<String> terms ) throws Exception
     {
-        Stream<Output> stream;
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES ) )
         {
-            stream = queryAsStream( terms, indexReader );
+            return queryAsStream( terms, indexReader );
         }
-        return stream;
     }
 
     @Description( "Queries the bloom index for relationships" )
     @Procedure( name = "db.fulltext.bloomFulltextRelationships", mode = READ )
     public Stream<Output> bloomFulltextRelationships( @Name( "terms" ) List<String> terms ) throws Exception
     {
-        Stream<Output> stream;
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS ) )
         {
-            stream = queryAsStream( terms, indexReader );
+            return queryAsStream( terms, indexReader );
         }
-        return stream;
     }
 
     private Stream<Output> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader )
     {
-        Stream<Output> stream;
         PrimitiveLongIterator primitiveLongIterator = indexReader.fuzzyQuery( terms.toArray( new String[0] ) );
-        Iterable<Output> iterable = () -> new Iterator<Output>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return primitiveLongIterator.hasNext();
-            }
+        Iterator<Output> iterator = PrimitiveLongCollections.map( Output::new, primitiveLongIterator );
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
 
-            @Override
-            public Output next()
-            {
-                return new Output( primitiveLongIterator.next() );
-            }
-        };
-
-        stream = StreamSupport.stream( iterable.spliterator(), false );
-        return stream;
     }
 
     public static class Output
