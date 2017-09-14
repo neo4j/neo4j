@@ -48,6 +48,7 @@ import org.neo4j.causalclustering.load_balancing.procedure.ResultFormatV1;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -222,7 +223,7 @@ public class ServerPoliciesLoadBalancingIT
         try ( InternalTransaction tx = db.beginTransaction( KernelTransaction.Type.explicit, EnterpriseSecurityContext.AUTH_DISABLED ) )
         {
             Map<String,Object> parameters = MapUtil.map( ParameterNames.CONTEXT.parameterName(), context );
-            try ( Result result = db.execute( tx, "CALL " + GET_SERVERS_V2.callName(), parameters ) )
+            try ( Result result = db.execute( tx, "CALL " + GET_SERVERS_V2.callName(), ValueUtils.asMapValue( parameters )) )
             {
                 while ( result.hasNext() )
                 {

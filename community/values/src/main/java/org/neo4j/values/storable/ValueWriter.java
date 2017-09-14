@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import java.nio.charset.StandardCharsets;
+
 /**
  * Writer of values.
  * <p>
@@ -62,7 +64,10 @@ public interface ValueWriter<E extends Exception>
 
     void writeString( char value ) throws E;
 
-    void writeUTF8( byte[] bytes, int offset, int length ) throws E;
+    default void writeUTF8( byte[] bytes, int offset, int length ) throws E
+    {
+        writeString( new String( bytes, offset, length, StandardCharsets.UTF_8 ) );
+    }
 
     default void writeString( char[] value ) throws E
     {
@@ -127,11 +132,6 @@ public interface ValueWriter<E extends Exception>
         @Override
         public void writeString( char value ) throws E
         {   // no-op
-        }
-
-        @Override
-        public void writeUTF8( byte[] bytes, int offset, int length ) throws E
-        { //no-op
         }
 
         @Override

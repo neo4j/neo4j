@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ValueUtils.fromNodeProxy
 import org.neo4j.graphdb.Node
+import org.neo4j.helpers.ValueUtils.fromNodeProxy
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 

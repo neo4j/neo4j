@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
 
@@ -101,7 +101,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
         ClientConnectionInfo clientConnection,
         InternalTransaction tx,
         String queryText,
-        Map<String,Object> queryParameters
+        MapValue queryParameters
     )
     {
         Statement initialStatement = statementSupplier.get();

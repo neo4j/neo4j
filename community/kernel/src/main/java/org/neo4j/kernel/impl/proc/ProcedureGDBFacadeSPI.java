@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.store.StoreId;
+import org.neo4j.values.virtual.MapValue;
 
 class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
@@ -121,6 +122,20 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 
     @Override
     public Result executeQuery( String query, Map<String,Object> parameters, TransactionalContext tc )
+    {
+        try
+        {
+            availability.assertDatabaseAvailable();
+            return sourceModule.queryExecutor.get().executeQuery( query, parameters, tc );
+        }
+        catch ( QueryExecutionKernelException e )
+        {
+            throw e.asUserException();
+        }
+    }
+
+    @Override
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext tc )
     {
         try
         {

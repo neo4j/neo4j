@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -29,6 +28,7 @@ import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.values.virtual.MapValue;
 
 public class StackingQueryRegistrationOperations implements QueryRegistrationOperations
 {
@@ -64,7 +64,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         KernelStatement statement,
         ClientConnectionInfo clientConnection,
         String queryText,
-        Map<String,Object> queryParameters
+        MapValue queryParameters
     )
     {
         long queryId = lastQueryId.incrementAndGet();

@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * To run a Cypher query, use this class.
@@ -50,6 +51,20 @@ public class ExecutionEngine implements QueryExecutionEngine
             CompatibilityFactory compatibilityFactory )
     {
         inner = new org.neo4j.cypher.internal.ExecutionEngine( queryService, logProvider, compatibilityFactory );
+    }
+
+    @Override
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+            throws QueryExecutionKernelException
+    {
+        try
+        {
+            return inner.execute( query, parameters, context );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
     }
 
     @Override

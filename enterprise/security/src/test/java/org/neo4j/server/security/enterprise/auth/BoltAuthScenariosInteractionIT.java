@@ -23,8 +23,8 @@ import org.junit.Rule;
 
 import java.util.Map;
 
-import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>

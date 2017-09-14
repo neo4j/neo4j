@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.string.UTF8
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
@@ -206,9 +205,6 @@ object CastSupport {
     override def writeByteArray(value: Array[Byte]): Unit = {
       _array = value
     }
-
-    override def writeUTF8(bytes: Array[Byte], offset: Int, length: Int): Unit =
-      write(UTF8.decode(bytes, offset, length));
   }
 
 }

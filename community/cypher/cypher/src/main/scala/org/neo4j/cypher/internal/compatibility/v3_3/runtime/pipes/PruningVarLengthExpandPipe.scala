@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,

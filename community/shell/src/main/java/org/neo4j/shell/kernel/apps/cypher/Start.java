@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -201,10 +202,10 @@ public class Start extends TransactionProvidingApp
         InternalTransaction transaction =
             graph.beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED );
         return contextFactory.newContext(
-            new ShellConnectionInfo( session.getId() ),
-            transaction,
-            queryText,
-            queryParameters
+                new ShellConnectionInfo( session.getId() ),
+                transaction,
+                queryText,
+                ValueUtils.asMapValue( queryParameters )
         );
     }
 }

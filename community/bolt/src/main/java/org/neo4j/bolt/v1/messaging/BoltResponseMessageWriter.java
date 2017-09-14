@@ -23,13 +23,14 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.logging.BoltMessageLogger;
-import org.neo4j.cypher.internal.javacompat.BaseToObjectValueWriter;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.PrettyPrinter;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
@@ -84,7 +85,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onSuccess( MapValue metadata ) throws IOException
     {
-        messageLogger.logSuccess( metadataSupplier( metadata ) );
+        messageLogger.logSuccess( () -> metadata );
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );
         onMessageComplete.onMessageComplete();
@@ -94,9 +95,9 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     {
         return () ->
         {
-            MapToObjectWriter writer = new MapToObjectWriter();
-            metadata.writeTo( writer );
-            return writer.value().toString();
+            PrettyPrinter printer = new PrettyPrinter();
+            metadata.writeTo( printer );
+            return printer.value();
         };
     }
 

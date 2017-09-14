@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,9 @@ import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.concurrent.Runnables;
 import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
@@ -63,7 +66,6 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
 import static org.neo4j.bolt.v1.messaging.message.PullAllMessage.pullAll;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
-import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
 {
@@ -100,7 +102,7 @@ public class ResetFuzzTest
         // given
         life.start();
         BoltWorker boltWorker = workerFactory.newWorker( boltChannel );
-        boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
+        boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", Collections.emptyMap(), nullResponseHandler() ) );
 
         NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();
         BoltMessageRouter router = new BoltMessageRouter(
@@ -169,6 +171,11 @@ public class ResetFuzzTest
             sent.add( message );
             message.dispatch( messageHandler );
         }
+    }
+
+    private MapValue map( Object... keyValues )
+    {
+        return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
     @After

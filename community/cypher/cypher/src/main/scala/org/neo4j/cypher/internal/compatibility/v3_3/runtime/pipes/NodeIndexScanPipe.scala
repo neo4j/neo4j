@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.helpers.ValueUtils
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,

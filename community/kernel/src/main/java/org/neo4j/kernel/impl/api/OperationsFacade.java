@@ -112,6 +112,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.deduplicate;
@@ -1327,7 +1328,7 @@ public class OperationsFacade
     public ExecutingQuery startQueryExecution(
         ClientConnectionInfo descriptor,
         String queryText,
-        Map<String,Object> queryParameters )
+        MapValue queryParameters )
     {
         statement.assertOpen();
         return queryRegistrationOperations().startQueryExecution( statement, descriptor, queryText, queryParameters );

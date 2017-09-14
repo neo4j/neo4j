@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.virtual.MapValue;
 
 public class NullBoltMessageLogger implements BoltMessageLogger
 {
@@ -78,7 +79,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier )
+    public void logRun( String statement, Supplier<MapValue> parametersSupplier )
     {
     }
 
@@ -103,7 +104,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     }
 
     @Override
-    public void logSuccess( Supplier<String> metadataSupplier )
+    public void logSuccess( Supplier<MapValue> metadataSupplier )
     {
     }
 

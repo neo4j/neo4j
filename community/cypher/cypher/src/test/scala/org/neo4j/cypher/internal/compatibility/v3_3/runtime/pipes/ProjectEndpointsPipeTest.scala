@@ -27,9 +27,9 @@ import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ValueUtils.{asListOfEdges, fromNodeProxy}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.helpers.ValueUtils.{asListOfEdges, fromNodeProxy}
 import org.neo4j.values.AnyValue
 
 class ProjectEndpointsPipeTest extends CypherFunSuite {

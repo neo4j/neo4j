@@ -23,8 +23,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -38,9 +36,13 @@ import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.result.QueryResult.Record;
+import org.neo4j.helpers.ValueUtils;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,14 +57,13 @@ import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
-import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unchecked" )
 public class BoltConnectionIT
 {
-    private static final Map<String,Object> EMPTY_PARAMS = emptyMap();
+    private static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     private static final String USER_AGENT = "BoltConnectionIT/0.0";
     private static final BoltChannel boltChannel = mock( BoltChannel.class );
     @Rule
@@ -460,9 +461,7 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
-        Map<String, Object> params = new HashMap<>();
-        params.put( "csvFileUrl", createLocalIrisData( machine ) );
-
+        MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
         long txIdBeforeQuery = env.lastClosedTxId();
         long batch = 40;
 
@@ -508,8 +507,7 @@ public class BoltConnectionIT
         // Given
         BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
-        Map<String, Object> params = new HashMap<>();
-        params.put( "csvFileUrl", createLocalIrisData( machine ) );
+        MapValue params = map( "csvFileUrl", createLocalIrisData( machine ) );
         runAndPull( machine, "BEGIN" );
 
         // When
@@ -614,8 +612,7 @@ public class BoltConnectionIT
     {
         for ( String className : IRIS_CLASS_NAMES )
         {
-            Map<String, Object> params = new HashMap<>();
-            params.put( "className", className );
+            MapValue params = map( "className", className );
             runAndPull( machine, "CREATE (c:Class {name: {className}}) RETURN c", params );
         }
 
@@ -627,12 +624,12 @@ public class BoltConnectionIT
         return runAndPull( machine, statement, EMPTY_PARAMS, SUCCESS );
     }
 
-    private Record[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params ) throws Exception
+    private Record[] runAndPull( BoltStateMachine machine, String statement, MapValue params ) throws Exception
     {
         return runAndPull( machine, statement, params, SUCCESS );
     }
 
-    private Record[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params,
+    private Record[] runAndPull( BoltStateMachine machine, String statement, MapValue params,
             BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -641,6 +638,11 @@ public class BoltConnectionIT
         RecordedBoltResponse response = recorder.nextResponse();
         assertEquals( expectedResponse, response.message() );
         return response.records();
+    }
+
+    private MapValue map( Object... keyValues )
+    {
+        return ValueUtils.asMapValue( MapUtil.map( keyValues ) );
     }
 
     private static String[] IRIS_CLASS_NAMES =

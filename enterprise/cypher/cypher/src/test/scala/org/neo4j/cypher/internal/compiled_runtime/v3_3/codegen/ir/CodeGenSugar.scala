@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
 
-import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
@@ -81,7 +80,7 @@ trait CodeGenSugar extends MockitoSugar {
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
       transactionalContext = TransactionalContextWrapper(
         contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
-                                  "no query text exists for this test", Collections.emptyMap()))
+                                  "no query text exists for this test", EMPTY_MAP))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
       val result = plan
         .executionResultBuilder(queryContext, mode, tracer(mode, queryContext), EMPTY_MAP, new TaskCloser)

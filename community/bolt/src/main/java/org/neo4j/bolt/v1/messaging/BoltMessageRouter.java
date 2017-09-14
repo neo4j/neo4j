@@ -29,6 +29,7 @@ import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * This class is responsible for routing incoming request messages to a worker
@@ -86,7 +87,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     }
 
     @Override
-    public void onRun( String statement, Map<String,Object> params )
+    public void onRun( String statement, MapValue params )
     {
         messageLogger.logRun( statement, () -> params );
         worker.enqueue( session -> session.run( statement, params, runHandler ) );

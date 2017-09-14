@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.virtual.MapValue;
 
 public interface BoltMessageLogger
 {
@@ -42,7 +43,7 @@ public interface BoltMessageLogger
 
     void logInit( String userAgent );
 
-    void logRun( String statement, Supplier<Map<String, Object>> parametersSupplier );
+    void logRun( String statement, Supplier<MapValue> parametersSupplier );
 
     void logPullAll();
 
@@ -52,7 +53,7 @@ public interface BoltMessageLogger
 
     void logReset();
 
-    void logSuccess( Supplier<String> metadataSupplier );
+    void logSuccess( Supplier<MapValue> metadataSupplier );
 
     void logFailure( Status status );
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.javacompat.ValueUtils
+import org.neo4j.helpers.ValueUtils
 
 case class AllNodesScanPipe(ident: String)(val id: Id = new Id) extends Pipe {
 

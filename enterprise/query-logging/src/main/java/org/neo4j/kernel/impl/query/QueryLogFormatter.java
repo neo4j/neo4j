@@ -25,6 +25,9 @@ import java.util.Map;
 
 import org.neo4j.helpers.Strings;
 import org.neo4j.kernel.api.query.QuerySnapshot;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.utils.PrettyPrinter;
+import org.neo4j.values.virtual.MapValue;
 
 class QueryLogFormatter
 {
@@ -59,12 +62,51 @@ class QueryLogFormatter
         result.append( ") - " );
     }
 
+    static void formatMapValue( StringBuilder result, MapValue params )
+    {
+        formatMapValue( result, params, Collections.emptySet() );
+    }
+
+    static void formatMapValue( StringBuilder result, MapValue params, Collection<String> obfuscate )
+    {
+        result.append( '{' );
+        if ( params != null )
+        {
+            String sep = "";
+            for ( Map.Entry<String,AnyValue> entry : params.entrySet() )
+            {
+                result
+                        .append( sep )
+                        .append( entry.getKey() )
+                        .append( ": " );
+
+                if ( obfuscate.contains( entry.getKey() ) )
+                {
+                    result.append( "******" );
+                }
+                else
+                {
+                    result.append( formatAnyValue( entry.getValue() ));
+                }
+                sep = ", ";
+            }
+        }
+        result.append( "}" );
+    }
+
+    static String formatAnyValue( AnyValue value )
+    {
+        PrettyPrinter printer = new PrettyPrinter( "'" );
+        value.writeTo( printer );
+        return printer.value();
+    }
+
     static void formatMap( StringBuilder result, Map<String,Object> params )
     {
         formatMap( result, params, Collections.emptySet() );
     }
 
-    static void formatMap( StringBuilder result, Map<String,Object> params, Collection<String> obfuscate )
+    static void formatMap( StringBuilder result, Map<String, Object> params, Collection<String> obfuscate )
     {
         result.append( '{' );
         if ( params != null )
@@ -95,7 +137,7 @@ class QueryLogFormatter
     {
         if ( value instanceof Map<?,?> )
         {
-            formatMap( result, (Map<String,Object>) value );
+            formatMapValue( result, (MapValue) value );
         }
         else if ( value instanceof String )
         {

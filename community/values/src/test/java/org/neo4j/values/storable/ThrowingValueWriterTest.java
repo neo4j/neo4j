@@ -110,12 +110,6 @@ public class ThrowingValueWriterTest
         }
 
         @Override
-        public void writeUTF8( byte[] bytes, int offset, int length ) throws TestException
-        {
-            throw new TestException();
-        }
-
-        @Override
         public void writeString( char[] value, int offset, int length ) throws TestException
         {
             throw new TestException();

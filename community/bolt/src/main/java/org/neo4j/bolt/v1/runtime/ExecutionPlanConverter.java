@@ -24,8 +24,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.javacompat.ValueUtils;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;

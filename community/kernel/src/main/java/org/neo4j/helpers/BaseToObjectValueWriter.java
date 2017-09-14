@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.javacompat;
+package org.neo4j.helpers;
 
 import java.lang.reflect.Array;
 import java.util.ArrayDeque;
@@ -34,7 +34,6 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
-import org.neo4j.string.UTF8;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
@@ -368,12 +367,6 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     public void writeString( char[] value, int offset, int length ) throws RuntimeException
     {
         writeValue( new String( value, offset, length ) );
-    }
-
-    @Override
-    public void writeUTF8( byte[] bytes, int offset, int length ) throws E
-    {
-        writeValue( UTF8.decode( bytes, offset, length ) );
     }
 
     @Override

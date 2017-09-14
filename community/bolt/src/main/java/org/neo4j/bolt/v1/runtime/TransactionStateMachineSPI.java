@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -125,7 +125,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
     public BoltResultHandle executeQuery( BoltQuerySource querySource,
             SecurityContext securityContext,
             String statement,
-            Map<String,Object> params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
+            MapValue params, ThrowingAction<KernelException> onFail ) throws QueryExecutionKernelException
     {
         InternalTransaction internalTransaction = queryService.beginTransaction( implicit, securityContext );
         ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName,

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.javacompat.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
+import org.neo4j.helpers.{NodeProxyWrappingNodeValue, RelationshipProxyWrappingEdgeValue}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, MapValue}

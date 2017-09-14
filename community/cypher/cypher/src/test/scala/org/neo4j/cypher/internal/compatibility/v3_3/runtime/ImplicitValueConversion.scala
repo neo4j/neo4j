@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values._
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._

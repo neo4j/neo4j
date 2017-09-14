@@ -45,6 +45,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ValueUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -145,7 +146,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         }
         try
         {
-            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, params ), PullAllMessage.pullAll() ) );
+            subject.client.send( TransportTestUtil.chunk( RunMessage.run( call, ValueUtils.asMapValue( params ) ), PullAllMessage.pullAll() ) );
             resultConsumer.accept( collectResults( subject.client ) );
             return "";
         }

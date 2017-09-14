@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, LabelId, PropertyKeyId}
-import org.neo4j.cypher.internal.javacompat.ValueUtils.fromNodeProxy
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.graphdb.Node
+import org.neo4j.helpers.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.stringValue
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {

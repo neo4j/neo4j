@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi.v3_3
 
 import java.net.URL
-import java.util.Collections
 
 import org.hamcrest.Matchers.greaterThan
 import org.junit.Assert.assertThat
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.storageengine.api.StorageStatement
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.JavaConverters._
 
@@ -197,7 +197,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
-    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", Collections.emptyMap())
+    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", EMPTY_MAP)
   }
 
   private def createMiniGraph(relTypeName: String): Node = {

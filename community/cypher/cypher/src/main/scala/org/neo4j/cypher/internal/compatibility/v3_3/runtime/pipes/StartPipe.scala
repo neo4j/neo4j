@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsAllNodes}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue
 
 sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,

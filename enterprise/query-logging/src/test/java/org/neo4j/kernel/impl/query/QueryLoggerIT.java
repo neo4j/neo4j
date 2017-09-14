@@ -60,6 +60,7 @@ import org.neo4j.server.security.enterprise.auth.EmbeddedInteraction;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
@@ -227,7 +228,7 @@ public class QueryLoggerIT
         List<String> logLines = readAllLines( logFilename );
         assertEquals( 1, logLines.size() );
         assertThat( logLines.get( 0 ), endsWith( String.format(
-                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: [Jake, Eddie, Susannah]}}"
+                " ms: %s - %s - {props: {name: 'Roland', position: 'Gunslinger', followers: ['Jake', 'Eddie', 'Susannah']}}"
                         + " - {}",
                 clientConnectionInfo(),
                 query ) ) );
@@ -344,7 +345,7 @@ public class QueryLoggerIT
         try ( InternalTransaction tx = database
                 .beginTransaction( KernelTransaction.Type.explicit, neo ) )
         {
-            Result res = database.execute( tx, query, Collections.emptyMap() );
+            Result res = database.execute( tx, query, VirtualValues.EMPTY_MAP );
             res.close();
             tx.success();
         }

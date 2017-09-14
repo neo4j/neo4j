@@ -37,13 +37,13 @@ import org.neo4j.cypher.internal.compiler.v3_1.{PlannerName, ExplainMode => Expl
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_3
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Notification, ResourceIterator}
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters._

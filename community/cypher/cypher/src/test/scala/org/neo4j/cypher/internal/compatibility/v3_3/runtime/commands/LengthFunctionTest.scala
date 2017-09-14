@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConvers
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{LengthFunction, PathImpl, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ValueUtils
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.storable.Values.intValue
 
 class LengthFunctionTest extends CypherFunSuite {

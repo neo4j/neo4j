@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.spi.v3_3
 
-import java.util.Collections
-
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
@@ -33,6 +31,7 @@ import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLock
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
@@ -40,7 +39,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
-    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", Collections.emptyMap())
+    contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", EMPTY_MAP)
   }
 
   override protected def initTest(): Unit = {
