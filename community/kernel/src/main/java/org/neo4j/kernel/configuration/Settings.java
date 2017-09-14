@@ -956,7 +956,7 @@ public class Settings
                 @Override
                 public String toString()
                 {
-                    return "Non empty list";
+                    return "non-empty list";
                 }
             };
 

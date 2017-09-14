@@ -49,11 +49,11 @@ import static org.junit.Assert.assertFalse;
 
 public class BloomIT
 {
-    public static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
-    public static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
-    public static final String ENTITYID = "entityid";
+    private static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
+    private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
+    private static final String ENTITYID = "entityid";
     @Rule
-    public final FileSystemRule fs = new DefaultFileSystemRule();
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
     @Rule
