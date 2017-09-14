@@ -53,7 +53,7 @@ case class CostCompatibility[C <: CompilerContext, T <: Transformer[C, Compilati
       case CypherRuntime.default => None
       case CypherRuntime.interpreted => Some(InterpretedRuntimeName)
       case CypherRuntime.compiled => Some(CompiledRuntimeName)
-      case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 2.3")
+      case _ => throw new IllegalArgumentException("Runtime is not supported in Cypher 3.2")
     }
 
     val maybeUpdateStrategy = updateStrategy match {

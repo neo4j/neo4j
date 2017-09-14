@@ -89,77 +89,21 @@ trait Compatibility[C <: CompilerContext] {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl, transactionalContext,preParsingNotifications, pos3_2), extractedParameters)
+        val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
+        val executionPlanWrapper = new ExecutionPlanWrapper(
+          planImpl,
+          transactionalContext,
+          preParsingNotifications,
+          pos3_2,
+          searchMonitor,
+          executionMonitor)
+        (executionPlanWrapper, extractedParameters)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, transactionalContext: TransactionalContextWrapperV3_3,
-                             preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_2.InputPosition)
-    extends ExecutionPlan {
-
-    private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
-
-    private def queryContext(transactionalContext: TransactionalContextWrapperV3_3) = {
-      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_2(transactionalContext.tc))(
-        searchMonitor)
-      new ExceptionTranslatingQueryContext(ctx)
-    }
-
-    def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode,
-            params: Map[String, Any]): Result = {
-      val innerExecutionMode = executionMode match {
-        case CypherExecutionMode.explain => ExplainModev3_2
-        case CypherExecutionMode.profile => ProfileModev3_2
-        case CypherExecutionMode.normal => NormalModev3_2
-      }
-      exceptionHandler.runSafely {
-        val innerParams = typeConversions.asPrivateMap(params)
-        val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
-
-        new ExecutionResult(
-          new ClosingExecutionResult(
-            transactionalContext.tc.executingQuery(),
-            new ExecutionResultWrapper(innerResult,
-                                       inner.plannerUsed,
-                                       inner.runtimeUsed,
-                                       preParsingNotifications,
-                                       Some(offSet)),
-            exceptionHandler.runSafely)
-        )
-      }
-    }
-
-    def isPeriodicCommit: Boolean = inner.isPeriodicCommit
-
-    def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3): Boolean =
-      inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
-
-    override def plannerInfo: PlannerInfo = {
-      import scala.collection.JavaConverters._
-      new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, label, propertyKeys) =>
-          val labelId = transactionalContext.readOperations.labelGetForName(label)
-          schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, label, propertyKey) =>
-          val labelId = transactionalContext.readOperations.labelGetForName(label)
-          schemaIndexUsage(identifier, labelId, label, propertyKey)
-        case LegacyNodeIndexUsage(identifier, index) => explicitIndexUsage(identifier, "NODE", index)
-        case LegacyRelationshipIndexUsage(identifier, index) => explicitIndexUsage(identifier, "RELATIONSHIP", index)
-      }.asJava)
-    }
-
-    override def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode, params: MapValue): Result = {
-      var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
-      params.foreach(new BiConsumer[String, AnyValue] {
-        override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
-      })
-
-      run(transactionalContext, executionMode, map.toMap)
-    }
-  }
 
 }
 
@@ -170,3 +114,72 @@ class StringInfoLogger(log: Log) extends InfoLogger {
   }
 }
 
+class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2,
+                           transactionalContext: TransactionalContextWrapperV3_3,
+                           preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                           offSet: frontend.v3_2.InputPosition,
+                           searchMonitor: IndexSearchMonitor,
+                           executionMonitor: QueryExecutionMonitor)
+  extends ExecutionPlan {
+
+
+  private def queryContext(transactionalContext: TransactionalContextWrapperV3_3) = {
+    val ctx = new TransactionBoundQueryContext(TransactionalContextWrapperV3_2(transactionalContext.tc))(
+      searchMonitor)
+    new ExceptionTranslatingQueryContext(ctx)
+  }
+
+  def run(transactionalContext: TransactionalContextWrapperV3_3, executionMode: CypherExecutionMode,
+          params: Map[String, Any]): Result = {
+    val innerExecutionMode = executionMode match {
+      case CypherExecutionMode.explain => ExplainModev3_2
+      case CypherExecutionMode.profile => ProfileModev3_2
+      case CypherExecutionMode.normal => NormalModev3_2
+    }
+    exceptionHandler.runSafely {
+      val innerParams = typeConversions.asPrivateMap(params)
+      val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
+
+      new ExecutionResult(
+        new ClosingExecutionResult(
+          transactionalContext.tc.executingQuery(),
+          new ExecutionResultWrapper(innerResult,
+            inner.plannerUsed,
+            inner.runtimeUsed,
+            preParsingNotifications,
+            Some(offSet)),
+          exceptionHandler.runSafely)(executionMonitor)
+      )
+    }
+  }
+
+  def isPeriodicCommit: Boolean = inner.isPeriodicCommit
+
+  def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3): Boolean =
+    inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))
+
+  override val plannerInfo: PlannerInfo = {
+    import scala.collection.JavaConverters._
+    new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
+      case SchemaIndexSeekUsage(identifier, label, propertyKeys) =>
+        val labelId = transactionalContext.readOperations.labelGetForName(label)
+        schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+      case SchemaIndexScanUsage(identifier, label, propertyKey) =>
+        val labelId = transactionalContext.readOperations.labelGetForName(label)
+        schemaIndexUsage(identifier, labelId, label, propertyKey)
+      case LegacyNodeIndexUsage(identifier, index) => explicitIndexUsage(identifier, "NODE", index)
+      case LegacyRelationshipIndexUsage(identifier, index) => explicitIndexUsage(identifier, "RELATIONSHIP", index)
+    }.asJava)
+  }
+
+  override def run(transactionalContext: TransactionalContextWrapperV3_3,
+                   executionMode: CypherExecutionMode,
+                   params: MapValue): Result = {
+    var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
+    params.foreach(new BiConsumer[String, AnyValue] {
+      override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
+    })
+
+    run(transactionalContext, executionMode, map.toMap)
+  }
+}
