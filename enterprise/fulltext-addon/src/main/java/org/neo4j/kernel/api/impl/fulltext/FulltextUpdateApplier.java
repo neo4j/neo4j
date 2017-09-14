@@ -52,6 +52,8 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 class FulltextUpdateApplier
 {
     private static final FulltextIndexUpdate STOP_SIGNAL = () -> null;
+    private static final int POPULATING_BATCH_SIZE = 10_000;
+
     private final LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
     private final Log log;
     private final AvailabilityGuard availabilityGuard;
@@ -147,7 +149,8 @@ class FulltextUpdateApplier
         return enqueuePopulateIndex( index, db, db::getAllRelationships );
     }
 
-    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db, Supplier<ResourceIterable<? extends Entity>> entitySupplier )
+    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db,
+                                              Supplier<ResourceIterable<? extends Entity>> entitySupplier )
             throws IOException
     {
         BinaryLatch completedLatch = new BinaryLatch();
@@ -166,6 +169,12 @@ class FulltextUpdateApplier
                     if ( !properties.isEmpty() )
                     {
                         documents.add( documentRepresentingProperties( entityId, properties ) );
+                    }
+
+                    if ( documents.size() > POPULATING_BATCH_SIZE )
+                    {
+                        indexWriter.addDocuments( documents.size(), documents );
+                        documents.clear();
                     }
                 }
             }
