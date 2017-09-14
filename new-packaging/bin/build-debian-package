@@ -52,6 +52,10 @@ do
   newname=${package_directory}/debian/${package_name}${postfix}
   mv ${package_directory}/debian/${file} ${newname}
 done
+if [ ${package_name} = "neo4j-enterprise" ]
+then
+  cat ${package_directory}/debian/license-agreement-preinst >> ${package_directory}/debian/${package_name}.preinst
+fi
 
 # Update changelog, control and files with package name etc
 DISTRIBUTION=${distribution} DATE=`date -R` PACKAGE_NAME=${package_name} VERSION=${deb_version} envsubst '${DATE} ${DISTRIBUTION} ${PACKAGE_NAME} ${VERSION}' < src/debian/changelog > ${package_directory}/debian/changelog
