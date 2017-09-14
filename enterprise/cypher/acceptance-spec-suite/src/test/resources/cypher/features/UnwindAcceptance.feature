@@ -196,3 +196,16 @@ Feature: UnwindAcceptance
       | [:S] |
     And no side effects
 
+  Scenario: Nested primitive lists and UNWIND
+    Given an empty graph
+    When executing query:
+      """
+      UNWIND [[1],[2],[3]] AS i RETURN i
+      """
+    Then the result should be:
+      | i   |
+      | [1] |
+      | [2] |
+      | [3] |
+    And no side effects
+

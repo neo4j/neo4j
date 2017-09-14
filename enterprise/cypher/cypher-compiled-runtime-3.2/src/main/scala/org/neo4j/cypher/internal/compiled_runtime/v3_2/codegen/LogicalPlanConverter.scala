@@ -526,6 +526,10 @@ object LogicalPlanConverter {
         case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
           if RepresentationType.isPrimitive(innerReprType) =>
           (CypherCodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
+        case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType)) =>
+          (CypherCodeGenType(innerType, innerReprType), ir.UnwindCollection(opName, collection))
+        case CypherCodeGenType(symbols.ListType(innerType), _) =>
+          (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.ListType(innerType), _) =>
           (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.CTAny, _) =>
