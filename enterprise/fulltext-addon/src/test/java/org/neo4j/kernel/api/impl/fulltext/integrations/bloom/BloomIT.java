@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -29,7 +28,6 @@ import org.junit.rules.ExpectedException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -314,71 +312,6 @@ public class BloomIT
             {
                 assertThat( Iterators.count( result ), is( 2L ) );
             }
-        }
-    }
-
-    @Ignore( "This is more of a rudimentary write-throughput benchmark, which we can delete or turn into a proper " +
-             "benchmark at a later date" )
-    @Test
-    public void fiveHundredThousandUpdates() throws Exception
-    {
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
-
-        int trials = 50;
-        int threadCount = 10;
-        int updatesPerThread = 1000;
-        int updatesPerIteration = 10;
-        int iterationsPerThread = updatesPerThread / updatesPerIteration;
-        String[] words =
-                ("dui nunc mattis enim ut tellus elementum sagittis vitae et leo duis ut diam quam nulla porttitor " +
-                 "massa id neque aliquam vestibulum morbi blandit cursus risus at ultrices mi tempus imperdiet nulla " +
-                 "malesuada pellentesque elit eget gravida cum sociis natoque penatibus et magnis dis parturient " +
-                 "montes nascetur ridiculus mus mauris").split( " " );
-
-        Runnable work = () ->
-        {
-            ThreadLocalRandom rng = ThreadLocalRandom.current();
-            StringBuilder sb = new StringBuilder();
-            for ( int i = 0; i < iterationsPerThread; i++ )
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    for ( int j = 0; j < updatesPerIteration; j++ )
-                    {
-                        sb.setLength( 0 );
-                        int wordCount = rng.nextInt( 3, 7 );
-                        for ( int k = 0; k < wordCount; k++ )
-                        {
-                            sb.append( words[rng.nextInt( words.length )] ).append( ' ' );
-                        }
-                        sb.setLength( sb.length() - 1 );
-                        db.createNode().setProperty( "prop", sb.toString() );
-                    }
-                    tx.success();
-                }
-            }
-        };
-
-        for ( int i = 0; i < trials; i++ )
-        {
-            long startMillis = System.currentTimeMillis();
-            Thread[] threads = new Thread[threadCount];
-            for ( int j = 0; j < threadCount; j++ )
-            {
-                threads[j] = new Thread( work );
-            }
-            for ( Thread thread : threads )
-            {
-                thread.start();
-            }
-            for ( Thread thread : threads )
-            {
-                thread.join();
-            }
-            long elapsedMillis = System.currentTimeMillis() - startMillis;
-            System.out.printf( "elapsed: %s ms.%n", elapsedMillis );
         }
     }
 
