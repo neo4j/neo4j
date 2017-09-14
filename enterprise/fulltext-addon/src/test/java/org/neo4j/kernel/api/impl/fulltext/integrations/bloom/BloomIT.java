@@ -318,7 +318,7 @@ public class BloomIT
     }
 
     @Ignore( "This is more of a rudimentary write-throughput benchmark, which we can delete or turn into a proper " +
-             "benchmark at a later date")
+             "benchmark at a later date" )
     @Test
     public void fiveHundredThousandUpdates() throws Exception
     {
