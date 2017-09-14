@@ -27,6 +27,7 @@ import org.apache.lucene.search.Query;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
 
@@ -40,14 +41,14 @@ import org.neo4j.kernel.api.impl.schema.WritableDatabaseSchemaIndex;
  */
 public class PartitionedIndexWriter implements LuceneIndexWriter
 {
-    private final WritableDatabaseSchemaIndex index;
+    private final WritableAbstractDatabaseIndex index;
 
     // by default we still keep a spare of 10% to the maximum partition size: During concurrent updates
     // it could happen that 2 threads reserve space in a partition (without claiming it by doing addDocument):
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
 
-    public PartitionedIndexWriter( WritableDatabaseSchemaIndex index ) throws IOException
+    public PartitionedIndexWriter( WritableAbstractDatabaseIndex index ) throws IOException
     {
         this.index = index;
     }

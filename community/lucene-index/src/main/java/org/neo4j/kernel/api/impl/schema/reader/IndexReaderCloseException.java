@@ -29,9 +29,9 @@ import java.io.UncheckedIOException;
  * @see org.neo4j.kernel.api.impl.index.partition.PartitionSearcher
  * @see SimpleIndexReader
  */
-class IndexReaderCloseException extends UncheckedIOException
+public class IndexReaderCloseException extends UncheckedIOException
 {
-    IndexReaderCloseException( IOException cause )
+    public IndexReaderCloseException( IOException cause )
     {
         super( cause );
     }

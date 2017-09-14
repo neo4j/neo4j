@@ -46,6 +46,7 @@
     <module>deferred-locks</module>
     <module>ha</module>
     <module>procedure-compiler-enterprise-tests</module>
+    <module>fulltext-addon</module>
   </modules>
 
   <profiles>

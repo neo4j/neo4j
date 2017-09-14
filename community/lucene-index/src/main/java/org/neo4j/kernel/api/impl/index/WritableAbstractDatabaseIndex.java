@@ -203,4 +203,14 @@ public class WritableAbstractDatabaseIndex<T extends AbstractLuceneIndex> implem
     {
         return luceneIndex.getPartitions();
     }
+
+    public boolean hasSinglePartition( List<AbstractIndexPartition> partitions )
+    {
+        return luceneIndex.hasSinglePartition( partitions );
+    }
+
+    public AbstractIndexPartition getFirstPartition( List<AbstractIndexPartition> partitions )
+    {
+        return luceneIndex.getFirstPartition( partitions );
+    }
 }
