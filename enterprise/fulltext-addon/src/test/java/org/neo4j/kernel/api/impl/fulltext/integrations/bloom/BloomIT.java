@@ -38,6 +38,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -45,8 +46,10 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class BloomIT
@@ -272,6 +275,44 @@ public class BloomIT
         Result result = db.execute( String.format( NODES, "Esplanaden" ) );
         assertFalse( result.hasNext() );
         result.close();
+    }
+
+    @Test
+    public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Langelinie Pavillinen" );
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "Langelinie" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+
+            Thread th = new Thread( () ->
+            {
+                try ( Transaction tx1 = db.beginTx() )
+                {
+                    db.createNode().setProperty( "prop", "Den Lille Havfrue, Langelinie" );
+                    tx1.success();
+                }
+            } );
+            th.start();
+            th.join();
+
+            try ( Result result = db.execute( String.format( NODES, "Langelinie" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 2L ) );
+            }
+        }
     }
 
     @Test
