@@ -32,8 +32,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -52,7 +56,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
@@ -64,15 +68,15 @@ import static org.neo4j.graphdb.Label.label;
 public class NonUniqueIndexTest
 {
     @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( getClass() );
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public PageCacheAndDependenciesRule resources =
+            new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, NonUniqueIndexTest.class );
 
     @Test
     public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
     {
         // Given
-        GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler();
+        Config config = Config.defaults();
+        GraphDatabaseService db = newEmbeddedGraphDatabaseWithSlowJobScheduler( config );
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -98,10 +102,10 @@ public class NonUniqueIndexTest
         db.shutdown();
 
         // Then
-        assertThat( nodeIdsInIndex( 1, "value" ), equalTo( singletonList( node.getId() ) ) );
+        assertThat( nodeIdsInIndex( config, 1, "value" ), equalTo( singletonList( node.getId() ) ) );
     }
 
-    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler()
+    private GraphDatabaseService newEmbeddedGraphDatabaseWithSlowJobScheduler( Config config )
     {
         GraphDatabaseFactoryState graphDatabaseFactoryState = new GraphDatabaseFactoryState();
         graphDatabaseFactoryState.setUserLogProvider( NullLogService.getInstance().getUserLogProvider() );
@@ -126,7 +130,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), Config.defaults(),
+        }.newFacade( resources.directory().graphDbDir(), config,
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
@@ -157,14 +161,24 @@ public class NonUniqueIndexTest
         };
     }
 
-    private List<Long> nodeIdsInIndex( int indexId, String value ) throws Exception
+    private List<Long> nodeIdsInIndex( Config config, int indexId, String value ) throws Exception
     {
-        Config config = Config.defaults();
-        DefaultFileSystemAbstraction fs = fileSystemRule.get();
-        File storeDir = directory.graphDbDir();
+        FileSystemAbstraction fs = resources.fileSystem();
+        File storeDir = resources.directory().graphDbDir();
         NullLogProvider logProvider = NullLogProvider.getInstance();
         OperationalMode operationalMode = OperationalMode.single;
-        SchemaIndexProvider indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config, operationalMode );
+        PageCache pageCache = resources.pageCache();
+        Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
+        SchemaIndexProvider indexProvider;
+        if ( useFusionIndex )
+        {
+            indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
+                    .newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
+        }
+        else
+        {
+            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config, operationalMode );
+        }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
                 IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );
