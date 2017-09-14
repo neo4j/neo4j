@@ -147,8 +147,7 @@ class FulltextUpdateApplier
         return enqueuePopulateIndex( index, db, db::getAllRelationships );
     }
 
-    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db,
-                                              Supplier<ResourceIterable<? extends Entity>> entitySupplier )
+    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db, Supplier<ResourceIterable<? extends Entity>> entitySupplier )
             throws IOException
     {
         BinaryLatch completedLatch = new BinaryLatch();
@@ -156,6 +155,7 @@ class FulltextUpdateApplier
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
+            ArrayList<Document> documents = new ArrayList<>();
             try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
             {
                 ResourceIterable<? extends Entity> entities = entitySupplier.get();
@@ -165,11 +165,11 @@ class FulltextUpdateApplier
                     Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
                     if ( !properties.isEmpty() )
                     {
-                        updateDocument( indexWriter, entityId, properties );
+                        documents.add( documentRepresentingProperties( entityId, properties ) );
                     }
                 }
             }
-
+            indexWriter.addDocuments( documents.size(), documents );
             return Pair.of( index, completedLatch );
         };
 
