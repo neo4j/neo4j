@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
-import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID;
 
 /**
  * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
@@ -105,7 +105,7 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getSortedValuesIterator( NODE_ID_KEY, Sort.RELEVANCE );
+            return docValuesCollector.getSortedValuesIterator( LUCENE_FULLTEXT_ADDON_INTERNAL_ID, Sort.RELEVANCE );
         }
         catch ( IOException e )
         {

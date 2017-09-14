@@ -940,6 +940,54 @@ public class Settings
         };
     }
 
+    public static BiFunction<List<String>,Function<String,String>,List<String>> nonEmptyList =
+            new BiFunction<List<String>,Function<String,String>,List<String>>()
+            {
+                @Override
+                public List<String> apply( List<String> values, Function<String,String> settings )
+                {
+                    if ( values.isEmpty() )
+                    {
+                        throw new IllegalArgumentException( "setting must not be empty" );
+                    }
+                    return values;
+                }
+
+                @Override
+                public String toString()
+                {
+                    return "non-empty list";
+                }
+            };
+
+    public static BiFunction<List<String>,Function<String,String>,List<String>> matchesAny( final String regex )
+    {
+        final Pattern pattern = Pattern.compile( regex );
+
+        return new BiFunction<List<String>,Function<String,String>,List<String>>()
+        {
+            @Override
+            public List<String> apply( List<String> values, Function<String,String> settings )
+            {
+                for ( String value : values )
+                {
+                    if ( !pattern.matcher( value ).matches() )
+                    {
+                        throw new IllegalArgumentException( "value does not match expression:" + regex );
+                    }
+                }
+
+                return values;
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format( MATCHES_PATTERN_MESSAGE, regex );
+            }
+        };
+    }
+
     public static <T extends Comparable<T>> BiFunction<T, Function<String, String>, T> min( final T min )
     {
         return new BiFunction<T, Function<String, String>, T>()

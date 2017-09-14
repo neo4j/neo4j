@@ -34,6 +34,7 @@ import org.neo4j.logging.Log;
  */
 public class FulltextProvider implements AutoCloseable
 {
+    public static final String LUCENE_FULLTEXT_ADDON_INTERNAL_ID = "__lucene__fulltext__addon__internal__id__";
     private static FulltextProvider instance;
     private final GraphDatabaseService db;
     private final Log log;

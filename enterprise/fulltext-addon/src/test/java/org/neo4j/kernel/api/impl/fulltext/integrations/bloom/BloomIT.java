@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,8 +35,11 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
@@ -45,13 +49,15 @@ import static org.junit.Assert.assertFalse;
 
 public class BloomIT
 {
-    public static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
-    public static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
-    public static final String ENTITYID = "entityid";
+    private static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
+    private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
+    private static final String ENTITYID = "entityid";
     @Rule
-    public final FileSystemRule fs = new DefaultFileSystemRule();
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     private TestGraphDatabaseFactory factory;
     private GraphDatabaseService db;
@@ -117,9 +123,29 @@ public class BloomIT
         assertFalse( result.hasNext() );
     }
 
+    @Test
+    public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
+    {
+        Map<Setting<?>,String> config = new HashMap<>();
+        expectedException.expect( new RootCauseMatcher<>( InvalidSettingException.class, "Bad value" ) );
+        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+    }
+
+    @Test
+    public void shouldNotBeAbleToStartWithIllegalPropertyKey() throws Exception
+    {
+        Map<Setting<?>,String> config = new HashMap<>();
+        config.put( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID + ", hello" );
+        expectedException.expect( InvalidSettingException.class );
+        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+    }
+
     @After
     public void after() throws Exception
     {
-        db.shutdown();
+        if ( db != null )
+        {
+            db.shutdown();
+        }
     }
 }

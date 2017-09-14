@@ -36,7 +36,6 @@ import static org.apache.lucene.document.Field.Store.NO;
 
 class LuceneFulltextDocumentStructure
 {
-    static final String ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
@@ -72,8 +71,8 @@ class LuceneFulltextDocumentStructure
 
         private DocWithId()
         {
-            idField = new StringField( ID_KEY, "", NO );
-            idValueField = new NumericDocValuesField( ID_KEY, 0L );
+            idField = new StringField( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, "", NO );
+            idValueField = new NumericDocValuesField( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -102,7 +101,7 @@ class LuceneFulltextDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( ID_KEY ) )
+                if ( !fieldName.equals( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID ) )
                 {
                     it.remove();
                 }
@@ -113,7 +112,7 @@ class LuceneFulltextDocumentStructure
 
     static Term newTermForChangeOrRemove( long id )
     {
-        return new Term( ID_KEY, "" + id );
+        return new Term( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, "" + id );
     }
 
 }
