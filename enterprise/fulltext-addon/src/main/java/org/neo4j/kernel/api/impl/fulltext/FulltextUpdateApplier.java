@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -48,14 +49,13 @@ class FulltextUpdateApplier
 {
     private static final FulltextIndexUpdate STOP_SIGNAL = () -> null;
     private final LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
-    private final ApplierThread workerThread;
     private final Log log;
+    private ApplierThread workerThread;
 
     FulltextUpdateApplier( Log log )
     {
         this.log = log;
         workQueue = new LinkedBlockingQueue<>();
-        workerThread = new ApplierThread( workQueue, log );
     }
 
     <E extends Entity> BinaryLatch updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index ) throws
@@ -149,7 +149,7 @@ class FulltextUpdateApplier
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
-            try ( Transaction tx = db.beginTx() )
+            try ( Transaction ignore = db.beginTx( 10, TimeUnit.HOURS ) )
             {
                 ResourceIterable<? extends Entity> entities = entitySupplier.get();
                 for ( Entity entity : entities )
@@ -184,6 +184,11 @@ class FulltextUpdateApplier
 
     void start()
     {
+        if ( workerThread != null )
+        {
+            throw new IllegalStateException( workerThread.getName() + " already started." );
+        }
+        workerThread = new ApplierThread( workQueue, log );
         workerThread.start();
     }
 
@@ -199,6 +204,7 @@ class FulltextUpdateApplier
         try
         {
             workerThread.join();
+            workerThread = null;
         }
         catch ( InterruptedException e )
         {
