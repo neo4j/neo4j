@@ -21,9 +21,7 @@ package org.neo4j.collection.pool;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -56,7 +54,7 @@ public class MarshlandPoolTest
     {
         // Given
         Pool<Object> delegatePool = mock(Pool.class);
-        when(delegatePool.acquire()).thenReturn( 1337, 1338L, 1339L );
+        when(delegatePool.acquire()).thenReturn( 1337 );
 
         final MarshlandPool<Object> pool = new MarshlandPool<>(delegatePool);
 
@@ -94,53 +92,6 @@ public class MarshlandPoolTest
         verify( delegatePool, times(1) ).acquire();
         verify( delegatePool, times(1) ).release( any() );
         verifyNoMoreInteractions( delegatePool );
-    }
-
-    /*
-     * This test is about how the LocalSlot works with nested use, i.e. that acquiring an instance from the local slot
-     * and while having it (before releasing it) acquiring a "nested" instance which gets released before releasing the
-     * first one. The test is about how that interacts with the delegate pool and that the nested instance should not
-     * take precedence over the first instance in the local slot.
-     */
-    @Test
-    public void shouldHaveNestedUsageFallBackToDelegatePool() throws Exception
-    {
-        // given
-        Pool<Integer> delegatePool = mock( Pool.class );
-        when( delegatePool.acquire() ).thenReturn( 5, 6 );
-        MarshlandPool<Integer> pool = new MarshlandPool<>( delegatePool );
-
-        // when
-        Integer top = pool.acquire();
-        assertEquals( 5, top.intValue() );
-        verify( delegatePool, times( 1 ) ).acquire();
-
-        // do this a couple of times, just to verify that too
-        int hoops = 2;
-        for ( int i = 1; i <= hoops; i++ )
-        {
-            // and when w/o releasing the top one, acquire a nested
-            Integer nested = pool.acquire();
-            assertEquals( 6, nested.intValue() );
-            verify( delegatePool, times( 1 + i ) ).acquire();
-
-            // releasing the nested
-            pool.release( nested );
-            verify( delegatePool, times( i ) ).release( nested );
-        }
-
-        // when finally releasing the top one
-        verify( delegatePool, times( hoops ) ).release( anyInt() );
-        pool.release( top );
-        verify( delegatePool, times( hoops ) ).release( anyInt() );
-
-        // then the next acquire should see the top one
-        verify( delegatePool, times( 1 + hoops ) ).acquire();
-        Integer topAgain = pool.acquire();
-        verify( delegatePool, times( 1 + hoops ) ).acquire();
-        assertEquals( 5, topAgain.intValue() );
-        pool.release( topAgain );
-        verify( delegatePool, times( hoops ) ).release( anyInt() );
     }
 
     private void assertPoolEventuallyReturns( Pool<Object> pool, int expected ) throws InterruptedException
