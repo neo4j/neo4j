@@ -67,10 +67,10 @@ class ListSliceTest extends CypherFunSuite {
   private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {
     val f = if (from == NO_VALUE) None else Some(Literal(from))
     val t = if (to == NO_VALUE) None else Some(Literal(to))
-    ListSlice(collection, f, t)(ctx)(state)
+    ListSlice(collection, f, t)(ctx, state)
   }
 
   private def sliceValue(in: Any) = {
-    ListSlice(Literal(in), Some(Literal(0)), Some(Literal(1)))(ctx)(state)
+    ListSlice(Literal(in), Some(Literal(0)), Some(Literal(1)))(ctx, state)
   }
 }

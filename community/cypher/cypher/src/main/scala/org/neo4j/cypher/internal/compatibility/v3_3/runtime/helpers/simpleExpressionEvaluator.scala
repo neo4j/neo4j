@@ -36,12 +36,17 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val commandExpr = converters.toCommandExpression(expr)
 
-    implicit val emptyQueryState = new QueryState(query = null, resources = null, params = VirtualValues.EMPTY_MAP,
-                                                  decorator = NullPipeDecorator, triadicState = mutable.Map.empty,
-                                                  repeatableReads = mutable.Map.empty)
+    val emptyQueryState =
+      new QueryState(
+        query = null,
+        resources = null,
+        params = VirtualValues.EMPTY_MAP,
+        decorator = NullPipeDecorator,
+        triadicState = mutable.Map.empty,
+        repeatableReads = mutable.Map.empty)
 
     try {
-      Some(commandExpr(ExecutionContext.empty))
+      Some(commandExpr(ExecutionContext.empty, emptyQueryState))
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context

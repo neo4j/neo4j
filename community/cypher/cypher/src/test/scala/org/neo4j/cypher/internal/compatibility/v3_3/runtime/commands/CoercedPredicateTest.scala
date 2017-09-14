@@ -28,14 +28,14 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class CoercedPredicateTest extends CypherFunSuite {
 
   val ctx: ExecutionContext = null
-  implicit val state: QueryState = QueryStateHelper.empty
+  val state: QueryState = QueryStateHelper.empty
 
   test("should_coerce_non_empty_collection_to_true") {
     // Given
     val collection = ListLiteral(Literal(1))
 
     // When
-    val result = CoercedPredicate(collection).isTrue(ctx)
+    val result = CoercedPredicate(collection).isTrue(ctx, state)
 
     // Then
     result should equal(true)
@@ -46,7 +46,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     val collection = ListLiteral()
 
     // When
-    val result = CoercedPredicate(collection).isTrue(ctx)
+    val result = CoercedPredicate(collection).isTrue(ctx, state)
 
     // Then
     result should equal(false)
@@ -57,7 +57,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     val inner = Not(True())
 
     // When
-    val result = CoercedPredicate(inner).isTrue(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx, state)
 
     // Then
     result should equal(false)
@@ -68,7 +68,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     val inner = True()
 
     // When
-    val result = CoercedPredicate(inner).isTrue(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx, state)
 
     // Then
     result should equal(true)
@@ -79,7 +79,7 @@ class CoercedPredicateTest extends CypherFunSuite {
     val inner = Literal(null)
 
     // When
-    val result = CoercedPredicate(inner).isTrue(ctx)
+    val result = CoercedPredicate(inner).isTrue(ctx, state)
 
     // Then
     result should equal(false)

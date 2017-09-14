@@ -33,7 +33,7 @@ class SimpleCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("one"))
@@ -47,7 +47,7 @@ class SimpleCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("two"))
@@ -61,7 +61,7 @@ class SimpleCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(NO_VALUE)
@@ -75,7 +75,7 @@ class SimpleCaseTest extends CypherFunSuite {
     ) defaultsTo "default"
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("default"))
@@ -89,7 +89,7 @@ class SimpleCaseTest extends CypherFunSuite {
     ) defaultsTo "default"
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     assert(result == stringValue("default"))

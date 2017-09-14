@@ -29,8 +29,6 @@ import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
 
-import scala.collection.JavaConverters._
-
 class KeysFunctionTest extends CypherFunSuite {
 
   test("test Property Keys") {
@@ -52,7 +50,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
-    val result = KeysFunction(Variable("n"))(ctx)(state)
+    val result = KeysFunction(Variable("n"))(ctx, state)
 
     // THEN
     result should equal(list(stringValue("theProp1"), stringValue("OtherProp"), stringValue("MoreProp")))
@@ -71,7 +69,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
-    val result = KeysFunction(Variable("n"))(ctx)(state)
+    val result = KeysFunction(Variable("n"))(ctx, state)
 
     // THEN
     result should equal(EMPTY_LIST)
@@ -83,9 +81,9 @@ class KeysFunctionTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext.empty
 
+    val function = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))
     // WHEN
-    val result = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(
-      state)
+    val result = function(ctx, state)
 
     result should equal(list(stringValue("foo"), stringValue("bar"), stringValue("baz")))
   }

@@ -40,7 +40,7 @@ case class ProjectionSlottedPipe(source: Pipe, introducedExpressions: Map[Slot, 
 
     case (RefSlot(offset, _, _, _), expression) =>
       (ctx: ExecutionContext, state: QueryState) =>
-        val result = expression(ctx)(state)
+        val result = expression(ctx, state)
         ctx.setRefAt(offset, result)
   }
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

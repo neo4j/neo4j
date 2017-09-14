@@ -39,7 +39,7 @@ class StdevFunction(val value: Expression, val population:Boolean)
   private var count:Int = 0
   private var total:Double = 0
 
-  def result(implicit state: QueryState): AnyValue = {
+  override def result(state: QueryState): AnyValue = {
     if(count < 2) {
       Values.ZERO_FLOAT
     } else {
@@ -55,8 +55,8 @@ class StdevFunction(val value: Expression, val population:Boolean)
     }
   }
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
+  override def apply(data: ExecutionContext, state: QueryState) {
+    actOnNumber(value(data, state), (number) => {
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()

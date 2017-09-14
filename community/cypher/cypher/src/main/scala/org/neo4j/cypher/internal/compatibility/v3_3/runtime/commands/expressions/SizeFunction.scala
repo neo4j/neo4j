@@ -31,7 +31,7 @@ case class SizeFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
     with ListSupport {
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case _: PathValue => throw new CypherTypeException("SIZE cannot be used on paths")
     case s: TextValue => Values.longValue(s.length())
     case x => Values.longValue(makeTraversable(x).size())

@@ -29,7 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 
 case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit queryState: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, queryState: QueryState): AnyValue = {
     def getNode(x: String): NodeValue = ctx(x).asInstanceOf[NodeValue]
 
     def getRel(x: String): EdgeValue = ctx(x).asInstanceOf[EdgeValue]

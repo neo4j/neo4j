@@ -29,7 +29,7 @@ case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = ???
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ???
 
   override def symbolTableDependencies: Set[String] = ???
 

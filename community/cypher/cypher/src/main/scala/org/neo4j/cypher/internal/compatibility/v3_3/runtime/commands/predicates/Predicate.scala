@@ -26,16 +26,20 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
-import org.neo4j.values.storable.{BooleanValue, TextValue, Values}
+import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.util.{Failure, Success, Try}
 
 abstract class Predicate extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).map(Values.booleanValue).getOrElse(Values.NO_VALUE)
-  def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
+  def apply(ctx: ExecutionContext, state: QueryState): Value =
+    isMatch(ctx, state).
+      map(Values.booleanValue).
+      getOrElse(Values.NO_VALUE)
+
+  def isTrue(m: ExecutionContext, state: QueryState): Boolean = isMatch(m, state).getOrElse(false)
   def andWith(other: Predicate): Predicate = Ands(this, other)
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean]
 
   // This is the un-dividable list of predicates. They can all be ANDed
   // together
@@ -68,13 +72,13 @@ abstract class CompositeBooleanPredicate extends Predicate {
    * exceptions). Any exception thrown is held until the end (or until the exit state) so that it is
    * superceded by exit predicates (false for AND and true for OR).
    */
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     predicates.foldLeft[Try[Option[Boolean]]](Success(Some(!shouldExitWhen))) { (previousValue, predicate) =>
       previousValue match {
         // if a previous evaluation was true (false) the OR (AND) result is determined
         case Success(Some(result)) if result == shouldExitWhen => previousValue
         case _ =>
-          Try(predicate.isMatch(m)) match {
+          Try(predicate.isMatch(m, state)) match {
             // If we get the exit case (false for AND and true for OR) ignore any error cases
             case Success(Some(result)) if result == shouldExitWhen => Success(Some(shouldExitWhen))
             // Handle null only for non error cases
@@ -96,7 +100,7 @@ abstract class CompositeBooleanPredicate extends Predicate {
 }
 
 case class Not(a: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = a.isMatch(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = a.isMatch(m, state) match {
     case Some(x) => Some(!x)
     case None    => None
   }
@@ -108,11 +112,12 @@ case class Not(a: Predicate) extends Predicate {
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (a.isMatch(m), b.isMatch(m)) match {
-    case (None, _)          => None
-    case (_, None)          => None
-    case (Some(l), Some(r)) => Some(l ^ r)
-  }
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] =
+    (a.isMatch(m, state), b.isMatch(m, state)) match {
+      case (None, _) => None
+      case (_, None) => None
+      case (Some(l), Some(r)) => Some(l ^ r)
+    }
 
   override def toString: String = "(" + a + " XOR " + b + ")"
   def containsIsNull = a.containsIsNull || b.containsIsNull
@@ -124,7 +129,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 }
 
 case class IsNull(expression: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = expression(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = expression(m, state) match {
     case Values.NO_VALUE => Some(true)
     case _ => Some(false)
   }
@@ -137,7 +142,7 @@ case class IsNull(expression: Expression) extends Predicate {
 }
 
 case class True() extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Some(true)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Some(true)
   override def toString: String = "true"
   def containsIsNull = false
   def rewrite(f: (Expression) => Expression) = f(this)
@@ -146,7 +151,7 @@ case class True() extends Predicate {
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = variable(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = variable(m, state) match {
     case pc: NodeValue => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.id, _)))
     case pc: EdgeValue => Some(
       propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.id, _)))
@@ -168,7 +173,7 @@ case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends P
 
 trait StringOperator {
   self: Predicate =>
-  override def isMatch(m: ExecutionContext)(implicit state: QueryState) = (lhs(m), rhs(m)) match {
+  override def isMatch(m: ExecutionContext, state: QueryState) = (lhs(m, state), rhs(m, state)) match {
     case (l: TextValue, r: TextValue) => Some(compare(l.stringValue(), r.stringValue()))
     case (_, _) => None
   }
@@ -203,8 +208,8 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
                                    (implicit converter: TextValue => TextValue = identity) extends Predicate {
   lazy val pattern = converter(regexExpr.anyVal.asInstanceOf[TextValue]).stringValue().r.pattern
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) =
-    lhsExpr(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState) =
+    lhsExpr(m, state) match {
       case s: TextValue => Some(pattern.matcher(s.stringValue()).matches())
       case _ => None
     }
@@ -225,14 +230,18 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
 
 case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
                             (implicit converter: TextValue => TextValue = identity) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (lhsExpr(m), regexExpr(m)) match {
-    case (lhs, rhs) if rhs == Values.NO_VALUE || lhs == Values.NO_VALUE => None
-    case (lhs, rhs) =>
-      val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
-      if (!lhs.isInstanceOf[TextValue])
-        None
-      else
-        Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val lValue = lhsExpr(m, state)
+    val rValue = regexExpr(m, state)
+    (lValue, rValue) match {
+      case (lhs, rhs) if rhs == Values.NO_VALUE || lhs == Values.NO_VALUE => None
+      case (lhs, rhs) =>
+        val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
+        if (!lhs.isInstanceOf[TextValue])
+          None
+        else
+          Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+    }
   }
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
@@ -250,8 +259,8 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
 }
 
 case class NonEmpty(collection: Expression) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    collection(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    collection(m, state) match {
       case IsList(x) => Some(x.nonEmpty)
       case x if x == Values.NO_VALUE => None
       case x => throw new CypherTypeException("Expected a collection, got `%s`".format(x))
@@ -271,7 +280,7 @@ case class NonEmpty(collection: Expression) extends Predicate {
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = entity(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = entity(m, state) match {
 
     case Values.NO_VALUE =>
       None
@@ -305,7 +314,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 case class CoercedPredicate(inner: Expression) extends Predicate {
   def arguments = Seq(inner)
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState) = inner(m) match {
+  def isMatch(m: ExecutionContext, state: QueryState) = inner(m, state) match {
     case x: BooleanValue => Some(x.booleanValue())
     case Values.NO_VALUE => None
     case IsList(coll) => Some(coll.nonEmpty)

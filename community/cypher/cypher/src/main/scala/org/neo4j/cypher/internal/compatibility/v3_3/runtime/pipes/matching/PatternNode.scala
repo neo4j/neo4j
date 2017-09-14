@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.{KeyToken, UnresolvedProperty}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -41,7 +41,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   def canUseThis(graphNodeId: Long, state: QueryState, ctx: ExecutionContext): Boolean =
     nodeHasLabels(graphNodeId, state.query) &&
-    nodeHasProperties(graphNodeId, ctx)(state)
+    nodeHasProperties(graphNodeId, ctx, state)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
@@ -102,14 +102,14 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
     }
   }
 
-  private def nodeHasProperties(graphNodeId: Long, execCtx: ExecutionContext)(implicit state: QueryState): Boolean =
+  private def nodeHasProperties(graphNodeId: Long, execCtx: ExecutionContext, state: QueryState): Boolean =
     properties.forall {
     case (token, expression) =>
       val propertyId = token.getOptId(state.query)
       if (propertyId.isEmpty) false // The property doesn't exist in the graph
       else {
         val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
-        val expectedValue = expression(execCtx)
+        val expectedValue = expression(execCtx, state)
         value == expectedValue
       }
   }

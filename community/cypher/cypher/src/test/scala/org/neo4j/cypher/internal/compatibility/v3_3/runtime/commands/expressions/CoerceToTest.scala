@@ -211,7 +211,7 @@ class CoerceToTest extends CypherFunSuite {
 
       def notTo(typ: CypherType) = {
         a[CypherTypeException] should be thrownBy {
-          CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty)
+          CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty, state)
         }
 
         remaining -= typ
@@ -226,12 +226,12 @@ class CoerceToTest extends CypherFunSuite {
         override def arguments: Seq[Expression] = Seq.empty
 
         override def symbolTableDependencies: Set[String] = Set.empty
-        def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = in
+        def apply(ctx: ExecutionContext, state: QueryState): AnyValue = in
 
       }
 
       case class to(typ: CypherType) {
-        private val coercedValue = CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty)
+        private val coercedValue = CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty, state)
 
         counter += 1
         remaining -= typ

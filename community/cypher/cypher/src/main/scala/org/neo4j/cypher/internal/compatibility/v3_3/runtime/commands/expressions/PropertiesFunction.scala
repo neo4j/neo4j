@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) =
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
     value match {
       case IsMap(mapValue) => mapValue(state.query)
       case v =>

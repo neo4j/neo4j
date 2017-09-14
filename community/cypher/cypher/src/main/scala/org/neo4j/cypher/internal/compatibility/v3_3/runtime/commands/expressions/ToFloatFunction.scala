@@ -32,7 +32,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case v: DoubleValue => v
     case v: NumberValue => Values.doubleValue(v.doubleValue())
     case v: TextValue =>

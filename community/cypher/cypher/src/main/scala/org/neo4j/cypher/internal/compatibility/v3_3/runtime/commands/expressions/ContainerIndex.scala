@@ -30,10 +30,10 @@ case class ContainerIndex(expression: Expression, index: Expression) extends Nul
 with ListSupport {
   def arguments = Seq(expression, index)
 
-  def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue = {
     value match {
       case IsMap(m) =>
-        val item = index(ctx)
+        val item = index(ctx, state)
         if (item == Values.NO_VALUE) Values.NO_VALUE
         else {
           val key = CastSupport.castOrFail[TextValue](item)
@@ -41,7 +41,7 @@ with ListSupport {
         }
 
       case IsList(collection) =>
-        val item = index(ctx)
+        val item = index(ctx, state)
         if (item == Values.NO_VALUE) Values.NO_VALUE
         else {
           var idx = validateTypeAndRange(item)
@@ -54,8 +54,9 @@ with ListSupport {
         }
 
       case _ =>
+        val indexValue = index(ctx, state)
         throw new CypherTypeException(
-          s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[${index(ctx)}])")
+          s"`$value` is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key (found: $value[$indexValue])")
     }
   }
 

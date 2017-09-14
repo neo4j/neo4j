@@ -33,7 +33,7 @@ import scala.collection.Map
 case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
   extends Expression with GraphElementPropertyFunctions {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val variableValue = ctx(id)
 
     val mapOfProperties = variableValue match {
@@ -41,7 +41,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
       case IsMap(m) => if (includeAllProps) m(state.query) else VirtualValues.emptyMap()
     }
     val mapOfLiteralValues = literalExpressions.map {
-      case (k, e) => (k, e(ctx))
+      case (k, e) => (k, e(ctx, state))
     }.toMap.asJava
 
 

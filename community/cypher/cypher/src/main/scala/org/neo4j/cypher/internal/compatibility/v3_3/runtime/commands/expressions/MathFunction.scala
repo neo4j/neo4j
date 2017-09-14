@@ -38,8 +38,8 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val value = arg(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val value = arg(ctx, state)
     if (Values.NO_VALUE == value) Values.NO_VALUE else Values.doubleValue(apply(asDouble(value).doubleValue()))
   }
 
@@ -71,8 +71,8 @@ trait NumericHelper {
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val value = argument(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val value = argument(ctx, state)
     if (Values.NO_VALUE == value) Values.NO_VALUE
     else value match {
       case f: IntegralValue => Values.longValue(Math.abs(f.longValue()))
@@ -107,9 +107,9 @@ case class AtanFunction(argument: Expression) extends NullSafeMathFunction(argum
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val yValue = y(ctx)
-    val xValue = x(ctx)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val yValue = y(ctx, state)
+    val xValue = x(ctx, state)
     if (Values.NO_VALUE == yValue || Values.NO_VALUE == xValue)
       Values.NO_VALUE
     else
@@ -153,7 +153,7 @@ case class DegreesFunction(argument: Expression) extends NullSafeMathFunction(ar
 
 case class EFunction() extends Expression() {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.E
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.E
 
   override def arguments = Seq()
 
@@ -192,7 +192,7 @@ case class Log10Function(argument: Expression) extends NullSafeMathFunction(argu
 
 case class PiFunction() extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.PI
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.PI
 
   override def arguments = Seq()
 
@@ -231,7 +231,7 @@ case class TanFunction(argument: Expression) extends NullSafeMathFunction(argume
 
 case class RandFunction() extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.doubleValue(math.random)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.doubleValue(math.random)
 
   override def arguments = Seq()
 
@@ -242,13 +242,13 @@ case class RandFunction() extends Expression {
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val stepVal = asLong(step(ctx))
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val stepVal = asLong(step(ctx, state))
     if (stepVal.longValue() == 0L)
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
-    val startVal = asLong(start(ctx))
-    val inclusiveEndVal = asLong(end(ctx))
+    val startVal = asLong(start(ctx, state))
+    val inclusiveEndVal = asLong(end(ctx, state))
 
     VirtualValues.range(startVal.longValue(), inclusiveEndVal.longValue(), stepVal.longValue())
   }
@@ -265,8 +265,8 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val value = argument(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
+    val value = argument(ctx, state)
     if (Values.NO_VALUE == value) Values.NO_VALUE
     else {
       Values.longValue(Math.signum(asDouble(value).doubleValue()).toLong)

@@ -28,10 +28,10 @@ trait AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def aggregateOn(values: AnyValue*): Any = {
-    implicit val state = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     val func: AggregationFunction = createAggregator(Variable("x"))
-    values.foreach(value => func(ExecutionContext.from("x" -> value)))
-    func.result
+    values.foreach(value => func(ExecutionContext.from("x" -> value), state))
+    func.result(state)
   }
 }

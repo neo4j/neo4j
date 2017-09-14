@@ -29,9 +29,9 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def compare(comparisonResult: Int): Boolean
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val l = left(m)
-    val r = right(m)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val l = left(m, state)
+    val r = right(m, state)
 
     if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
     else (l, r) match {
@@ -70,9 +70,9 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
     else None
   }
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val a1 = a(m)
-    val b1 = b(m)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val a1 = a(m, state)
+    val b1 = b(m, state)
 
     (a1, b1) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None

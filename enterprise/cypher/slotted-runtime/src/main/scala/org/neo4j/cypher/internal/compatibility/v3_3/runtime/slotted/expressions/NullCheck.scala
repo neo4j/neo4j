@@ -28,7 +28,7 @@ import org.neo4j.values.storable.Values
 
 case class NullCheck(offset: Int, inner: Expression) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
-    if (nodeIsNull(ctx.getLongAt(offset))) Values.NO_VALUE else inner(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue =
+    if (nodeIsNull(ctx.getLongAt(offset))) Values.NO_VALUE else inner(ctx, state)
 
 }

@@ -34,7 +34,7 @@ class GenericCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("one"))
@@ -48,7 +48,7 @@ class GenericCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("two"))
@@ -62,7 +62,7 @@ class GenericCaseTest extends CypherFunSuite {
     )
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(NO_VALUE)
@@ -76,7 +76,7 @@ class GenericCaseTest extends CypherFunSuite {
     ) defaultsTo "other"
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     result should equal(stringValue("other"))
@@ -87,7 +87,7 @@ class GenericCaseTest extends CypherFunSuite {
     val caseExpr = GenericCase(IndexedSeq(CoercedPredicate(Null())->Literal(42)), Some(Literal("defaults")))
 
     //WHEN
-    val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
+    val result = caseExpr(ExecutionContext.empty, QueryStateHelper.empty)
 
     //THEN
     assert(result === stringValue("defaults"))

@@ -137,5 +137,5 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   private def idx(value: Any)(implicit collection: Expression) =
-    ContainerIndex(collection, Literal(value))(ctx)(state)
+    ContainerIndex(collection, Literal(value))(ctx, state)
 }

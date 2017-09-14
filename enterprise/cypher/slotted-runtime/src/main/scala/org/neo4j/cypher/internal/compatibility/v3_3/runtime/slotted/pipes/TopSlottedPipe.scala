@@ -48,14 +48,13 @@ case class TopNSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], countExpress
   countExpression.registerOwningPipe(this)
 
   protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else if (orderBy.isEmpty)
       input
     else {
       val first = input.next()
-      val count = countExpression(first).asInstanceOf[NumberValue].longValue().toInt
+      val count = countExpression(first, state).asInstanceOf[NumberValue].longValue().toInt
       val topTable = new DefaultComparatorTopTable(comparator, count)
       topTable.add(first)
 
@@ -81,7 +80,6 @@ case class Top1SlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else if (orderBy.isEmpty)
@@ -111,7 +109,6 @@ case class Top1WithTiesSlottedPipe(source: Pipe, orderBy: List[ColumnOrder])
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     if (input.isEmpty)
       Iterator.empty
     else {

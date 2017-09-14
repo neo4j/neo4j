@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = coerce(expr(ctx), typ)(state.query)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = coerce(expr(ctx, state), typ)(state.query)
 
   def symbolTableDependencies = expr.symbolTableDependencies
 

@@ -46,7 +46,7 @@ object Ands {
 
 @deprecated("Use Ands (plural) instead")
 class And(val a: Predicate, val b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m, state)
 
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"

@@ -38,7 +38,7 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
     }
   }
 
-  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case n: NodeValue => Values.longValue(getDegree(state.query, n.id()))
     case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
   }

@@ -139,5 +139,5 @@ class TestExpression extends Expression {
 
   def symbolTableDependencies = Set()
 
-  def apply(v1: ExecutionContext)(implicit state: QueryState) = null
+  def apply(v1: ExecutionContext, state: QueryState) = null
 }

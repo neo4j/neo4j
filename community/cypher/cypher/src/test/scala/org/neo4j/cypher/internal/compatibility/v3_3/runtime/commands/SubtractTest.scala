@@ -34,26 +34,26 @@ class SubtractTest extends CypherFunSuite {
 
   test("numbers") {
     val expr = Subtract(Literal(2), Literal(1))
-   expr(m)(s) should equal(longValue(1))
+   expr(m, s) should equal(longValue(1))
   }
 
   test("strings") {
     val expr = Subtract(Literal("hello"), Literal("world"))
-    intercept[CypherTypeException](expr(m)(s))
+    intercept[CypherTypeException](expr(m, s))
   }
 
   test("stringPlusNumber") {
     val expr = Subtract(Literal("hello"), Literal(1))
-    intercept[CypherTypeException](expr(m)(s))
+    intercept[CypherTypeException](expr(m, s))
   }
 
   test("numberPlusString") {
     val expr = Subtract(Literal(1), Literal("world"))
-    intercept[CypherTypeException](expr(m)(s))
+    intercept[CypherTypeException](expr(m, s))
   }
 
   test("numberPlusBool") {
     val expr = Subtract(Literal("1"), Literal(true))
-    intercept[CypherTypeException](expr(m)(s))
+    intercept[CypherTypeException](expr(m, s))
   }
 }

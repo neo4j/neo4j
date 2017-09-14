@@ -31,7 +31,7 @@ case class Ors(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPred
 
 @deprecated("Use Ors (plural) instead")
 case class Or(a: Predicate, b: Predicate) extends Predicate {
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = Ors(NonEmptyList(a, b)).isMatch(m, state)
 
   override def toString: String = s"($a OR $b)"
   def containsIsNull = a.containsIsNull || b.containsIsNull

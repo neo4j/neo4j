@@ -28,8 +28,7 @@ import org.neo4j.values.virtual.{NodeValue, VirtualValues}
 
 case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)
-                      (implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case n: NodeValue =>
       val ctx = state.query
       VirtualValues.list(ctx.getLabelsForNode(n.id()).map(t => Values.stringValue(ctx.getLabelName(t))).toArray:_*)

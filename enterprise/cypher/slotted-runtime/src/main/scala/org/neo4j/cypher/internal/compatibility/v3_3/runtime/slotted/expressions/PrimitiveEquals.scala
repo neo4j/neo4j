@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate with SlottedExpression {
 
-  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val value1 = a(m)
-    val value2 = b(m)
+  override def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val value1 = a(m, state)
+    val value2 = b(m, state)
     Some(value1 == value2)
   }
   override def containsIsNull: Boolean = false

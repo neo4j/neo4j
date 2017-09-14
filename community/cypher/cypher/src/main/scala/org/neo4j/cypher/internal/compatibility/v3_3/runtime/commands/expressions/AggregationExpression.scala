@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 abstract class AggregationExpression extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) =
+  def apply(ctx: ExecutionContext, state: QueryState) =
     throw new UnsupportedOperationException("Aggregations should not be used like this.")
 
   def createAggregationFunction: AggregationFunction

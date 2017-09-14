@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = value match {
     case r: EdgeValue => r.`type`()
 
     case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)

@@ -176,7 +176,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
     val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
-    predicate.forall(_.isTrue(m)(state))
+    predicate.forall(_.isTrue(m, state))
   }
 
   private def traverseNextNodeOrYield[U](remaining: Set[MatchingPair], history: History, yielder: ExecutionContext => U): Boolean = {

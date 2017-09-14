@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 case class TimestampFunction() extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.longValue(state.readTimeStamp())
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = Values.longValue(state.readTimeStamp())
 
   def innerExpectedType = CTString
 

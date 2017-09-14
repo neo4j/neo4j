@@ -43,7 +43,7 @@ class LabelsFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
-    val result = LabelsFunction(Variable("n"))(ctx)(state)
+    val result = LabelsFunction(Variable("n"))(ctx, state)
 
     // THEN
     result should equal(list(stringValue("bambi")))

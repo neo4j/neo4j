@@ -44,7 +44,7 @@ case class DistinctSlottedPipe(source: Pipe,
     val result = input.map(incoming => {
       val outgoing = PrimitiveExecutionContext(pipelineInformation)
       groupingExpressions.foreach {
-        case (offset, expression) => outgoing.setRefAt(offset, expression(incoming)(state))
+        case (offset, expression) => outgoing.setRefAt(offset, expression(incoming, state))
       }
       outgoing
     })

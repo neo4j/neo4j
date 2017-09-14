@@ -38,7 +38,7 @@ class ReduceTest extends CypherFunSuite {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    reduce.apply(m)(s) should equal(longValue(6))
+    reduce.apply(m, s) should equal(longValue(6))
   }
 
   test("returns_null_from_null_collection") {
@@ -49,6 +49,6 @@ class ReduceTest extends CypherFunSuite {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    reduce(m)(s) should equal(Values.NO_VALUE)
+    reduce(m, s) should equal(Values.NO_VALUE)
   }
 }

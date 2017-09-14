@@ -37,9 +37,9 @@ The key for the cache is the expression and not the value, which saves in execut
 case class ConstantCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
+  override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
     val inChecker = state.cachedIn.getOrElseUpdate(list, {
-      val listValue = list(ctx)
+      val listValue = list(ctx, state)
       val checker = if (listValue == Values.NO_VALUE)
         NullListChecker
       else {
@@ -49,7 +49,7 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
       new InCheckContainer(checker)
     })
 
-    inChecker.contains(value(ctx))
+    inChecker.contains(value(ctx, state))
   }
 
   override def containsIsNull = false
@@ -69,8 +69,8 @@ It uses a cache for the <rhs-expression> value, and turns it into a Set, for fas
 case class DynamicCachedIn(value: Expression, list: Expression) extends Predicate with ListSupport {
 
   // These two are here to make the fields accessible without conflicting with the case classes
-  override def isMatch(ctx: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val listValue: AnyValue = list(ctx)
+  override def isMatch(ctx: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val listValue: AnyValue = list(ctx, state)
 
     if(listValue == Values.NO_VALUE)
       return None
@@ -85,7 +85,7 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
       new InCheckContainer(checker)
     })
 
-    inChecker.contains(value(ctx))
+    inChecker.contains(value(ctx, state))
   }
 
   override def containsIsNull = false

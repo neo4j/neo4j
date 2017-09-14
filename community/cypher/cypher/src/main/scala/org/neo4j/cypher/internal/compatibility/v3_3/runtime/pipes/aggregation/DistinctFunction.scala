@@ -28,21 +28,21 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
   private val seen = scala.collection.mutable.Set[AnyValue]()
   private var seenNull = false
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState) {
-    val data = value(ctx)
+  override def apply(ctx: ExecutionContext, state: QueryState) {
+    val data = value(ctx, state)
 
     if (data == null) {
       if (!seenNull) {
         seenNull = true
-        inner(ctx)
+        inner(ctx, state)
       }
     } else {
       if (!seen.contains(data)) {
         seen += data
-        inner(ctx)
+        inner(ctx, state)
       }
     }
   }
 
-  override def result(implicit state: QueryState) = inner.result
+  override def result(state: QueryState): AnyValue = inner.result(state)
 }

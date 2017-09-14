@@ -41,8 +41,6 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
                                        (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
-
     input.flatMap {
       (inputRow: ExecutionContext) =>
         val fromNode = inputRow.getLongAt(fromOffset)
@@ -68,7 +66,7 @@ case class OptionalExpandAllSlottedPipe(source: Pipe,
             outputRow.setLongAt(relOffset, relId)
             outputRow.setLongAt(toOffset, otherSide)
             outputRow
-          }).filter(ctx => predicate.isTrue(ctx))
+          }).filter(ctx => predicate.isTrue(ctx, state))
 
           if (matchIterator.isEmpty)
             Iterator(withNulls(inputRow))

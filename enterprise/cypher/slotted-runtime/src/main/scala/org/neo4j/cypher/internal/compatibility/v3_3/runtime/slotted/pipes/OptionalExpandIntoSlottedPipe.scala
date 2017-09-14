@@ -43,7 +43,6 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
   private final val CACHE_SIZE = 100000
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    implicit val s = state
     //cache of known connected nodes
     val relCache = new PrimitiveRelationshipsCache(CACHE_SIZE)
 
@@ -63,7 +62,7 @@ case class OptionalExpandIntoSlottedPipe(source: Pipe,
             outputRow.copyFrom(inputRow, pipelineInformation.initialNumberOfLongs, pipelineInformation.initialNumberOfReferences)
             outputRow.setLongAt(relOffset, relId)
             outputRow
-          }).filter(ctx => predicate.isTrue(ctx))
+          }).filter(ctx => predicate.isTrue(ctx, state))
 
           if (matchIterator.isEmpty)
             Iterator(withNulls(inputRow))

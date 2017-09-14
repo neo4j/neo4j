@@ -27,6 +27,6 @@ import org.neo4j.values.storable.Values.longValue
 
 case class IdFromSlot(offset: Int) extends Expression with SlottedExpression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
+  override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = longValue(ctx.getLongAt(offset))
 
 }

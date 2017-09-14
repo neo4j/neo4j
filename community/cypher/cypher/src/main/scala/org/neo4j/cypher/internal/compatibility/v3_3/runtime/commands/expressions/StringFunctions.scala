@@ -51,7 +51,7 @@ case object asString extends (AnyValue => String) {
 
 case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = argument(m) match {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = argument(m, state) match {
     case v: IntegralValue => Values.stringValue(v.longValue().toString)
     case v: FloatingPointValue => Values.stringValue(v.doubleValue().toString)
     case v: TextValue => v
@@ -65,40 +65,40 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m)).toLowerCase)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    Values.stringValue(asString(argument(m, state)).toLowerCase)
 
   override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m)).toUpperCase)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    Values.stringValue(asString(argument(m, state)).toUpperCase)
 
   override def rewrite(f: (Expression) => Expression) = f(ToUpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m)).replaceAll("^\\s+", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    Values.stringValue(asString(argument(m, state)).replaceAll("^\\s+", ""))
 
   override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m)).replaceAll("\\s+$", ""))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    Values.stringValue(asString(argument(m, state)).replaceAll("\\s+$", ""))
 
   override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue =
-    Values.stringValue(asString(argument(m)).trim)
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
+    Values.stringValue(asString(argument(m, state)).trim)
 
   override def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
@@ -106,8 +106,8 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal = asString(orig(m))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    val origVal = asString(orig(m, state))
 
     def noMoreThanMax(maxLength: Int, length: Int): Int =
       if (length > maxLength) {
@@ -117,12 +117,12 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
       }
 
     // if start goes off the end of the string, let's be nice and handle that.
-    val startVal = noMoreThanMax(origVal.length, asInt(start(m)).value())
+    val startVal = noMoreThanMax(origVal.length, asInt(start(m, state)).value())
 
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal = length match {
       case None => origVal.length - startVal
-      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m)).value())
+      case Some(func) => noMoreThanMax(origVal.length - startVal, asInt(func(m, state)).value())
     }
 
     Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
@@ -147,10 +147,10 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Expression)
   extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val origVal = asString(value)
-    val searchVal = asString(search(m))
-    val replaceWithVal = asString(replaceWith(m))
+    val searchVal = asString(search(m, state))
+    val replaceWithVal = asString(replaceWith(m, state))
 
     if (searchVal == null || replaceWithVal == null) {
       Values.NO_VALUE
@@ -172,9 +172,9 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal = asString(orig(m))
-    val separatorVal = asString(separator(m))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    val origVal = asString(orig(m, state))
+    val separatorVal = asString(separator(m, state))
 
     if (origVal == null || separatorVal == null) {
       Values.NO_VALUE
@@ -208,12 +208,15 @@ case class SplitFunction(orig: Expression, separator: Expression)
 case class LeftFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal = asString(orig(m))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    val origVal = asString(orig(m, state))
     val startVal = 0
+    val expectedLength = asInt(length(m, state)).value()
     // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m)).value() + startVal) origVal.length
-    else asInt(length(m)).value()
+    val lengthVal = if (origVal.length < expectedLength + startVal)
+      origVal.length
+    else
+      expectedLength
     Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
   }
 
@@ -228,11 +231,11 @@ case class LeftFunction(orig: Expression, length: Expression)
 case class RightFunction(orig: Expression, length: Expression)
   extends NullInNullOutExpression(orig) with NumericHelper {
 
-  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal = asString(orig(m))
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
+    val origVal = asString(orig(m, state))
     // if length goes off the end of the string, let's be nice and handle that.
-    val lengthVal = if (origVal.length < asInt(length(m)).value()) origVal.length
-    else asInt(length(m)).value()
+    val lengthVal = if (origVal.length < asInt(length(m, state)).value()) origVal.length
+    else asInt(length(m, state)).value()
     val startVal = origVal.length - lengthVal
     Values.stringValue(origVal.substring(startVal, startVal + lengthVal))
   }

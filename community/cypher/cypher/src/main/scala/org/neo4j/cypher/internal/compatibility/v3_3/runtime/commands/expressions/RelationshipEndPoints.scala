@@ -27,7 +27,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = relExpression(ctx) match {
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = relExpression(ctx, state) match {
     case v if v == Values.NO_VALUE => Values.NO_VALUE
     case value =>
       val edge = castOrFail[EdgeValue](value)

@@ -45,7 +45,7 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def symbolTableDependencies = Set.empty
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = ???
+  def apply(ctx: ExecutionContext, state: QueryState) = ???
 }
 
 object KeyToken {

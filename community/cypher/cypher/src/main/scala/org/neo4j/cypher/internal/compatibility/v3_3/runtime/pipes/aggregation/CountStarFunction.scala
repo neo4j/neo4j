@@ -21,16 +21,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.storable.Values
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 class CountStarFunction extends AggregationFunction {
   var count:Long = 0
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
+  override def apply(data: ExecutionContext, state: QueryState) {
     count += 1
   }
 
-  def result(implicit state: QueryState): AnyValue = Values.longValue(count)
+  override def result(state: QueryState): AnyValue = Values.longValue(count)
 }
 

@@ -33,10 +33,10 @@ class SumFunction(val value: Expression)
   def name = "SUM"
 
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
-  def result(implicit state: QueryState): AnyValue = asNumberValue(sum.value)
+  override def result(state: QueryState): AnyValue = asNumberValue(sum.value)
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
+  override def apply(data: ExecutionContext, state: QueryState) {
+    actOnNumber(value(data, state), (number) => {
       sum = sum.add(number)
     })
   }

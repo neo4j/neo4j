@@ -68,7 +68,7 @@ trait GraphElementPropertyFunctions extends ListSupport {
 
   private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer,
                                  state: QueryState) {
-    val map = getMapFromExpression(expression(context)(state))
+    val map = getMapFromExpression(expression(context, state))
 
     pc match {
       case n: Node => map.foreach(new BiConsumer[String, AnyValue] {
@@ -85,7 +85,7 @@ trait GraphElementPropertyFunctions extends ListSupport {
 
   private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String,
                              state: QueryState) {
-    val unsafeValue: AnyValue = expression(context)(state)
+    val unsafeValue: AnyValue = expression(context, state)
     if (unsafeValue != Values.NO_VALUE) {
       val value = makeValueNeoSafe(unsafeValue)
       pc match {

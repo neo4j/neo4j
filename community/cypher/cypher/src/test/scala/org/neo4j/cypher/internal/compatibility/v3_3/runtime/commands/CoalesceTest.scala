@@ -49,11 +49,11 @@ class CoalesceTest extends CypherFunSuite {
     calc(func) should equal(stringValue("Hunger"))
   }
 
-  private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryStateHelper.empty)
+  private def calc(e: Expression): Any = e(ExecutionContext.empty, QueryStateHelper.empty)
 }
 
 case class BreakingExpression() extends Expression {
-  def apply(v1: ExecutionContext)(implicit state: QueryState) = {
+  def apply(v1: ExecutionContext, state: QueryState) = {
     import org.scalatest.Assertions._
     fail("Coalesce is not lazy")
   }

@@ -28,21 +28,21 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.doubleValue
 
 trait PercentileTest {
-  implicit val state = QueryStateHelper.empty
+  val state = QueryStateHelper.empty
 
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
   def getPercentile(percentile: Double, values: List[Any]): AnyValue = {
     val func = createAggregator(Variable("x"), Literal(percentile))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> ValueUtils.of(value)))(QueryStateHelper.empty)
+      func(ExecutionContext.from("x" -> ValueUtils.of(value)), QueryStateHelper.empty)
     })
-    func.result
+    func.result(state)
   }
 }
 
 class PercentileDiscTest extends CypherFunSuite with PercentileTest {
-  def createAggregator(inner: Expression, perc:Expression) = new PercentileDiscFunction(inner, perc)
+  def createAggregator(inner: Expression, perc: Expression) = new PercentileDiscFunction(inner, perc)
 
   test("singleOne") {
     val values = List(1.0)

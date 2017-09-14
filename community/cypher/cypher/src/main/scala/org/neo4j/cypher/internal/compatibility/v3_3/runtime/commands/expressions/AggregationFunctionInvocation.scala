@@ -33,17 +33,16 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = null
 
-    override def result(implicit state:QueryState): AnyValue = valueConverter(aggregator.result)
+    override def result(state: QueryState): AnyValue = valueConverter(aggregator(state).result)
 
-    override def apply(data: ExecutionContext)
-                      (implicit state: QueryState) = {
+    override def apply(data: ExecutionContext, state: QueryState): Unit = {
       val argValues = arguments.map(arg => {
-        state.query.asObject(arg(data)(state))
+        state.query.asObject(arg(data, state))
       })
-      aggregator.update(argValues)
+      aggregator(state).update(argValues)
     }
 
-    private def aggregator(implicit state: QueryState) = {
+    private def aggregator(state: QueryState) = {
       if (inner == null) {
         inner = state.query.aggregateFunction(signature.name, signature.allowed)
       }

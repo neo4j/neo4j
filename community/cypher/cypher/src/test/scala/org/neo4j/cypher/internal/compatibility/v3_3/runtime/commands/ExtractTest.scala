@@ -36,6 +36,6 @@ class ExtractTest extends CypherFunSuite {
 
     val extract = ExtractFunction(collection, "n", expression)
 
-    extract.apply(m)(QueryStateHelper.empty) should equal(list(intValue(1), intValue(3), intValue(2)))
+    extract.apply(m, QueryStateHelper.empty) should equal(list(intValue(1), intValue(3), intValue(2)))
   }
 }

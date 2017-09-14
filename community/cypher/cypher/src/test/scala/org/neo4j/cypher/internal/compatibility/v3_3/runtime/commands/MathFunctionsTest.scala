@@ -159,5 +159,5 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
     intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
 
-  private def calc(e:Expression) = e(ExecutionContext.empty)(QueryStateHelper.empty)
+  private def calc(e:Expression) = e(ExecutionContext.empty, QueryStateHelper.empty)
 }

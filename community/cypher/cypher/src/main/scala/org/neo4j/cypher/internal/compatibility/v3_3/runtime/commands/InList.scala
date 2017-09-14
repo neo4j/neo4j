@@ -39,14 +39,14 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 
   def seqMethod(f: ListValue): CollectionPredicate
 
-  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val list = collectionExpression(m)
+  def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
+    val list = collectionExpression(m, state)
 
     if (list == Values.NO_VALUE) None
     else {
       val seq = makeTraversable(list)
 
-      seqMethod(seq)(item => predicate.isMatch(m.newWith1(id, item)))
+      seqMethod(seq)(item => predicate.isMatch(m.newWith1(id, item), state))
     }
   }
 

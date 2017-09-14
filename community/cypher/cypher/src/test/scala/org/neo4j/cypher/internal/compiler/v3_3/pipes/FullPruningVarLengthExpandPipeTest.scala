@@ -427,14 +427,14 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     FullPruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
         row("to") = node
-        val result = nodePredicate.isTrue(row)(state)
+        val result = nodePredicate.isTrue(row, state)
         row.remove("to")
         result
       }
 
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = {
         row("r") = rel
-        val result = relationshipPredicate.isTrue(row)(state)
+        val result = relationshipPredicate.isTrue(row, state)
         row.remove("r")
         result
       }

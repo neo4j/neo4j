@@ -65,6 +65,6 @@ class ToStringFunctionTest extends CypherFunSuite {
   }
 
   private def toStringFunction(orig: Any) = {
-    ToStringFunction(Literal(orig))(ExecutionContext.empty)(QueryStateHelper.empty)
+    ToStringFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty)
   }
 }

@@ -34,10 +34,10 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   protected var count: Int = 0
   protected var perc: Double = 0
 
-  def apply(data: ExecutionContext)(implicit state: QueryState) {
-    actOnNumber(value(data), (number) => {
+  override def apply(data: ExecutionContext, state: QueryState) {
+    actOnNumber(value(data, state), (number) => {
       if (count < 1) {
-        perc = asDouble(percentile(data)).doubleValue()
+        perc = asDouble(percentile(data, state)).doubleValue()
         if (perc < 0 || perc > 1.0)
           throw new InvalidArgumentException(
             s"Invalid input '$perc' is not a valid argument, must be a number in the range 0.0 to 1.0")
@@ -53,7 +53,7 @@ class PercentileContFunction(value: Expression, percentile: Expression)
 
   def name = "PERCENTILE_CONT"
 
-  def result(implicit state: QueryState): AnyValue = {
+  override def result(state: QueryState): AnyValue = {
     temp = temp.sortBy((num: AnyValue) => asDouble(num).doubleValue())
 
     if (perc == 1.0 || count == 1) {
@@ -76,7 +76,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression)
 
   def name = "PERCENTILE_DISC"
 
-  def result(implicit state: QueryState): AnyValue = {
+  override def result(state: QueryState): AnyValue = {
     temp = temp.sortBy((num: AnyValue) => asDouble(num).doubleValue())
 
     if (perc == 1.0 || count == 1) {

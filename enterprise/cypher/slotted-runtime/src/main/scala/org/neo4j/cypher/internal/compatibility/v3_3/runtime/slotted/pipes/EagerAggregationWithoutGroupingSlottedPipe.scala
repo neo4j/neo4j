@@ -44,8 +44,6 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
 
-    implicit val s = state
-
     val aggregationAccumulators: Seq[AggregationFunction] = aggregationFunctions.map(_.createAggregationFunction)
 
     if (input.isEmpty)
@@ -53,13 +51,13 @@ case class EagerAggregationWithoutGroupingSlottedPipe(source: Pipe,
     else {
       // Consume input
       input.foreach { ctx =>
-        aggregationAccumulators.foreach(f => f.apply(ctx))
+        aggregationAccumulators.foreach(f => f.apply(ctx, state))
       }
 
       // Present result
       val context = PrimitiveExecutionContext(pipelineInformation)
       (aggregationOffsets zip aggregationAccumulators).foreach {
-        case (offset, value) => context.setRefAt(offset, value.result)
+        case (offset, value) => context.setRefAt(offset, value.result(state))
       }
       Iterator(context)
     }

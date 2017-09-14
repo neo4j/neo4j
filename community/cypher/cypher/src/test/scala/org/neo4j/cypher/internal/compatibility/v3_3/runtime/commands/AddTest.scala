@@ -34,33 +34,34 @@ class AddTest extends CypherFunSuite {
 
   test("numbers") {
     val expr = Add(Literal(1), Literal(1))
-    expr(m)(s) should equal(longValue(2))
+    expr(m, s) should equal(longValue(2))
   }
 
   test("with_null") {
-    val expected = Values.NO_VALUE
+    val nullPlusOne = Add(Literal(null), Literal(1))
+    val twoPlusNull = Add(Literal(2), Literal(null))
 
-    Add(Literal(null), Literal(1))(m)(s) should equal(expected)
-    Add(Literal(2), Literal(null))(m)(s) should equal(expected)
+    nullPlusOne(m, s) should equal(Values.NO_VALUE)
+    twoPlusNull(m, s) should equal(Values.NO_VALUE)
   }
 
   test("strings") {
     val expr = Add(Literal("hello"), Literal("world"))
-    expr(m)(s) should equal(stringValue("helloworld"))
+    expr(m, s) should equal(stringValue("helloworld"))
   }
 
   test("stringPlusNumber") {
     val expr = Add(Literal("hello"), Literal(1))
-    expr(m)(s) should equal(stringValue("hello1"))
+    expr(m, s) should equal(stringValue("hello1"))
   }
 
   test("numberPlusString") {
     val expr = Add(Literal(1), Literal("world"))
-    expr(m)(s) should equal(stringValue("1world"))
+    expr(m, s) should equal(stringValue("1world"))
   }
 
   test("numberPlusBool") {
     val expr = Add(Literal("1"), Literal(true))
-    intercept[CypherTypeException](expr(m)(s))
+    intercept[CypherTypeException](expr(m, s))
   }
 }

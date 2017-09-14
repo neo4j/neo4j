@@ -219,7 +219,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     )
 
     val predicate = mock[Predicate]
-    when(predicate.isTrue(any[ExecutionContext])(any[QueryState]))
+    when(predicate.isTrue(any[ExecutionContext], any[QueryState]))
       .thenReturn(true)
       .thenReturn(false)
     // when

@@ -53,11 +53,12 @@ class ToBooleanFunctionTest extends CypherFunSuite {
   test("throws for wrong types") {
     a [ParameterWrongTypeException] shouldBe thrownBy(toBoolean(1))
     a [ParameterWrongTypeException] shouldBe thrownBy(toBoolean(1.0))
-    a [ParameterWrongTypeException] shouldBe thrownBy(ToBooleanFunction(ListLiteral.empty)(ExecutionContext.empty)(QueryStateHelper.empty))
+    val toBooleanOfList = ToBooleanFunction(ListLiteral.empty)
+    a [ParameterWrongTypeException] shouldBe thrownBy(toBooleanOfList(ExecutionContext.empty, QueryStateHelper.empty))
   }
 
   private def toBoolean(orig: Any) = {
-    ToBooleanFunction(Literal(orig))(ExecutionContext.empty)(QueryStateHelper.empty)
+    ToBooleanFunction(Literal(orig))(ExecutionContext.empty, QueryStateHelper.empty)
   }
 
 }

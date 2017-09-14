@@ -42,7 +42,7 @@ object SeekArgs {
 
 case class SingleSeekArg(expr: Expression) extends SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): ListValue =
-    expr(ctx)(state) match {
+    expr(ctx, state) match {
       case value => VirtualValues.list(value)
     }
 
@@ -51,7 +51,7 @@ case class SingleSeekArg(expr: Expression) extends SeekArgs {
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
   def expressions(ctx: ExecutionContext, state: QueryState): ListValue = {
-    coll(ctx)(state) match {
+    coll(ctx, state) match {
       case IsList(values) => values
     }
   }
