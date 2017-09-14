@@ -22,7 +22,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -58,7 +61,8 @@ class FulltextUpdateApplier
         workQueue = new LinkedBlockingQueue<>();
     }
 
-    <E extends Entity> BinaryLatch updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index ) throws
+    <E extends Entity> BinaryLatch updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index )
+            throws
             IOException
     {
         BinaryLatch completedLatch = new BinaryLatch();
@@ -98,8 +102,8 @@ class FulltextUpdateApplier
     }
 
     <E extends Entity> BinaryLatch removePropertyData( Iterable<PropertyEntry<E>> propertyEntries,
-                                                Map<Long,Map<String,Object>> state,
-                                                WritableFulltext index ) throws IOException
+                                                       Map<Long,Map<String,Object>> state,
+                                                       WritableFulltext index ) throws IOException
     {
         BinaryLatch completedLatch = new BinaryLatch();
         FulltextIndexUpdate update = () ->
@@ -214,7 +218,7 @@ class FulltextUpdateApplier
 
     private interface FulltextIndexUpdate
     {
-        Pair<WritableFulltext, BinaryLatch> applyUpdateAndReturnIndex() throws IOException;
+        Pair<WritableFulltext,BinaryLatch> applyUpdateAndReturnIndex() throws IOException;
     }
 
     private static class ApplierThread extends Thread
@@ -233,13 +237,53 @@ class FulltextUpdateApplier
         @Override
         public void run()
         {
+            Set<WritableFulltext> refreshableSet = Collections.newSetFromMap( new IdentityHashMap<>() );
+            List<BinaryLatch> latches = new ArrayList<>();
+
             FulltextIndexUpdate update;
             while ( (update = getNextUpdate()) != STOP_SIGNAL )
             {
-                Pair<WritableFulltext,BinaryLatch> updateProgress = applyUpdate( update );
-                refreshIndex( updateProgress.first() );
-                updateProgress.other().release();
+                update = drainQueueAndApplyUpdates( update, refreshableSet, latches );
+                refreshAndClearIndexes( refreshableSet );
+                releaseAndClearLatches( latches );
+
+                if ( update == STOP_SIGNAL )
+                {
+                    return;
+                }
             }
+        }
+
+        private FulltextIndexUpdate drainQueueAndApplyUpdates(
+                FulltextIndexUpdate update,
+                Set<WritableFulltext> refreshableSet,
+                List<BinaryLatch> latches )
+        {
+            do
+            {
+                applyUpdate( update, refreshableSet, latches );
+                update = workQueue.poll();
+            }
+            while ( update != null && update != STOP_SIGNAL );
+            return update;
+        }
+
+        private void refreshAndClearIndexes( Set<WritableFulltext> refreshableSet )
+        {
+            for ( WritableFulltext index : refreshableSet )
+            {
+                refreshIndex( index );
+            }
+            refreshableSet.clear();
+        }
+
+        private void releaseAndClearLatches( List<BinaryLatch> latches )
+        {
+            for ( BinaryLatch latch : latches )
+            {
+                latch.release();
+            }
+            latches.clear();
         }
 
         private FulltextIndexUpdate getNextUpdate()
@@ -260,17 +304,20 @@ class FulltextUpdateApplier
             return update;
         }
 
-        private Pair<WritableFulltext,BinaryLatch> applyUpdate( FulltextIndexUpdate update )
+        private void applyUpdate( FulltextIndexUpdate update,
+                                  Set<WritableFulltext> refreshableSet,
+                                  List<BinaryLatch> latches )
         {
             try
             {
-                return update.applyUpdateAndReturnIndex();
+                Pair<WritableFulltext,BinaryLatch> updateProgress = update.applyUpdateAndReturnIndex();
+                refreshableSet.add( updateProgress.first() );
+                latches.add( updateProgress.other() );
             }
             catch ( IOException e )
             {
                 log.error( "Failed to apply fulltext index update.", e );
             }
-            return null;
         }
 
         private void refreshIndex( WritableFulltext index )
