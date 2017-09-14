@@ -22,6 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
@@ -38,10 +39,10 @@ import scala.util.matching.Regex
 
 class EagerizationAcceptanceTest
   extends ExecutionEngineFunSuite
-  with TableDrivenPropertyChecks
-  with QueryStatisticsTestSupport
-  with CypherComparisonSupport
-  with CreateTempFileTestSupport {
+    with TableDrivenPropertyChecks
+    with QueryStatisticsTestSupport
+    with CypherComparisonSupport
+    with CreateTempFileTestSupport {
 
   val VERBOSE = false
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
@@ -53,19 +54,20 @@ class EagerizationAcceptanceTest
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
 
-    val query = """MATCH (n)--(m)
-                  |SET n.val = n.val + 1
-                  |WITH *
-                  |UNWIND [1] as i WITH *
-                  |RETURN n.val AS nv, m.val AS mv
-                """.stripMargin
+    val query =
+      """MATCH (n)--(m)
+        |SET n.val = n.val + 1
+        |WITH *
+        |UNWIND [1] as i WITH *
+        |RETURN n.val AS nv, m.val AS mv
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Cost2_3 + Configs.Rule2_3))
 
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
-                                    Map("nv" -> 2, "mv" -> 2)))
+      Map("nv" -> 2, "mv" -> 2)))
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between node property writes in QG tail and reads in horizon") {
@@ -73,18 +75,19 @@ class EagerizationAcceptanceTest
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
 
-    val query = """UNWIND [1] as i WITH *
-                  |MATCH (n)--(m)
-                  |SET n.val = n.val + 1
-                  |RETURN n.val AS nv, m.val AS mv
-                """.stripMargin
+    val query =
+      """UNWIND [1] as i WITH *
+        |MATCH (n)--(m)
+        |SET n.val = n.val + 1
+        |RETURN n.val AS nv, m.val AS mv
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
-                                    Map("nv" -> 2, "mv" -> 2)))
+      Map("nv" -> 2, "mv" -> 2)))
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between node property writes in QG tail and reads in horizon of another tail") {
@@ -92,22 +95,22 @@ class EagerizationAcceptanceTest
     val n2 = createNode("val" -> 1)
     relate(n1, n2)
 
-    val query = """UNWIND [1] as i WITH *
-                  |MATCH (n)--(m)
-                  |SET n.val = n.val + 1
-                  |WITH *
-                  |UNWIND [1] as j WITH *
-                  |RETURN n.val AS nv, m.val AS mv
-                """.stripMargin
+    val query =
+      """UNWIND [1] as i WITH *
+        |MATCH (n)--(m)
+        |SET n.val = n.val + 1
+        |WITH *
+        |UNWIND [1] as j WITH *
+        |RETURN n.val AS nv, m.val AS mv
+      """.stripMargin
 
     val result = executeWith(
       Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     result.toList should equal(List(Map("nv" -> 2, "mv" -> 2),
-                                    Map("nv" -> 2, "mv" -> 2)))
+      Map("nv" -> 2, "mv" -> 2)))
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between relationship property writes in QG head and reads in horizon") {
@@ -115,20 +118,20 @@ class EagerizationAcceptanceTest
     val n2 = createNode()
     relate(n1, n2, ("val" -> 1))
 
-    val query = """MATCH (n)-[r]-(m)
-                  |SET r.val = r.val + 1
-                  |RETURN r.val AS rv
-                """.stripMargin
+    val query =
+      """MATCH (n)-[r]-(m)
+        |SET r.val = r.val + 1
+        |RETURN r.val AS rv
+      """.stripMargin
 
     val result = executeWith(
       Configs.CommunityInterpreted - Configs.Cost2_3,
       expectedDifferentResults = Configs.Rule2_3,
-      expectedDifferentPlans = Configs.Cost3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3),
       query = query)
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between relationship property writes in QG tail and reads in horizon") {
@@ -136,39 +139,40 @@ class EagerizationAcceptanceTest
     val n2 = createNode()
     relate(n1, n2, ("val" -> 1))
 
-    val query = """UNWIND [1] as i WITH *
-                  |MATCH (n)-[r]-(m)
-                  |SET r.val = r.val + 1
-                  |RETURN r.val AS rv
-                """.stripMargin
+    val query =
+      """UNWIND [1] as i WITH *
+        |MATCH (n)-[r]-(m)
+        |SET r.val = r.val + 1
+        |RETURN r.val AS rv
+      """.stripMargin
 
     val result = executeWith(
       Configs.CommunityInterpreted - Configs.Cost2_3,
       expectedDifferentResults = Configs.Rule2_3,
-      expectedDifferentPlans = Configs.Cost3_1 + Configs.AllRulePlanners,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1),
       query = query)
 
     result.toList should equal(List(Map("rv" -> 3), Map("rv" -> 3)))
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should handle detach deleting the same node twice") {
     val a = createLabeledNode("A")
     relate(a, createNode())
 
-    val query = """MATCH (a:A)
-                  |UNWIND [0, 1] AS i
-                  |MATCH (a)-->()
-                  |DETACH DELETE a
-                  |RETURN count(*)
-                """.stripMargin
+    val query =
+      """MATCH (a:A)
+        |UNWIND [0, 1] AS i
+        |MATCH (a)-->()
+        |DETACH DELETE a
+        |RETURN count(*)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query = query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query = query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     result.columnAs[Long]("count(*)").next should equal(2)
     assertStats(result, nodesDeleted = 1, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between MATCH and DELETE relationships") {
@@ -177,10 +181,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T")
     val query = "MATCH (a)-[t:T]-(b) DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query = query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query = query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce extra eagerness after CALL of writing procedure") {
@@ -211,11 +215,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query, expectedDifferentResults = Configs.AbsolutelyAll)
-    result.size should equal(4)
-
     // Correct! Eagerization happens as part of query context operation
-    assertNumberOfEagerness(query, 0)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query, expectedDifferentResults = Configs.AbsolutelyAll,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    result.size should equal(4)
   }
 
   test("should not introduce extra eagerness after CALL of writing void procedure") {
@@ -250,15 +253,14 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel"
 
     // only run against one scenario, otherwise count increments unpredictably due to fallback
+    // Correct! Eagerization happens as part of query context operation
     val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3, query,
       executeBefore = () => counter.reset(),
-      expectedDifferentResults = Configs.AbsolutelyAll)
+      expectedDifferentResults = Configs.AbsolutelyAll,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(4)
     counter.counted should equal(4)
-
-    // Correct! Eagerization happens as part of query context operation
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce extra eagerness after CALL of reading procedure") {
@@ -276,13 +278,14 @@ class EagerizationAcceptanceTest
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
             val result = Array.newBuilder[Array[AnyRef]]
-            val relationshipIterator = statement.readOperations().nodeGetRelationships( nodeCursor.get().id(), Direction.OUTGOING )
+            val relationshipIterator = statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
             while (relationshipIterator.hasNext) {
               relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
                 override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long) {
                   if (endNodeId == idY)
                     result += Array(new java.lang.Long(relationshipId))
-              }})
+                }
+              })
             }
             RawIterator.of(result.result(): _*)
           } finally {
@@ -300,12 +303,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query)
+    // Correct! No eagerization necessary
+    val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(2)
-
-    // Correct! No eagerization necessary
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce extra eagerness after CALL of reading VOID procedure") {
@@ -324,7 +326,7 @@ class EagerizationAcceptanceTest
             val idX = input(0).asInstanceOf[Node].getId
             val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
-            val relationshipIterator = statement.readOperations().nodeGetRelationships( nodeCursor.get().id(), Direction.OUTGOING )
+            val relationshipIterator = statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
             while (relationshipIterator.hasNext) {
               relationshipIterator.relationshipVisit(relationshipIterator.next(), new RelationshipVisitor[Exception] {
                 override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {
@@ -349,14 +351,13 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
+    // Correct! No eagerization necessary
     val result = executeWith(Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3, query,
-      executeBefore = () => counter.reset())
+      executeBefore = () => counter.reset(),
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(2)
     counter.counted should equal(2)
-
-    // Correct! No eagerization necessary
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness between MATCH and CREATE relationships with overlapping relationship types") {
@@ -365,10 +366,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T")
     val query = "MATCH (a)-[t:T]-(b) CREATE (a)-[:T]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships when properties don't overlap") {
@@ -377,10 +378,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T", Map("prop1" -> "foo"))
     val query = "MATCH (a)-[t:T {prop1: 'foo'}]-(b) CREATE (a)-[:T {prop2: 'bar'}]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsCreated = 2, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness between MATCH and CREATE relationships when properties overlap") {
@@ -389,10 +390,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T", Map("prop1" -> "foo"))
     val query = "MATCH (a)-[t:T {prop1: 'foo'}]-(b) CREATE (a)-[:T {prop1: 'foo'}]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsCreated = 2, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should plan eagerness for delete on paths") {
@@ -402,10 +403,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH p=(:L)-[*]-() DELETE p RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should plan eagerness for detach delete on paths") {
@@ -415,30 +416,30 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH p=(:L)-[*]-() DETACH DELETE p RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("github issue #5653") {
     graph.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
 
     val query = "MATCH (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE r, p1, p2 RETURN count(*) AS count"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 3, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("github issue #5653 with path instead") {
     graph.execute("CREATE (a:Person {id: 42})-[:FRIEND_OF]->(b:Person {id:42}), (b)-[:FRIEND_OF]->(a), (:Person)-[:FRIEND_OF]->(b)")
 
     val query = "MATCH p = (p1:Person {id: 42})-[r:FRIEND_OF]->(p2:Person {id:42}) DETACH DELETE p RETURN count(*) AS count"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 3, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships with overlapping relationship types when directed") {
@@ -447,10 +448,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T")
     val query = "MATCH (a)-[t:T]->(b) CREATE (a)-[:T]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
     result.columnAs[Int]("count").next should equal(1)
     assertStats(result, relationshipsCreated = 1)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should not introduce eagerness between MATCH and CREATE relationships with unrelated relationship types") {
@@ -459,10 +460,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "T")
     val query = "MATCH (a)-[t:T]-(b) CREATE (a)-[:T2]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   // TESTS FOR DELETE AND MERGE
@@ -473,11 +474,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (n) DELETE n MERGE (m {p: 0}) ON CREATE SET m.p = 1 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
 
     assertStats(result, nodesCreated = 2, propertiesWritten = 4, nodesDeleted = 2)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for node also with UNWIND") {
@@ -494,10 +495,10 @@ class EagerizationAcceptanceTest
         |RETURN count(*)
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     assertStats(result, nodesCreated = 1, nodesDeleted = 2, propertiesWritten = 1, labelsAdded = 1)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for node") {
@@ -513,10 +514,10 @@ class EagerizationAcceptanceTest
         |RETURN b2.deleted
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     assertStats(result, nodesCreated = 1, nodesDeleted = 3, propertiesWritten = 1, labelsAdded = 1)
     result.columnAs[Node]("b2.deleted").toList should equal(List(null, null, null))
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for node with projection") {
@@ -533,17 +534,17 @@ class EagerizationAcceptanceTest
         |RETURN b2.deleted
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 2, labelsAdded = 2)
     result.columnAs[Node]("b2.deleted").toList should equal(List(null, null))
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for nodes when there merge matches all labels") {
     createLabeledNode("B")
     createLabeledNode("B")
 
-   val query =
+    val query =
       """
         |MATCH (b:B)
         |DELETE b
@@ -554,7 +555,6 @@ class EagerizationAcceptanceTest
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
     result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, nodesCreated = 1, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   ignore("should not introduce eagerness between DELETE and MERGE for nodes when deleting variable not bound for same label") {
@@ -573,10 +573,10 @@ class EagerizationAcceptanceTest
         |RETURN count(*)
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     assertStats(result, nodesCreated = 0, nodesDeleted = 2)
     result.columnAs[Long]("count(*)").next shouldBe 8
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship") {
@@ -593,12 +593,11 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1))
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
 
     // Merge should not be able to match on deleted relationship
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship, direction reversed") {
@@ -614,10 +613,9 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2))
     assertStats(result, relationshipsDeleted = 1, relationshipsCreated = 1)
     result.columnAs[Long]("count(*)").next shouldBe 1
-    assertNumberOfEagerness(query, 2)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is no read matching the merge") {
@@ -634,10 +632,9 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1))
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is a read matching the merge") {
@@ -654,10 +651,9 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1))
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
     result.toList should equal(List(Map("exists(t2.id)" -> false), Map("exists(t2.id)" -> false)))
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness between DELETE and MERGE for relationships when there is a read matching the merge, direction reversed") {
@@ -674,10 +670,9 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2))
     assertStats(result, relationshipsDeleted = 2, relationshipsCreated = 1)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 2)
   }
 
   // TESTS FOR MATCH AND CREATE
@@ -687,10 +682,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CREATE (a)-[:KNOWS]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     assertStats(result, relationshipsCreated = 4)
     result.columnAs[Long]("count(*)").next shouldBe 4
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness for match create match") {
@@ -699,11 +694,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH () CREATE () WITH * MATCH (n) RETURN count(*) AS count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     assertStats(result, nodesCreated = 2)
     result.columnAs[Int]("count").next should equal(8)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness for match create match create") {
@@ -713,11 +708,11 @@ class EagerizationAcceptanceTest
     val query = "MATCH (k) CREATE (l {prop: 44}) WITH * MATCH (m) CREATE (n {prop:45}) RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentResults = Configs.Rule2_3)
+      expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2))
 
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 10, propertiesWritten = 10)
-    assertNumberOfEagerness(query, 2)
   }
 
   test("should not introduce eagerness for simple match create with nodes created in same tx") {
@@ -736,29 +731,29 @@ class EagerizationAcceptanceTest
     val result = executeWith(
       Configs.CommunityInterpreted - Configs.Cost2_3,
       query = query,
-      executeBefore = executeBefore)
+      executeBefore = executeBefore,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 6
     assertStats(result, nodesCreated = 6)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness for leaf create match") {
     val query = "CREATE () WITH * MATCH () RETURN count(*)"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     assertStats(result, nodesCreated = 1)
     result should not(use("ReadOnly"))
     result.columnAs[Long]("count(*)").next shouldBe 1
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not need eagerness for match create with labels") {
     createLabeledNode("L")
     val query = "MATCH (:L) CREATE (:L) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not need eagerness for match create with labels and property with index") {
@@ -767,10 +762,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (n:L {id: 0}) USING INDEX n:L(id) CREATE (:L {id:0}) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
-    assertStats(result, nodesCreated = 1, labelsAdded = 1,  propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
+    assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
   }
 
   test("should need eagerness for double match and then create") {
@@ -778,10 +773,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (), () CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not need eagerness for double match and then create when non-overlapping properties") {
@@ -789,10 +784,10 @@ class EagerizationAcceptanceTest
     createNode("prop1" -> 42, "prop2" -> 42)
     val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop3: 42}) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesCreated = 4, propertiesWritten = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should need eagerness for double match and then create when overlapping properties") {
@@ -800,10 +795,10 @@ class EagerizationAcceptanceTest
     createNode("prop1" -> 42, "prop2" -> 42)
     val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop1: 42, prop2: 42}) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesCreated = 4, propertiesWritten = 8)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not add eagerness when not writing to nodes") {
@@ -811,10 +806,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CREATE (a)-[r:KNOWS]->(b) SET r = { key: 42 } RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4, propertiesWritten = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching using a pattern predicate and creating relationship should not be eager") {
@@ -822,10 +817,9 @@ class EagerizationAcceptanceTest
     val query = "MATCH (n) WHERE (n)-->() CREATE (n)-[:T]->() RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not be eager when creating single node after matching on pattern with relationship") {
@@ -833,27 +827,27 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode())
     val query = "MATCH ()--() CREATE () RETURN count(*) AS count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count").next shouldBe 4
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query,  0)
   }
 
   ignore("should not be eager when creating single node after matching on pattern with relationship and also matching on label") {
-    // TODO: Implement RelationShipBoundNodeEffect
+    // TODO: Implement RelationShipBoundNodeEffect. Then figure out with which Configuration to call executeWith
     val query = "MATCH (:L) MATCH ()--() CREATE ()"
-
-    assertNumberOfEagerness(query,  0)
+    executeWith(Configs.All, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
   }
 
   test("should not be eager when creating single node after matching on empty node") {
     createNode()
     val query = "MATCH () CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1)
-    assertNumberOfEagerness(query,  0)
   }
 
   test("should not introduce an eager pipe between two node reads and a relationships create") {
@@ -861,10 +855,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce an eager pipe between two node reads and a relationships create when there is sorting between the two") {
@@ -872,10 +866,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a), (b) WITH a, b ORDER BY id(a) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce an eager pipe between a leaf node read and a relationship + node create") {
@@ -883,10 +877,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a) CREATE (a)-[:TYPE]->() RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce an eager pipe between a non-leaf node read and a relationship + node create") {
@@ -894,10 +888,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (), (a) CREATE (a)-[:TYPE]->() RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesCreated = 4, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce an eager pipe between a leaf relationship read and a relationship create") {
@@ -905,10 +899,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
     assertStats(result, relationshipsCreated = 2)
     result.columnAs[Int]("count(*)").next should equal(2)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should introduce an eager pipe between a leaf relationship read and a relationship create if directions reversed 1") {
@@ -917,10 +911,10 @@ class EagerizationAcceptanceTest
     relate(a, b, "TYPE") // NOTE: The order the nodes are related should not affect the result (opposite from the test below)
     val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)<-[:TYPE]-(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, relationshipsCreated = 1)
     result.columnAs[Int]("count(*)").next should equal(1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce an eager pipe between a leaf relationship read and a relationship create if directions reversed 2") {
@@ -929,10 +923,10 @@ class EagerizationAcceptanceTest
     relate(b, a, "TYPE") // NOTE: The order the nodes are related should not affect the result (opposite from the test above)
     val query = "MATCH (a)-[:TYPE]->(b) CREATE (a)<-[:TYPE]-(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, relationshipsCreated = 1)
     result.columnAs[Int]("count(*)").next should equal(1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce an eager pipe between a non-directional leaf relationship read and a relationship create") {
@@ -940,10 +934,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH (a)-[:TYPE]-(b) CREATE (a)-[:TYPE]->(b) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, relationshipsCreated = 4)
     result.columnAs[Int]("count").next should equal(4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce an eager pipe between a non-directional read and a relationship merge") {
@@ -952,9 +946,9 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a)-[:TYPE]-(b) MERGE (a)-[:TYPE]->(b) RETURN count(*) as count"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     assertStats(result, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 1)
     result.columnAs[Int]("count").next should equal(4)
 
   }
@@ -964,10 +958,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH ()-[:TYPE]->(), (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce an eager pipe between a non-leaf relationship read, rel uniqueness, and a relationship create, with double match") {
@@ -975,10 +969,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH ()-[:TYPE]->() MATCH (a)-[:TYPE]->(b) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should handle conflicts with create after WITH") {
@@ -986,10 +980,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "TYPE")
     val query = "MATCH ()-[:TYPE]->() CREATE (a)-[:TYPE]->(b) WITH * MATCH ()-[:TYPE]->() CREATE (c)-[:TYPE]->(d) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(3, optimalEagerCount = 2, expectPlansToFailPredicate = Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, nodesCreated = 20, relationshipsCreated = 10)
-    assertNumberOfEagerness(query, 3, optimalEagerCount = 2)
   }
 
   test("should introduce an eager pipe between a non-leaf relationship read and a relationship create") {
@@ -997,10 +991,10 @@ class EagerizationAcceptanceTest
     relate(createLabeledNode("LabelOne"), createLabeledNode("LabelTwo"), "TYPE")
     val query = "MATCH ()-[:TYPE]->() MATCH (a:LabelOne)-[:TYPE]->(b:LabelTwo) CREATE (a)-[:TYPE]->(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness for match - create on different relationship types") {
@@ -1008,10 +1002,10 @@ class EagerizationAcceptanceTest
     relate(createNode(), createNode(), "T1")
     val query = "MATCH ()-[:T1]->() CREATE ()-[:T2]->() RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesCreated = 4, relationshipsCreated = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   // TESTS FOR MATCH AND DELETE
@@ -1025,10 +1019,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person), (m:Movie) DELETE a, m RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesDeleted = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness when deleting nodes on single leaf") {
@@ -1038,10 +1032,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person) DELETE a RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should include eagerness when reading and deleting") {
@@ -1049,10 +1043,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r]-(b) DELETE r,a,b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching relationship, deleting relationship and nodes should be eager") {
@@ -1062,10 +1056,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r]-(b) DELETE r, a, b RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.toList should equal(List(Map("count" -> 2)))
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching relationship with property, deleting relationship and nodes should be eager") {
@@ -1075,10 +1069,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r {prop : 3}]-(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching directional relationship, and detach deleting both nodes should be eager") {
@@ -1089,11 +1083,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r]->(b) DETACH DELETE a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
-    result.toList should equal (List(Map("count(*)" -> 2)))
+    result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching directional relationship, and deleting it should not be eager") {
@@ -1104,11 +1098,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r]->(b) DELETE r RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
 
-    result.toList should equal (List(Map("count(*)" -> 2)))
+    result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching directional relationship, deleting relationship and labeled nodes should not be eager") {
@@ -1117,10 +1111,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:A)-[r]->(b:B) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 2)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
+    result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching reversed directional relationship, deleting relationship and labeled nodes should not be eager") {
@@ -1129,10 +1123,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (b:B)<-[r]-(a:A) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 2)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
+    result.toList should equal(List(Map("count(*)" -> 2)))
     assertStats(result, nodesDeleted = 4, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching directional relationship with property, deleting relationship and nodes should not be eager") {
@@ -1143,10 +1137,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r {prop : 3}]->(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 4)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0))
+    result.toList should equal(List(Map("count(*)" -> 4)))
     assertStats(result, nodesDeleted = 8, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("matching undirected relationship, deleting relationship and nodes should be eager") {
@@ -1159,10 +1153,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r]-(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 12)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    result.toList should equal(List(Map("count(*)" -> 12)))
     assertStats(result, nodesDeleted = 12, relationshipsDeleted = 6)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching undirected relationship, deleting relationship and labeled nodes should be eager") {
@@ -1172,10 +1166,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:A)-[r]-(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 4)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    result.toList should equal(List(Map("count(*)" -> 4)))
     assertStats(result, nodesDeleted = 6, relationshipsDeleted = 3)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching undirected relationship with property, deleting relationship and nodes should be eager") {
@@ -1186,10 +1180,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r {prop : 3}]-(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 8)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    result.toList should equal(List(Map("count(*)" -> 8)))
     assertStats(result, nodesDeleted = 8, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching directional multi-step relationship, deleting relationship and nodes should be eager") {
@@ -1201,10 +1195,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r1]->(b)-[r2]->(c) DELETE r1, r2, a, b, c RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 4)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    result.toList should equal(List(Map("count(*)" -> 4)))
     assertStats(result, nodesDeleted = 5, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching directional varlength relationship, deleting relationship and nodes should be eager") {
@@ -1216,20 +1210,20 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a)-[r*]->(b) DETACH DELETE a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
-    result.toList should equal (List(Map("count(*)" -> 8)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    result.toList should equal(List(Map("count(*)" -> 8)))
     assertStats(result, nodesDeleted = 5, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   // ANDRES CLAIMS THAT THIS TEST IS DUBIOUS
   test("create directional relationship with property, match and delete relationship and nodes within same query should be eager and work") {
     val query = "CREATE ()-[:T {prop: 3}]->() WITH * MATCH (a)-[r {prop : 3}]->(b) DELETE r, a, b RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 1, nodesDeleted = 2, relationshipsDeleted = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   // TESTS USING OPTIONAL MATCHES
@@ -1240,10 +1234,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("A")
     val query = "MATCH (a:A) OPTIONAL MATCH (b:B) CREATE (:B) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 6
     assertStats(result, nodesCreated = 6, labelsAdded = 6)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not need eagerness for match optional match create where labels do not interfere") {
@@ -1252,10 +1246,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("A")
     val query = "MATCH (a:A) OPTIONAL MATCH (b:B) CREATE (:A) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 6
     assertStats(result, nodesCreated = 6, labelsAdded = 6)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should introduce eagerness when deleting things on optional matches") {
@@ -1273,10 +1267,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person) OPTIONAL MATCH (a)-[r1]-() DELETE a, r1 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 7
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 7)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should introduce eagerness when deleting relationship on optional expand into") {
@@ -1287,10 +1281,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person) MERGE (b) WITH * OPTIONAL MATCH (a)-[r1]-(b) DELETE r1 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 3
     assertStats(result, relationshipsDeleted = 2)
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should introduce eagerness when deleting things from an optional match which is a cartesian product") {
@@ -1306,10 +1300,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:Person) OPTIONAL MATCH (a)-[r1]-(), (m:Movie)-[r2]-() DELETE a, r1, m, r2 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 6
     assertStats(result, nodesDeleted = 3, relationshipsDeleted = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("MATCH (a:Person),(m:Movie) CREATE (a)-[:T]->(m) WITH a OPTIONAL MATCH (a) RETURN *") {
@@ -1317,10 +1311,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("Movie")
     val query = "MATCH (a:Person), (m:Movie) CREATE (a)-[:T]->(m) WITH a OPTIONAL MATCH (a) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, relationshipsCreated = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   // TESTS FOR MATCH AND MERGE
@@ -1331,9 +1325,9 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON MATCH SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 1)
-    assertNumberOfEagerness(query, 1)
     result.toList should equal(List(Map("c" -> 36)))
   }
 
@@ -1343,10 +1337,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q:Three) ON MATCH SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 2, nodesCreated = 1)
     result.toList should equal(List(Map("c" -> 12)))
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager if merging node with properties after matching all nodes") {
@@ -1355,10 +1349,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (a:Two), (b) MERGE (q {p: 1}) RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
     result.toList should equal(List(Map("c" -> 6)))
-    assertNumberOfEagerness(query, 1)
   }
 
   test("on match set label on unstable iterator should not be eager if no overlap") {
@@ -1367,10 +1361,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two) MERGE (q) ON MATCH SET q:One RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     assertStats(result, labelsAdded = 3)
     result.toList should equal(List(Map("c" -> 12)))
-    assertNumberOfEagerness(query, 0)
   }
 
   test("on create set label on unstable iterator should be eager") {
@@ -1379,11 +1373,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) MERGE (q) ON CREATE SET q:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 0)
     result.toList should equal(List(Map("c" -> 36)))
-
-    assertNumberOfEagerness(query, 1)
   }
 
   test("on match set property on unstable iterator should be eager") {
@@ -1392,11 +1385,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a.id = 0 RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.toList should equal(List(Map("c" -> 36)))
     assertStats(result, propertiesWritten = 36)
-
-    assertNumberOfEagerness(query, 1)
   }
 
   test("on match set property on unstable iterator should not be eager if no overlap") {
@@ -1405,11 +1397,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}), (c {id: 0}) MERGE (a) ON MATCH SET a.id2 = 0 RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     result.toList should equal(List(Map("c" -> 12)))
     assertStats(result, propertiesWritten = 12)
-
-    assertNumberOfEagerness(query, 0)
   }
 
   test("on create set overwrite property with literal map on unstable iterator should be eager") {
@@ -1418,11 +1409,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON CREATE SET a = {id: 0} RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.toList should equal(List(Map("c" -> 36)))
     assertStats(result, propertiesWritten = 0)
-
-    assertNumberOfEagerness(query, 1)
   }
 
   test("on create set append property with literal map on unstable iterator should be eager") {
@@ -1431,11 +1421,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON CREATE SET a += {id: 0} RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.toList should equal(List(Map("c" -> 36)))
     assertStats(result, propertiesWritten = 0)
-
-    assertNumberOfEagerness(query, 1)
   }
 
   test("on match set property with parameter map on unstable iterator should be eager") {
@@ -1444,11 +1433,11 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (b {id: 0}), (c {id: 0}), (a) MERGE () ON MATCH SET a = {map} RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("map" -> Map("id" -> 0)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1),
+      params = Map("map" -> Map("id" -> 0)))
     result.toList should equal(List(Map("c" -> 36)))
     assertStats(result, propertiesWritten = 36)
-
-    assertNumberOfEagerness(query, 1)
   }
 
   // TODO: This does not work on 2.3 either
@@ -1458,15 +1447,16 @@ class EagerizationAcceptanceTest
     relate(a, b)
     relate(a, b)
 
-    val query = """MATCH p=()-->()
-                  |DELETE p
-                  |RETURN count(*)
-                """.stripMargin
+    val query =
+      """MATCH p=()-->()
+        |DELETE p
+        |RETURN count(*)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 1)
   }
 
   // TODO: This does not work on 2.3 either
@@ -1476,16 +1466,17 @@ class EagerizationAcceptanceTest
     relate(a, b)
     relate(a, b)
 
-    val query = """MATCH p=()-->()
-                  |UNWIND nodes(p) as n
-                  |DETACH DELETE n
-                  |RETURN count(*)
-                """.stripMargin
+    val query =
+      """MATCH p=()-->()
+        |UNWIND nodes(p) as n
+        |DETACH DELETE n
+        |RETURN count(*)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness for MATCH nodes and MERGE relationships") {
@@ -1494,10 +1485,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) MERGE (a)-[r:KNOWS]->(b) RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness when the ON MATCH includes writing to a non-matched property") {
@@ -1508,10 +1499,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a.prop = 42 RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should not introduce eagerness when the ON MATCH includes writing to a left-side matched label") {
@@ -1524,12 +1515,12 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET b:Foo RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 1)
 
     //TODO this we need to consider not only overlap but also what known labels the node we set has
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should introduce eagerness when the ON MATCH includes writing to a right-side matched label") {
@@ -1542,10 +1533,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET a:Bar RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not introduce eagerness when the ON CREATE includes writing to a left-side matched label") {
@@ -1558,11 +1549,11 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON CREATE SET b:Foo RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 2)
     //TODO this we need to consider not only overlap but also what known labels the node we set has
-    assertNumberOfEagerness(query, 1, optimalEagerCount = 0)
   }
 
   test("should introduce eagerness when the ON CREATE includes writing to a right-side matched label") {
@@ -1575,10 +1566,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON CREATE SET a:Bar RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   ignore("should not add eagerness when reading and merging nodes and relationships when matching different label") {
@@ -1586,10 +1577,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:B) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 0
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should add eagerness when reading and merging nodes and relationships on matching same label") {
@@ -1600,10 +1591,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (a:A) MERGE (a)-[:BAR]->(b:A) WITH a MATCH (a2) RETURN count (a2) AS nodes"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2, labelsAdded = 2)
     result.toList should equal(List(Map("nodes" -> 15)))
-    assertNumberOfEagerness(query, 1)
   }
 
   ignore("should not add eagerness when reading nodes and merging relationships") {
@@ -1611,18 +1603,18 @@ class EagerizationAcceptanceTest
     createLabeledNode("B")
     val query = "MATCH (a:A), (b:B) MERGE (a)-[:BAR]->(b) WITH a MATCH (a) WHERE (a)-[:FOO]->() RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 0
     assertStats(result, relationshipsCreated = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("never ending query should end - this is the query that prompted Eagerness in the first place") {
     createNode()
     val query = "MATCH (a) CREATE ()"
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     assertStats(result, nodesCreated = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should be eager when combining MATCH, MERGE, CREATE with UNWIND") {
@@ -1632,10 +1624,10 @@ class EagerizationAcceptanceTest
     val query = "UNWIND range(0, 9) AS i MATCH (x) MERGE (m {v: i % 2}) ON CREATE SET m:Merged CREATE ({v: (i + 1) % 2}) RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 20
     assertStats(result, nodesCreated = 22, propertiesWritten = 22, labelsAdded = 2)
-    assertNumberOfEagerness(query, 2)
   }
 
   test("should be eager when combining MATCH, MATCH, CREATE with UNWIND") {
@@ -1645,10 +1637,10 @@ class EagerizationAcceptanceTest
     val query = "UNWIND range(0, 9) AS i MATCH (x) MATCH (m {v: i % 2}) CREATE ({v: (i + 1) % 2}) RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 10
     assertStats(result, nodesCreated = 10, propertiesWritten = 10)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager when combining MATCH, CREATE, MERGE with UNWIND") {
@@ -1658,10 +1650,10 @@ class EagerizationAcceptanceTest
     val query = "UNWIND range(0, 9) AS i MATCH (x) WITH * CREATE ({v: i % 2}) MERGE (m {v: (i + 1) % 2}) ON CREATE SET m:Merged RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 200
     assertStats(result, nodesCreated = 20, propertiesWritten = 20, labelsAdded = 0)
-    assertNumberOfEagerness(query, 2)
   }
 
   // TESTS WITH MULTIPLE MERGES
@@ -1669,10 +1661,10 @@ class EagerizationAcceptanceTest
   test("should not be eager when merging on two different labels") {
     val query = "MERGE(:L1) MERGE(p:L2) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 2, propertiesWritten = 1, labelsAdded = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when merging on the same label, merges match") {
@@ -1680,20 +1672,20 @@ class EagerizationAcceptanceTest
     createLabeledNode("L1")
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when merging on the same label, merges create") {
     createNode()
     val query = "MERGE(:L1) MERGE(p:L1) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when right side creates nodes for left side, merges match") {
@@ -1701,10 +1693,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("Person")
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when right side creates nodes for left side, 2nd merge create") {
@@ -1712,55 +1704,56 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MERGE() MERGE(p: Person) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when no merge has labels, merges match") {
     createNode()
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result)
-    assertNumberOfEagerness(query, 0)
   }
 
   ignore("does not need to be eager when no merge has labels, merges create") {
     val query = "MERGE() MERGE(p) ON CREATE SET p.name = 'Blaine' RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("Multiple single node merges building on each other through property values should be eager") {
     val query = "MERGE(a {p: 1}) MERGE(b {p: a.p}) MERGE(c {p: b.p}) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners - Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 2)
   }
 
   test("Multiple single node merges should be eager") {
     val query = "UNWIND [0, 1] AS i MERGE (a {p: i % 2}) MERGE (b {p: (i + 1) % 2}) ON CREATE SET b:ShouldNotBeSet RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, nodesCreated = 2, propertiesWritten = 2, labelsAdded = 0)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not be eager when merging on already bound variables") {
     val query = "MERGE (city:City) MERGE (country:Country) MERGE (city)-[:IN]->(country) RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 2, labelsAdded = 2, relationshipsCreated = 1)
   }
@@ -1768,14 +1761,15 @@ class EagerizationAcceptanceTest
   test("should not use eager if on create modifies relationships which don't affect the match clauses") {
     createLabeledNode("LeftLabel")
     createLabeledNode("RightLabel")
-    val query = """MATCH (src:LeftLabel), (dst:RightLabel)
-              |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
-              |ON CREATE SET r.p3 = 42""".stripMargin
+    val query =
+      """MATCH (src:LeftLabel), (dst:RightLabel)
+        |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
+        |ON CREATE SET r.p3 = 42""".stripMargin
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
 
     assertStats(result, relationshipsCreated = 1, propertiesWritten = 1)
-    assertNumberOfEagerness(query,  0)
   }
 
   // TESTS FOR SET
@@ -1784,30 +1778,30 @@ class EagerizationAcceptanceTest
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Node {prop:5}) SET n.value = 10 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching label and setting different label should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Node) SET n:Lol RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching label and setting same label should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Lol")
     val query = "MATCH (n:Lol) SET n:Lol RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsAdded = 0)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching label on right-hand side and setting same label should be eager and get the count right") {
@@ -1816,9 +1810,9 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) SET n:Two RETURN count(*) AS c"
 
-    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsAdded = 1)
-    assertNumberOfEagerness(query, 1)
     result.toList should equal(List(Map("c" -> 12)))
   }
 
@@ -1827,10 +1821,10 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (n), (m1:Lol), (m2:Lol) SET n:Rofl RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, labelsAdded = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("setting label in tail should be eager if overlap") {
@@ -1840,10 +1834,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("Foo")
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Foo) SET n:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 2, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("setting label in tail should be eager if overlap within tail") {
@@ -1853,10 +1847,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("B")
     val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 4, nodesCreated = 2)
-    assertNumberOfEagerness(query, 2)
   }
 
   test("setting label in tail should not be eager if no overlap") {
@@ -1866,58 +1860,58 @@ class EagerizationAcceptanceTest
     createLabeledNode("Bar")
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Bar) SET n:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 2, nodesCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching property and setting label should not be eager") {
     createNode(Map("name" -> "thing"))
     val query = "MATCH (n {name : 'thing'}) SET n:Lol RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsAdded = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("single simple match followed by set property should not be eager") {
     createNode()
     val query = "MATCH (n) SET n.prop = 5 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("single property match followed by set property should not be eager") {
     createNode(Map("prop" -> 20))
     val query = "MATCH (n { prop: 20 }) SET n.prop = 10 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("single label match followed by set property should not be eager") {
     createLabeledNode("Node")
     val query = "MATCH (n:Node) SET n.prop = 10 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("single label+property match followed by set property should not be eager") {
     val query = "MATCH (n:Node {prop:5}) SET n.prop = 10 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 0
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching property via index and writing same property should not be eager") {
@@ -1927,9 +1921,9 @@ class EagerizationAcceptanceTest
     val query = "MATCH (b :Book {isbn : '123'}) SET b.isbn = '456' RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 1
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching property via index and writing same property should be eager") {
@@ -1939,10 +1933,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b :Book {isbn : '123'}) SET a.isbn = '456' RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("match property on right-side followed by property write on left-side match needs eager") {
@@ -1950,10 +1944,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (a),(b {id: 0}),(c {id: 0}) SET a.id = 0 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("match property on right-side followed by property write on right-side match needs eager") {
@@ -1961,10 +1955,10 @@ class EagerizationAcceptanceTest
     createNode(Map("id" -> 0))
     val query = "MATCH (a),(b {id: 0}),(c {id: 0}) SET c.id = 1 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("match property on left-side followed by property write does not need eager") {
@@ -1973,10 +1967,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (b {id: 0}) SET b.id = 1 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing relationship property should not be eager") {
@@ -1985,21 +1979,21 @@ class EagerizationAcceptanceTest
     val query = "MATCH (n {prop : 5})-[r]-() SET r.prop = 6 RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing same node property should be eager") {
-    relate(createNode(Map("prop" -> 5)),createNode())
+    relate(createNode(Map("prop" -> 5)), createNode())
 
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m.prop = 5 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching relationship property, writing same relationship property should be eager") {
@@ -2007,11 +2001,11 @@ class EagerizationAcceptanceTest
     val query = "MATCH ()-[r {prop : 3}]-() SET r.prop = 6 RETURN count(*) AS c"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     assertStats(result, propertiesWritten = 2)
     result.toList should equal(List(Map("c" -> 2)))
 
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching relationship property, writing different relationship property should not be eager") {
@@ -2020,20 +2014,20 @@ class EagerizationAcceptanceTest
     val query = "MATCH ()-[r {prop1 : 3}]-() SET r.prop2 = 6 RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching relationship property, writing node property should not be eager") {
     relate(createNode(), createNode(), "prop" -> 3)
     val query = "MATCH (n)-[r {prop : 3}]-() SET n.prop = 6 RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching on relationship property existence, writing same property should not be eager") {
@@ -2043,10 +2037,10 @@ class EagerizationAcceptanceTest
     val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo' RETURN count(*)"
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching on relationship property existence, writing different property should not be eager") {
@@ -2055,8 +2049,8 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH ()-[r]-() WHERE exists(r.prop1) SET r.prop2 = 'foo'"
 
-    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1), propertiesWritten = 2)
-    assertNumberOfEagerness(query, 0)
+    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0)), propertiesWritten = 2)
   }
 
   test("matching two relationships, writing one property should be eager") {
@@ -2067,8 +2061,8 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH ()-[r {prop: 42}]-(), (:L)-[r2]-() SET r2.prop = 42"
 
-    assertNumberOfEagerness(query, 1)
-    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1), propertiesWritten = 2)
+    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, planComparisonStrategy = testEagerPlanComparisonStrategy(1)), propertiesWritten = 2)
+    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
   }
 
   test("setting property in tail should be eager if overlap") {
@@ -2078,10 +2072,10 @@ class EagerizationAcceptanceTest
     createNode("prop" -> 42)
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop = 42 RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.AllRulePlanners))
     result.columnAs[Int]("count").next should equal(8)
     assertStats(result, propertiesWritten = 8, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("setting property in tail should be eager if overlap head") {
@@ -2091,10 +2085,10 @@ class EagerizationAcceptanceTest
     createNode("prop" -> 42)
     val query = "MATCH (n {prop: 42}) CREATE (m) WITH * MATCH (o) SET n.prop = 42 RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(12)
     assertStats(result, propertiesWritten = 12, nodesCreated = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("setting property in tail should be eager if overlap first tail") {
@@ -2112,10 +2106,10 @@ class EagerizationAcceptanceTest
         |SET m.prop = 42
         |RETURN count(*) as count""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.AllRulePlanners - Configs.Rule2_3))
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("setting property in tail should not be eager if no overlap") {
@@ -2125,54 +2119,51 @@ class EagerizationAcceptanceTest
     createNode("prop" -> 42)
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2 = 42 RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     result.columnAs[Int]("count").next should equal(8)
     assertStats(result, propertiesWritten = 8, nodesCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing with += should be eager") {
-    relate(createNode(Map("prop" -> 5)),createNode())
+    relate(createNode(Map("prop" -> 5)), createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop: 5} RETURN count(*)"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching node property, writing with += should not be eager when we can avoid it") {
-    relate(createNode(Map("prop" -> 5)),createNode())
+    relate(createNode(Map("prop" -> 5)), createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching node property, writing with += should be eager when using parameters") {
     val s = createNode(Map("prop" -> 5))
     val e = createNode()
-    relate(s,e)
-    relate(e,s)
+    relate(s, e)
+    relate(e, s)
 
     val query = "MATCH (n {prop : 5})-[r]->(m) SET m += {props} RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("props" -> Map("prop" -> 5)))
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1), params = Map("props" -> Map("prop" -> 5)))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-    assertNumberOfEagerness(query, 1)
   }
 
   test("matching rel property, writing with += should not be eager when we can avoid it") {
-    relate(createNode(Map("prop" -> 5)),createNode())
+    relate(createNode(Map("prop" -> 5)), createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
-
-    assertNumberOfEagerness(query, 0)
   }
 
   //REMOVE LABEL
@@ -2180,16 +2171,16 @@ class EagerizationAcceptanceTest
     createLabeledNode(Map("prop" -> 5), "Node", "Lol")
     val query = "MATCH (n:Node) REMOVE n:Lol"
 
-    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query), labelsRemoved = 1)
-    assertNumberOfEagerness(query, 0)
+    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0)), labelsRemoved = 1)
   }
 
   test("matching label and removing same label should not be eager") {
     createLabeledNode(Map("prop" -> 5), "Node")
     val query = "MATCH (n:Node) REMOVE n:Node"
 
-    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query), labelsRemoved = 1)
-    assertNumberOfEagerness(query, 0)
+    assertStats(executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3)), labelsRemoved = 1)
   }
 
   test("should not be eager if removing label from left-most node") {
@@ -2197,11 +2188,11 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m:Lol), (n) REMOVE n:Lol RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
 
     assertStats(result, labelsRemoved = 1)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should be eager if removing a label that's matched by an unstable iterator") {
@@ -2209,11 +2200,11 @@ class EagerizationAcceptanceTest
     createLabeledNode("Lol")
     val query = "MATCH (m:Lol), (n:Lol) REMOVE m:Lol RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     assertStats(result, labelsRemoved = 2)
     result.columnAs[Long]("count(*)").next shouldBe 4
-    assertNumberOfEagerness(query, 1)
   }
 
   test("remove same label without anything else reading it should not be eager") {
@@ -2222,10 +2213,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("C")
     val query = "MATCH  (m1:A), (m2:B), (n:C) REMOVE n:C RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsRemoved = 1)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("matching label on right-hand side and removing same label should be eager and get the count right") {
@@ -2234,9 +2225,9 @@ class EagerizationAcceptanceTest
     createNode()
     val query = "MATCH (m1:Two), (m2:Two), (n) REMOVE n:Two RETURN count(*) AS c"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     assertStats(result, labelsRemoved = 2)
-    assertNumberOfEagerness(query, 1)
     result.toList should equal(List(Map("c" -> 12)))
   }
 
@@ -2246,10 +2237,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("B")
     val query = "MATCH (n), (m1:A), (m2:A) REMOVE n:B RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 12
     assertStats(result, labelsRemoved = 3)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("removing label in tail should be eager if overlap") {
@@ -2257,10 +2248,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("Foo")
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Foo) REMOVE n:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, labelsRemoved = 2, nodesCreated = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("removing label in tail should be eager if overlap, creating matching nodes in between") {
@@ -2268,9 +2259,9 @@ class EagerizationAcceptanceTest
     createLabeledNode("Foo")
     val query = "MATCH (n) CREATE (m:Foo) WITH * MATCH (o:Foo) REMOVE n:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 8
-    assertNumberOfEagerness(query, 2)
     assertStats(result, labelsAdded = 2, labelsRemoved = 2, nodesCreated = 2)
   }
 
@@ -2281,10 +2272,10 @@ class EagerizationAcceptanceTest
     createLabeledNode("Bar")
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o:Bar) REMOVE n:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsRemoved = 2, nodesCreated = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("undirected expand followed by remove label needn't to be eager") {
@@ -2293,10 +2284,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (n:Foo)--(m) REMOVE m:Foo RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, labelsRemoved = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
   // UNWIND TESTS
@@ -2309,11 +2300,11 @@ class EagerizationAcceptanceTest
     // Relationship match is non-directional, so should give 2 rows
     val query = "MATCH (a)-[t:T]-(b) UNWIND [1] as i DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 1)
   }
 
   test("eagerness should work with match - unwind - delete with preceding projection") {
@@ -2324,11 +2315,11 @@ class EagerizationAcceptanceTest
     // Relationship match is non-directional, so should give 2 rows
     val query = "CREATE () WITH * MATCH (a)-[t:T]-(b) UNWIND [1] as i DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 1, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 1)
   }
 
   test("eagerness should work with match - unwind - delete with multiple preceding projections") {
@@ -2339,11 +2330,11 @@ class EagerizationAcceptanceTest
     // Relationship match is non-directional, so should give 2 rows
     val query = "CREATE () WITH * CREATE () WITH * MATCH (a)-[t:T]-(b) UNWIND [1] as i DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.Rule2_3))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 2, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should be eager between conflicting read/write separated by empty UNWIND") {
@@ -2352,10 +2343,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (), () UNWIND [] AS i CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(0)
     assertStats(result, nodesCreated = 0)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by UNWIND of one") {
@@ -2364,10 +2355,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (), () UNWIND [0] AS i CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by UNWIND of two") {
@@ -2376,10 +2367,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (), () UNWIND [0, 0] AS i CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(8)
     assertStats(result, nodesCreated = 8)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by UNWIND between reads") {
@@ -2388,10 +2379,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH () UNWIND [0] as i MATCH () CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by UNWIND between reads and writes -- MATCH") {
@@ -2400,10 +2391,10 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH () UNWIND [0] as i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by UNWIND between reads and writes -- MERGE") {
@@ -2412,10 +2403,10 @@ class EagerizationAcceptanceTest
 
     val query = "MERGE () WITH * UNWIND [0] as i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   // FOREACH TESTS
@@ -2426,10 +2417,10 @@ class EagerizationAcceptanceTest
     //val query = "UNWIND [0] as u MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
     val query = "MATCH (a), (b) FOREACH(i in range(0, 1) | DELETE a) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting CREATE and MERGE node with FOREACH") {
@@ -2445,10 +2436,10 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 8)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between DELETE and MERGE node with FOREACH") {
@@ -2469,10 +2460,10 @@ class EagerizationAcceptanceTest
         |RETURN count(*)
       """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 6, labelsAdded = 2)
     result.columnAs[Long]("count(*)").next shouldBe 2
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should not be eager between conflicting CREATE and MERGE node with nested FOREACH") {
@@ -2490,10 +2481,10 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 2, labelsAdded = 2, propertiesWritten = 6)
-    assertNumberOfEagerness(query, 0)
   }
 
   test("should be eager between conflicting MERGEs in nested FOREACH") {
@@ -2512,10 +2503,10 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 24)
-    assertNumberOfEagerness(query, 2)
   }
 
   test("should not be eager between non-conflicting updates in nested FOREACH") {
@@ -2532,18 +2523,21 @@ class EagerizationAcceptanceTest
         |)
         |RETURN count(*)""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
     result.columnAs[Long]("count(*)").next() should equal(1)
     assertStats(result, nodesCreated = 4, labelsAdded = 4)
-    assertNumberOfEagerness(query, 0)
   }
 
 
   // LOAD CSV
   test("should not be eager for LOAD CSV followed by MERGE") {
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
+    val config =
+      TestConfiguration(Versions.Default, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
+      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.Rule, Runtimes.Default)
 
-    assertNumberOfEagerness(query, 0)
+    executeWith(config, "EXPLAIN " + query, planComparisonStrategy = testEagerPlanComparisonStrategy(0))
   }
 
   test("eagerness should work with match - load csv - delete") {
@@ -2558,11 +2552,11 @@ class EagerizationAcceptanceTest
 
     val query = s"MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 1)
   }
 
   test("eagerness should work with match - load csv - delete with preceding projection") {
@@ -2577,11 +2571,11 @@ class EagerizationAcceptanceTest
 
     val query = s"CREATE () WITH * MATCH (a)-[t:T]-(b) LOAD CSV FROM '$url' AS line DELETE t RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, nodesCreated = 1, relationshipsDeleted = 1)
     // this assertion depends on unnestApply and cleanUpEager
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by LOAD CSV between reads and writes -- MATCH") {
@@ -2595,10 +2589,10 @@ class EagerizationAcceptanceTest
 
     val query = s"MATCH () LOAD CSV FROM '$url' AS i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager between conflicting read/write separated by LOAD CSV between reads and writes -- MERGE") {
@@ -2612,10 +2606,10 @@ class EagerizationAcceptanceTest
 
     val query = s"MERGE () WITH * LOAD CSV FROM '$url' AS line MATCH () LOAD CSV FROM '$url' AS line2 CREATE () RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
-    assertNumberOfEagerness(query, 2, optimalEagerCount = 1)
   }
 
   test("should always be eager after deleted relationships if there are any subsequent expands that might load them") {
@@ -2638,13 +2632,12 @@ class EagerizationAcceptanceTest
         |MATCH (d)-->(c2:Cookie)
         |RETURN d, c2""".stripMargin
 
-    cookies.foreach { case (name, node)  =>
+    cookies.foreach { case (name, node) =>
       val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-        expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1 + Configs.Cost3_2,
+        planComparisonStrategy = testEagerPlanComparisonStrategy(2),
         params = Map("cookie" -> name))
       assertStats(result, nodesDeleted = 1, relationshipsDeleted = 2)
     }
-    assertNumberOfEagerness(query, 2)
   }
 
   test("should always be eager after deleted nodes if there are any subsequent matches that might load them") {
@@ -2656,11 +2649,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH (c:Cookie) DELETE c WITH 1 as t MATCH (x:Cookie) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
 
     result.columnAs[Int]("count").next should equal(0)
     assertStats(result, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should always be eager after deleted paths if there are any subsequent matches that might load them") {
@@ -2672,11 +2665,11 @@ class EagerizationAcceptanceTest
 
     val query = "MATCH p=(:Cookie) DELETE p WITH 1 as t MATCH (x:Cookie) RETURN count(*) as count"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
 
     result.columnAs[Int]("count").next should equal(0)
     assertStats(result, nodesDeleted = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager with labels function before set label") {
@@ -2684,16 +2677,17 @@ class EagerizationAcceptanceTest
     val n2 = createNode()
     relate(n1, n2)
 
-    val query = """MATCH (n)--(m)
-                  |WITH labels(n) AS labels, m
-                  |SET m:Foo
-                  |RETURN labels
-                """.stripMargin
+    val query =
+      """MATCH (n)--(m)
+        |WITH labels(n) AS labels, m
+        |SET m:Foo
+        |RETURN labels
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.toList should equal(List(Map("labels" -> List()), Map("labels" -> List())))
     assertStats(result, labelsAdded = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager with labels function before remove label") {
@@ -2701,16 +2695,17 @@ class EagerizationAcceptanceTest
     val n2 = createLabeledNode("Foo")
     relate(n1, n2)
 
-    val query = """MATCH (n)--(m)
-                  |WITH labels(n) AS labels, m
-                  |REMOVE m:Foo
-                  |RETURN labels
-                """.stripMargin
+    val query =
+      """MATCH (n)--(m)
+        |WITH labels(n) AS labels, m
+        |REMOVE m:Foo
+        |RETURN labels
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.toList should equal(List(Map("labels" -> List("Foo")), Map("labels" -> List("Foo"))))
     assertStats(result, labelsRemoved = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager with labels function after set label") {
@@ -2718,16 +2713,17 @@ class EagerizationAcceptanceTest
     val n2 = createNode()
     relate(n1, n2)
 
-    val query = """MATCH (n)--(m)
-                  |SET n:Foo
-                  |RETURN labels(n), labels(m)
-                """.stripMargin
+    val query =
+      """MATCH (n)--(m)
+        |SET n:Foo
+        |RETURN labels(n), labels(m)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, expectedDifferentResults = Configs.Rule2_3,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
-                                    Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
+      Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
     assertStats(result, labelsAdded = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager with labels function after merge on match set label") {
@@ -2736,16 +2732,17 @@ class EagerizationAcceptanceTest
     relate(n1, n2, "T")
     relate(n2, n1, "T")
 
-    val query = """MERGE (n)-[:T]->(m)
-                  |ON MATCH SET n:Foo
-                  |RETURN labels(n), labels(m)
-                """.stripMargin
+    val query =
+      """MERGE (n)-[:T]->(m)
+        |ON MATCH SET n:Foo
+        |RETURN labels(n), labels(m)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.toList should equal(List(Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo")),
-                                    Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
+      Map("labels(n)" -> List("Foo"), "labels(m)" -> List("Foo"))))
     assertStats(result, labelsAdded = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
   test("should be eager with labels function after remove label") {
@@ -2753,43 +2750,35 @@ class EagerizationAcceptanceTest
     val n2 = createLabeledNode("Foo")
     relate(n1, n2)
 
-    val query = """MATCH (n)--(m)
-                  |REMOVE n:Foo
-                  |RETURN labels(n), labels(m)
-                """.stripMargin
+    val query =
+      """MATCH (n)--(m)
+        |REMOVE n:Foo
+        |RETURN labels(n), labels(m)
+      """.stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, expectedDifferentResults = Configs.Rule2_3, query = query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, expectedDifferentResults = Configs.Rule2_3, query = query,
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.Rule2_3))
     result.toList should equal(List(Map("labels(n)" -> List(), "labels(m)" -> List()),
-                                    Map("labels(n)" -> List(), "labels(m)" -> List())))
+      Map("labels(n)" -> List(), "labels(m)" -> List())))
     assertStats(result, labelsRemoved = 2)
-    assertNumberOfEagerness(query, 1)
   }
 
-  private def assertNumberOfEagerness(query: String, expectedEagerCount: Int, optimalEagerCount: Int = -1) {
-    withClue("The optimum must be smaller than the expected, otherwise just use expected") {
-      expectedEagerCount shouldBe >=(optimalEagerCount)
-    }
-    val q = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
-    val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
-    val plan = result.getExecutionPlanDescription().toString
-    result.close()
+  private def testEagerPlanComparisonStrategy(expectedEagerCount: Int,
+                                              expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
+                                              optimalEagerCount: Int = -1) = {
+    val failureMessage = s"Unexpected number of eagers. Expected $expectedEagerCount" + (if(optimalEagerCount != -1) s", optimal $optimalEagerCount" else "")
+    ComparePlansWithPredicate((plan) => assertNumberOfEagerness0(plan, expectedEagerCount), expectPlansToFailPredicate, failureMessage)
+  }
+
+  private def assertNumberOfEagerness0(planDescription: InternalPlanDescription, expectedEagerCount: Int): Boolean = {
+    val plan = planDescription.toString
     val eagers = EagerRegEx.findAllIn(plan).length
     if (VERBOSE && expectedEagerCount > 0) {
-      println(s"\n$query expected eagerness $expectedEagerCount\n  Eager: $eagers\n")
+      println(s"Expected eagerness $expectedEagerCount\n  Eager: $eagers\n")
       if (VERBOSE_INCLUDE_PLAN_DESCRIPTION)
         println(plan)
     }
-    val msg = if (eagers == optimalEagerCount) {
-      s"Optimal eager count $optimalEagerCount achieved! Please change the test expectation (if this is a stable solution) "
-    } else if (optimalEagerCount > -1 && eagers < expectedEagerCount && eagers > optimalEagerCount) {
-      s"Eager count improved! But still not the optimal $optimalEagerCount. Please change the test expectation (if this is a stable solution) "
-    } else if (eagers < expectedEagerCount) {
-      "Too few eagers: "
-    } else {
-      "Too many eagers: "
-    }
-    withClue(s"$plan\n$msg") {
-      eagers shouldBe expectedEagerCount
-    }
+
+    eagers == expectedEagerCount
   }
 }

@@ -287,8 +287,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val config = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
 
     // Then
     graph.inTx {
@@ -305,15 +304,13 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
+    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines)  shouldBe empty
   }
 
   test("Should be able to remove label when node key constraint") {
@@ -325,14 +322,12 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
       TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
-    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+    executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
       TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
-    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines,
-      expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1) shouldBe empty
+    executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines)  shouldBe empty
   }
 }

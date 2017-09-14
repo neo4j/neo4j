@@ -129,13 +129,12 @@ trait CypherComparisonSupport extends CypherTestSupport {
   protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
-                            expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners,
+                            planComparisonStrategy: PlanComparisonStrategy = DoNotComparePlans,
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
     val compareResults = expectSucceed -  expectedDifferentResults
-    val comparePlans = expectSucceed - expectedDifferentPlans
     val baseScenario =
-      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults, comparePlans)
+      if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults)
       else TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
     val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
@@ -150,10 +149,33 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     positiveResults.foreach {
       case (scenario, result) =>
-        if (comparePlans.containsScenario(scenario)) {
-          assertPlansSimilar(baseResult, result, s"plan for ${scenario.name} did not equal ${baseScenario.name}")
-        } else {
-          assertPlansNotSimilar(baseResult, result, s"plan for ${scenario.name} was equal to ${baseScenario.name}")
+        planComparisonStrategy match {
+          case DoNotComparePlans =>
+            // Nothing to compare
+          case ComparePlansWithPredicate(predicate, expectPlansToFailPredicate, predicateFailureMessage) =>
+            val comparePlans = expectSucceed - expectPlansToFailPredicate
+            if (comparePlans.containsScenario(scenario)) {
+              if (!predicate(result.executionPlanDescription())) {
+                fail(s"plan for ${scenario.name} did not fulfill predicate.\n$predicateFailureMessage\n${result.executionPlanString()}")
+              }
+            } else {
+              if (predicate(result.executionPlanDescription())) {
+                fail(s"plan for ${scenario.name} did unexpectedly fulfill predicate\n$predicateFailureMessage\n${result.executionPlanString()}")
+              }
+            }
+          case ComparePlansWithAssertion(assertion, expectPlansToFail) =>
+            val comparePlans = expectSucceed - expectPlansToFail
+            if (comparePlans.containsScenario(scenario)) {
+              assertion(result.executionPlanDescription())
+            } else {
+              val tryResult = Try(assertion(result.executionPlanDescription()))
+              tryResult match {
+                case Success(_) =>
+                  fail(s"plan for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
+                case Failure(_) =>
+                  // Expected to fail
+              }
+            }
         }
         if (compareResults.containsScenario(scenario)) {
           assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
@@ -165,13 +187,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
     baseResult
   }
 
-  private def extractBaseScenario(expectSucceed: TestConfiguration, compareResults: TestConfiguration, comparePlans: TestConfiguration): TestScenario = {
-    val scenariosToChooseFrom = (compareResults.scenarios.isEmpty, comparePlans.scenarios.isEmpty) match {
-      case (true, true) => expectSucceed
-      case (true, false) => comparePlans
-      case (false, true) => compareResults
-      case (false, false) => TestConfiguration(comparePlans.scenarios.intersect(compareResults.scenarios))
-    }
+  private def extractBaseScenario(expectSucceed: TestConfiguration, compareResults: TestConfiguration): TestScenario = {
+    val scenariosToChooseFrom = if (compareResults.scenarios.isEmpty) expectSucceed else compareResults
+
     if (scenariosToChooseFrom.scenarios.isEmpty) {
       fail("At least one scenario must be expected to succeed, be comparable with plan and result")
     }
@@ -201,22 +219,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     } else {
       scenario.checkResultForFailure(query, tryResult)
       None
-    }
-  }
-
-  private def assertPlansSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
-    val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
-    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue(hint + "\n" + thisResult.executionPlanString() + "\n Did not equal \n" + firstResult.executionPlanString()) {
-      assert(currentOps equals otherOps)
-    }
-  }
-
-  private def assertPlansNotSimilar(firstResult: InternalExecutionResult, thisResult: InternalExecutionResult, hint: String): Unit = {
-    val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
-    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
-    withClue("Unexpectedly (but correctly!)\n" + hint + "\n" + thisResult.executionPlanString() + "\n equaled \n" + firstResult.executionPlanString()) {
-      assert(!(currentOps equals otherOps))
     }
   }
 
@@ -353,6 +355,15 @@ object CypherComparisonSupport {
   case class Runtime(acceptedRuntimeName: String, preparserOption: String)
 
 
+  sealed trait PlanComparisonStrategy
+  case object DoNotComparePlans extends PlanComparisonStrategy
+  case class ComparePlansWithPredicate(predicate: (InternalPlanDescription) => Boolean,
+                                       expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
+                                       predicateFailureMessage : String = "") extends PlanComparisonStrategy
+  case class ComparePlansWithAssertion(assertion: (InternalPlanDescription) => Unit,
+    expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy
+
+
   /**
     * A single scenario, which can be composed to configurations.
     */
@@ -461,6 +472,8 @@ object CypherComparisonSupport {
     def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
 
     def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
+
+    def Rule3_2: TestConfiguration = TestScenario(Versions.V3_2, Planners.Rule, Runtimes.Default)
 
     def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
 

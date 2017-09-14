@@ -60,7 +60,6 @@ object LdbcQueries {
     )
 
     def expectedToSucceedIn: TestConfiguration
-    def expectedDifferentPlans: TestConfiguration
   }
 
   object Query1 extends LdbcQuery {
@@ -202,7 +201,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query2 extends LdbcQuery {
@@ -299,7 +297,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
   }
 
   object Query3 extends LdbcQuery {
@@ -436,7 +433,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query4 extends LdbcQuery {
@@ -528,7 +524,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query5 extends LdbcQuery {
@@ -630,7 +625,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query6 extends LdbcQuery {
@@ -709,7 +703,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query7 extends LdbcQuery {
@@ -826,7 +819,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query8 extends LdbcQuery {
@@ -924,7 +916,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.AllExceptSlotted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3
   }
 
   object Query9 extends LdbcQuery {
@@ -1024,7 +1015,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query10 extends LdbcQuery {
@@ -1149,7 +1139,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query11 extends LdbcQuery {
@@ -1222,7 +1211,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_2
   }
 
   object Query12 extends LdbcQuery {
@@ -1367,7 +1355,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2
   }
 
   object Query13 extends LdbcQuery {
@@ -1412,7 +1399,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query14 extends LdbcQuery {
@@ -1519,7 +1505,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   object Query14_v2 extends LdbcQuery {
@@ -1551,7 +1536,6 @@ object LdbcQueries {
 
     override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
-    override def expectedDifferentPlans: TestConfiguration = Configs.AllRulePlanners
   }
 
   val LDBC_QUERIES = Seq(
