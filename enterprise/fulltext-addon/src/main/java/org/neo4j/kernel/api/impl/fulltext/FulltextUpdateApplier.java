@@ -42,6 +42,7 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.logging.Log;
 
@@ -53,11 +54,13 @@ class FulltextUpdateApplier
     private static final FulltextIndexUpdate STOP_SIGNAL = () -> null;
     private final LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
     private final Log log;
+    private final AvailabilityGuard availabilityGuard;
     private ApplierThread workerThread;
 
-    FulltextUpdateApplier( Log log )
+    FulltextUpdateApplier( Log log, AvailabilityGuard availabilityGuard )
     {
         this.log = log;
+        this.availabilityGuard = availabilityGuard;
         workQueue = new LinkedBlockingQueue<>();
     }
 
@@ -153,7 +156,7 @@ class FulltextUpdateApplier
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
-            try ( Transaction ignore = db.beginTx( 10, TimeUnit.HOURS ) )
+            try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
             {
                 ResourceIterable<? extends Entity> entities = entitySupplier.get();
                 for ( Entity entity : entities )
@@ -192,7 +195,7 @@ class FulltextUpdateApplier
         {
             throw new IllegalStateException( workerThread.getName() + " already started." );
         }
-        workerThread = new ApplierThread( workQueue, log );
+        workerThread = new ApplierThread( workQueue, log, availabilityGuard );
         workerThread.start();
     }
 
@@ -225,18 +228,22 @@ class FulltextUpdateApplier
     {
         private LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
         private final Log log;
+        private final AvailabilityGuard availabilityGuard;
 
-        ApplierThread( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log )
+        ApplierThread( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log,
+                       AvailabilityGuard availabilityGuard )
         {
             super( "Fulltext Index Add-On Applier Thread" );
             this.workQueue = workQueue;
             this.log = log;
+            this.availabilityGuard = availabilityGuard;
             setDaemon( true );
         }
 
         @Override
         public void run()
         {
+            waitForDatabaseToBeAvailable();
             Set<WritableFulltext> refreshableSet = Collections.newSetFromMap( new IdentityHashMap<>() );
             List<BinaryLatch> latches = new ArrayList<>();
 
@@ -252,6 +259,16 @@ class FulltextUpdateApplier
                     return;
                 }
             }
+        }
+
+        private void waitForDatabaseToBeAvailable()
+        {
+            boolean isAvailable;
+            do
+            {
+                isAvailable = availabilityGuard.isAvailable( 100 );
+            }
+            while ( !isAvailable && !availabilityGuard.isShutdown() );
         }
 
         private FulltextIndexUpdate drainQueueAndApplyUpdates(

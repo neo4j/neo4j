@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -50,6 +51,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         Procedures procedures();
 
         LogService logService();
+
+        AvailabilityGuard availabilityGuard();
     }
 
     BloomKernelExtensionFactory()
@@ -61,6 +64,6 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
         return new BloomKernelExtension( dependencies.fileSystem(), context.storeDir(), dependencies.getConfig(), dependencies.db(),
-                dependencies.procedures(), dependencies.logService() );
+                dependencies.procedures(), dependencies.logService(), dependencies.availabilityGuard() );
     }
 }

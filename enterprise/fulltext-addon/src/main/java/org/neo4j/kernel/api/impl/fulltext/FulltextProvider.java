@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.logging.Log;
 
 /**
@@ -50,12 +51,13 @@ public class FulltextProvider implements AutoCloseable
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
      * @param db Database that this provider should work with.
      * @param log For logging errors.
+     * @param availabilityGuard Used for waiting with populating the index until the database is available.
      */
-    public FulltextProvider( GraphDatabaseService db, Log log )
+    public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard )
     {
         this.db = db;
         this.log = log;
-        applier = new FulltextUpdateApplier( log );
+        applier = new FulltextUpdateApplier( log, availabilityGuard );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
         nodeProperties = new HashSet<>();
