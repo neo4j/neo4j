@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.ExpressionConverter.createExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.SortItem
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{One, ZeroOneOrMany}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{SortDescription, plans}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast, symbols}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.v3_3.logical.plans
+import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, One, ZeroOneOrMany}
 
 object LogicalPlanConverter {
 
@@ -649,14 +649,14 @@ object LogicalPlanConverter {
   }
 
   // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
-  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[SortDescription]):
+  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[ColumnOrder]):
   (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
 
     val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
 
     val sortItems = inputSortItems.map {
-      case logical.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
-      case logical.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
+      case plans.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
+      case plans.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
     }
     val additionalSortVariables = sortItems.collect {
       case spi.SortItem(name, _) if !variablesToKeep.isDefinedAt(name) => (name, context.getVariable(name))

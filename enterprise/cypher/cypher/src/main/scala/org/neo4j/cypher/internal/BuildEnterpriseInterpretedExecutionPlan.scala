@@ -31,13 +31,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions.
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.v3_3.logical.plans.{IndexUsage, LogicalPlan, LogicalPlanId}
 import org.neo4j.values.virtual.MapValue
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {

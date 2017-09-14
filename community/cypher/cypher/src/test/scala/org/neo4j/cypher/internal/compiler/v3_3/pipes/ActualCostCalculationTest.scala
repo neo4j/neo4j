@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equals
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.v3_3.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.kernel.GraphDatabaseQueryService

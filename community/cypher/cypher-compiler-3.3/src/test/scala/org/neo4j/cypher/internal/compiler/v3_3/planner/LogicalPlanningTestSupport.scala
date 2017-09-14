@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.{namePatternPredicatePatternElements, _}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.namePatternPredicatePatternElements
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature, _}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -41,6 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 import scala.collection.mutable
 

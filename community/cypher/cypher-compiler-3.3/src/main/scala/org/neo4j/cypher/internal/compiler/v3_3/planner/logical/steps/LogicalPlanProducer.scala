@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, SortDescription}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast, _}
 import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.
@@ -451,7 +450,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
     LimitPlan(inner, count, ties)(solved)
   }
 
-  def planSort(inner: LogicalPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem])
+  def planSort(inner: LogicalPlan, descriptions: Seq[ColumnOrder], items: Seq[ast.SortItem])
               (implicit context: LogicalPlanningContext): LogicalPlan = {
     val solved = inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))))
     Sort(inner, descriptions)(solved)

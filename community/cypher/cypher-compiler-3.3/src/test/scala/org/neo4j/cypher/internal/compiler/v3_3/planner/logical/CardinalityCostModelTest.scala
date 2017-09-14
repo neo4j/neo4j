@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{Cost, LazyMode}
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 

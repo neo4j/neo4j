@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{AllNodesScan, Projection}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_3.ast.GetDegree
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_3.logical.plans.{AllNodesScan, Projection}
 
 class PlanRewritingPlanningIntegrationTest  extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

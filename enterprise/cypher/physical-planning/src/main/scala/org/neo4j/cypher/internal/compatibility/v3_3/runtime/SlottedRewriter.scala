@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown, ast => frontendAst}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, LogicalPlanId, Projection, VarExpand, _}
 
 import scala.collection.mutable
 

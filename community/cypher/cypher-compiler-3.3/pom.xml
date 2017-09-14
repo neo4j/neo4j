@@ -126,6 +126,11 @@
       <artifactId>neo4j-cypher-ir-3.3</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-logical-plans-3.3</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- neo4j testing -->
 

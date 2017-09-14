@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.QueryExecutionType
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 import scala.collection.mutable.ArrayBuffer
 

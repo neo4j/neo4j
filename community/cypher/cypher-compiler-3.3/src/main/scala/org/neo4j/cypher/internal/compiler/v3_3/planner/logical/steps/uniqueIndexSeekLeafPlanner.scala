@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, QueryExpression}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken, UsingIndexHint}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, QueryExpression}
 
 object uniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
   protected def constructPlan(idName: IdName,

@@ -23,8 +23,8 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 import scala.collection.mutable
 

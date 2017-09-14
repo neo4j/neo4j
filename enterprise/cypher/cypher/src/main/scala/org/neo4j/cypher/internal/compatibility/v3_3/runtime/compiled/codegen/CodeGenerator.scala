@@ -32,13 +32,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription, LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.values.virtual.MapValue
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {

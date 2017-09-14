@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CandidateSelector, LogicalPlanningContext, LogicalPlanningFunction0}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 object pickBestPlanUsingHintsAndCost extends LogicalPlanningFunction0[CandidateSelector] {
   val VERBOSE = java.lang.Boolean.getBoolean("pickBestPlan.VERBOSE")

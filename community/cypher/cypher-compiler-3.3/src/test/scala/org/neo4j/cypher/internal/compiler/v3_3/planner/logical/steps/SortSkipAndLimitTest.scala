@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext, SortDescription}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{AscSortItem, PatternExpression}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
   val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
-  val sortDescription: SortDescription = Ascending("n")
+  val columnOrder: ColumnOrder = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
@@ -89,7 +89,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result should equal(Sort(startPlan, Seq(sortDescription))(solved))
+    result should equal(Sort(startPlan, Seq(columnOrder))(solved))
 
     result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(variableSortItem))))
   }
@@ -106,7 +106,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    val sorted = Sort(startPlan, Seq(sortDescription))(solved)
+    val sorted = Sort(startPlan, Seq(columnOrder))(solved)
     val skipped = Skip(sorted, y)(solved)
     val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
 

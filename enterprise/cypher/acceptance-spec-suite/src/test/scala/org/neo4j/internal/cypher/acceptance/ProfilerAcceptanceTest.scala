@@ -22,11 +22,12 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.helpers.TxCounts
+import org.neo4j.cypher.internal.v3_3.logical.plans.QualifiedName
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, ProfilerStatisticsNotReadyException}
 import org.neo4j.graphdb.QueryExecutionException
 

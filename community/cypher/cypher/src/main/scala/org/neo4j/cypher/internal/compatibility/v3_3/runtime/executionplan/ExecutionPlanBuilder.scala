@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,

@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningSu
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{applyOptional, leafPlanOptions, outerHashJoin}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 /**
   * This class contains the main IDP loop in the cost planner.

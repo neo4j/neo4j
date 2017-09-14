@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanner, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 object argumentLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {

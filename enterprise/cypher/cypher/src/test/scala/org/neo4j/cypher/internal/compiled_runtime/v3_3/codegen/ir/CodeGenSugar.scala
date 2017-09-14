@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provid
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService

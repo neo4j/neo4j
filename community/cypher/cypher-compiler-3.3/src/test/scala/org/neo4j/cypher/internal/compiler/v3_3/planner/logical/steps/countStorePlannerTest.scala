@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
@@ -28,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, 
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{AggregatingQueryProjection, IdName}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {

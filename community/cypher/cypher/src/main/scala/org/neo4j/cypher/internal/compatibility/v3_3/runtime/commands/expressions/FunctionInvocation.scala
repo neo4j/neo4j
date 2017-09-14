@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
+import org.neo4j.cypher.internal.v3_3.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
