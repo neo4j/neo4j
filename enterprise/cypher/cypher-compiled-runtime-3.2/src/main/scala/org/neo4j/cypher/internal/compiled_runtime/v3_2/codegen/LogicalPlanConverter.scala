@@ -530,8 +530,6 @@ object LogicalPlanConverter {
           (CypherCodeGenType(innerType, innerReprType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.ListType(innerType), _) =>
           (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
-        case CypherCodeGenType(symbols.ListType(innerType), _) =>
-          (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
         case CypherCodeGenType(symbols.CTAny, _) =>
           (CypherCodeGenType(symbols.CTAny, ReferenceType), ir.UnwindCollection(opName, collection))
         case t =>
