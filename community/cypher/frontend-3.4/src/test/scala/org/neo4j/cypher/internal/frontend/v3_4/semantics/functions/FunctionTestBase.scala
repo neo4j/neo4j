@@ -30,7 +30,7 @@ abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
   protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
     val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
     result.errors shouldBe empty
-    invocation.types(result.state) should equal(expected)
+    types(invocation)(result.state) should equal(expected)
   }
 
   protected def testInvalidApplication(argumentTypes: TypeSpec*)(message: String) {

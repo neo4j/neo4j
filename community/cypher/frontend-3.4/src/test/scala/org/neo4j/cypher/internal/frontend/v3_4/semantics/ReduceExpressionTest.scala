@@ -71,7 +71,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
-    filter.types(result.state) should equal(CTAny | CTFloat)
+    types(filter)(result.state) should equal(CTAny | CTFloat)
   }
 
   test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {

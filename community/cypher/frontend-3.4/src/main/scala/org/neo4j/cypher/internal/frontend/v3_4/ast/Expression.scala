@@ -49,8 +49,6 @@ abstract class Expression extends ASTNode {
 
   import Expression.TreeAcc
 
-  def types: TypeGenerator = s => s.expressionType(this).actual
-
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
       acc => (acc :+ e, None)

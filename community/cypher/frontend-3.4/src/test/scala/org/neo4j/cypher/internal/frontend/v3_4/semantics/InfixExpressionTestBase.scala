@@ -25,7 +25,7 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
   protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec) {
     val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes)
     result.errors shouldBe empty
-    expression.types(result.state) should equal(expected)
+    types(expression)(result.state) should equal(expected)
   }
 
   protected def testInvalidApplication(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(message: String) {

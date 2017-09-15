@@ -32,7 +32,7 @@ class ListSliceTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(slice)(SemanticState.clean)
     result.errors shouldBe empty
-    slice.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
+    types(slice)(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {

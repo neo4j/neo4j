@@ -414,18 +414,21 @@ case class Foreach(
       expectType(CTList(CTAny).covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
-        val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
+        val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
         variable.declareVariable(possibleInnerTypes) chain updates.semanticCheck
       }
 }
 
-case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
+case class Unwind(
+                   expression: Expression,
+                   variable: Variable
+                 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "UNWIND"
 
   override def semanticCheck: SemanticCheck =
     SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
-      SemanticExpressionCheck.expectType(CTList(CTAny).covariant, expression) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
+      expectType(CTList(CTAny).covariant, expression) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
       variable.declareVariable(possibleInnerTypes)
     }
 }

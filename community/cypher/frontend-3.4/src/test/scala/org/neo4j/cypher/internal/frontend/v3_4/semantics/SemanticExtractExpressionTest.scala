@@ -32,7 +32,7 @@ class SemanticExtractExpressionTest extends SemanticFunSuite {
     val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = SemanticExpressionCheck.simple(extract)(SemanticState.clean)
     result.errors shouldBe empty
-    extract.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
+    types(extract)(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
 
   test("shouldRaiseSemanticErrorIfPredicateSpecified") {

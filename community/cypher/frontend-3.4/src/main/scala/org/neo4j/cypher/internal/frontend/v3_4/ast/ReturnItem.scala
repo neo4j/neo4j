@@ -71,8 +71,8 @@ final case class ReturnItems(
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        variable.declareVariable(item.expression.types, positions)
-      case Some(variable) => variable.declareVariable(item.expression.types)
+        variable.declareVariable(types(item.expression), positions)
+      case Some(variable) => variable.declareVariable(types(item.expression))
       case None           => (state) => SemanticCheckResult(state, Seq.empty)
     })
 

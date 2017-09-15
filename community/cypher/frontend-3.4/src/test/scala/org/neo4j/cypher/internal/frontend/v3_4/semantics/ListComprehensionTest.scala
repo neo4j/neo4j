@@ -29,7 +29,7 @@ class ListComprehensionTest extends SemanticFunSuite {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
-    filter.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
+    types(filter)(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
@@ -38,7 +38,7 @@ class ListComprehensionTest extends SemanticFunSuite {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
-    filter.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
+    types(filter)(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
 
   test("shouldSemanticCheckPredicateInStateContainingTypedVariable") {

@@ -35,7 +35,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
-    expression.types(result.state) should equal(CTList(CTAny).covariant)
+    types(expression)(result.state) should equal(CTList(CTAny).covariant)
   }
 
   test("pattern comprehension with literal string projection has correct type") {
@@ -44,7 +44,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
     val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
-    expression.types(result.state) should equal(CTList(CTString).invariant)
+    types(expression)(result.state) should equal(CTList(CTString).invariant)
   }
 
   test("inner projection using missing identifier reports error") {

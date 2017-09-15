@@ -96,7 +96,7 @@ trait SemanticAnalysisTooling {
           val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
           val r2 = expectType(argTypes, arg)(r1.state)
 
-          val actualTypes = arg.types(r2.state)
+          val actualTypes = types(arg)(r2.state)
           val remainingPossibilities = possibilities.filter {
             sig => actualTypes containsAny sig.argumentTypes.head.covariant
           } map {
@@ -129,13 +129,13 @@ trait SemanticAnalysisTooling {
       check(state)
 
   def unionOfTypes(traversable: TraversableOnce[Expression]): TypeGenerator = state =>
-    TypeSpec.union(traversable.map(_.types(state)).toSeq: _*)
+    TypeSpec.union(traversable.map(types(_)(state)).toSeq: _*)
 
   def leastUpperBoundsOfTypes(traversable: TraversableOnce[Expression]): TypeGenerator =
     if (traversable.isEmpty)
       _ => CTAny.invariant
     else
-      state => traversable.map { _.types(state) } reduce { _ leastUpperBounds _ }
+      state => traversable.map { types(_)(state) } reduce { _ leastUpperBounds _ }
 
   val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
   val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
@@ -199,6 +199,8 @@ trait SemanticAnalysisTooling {
     }
 
   def possibleTypes(expression: Expression) : TypeGenerator =
-    expression.types(_).unwrapLists
+    types(expression)(_).unwrapLists
+
+  def types(expression:Expression): TypeGenerator = _.expressionType(expression).actual
 }
 

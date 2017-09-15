@@ -34,7 +34,7 @@ class FilterExpressionTest extends SemanticFunSuite {
     )(DummyPosition(0))
     val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
-    filter.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
+    types(filter)(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
 
   test("shouldRaiseSyntaxErrorIfMissingPredicate") {

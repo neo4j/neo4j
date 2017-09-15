@@ -225,7 +225,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:FilterExpression =>
         FilteringExpressions.checkPredicateDefined(x) chain
           FilteringExpressions.semanticCheck(ctx, x) chain
-          specifyType(x.expression.types, x)
+          specifyType(types(x.expression), x)
 
       case x:ExtractExpression =>
         FilteringExpressions.checkPredicateNotDefined(x) chain
@@ -247,7 +247,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               check(SemanticContext.Simple, x.predicate) chain
               check(SemanticContext.Simple, x.projection)
           } chain {
-            val outerTypes: TypeGenerator = x.projection.types(_).wrapInList
+            val outerTypes: TypeGenerator = types(x.projection)(_).wrapInList
             specifyType(outerTypes, x)
           }
 
@@ -281,15 +281,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTList(CTAny).covariant, x.list) chain
           withScopedState {
             val indexType: TypeGenerator = s =>
-              (x.list.types(s) constrain CTList(CTAny)).unwrapLists
-            val accType: TypeGenerator = x.init.types
+              (types(x.list)(s) constrain CTList(CTAny)).unwrapLists
+            val accType: TypeGenerator = types(x.init)
 
             declareVariable(x.variable, indexType) chain
               declareVariable(x.accumulator, accType) chain
               check(SemanticContext.Simple, x.expression)
           } chain
-          expectType(x.init.types, x.expression, AccumulatorExpressionTypeMismatchMessageGenerator) chain
-          specifyType(s => x.init.types(s) leastUpperBounds x.expression.types(s), x) chain
+          expectType(types(x.init), x.expression, AccumulatorExpressionTypeMismatchMessageGenerator) chain
+          specifyType(s => types(x.init)(s) leastUpperBounds types(x.expression)(s), x) chain
           FilteringExpressions.failIfAggregating(x.expression)
 
       case x:ListLiteral =>
@@ -309,7 +309,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           expectType(CTInteger.covariant, x.from) chain
           check(ctx, x.to) chain
           expectType(CTInteger.covariant, x.to) chain
-          specifyType(x.list.types, x)
+          specifyType(types(x.list), x)
 
       case x:ContainerIndex =>
         check(ctx, x.expr) chain
@@ -330,7 +330,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
                   if (listLookup && !mapLookup) {
                     expectType(CTList(CTAny).covariant, x.expr) chain
                       expectType(CTInteger.covariant, x.idx) chain
-                      specifyType(x.expr.types(_).unwrapLists, x)
+                      specifyType(types(x.expr)(_).unwrapLists, x)
                   }
                   else if (!listLookup && mapLookup) {
                     expectType(CTMap.covariant, x.expr) chain
@@ -478,7 +478,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     }
 
     def possibleInnerTypes(e: FilteringExpression): TypeGenerator = s =>
-      (e.expression.types(s) constrain CTList(CTAny)).unwrapLists
+      (types(e.expression)(s) constrain CTList(CTAny)).unwrapLists
   }
 
   private def checkAddBoundary(add: Add): SemanticCheck =
@@ -503,7 +503,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     }
 
   private def infixAddRhsTypes(lhs: ast.Expression): TypeGenerator = s => {
-    val lhsTypes = lhs.types(s)
+    val lhsTypes = types(lhs)(s)
 
     // Strings
     // "a" + "b" => "ab"
@@ -535,8 +535,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
   }
 
   private def infixAddOutputTypes(lhs: ast.Expression, rhs: ast.Expression): TypeGenerator = s => {
-    val lhsTypes = lhs.types(s)
-    val rhsTypes = rhs.types(s)
+    val lhsTypes = types(lhs)(s)
+    val rhsTypes = types(rhs)(s)
 
     def when(fst: TypeSpec, snd: TypeSpec)(result: CypherType): TypeSpec =
       if (lhsTypes.containsAny(fst) && rhsTypes.containsAny(snd) || lhsTypes.containsAny(snd) && rhsTypes.containsAny(fst))
@@ -588,7 +588,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         declareVariable(x.variable, FilteringExpressions.possibleInnerTypes(x)) chain
           check(SemanticContext.Simple, e)
       } chain {
-        val outerTypes: TypeGenerator = e.types(_).wrapInList
+        val outerTypes: TypeGenerator = types(e)(_).wrapInList
         specifyType(outerTypes, x)
       }
     }
@@ -600,11 +600,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           declareVariable(x.variable, FilteringExpressions.possibleInnerTypes(x)) chain
             check(SemanticContext.Simple, e)
         } chain {
-          val outerTypes: TypeGenerator = e.types(_).wrapInList
+          val outerTypes: TypeGenerator = types(e)(_).wrapInList
           specifyType(outerTypes, x)
         }
       case None =>
-        specifyType(x.expression.types, x)
+        specifyType(types(x.expression), x)
     }
 }
 

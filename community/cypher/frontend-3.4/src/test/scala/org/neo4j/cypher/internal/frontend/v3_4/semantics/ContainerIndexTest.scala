@@ -35,9 +35,9 @@ class ContainerIndexTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
-    assertIsList(lhs.types(result.state))
-    rhs.types(result.state) should equal(CTInteger.covariant)
-    index.types(result.state) should equal(CTNode | CTString)
+    assertIsList(types(lhs)(result.state))
+    types(rhs)(result.state) should equal(CTInteger.covariant)
+    types(index)(result.state) should equal(CTNode | CTString)
   }
 
   test("should detect node lookup") {
@@ -47,9 +47,9 @@ class ContainerIndexTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
-    assertIsMap(lhs.types(result.state))
-    rhs.types(result.state) should equal(CTString.covariant)
-    index.types(result.state) should equal(CTAny.covariant)
+    assertIsMap(types(lhs)(result.state))
+    types(rhs)(result.state) should equal(CTString.covariant)
+    types(index)(result.state) should equal(CTAny.covariant)
   }
 
   test("should type as any if given untyped lookup arguments") {
@@ -59,9 +59,9 @@ class ContainerIndexTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
-    lhs.types(result.state) should equal(CTAny.contravariant)
-    rhs.types(result.state) should equal(CTAny.contravariant)
-    index.types(result.state) should equal(TypeSpec.all)
+    types(lhs)(result.state) should equal(CTAny.contravariant)
+    types(rhs)(result.state) should equal(CTAny.contravariant)
+    types(index)(result.state) should equal(TypeSpec.all)
   }
 
   test("should return list inner types of expression") {
@@ -71,7 +71,7 @@ class ContainerIndexTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
-    index.types(result.state) should equal(CTNode | CTString)
+    types(index)(result.state) should equal(CTNode | CTString)
   }
 
   test("should raise error if indexing by fraction") {

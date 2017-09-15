@@ -39,7 +39,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(caseExpression)(SemanticState.clean)
     result.errors shouldBe empty
-    caseExpression.types(result.state) should equal(CTInteger | CTFloat)
+    types(caseExpression)(result.state) should equal(CTInteger | CTFloat)
   }
 
   test("Generic: Should combine types of alternatives") {
@@ -59,7 +59,7 @@ class SemanticCaseExpressionTest extends SemanticFunSuite {
 
     val result = SemanticExpressionCheck.simple(caseExpression)(SemanticState.clean)
     result.errors shouldBe empty
-    caseExpression.types(result.state) should equal(CTInteger | CTFloat | CTString | CTNode)
+    types(caseExpression)(result.state) should equal(CTInteger | CTFloat | CTString | CTNode)
   }
 
   test("Generic: should type check predicates") {
