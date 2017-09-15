@@ -307,7 +307,16 @@ public class BoltFailuresIT
     private void awaitLogToContainMessage( AssertableLogProvider logProvider, LogMatcher matcher )
             throws TimeoutException
     {
-        await( () -> logProvider.containsMatchingLogCall( matcher ) );
+        try
+        {
+            await( () -> logProvider.containsMatchingLogCall( matcher ) );
+        }
+        catch ( TimeoutException e )
+        {
+            System.err.println( "Expected log call did not happen. Full log:" );
+            System.err.println( logProvider.serialize() );
+            throw e;
+        }
     }
 
     private Future<?> updateAllNodesAsync( Driver driver )
