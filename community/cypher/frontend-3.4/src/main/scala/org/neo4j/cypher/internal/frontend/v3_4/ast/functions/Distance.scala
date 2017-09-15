@@ -16,16 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object Distance extends Function with SimpleTypedFunction {
+case object Distance extends Function with TypeSignatures {
   def name = "distance"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat)
   )
 }

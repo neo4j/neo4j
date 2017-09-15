@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.ast
+package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
-case class ExpressionSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)
+case class TypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)

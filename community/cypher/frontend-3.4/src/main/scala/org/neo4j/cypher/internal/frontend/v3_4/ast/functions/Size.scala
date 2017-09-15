@@ -16,14 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object Size extends Function with SimpleTypedFunction {
+case object Size extends Function with TypeSignatures {
   def name = "size"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTInteger)
+    TypeSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTInteger)
   )
 }

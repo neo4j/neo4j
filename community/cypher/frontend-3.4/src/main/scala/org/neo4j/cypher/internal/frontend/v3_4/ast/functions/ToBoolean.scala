@@ -16,33 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, FunctionInvocation}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckResult, SemanticError, SemanticState}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
 
 case object ToBoolean extends Function {
-
   def name = "toBoolean"
-
-  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, 1) ifOkChain
-      checkMaxArgs(invocation, 1) ifOkChain
-      checkTypeOfArgument(invocation) ifOkChain
-      SemanticExpressionCheck.specifyType(CTBoolean, invocation)
-
-  private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
-    val argument = invocation.args.head
-    val specifiedType = s.expressionType(argument).specified
-    val correctType = Seq(CTString, CTBoolean, CTAny).foldLeft(false) {
-      case (acc, t) => acc || specifiedType.contains(t)
-    }
-
-    if (correctType) SemanticCheckResult.success(s)
-    else {
-      val message = s"Type mismatch: expected Boolean or String but was ${specifiedType.mkString(", ")}"
-      SemanticCheckResult.error(s, SemanticError(message, argument.position))
-    }
-  }
 }

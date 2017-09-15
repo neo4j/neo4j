@@ -16,33 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, FunctionInvocation, SimpleTypedFunction}
-import org.neo4j.cypher.internal.frontend.v3_4.notification.LengthOnNonPathNotification
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object Length extends Function with SimpleTypedFunction {
+case object Length extends Function with TypeSignatures {
   def name = "length"
 
   //NOTE using CTString and CTCollection here is deprecated
   override val signatures = Vector(
-    ExpressionSignature(Vector(CTString), CTInteger),
-    ExpressionSignature(Vector(CTList(CTAny)), CTInteger),
-    ExpressionSignature(Vector(CTPath), CTInteger)
+    TypeSignature(Vector(CTString), CTInteger),
+    TypeSignature(Vector(CTList(CTAny)), CTInteger),
+    TypeSignature(Vector(CTPath), CTInteger)
   )
-
-  override def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) =
-    super.semanticCheck(ctx, invocation) chain checkForInvalidUsage(ctx, invocation)
-
-  def checkForInvalidUsage(ctx: SemanticContext, invocation: FunctionInvocation) = (originalState: SemanticState) => {
-    val newState = invocation.args.foldLeft(originalState) {
-      case (state, expr) if state.expressionType(expr).actual != CTPath.invariant =>
-        state.addNotification(LengthOnNonPathNotification(expr.position))
-      case (state, expr) =>
-        state
-    }
-
-    SemanticCheckResult(newState, Seq.empty)
-  }
 }

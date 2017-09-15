@@ -23,10 +23,4 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Tail extends Function with SemanticAnalysisTooling {
   def name = "tail"
-
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
-    checkArgs(invocation, 1) ifOkChain {
-      expectType(CTList(CTAny).covariant, invocation.arguments(0)) chain
-      specifyType(invocation.arguments(0).types, invocation)
-    }
 }

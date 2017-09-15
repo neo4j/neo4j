@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object Rand extends Function with SimpleTypedFunction {
+case object Rand extends Function with TypeSignatures {
   val name = "rand"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(), outputType = CTFloat)
   )
 }

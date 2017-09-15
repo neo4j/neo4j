@@ -205,7 +205,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         }
 
       case x:FunctionInvocation =>
-        x.function.semanticCheckHook(ctx, x)
+        SemanticFunctionCheck.check(ctx, x)
 
       case x:GetDegree =>
         check(ctx, x.node) chain

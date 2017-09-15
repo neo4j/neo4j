@@ -16,20 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.{TypeGenerator, ast}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Head extends Function with SemanticAnalysisTooling {
   def name = "head"
-
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
-    checkArgs(invocation, 1) ifOkChain {
-      expectType(CTList(CTAny).covariant, invocation.arguments.head) chain
-      specifyType(possibleInnerTypes(invocation.arguments.head), invocation)
-    }
-
-  private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator =
-    expression.types(_).unwrapLists
 }

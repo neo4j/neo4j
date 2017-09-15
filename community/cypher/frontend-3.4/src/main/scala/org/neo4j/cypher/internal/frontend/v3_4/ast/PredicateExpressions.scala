@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
 
@@ -44,7 +44,7 @@ case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Exp
 
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
 
@@ -54,19 +54,19 @@ case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expr
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
+    TypeSignature(Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
 }
 
 case class Not(rhs: Expression)(val position: InputPosition) extends Expression with LeftUnaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(Vector(CTBoolean), outputType = CTBoolean)
+    TypeSignature(Vector(CTBoolean), outputType = CTBoolean)
   )
 }
 
 case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "="
@@ -76,7 +76,7 @@ case class Equals(lhs: Expression, rhs: Expression)(val position: InputPosition)
 
 case class NotEquals(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "<>"
@@ -88,7 +88,7 @@ case class InvalidNotEquals(lhs: Expression, rhs: Expression)(val position: Inpu
 
 case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "=~"
@@ -119,25 +119,25 @@ object PartialPredicate {
 
 case class StartsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class EndsWith(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class Contains(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 }
 
 case class IsNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "IS NULL"
@@ -145,7 +145,7 @@ case class IsNull(lhs: Expression)(val position: InputPosition) extends Expressi
 
 case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expression with RightUnaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTAny), outputType = CTBoolean)
   )
 
   override def canonicalOperatorSymbol = "IS NOT NULL"
@@ -153,11 +153,11 @@ case class IsNotNull(lhs: Expression)(val position: InputPosition) extends Expre
 
 sealed trait InequalityExpression extends Expression with BinaryOperatorExpression {
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTBoolean),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTBoolean),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
-    ExpressionSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
+    TypeSignature(argumentTypes = Vector(CTFloat, CTInteger), outputType = CTBoolean),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTBoolean),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTBoolean),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTBoolean),
+    TypeSignature(argumentTypes = Vector(CTString, CTString), outputType = CTBoolean)
   )
 
   def includeEquality: Boolean

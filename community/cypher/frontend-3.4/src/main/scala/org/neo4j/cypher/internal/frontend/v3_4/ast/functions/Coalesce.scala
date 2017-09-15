@@ -16,16 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysisTooling
 
 case object Coalesce extends Function with SemanticAnalysisTooling {
   def name = "coalesce"
-
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
-    checkMinArgs(invocation, 1) chain
-    expectType(CTAny.covariant, invocation.arguments) chain
-    specifyType(leastUpperBoundsOfTypes(invocation.arguments), invocation)
 }

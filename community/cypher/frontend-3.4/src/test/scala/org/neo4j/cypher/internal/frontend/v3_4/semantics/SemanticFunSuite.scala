@@ -48,7 +48,7 @@ class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
 
   def unsignedDecimal(str:String) = UnsignedDecimalIntegerLiteral(str)(pos)
   def signedDecimal(str:String) = SignedDecimalIntegerLiteral(str)(pos)
-  def decimalDouble(str:String) = SignedDecimalIntegerLiteral(str)(pos)
+  def decimalDouble(str:String) = DecimalDoubleLiteral(str)(pos)
   def signedOctal(str:String) = SignedOctalIntegerLiteral(str)(pos)
 
   def variable(name: String): Variable = Variable(name)(pos)

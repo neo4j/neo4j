@@ -16,9 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-trait ExpressionCallTypeChecking {
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
 
-  def signatures: Seq[ExpressionSignature] = Seq.empty
-
-  lazy val signatureLengths = signatures.map(_.argumentTypes.length)
-}
+case class TypeSignature(argumentTypes: IndexedSeq[CypherType], outputType: CypherType)

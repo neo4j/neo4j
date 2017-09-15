@@ -29,8 +29,8 @@ case class UnaryAdd(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression {
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "+"
@@ -40,9 +40,9 @@ case class Subtract(lhs: Expression, rhs: Expression)(val position: InputPositio
   extends Expression with BinaryOperatorExpression {
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "-"
@@ -52,8 +52,8 @@ case class UnarySubtract(rhs: Expression)(val position: InputPosition)
   extends Expression with LeftUnaryOperatorExpression {
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "-"
@@ -67,9 +67,9 @@ case class Multiply(lhs: Expression, rhs: Expression)(val position: InputPositio
   // 1.1 * 1 => 1.1
   // 1.1 * 1.1 => 1.21
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "*"
@@ -83,9 +83,9 @@ case class Divide(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 / 1 => 1.1
   // 1.1 / 1.1 => 1.0
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "/"
@@ -99,9 +99,9 @@ case class Modulo(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 % 1 => 0.1
   // 1.1 % 1.1 => 0.0
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTInteger, CTInteger), outputType = CTInteger),
+    TypeSignature(argumentTypes = Vector(CTInteger, CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "%"
@@ -115,7 +115,7 @@ case class Pow(lhs: Expression, rhs: Expression)(val position: InputPosition)
   // 1.1 ^ 1 => 1.1
   // 1.1 ^ 1.1 => 1.1105
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTFloat, CTFloat), outputType = CTFloat)
   )
 
   override def canonicalOperatorSymbol = "^"

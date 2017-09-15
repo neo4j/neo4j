@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{DefaultTypeMismatchMessageGenerator, SemanticContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
 
 /**
   * This class holds methods for performing semantic analysis.
@@ -85,10 +85,10 @@ trait SemanticAnalysisTooling {
     }
   }
 
-  def checkTypes(expression: Expression, signatures: Seq[ExpressionSignature]): SemanticCheck = s => {
+  def checkTypes(expression: Expression, signatures: Seq[TypeSignature]): SemanticCheck = s => {
     val initSignatures = signatures.filter(_.argumentTypes.length == expression.arguments.length)
 
-    val (remainingSignatures: Seq[ExpressionSignature], result) =
+    val (remainingSignatures: Seq[TypeSignature], result) =
       expression.arguments.foldLeft((initSignatures, SemanticCheckResult.success(s))) {
         case (accumulator@(Seq(), _), _) =>
           accumulator
@@ -197,5 +197,8 @@ trait SemanticAnalysisTooling {
         SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
       }
     }
+
+  def possibleTypes(expression: Expression) : TypeGenerator =
+    expression.types(_).unwrapLists
 }
 

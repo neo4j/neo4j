@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics.functions
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticExpressionCheck, SemanticFunSuite, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
+abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
 
   protected val context: SemanticContext = SemanticContext.Simple
 

@@ -17,17 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticError
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, ast}
 
 // this implementation exists only to handle the case where "reduce(x = 0, x in y : foo)" is parsed as a function invocation,
 // rather than a ReduceExpression
 case object Reduce extends Function {
   def name = "reduce"
-
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    semanticCheck(ctx, invocation)
-
-  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    SemanticError(s"${name}(...) requires '| expression' (an accumulation expression)", invocation.position)
 }

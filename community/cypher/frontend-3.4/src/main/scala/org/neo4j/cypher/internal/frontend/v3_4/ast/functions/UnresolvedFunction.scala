@@ -22,7 +22,4 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult
 
 case object UnresolvedFunction extends Function {
   def name = "UNKNOWN"
-
-  //we cannot do a full semantic check until we have resolved the function call.
-  override protected def semanticCheck(ctx: SemanticContext, invocation: FunctionInvocation) = SemanticCheckResult.success
 }

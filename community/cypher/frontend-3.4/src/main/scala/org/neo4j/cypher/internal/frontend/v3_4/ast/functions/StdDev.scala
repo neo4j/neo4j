@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AggregatingFunction, ExpressionSignature, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AggregatingFunction, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object StdDev extends AggregatingFunction with SimpleTypedFunction {
+case object StdDev extends AggregatingFunction with TypeSignatures {
   def name = "stdev"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
 }

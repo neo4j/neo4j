@@ -16,16 +16,16 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case object ToString extends Function with SimpleTypedFunction {
+case object ToString extends Function with TypeSignatures {
   override def name = "toString"
 
   override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTString),
-    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTString),
-    ExpressionSignature(argumentTypes = Vector(CTBoolean), outputType = CTString),
-    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTString),
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString)
   )
 }
