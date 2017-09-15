@@ -48,8 +48,16 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+
+import static java.lang.Integer.parseInt;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_id_batch_size;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class CoreBootstrapperIT
@@ -80,8 +88,9 @@ public class CoreBootstrapperIT
         CoreSnapshot snapshot = bootstrapper.bootstrap( membership );
 
         // then
-        assertEquals( nodeCount, ((IdAllocationState) snapshot.get( CoreStateType.ID_ALLOCATION ))
-                .firstUnallocated( IdType.NODE ) );
+        int recordIdBatchSize = parseInt( record_id_batch_size.getDefaultValue() );
+        assertThat( ((IdAllocationState) snapshot.get( CoreStateType.ID_ALLOCATION )).firstUnallocated( IdType.NODE ),
+                allOf( greaterThanOrEqualTo( (long) nodeCount ), lessThanOrEqualTo( (long) nodeCount + recordIdBatchSize ) ) );
 
         /* Bootstrapped state is created in RAFT land at index -1 and term -1. */
         assertEquals( 0, snapshot.prevIndex() );

@@ -558,6 +558,10 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val a2 = createLabeledNode("A")
     val a3 = createLabeledNode("A")
     val a4 = createLabeledNode("A")
+    println( a1 )
+    println( a2 )
+    println( a3 )
+    println( a4 )
 
     relate(a1, a2, "T")
     relate(a2, a3, "T")
@@ -570,8 +574,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         |UNWIND nodes(p)[1..-1] as n
         |RETURN id(n) as n, count(*) as c""".stripMargin)
 
-    result.toList should equal(List(
-      Map("n" -> 5, "c" -> 4), Map("n" -> 6, "c" -> 4)
+    result.toSet should equal(Set(
+      Map("n" -> a2.getId, "c" -> 4), Map("n" -> a3.getId, "c" -> 4)
     ))
 
     result.close()
