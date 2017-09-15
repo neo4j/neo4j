@@ -73,9 +73,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     databaseInfo.edition != Edition.community
   }
 
-  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = {
-    if (!isProfileReady)
-      throw new ProfilerStatisticsNotReadyException()
+  def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription = {
+    verifyProfileReady()
 
     plan map {
       input: InternalPlanDescription =>
@@ -101,8 +100,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-    def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription =
-      outerProfiler.decorate(plan, isProfileReady)
+    def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription =
+      outerProfiler.decorate(plan, verifyProfileReady)
   }
 
   def registerParentPipe(pipe: Pipe): Unit =

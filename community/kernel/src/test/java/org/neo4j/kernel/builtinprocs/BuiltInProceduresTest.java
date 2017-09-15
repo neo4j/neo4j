@@ -61,9 +61,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
@@ -231,6 +234,75 @@ public class BuiltInProceduresTest
         assertThat( call( "dbms.components" ), contains(
                 record( "Neo4j Kernel", singletonList( "1.3.37" ), "enterprise" )
         ) );
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDbLabels() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.labelsGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.labels" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.propertyKeyGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.propertyKeys" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.relationshipTypesGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.relationshipTypes" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
     }
 
     private Matcher<Object[]> record( Object... fields )

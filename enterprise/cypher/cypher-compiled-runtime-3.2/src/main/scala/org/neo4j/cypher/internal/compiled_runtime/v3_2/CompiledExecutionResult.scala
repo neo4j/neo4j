@@ -50,9 +50,12 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {
-    if (!taskCloser.isClosed) throw new ProfilerStatisticsNotReadyException
-
-    compiledCode.executionPlanDescription()
+    if (!taskCloser.isClosed) {
+      completed(success = false)
+      throw new ProfilerStatisticsNotReadyException
+    }
+    else
+      compiledCode.executionPlanDescription()
   }
 
   override def queryStatistics() = InternalQueryStatistics()
