@@ -335,9 +335,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Label scan should be just as pretty as you would expect") {
-    val pipe = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NodeByLabelScan", NoChildren, Seq(LabelName("Foo"), EstimatedRows
-    (1)), Set
-    ("n"))
+    val arguments = Seq(LabelName("Foo"), EstimatedRows(1))
+    val pipe = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NodeByLabelScan", NoChildren, arguments, Set("n"))
 
     renderAsTreeTable(pipe) should equal(
       """+------------------+----------------+-----------+-------+
@@ -352,8 +351,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val expandDescr = ExpandExpression("from", "rel", Seq.empty, "to", SemanticDirection.INCOMING, 0, None)
     val estimatedRows = EstimatedRows(1)
     val arguments = Seq(estimatedRows, expandDescr)
-    val planDescription = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "VarLengthExpand(All)", NoChildren, arguments, Set
-    ("rel", "to"))
+    val variables = Set("rel", "to")
+    val planDescription = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "VarLengthExpand(All)", NoChildren, arguments, variables)
     renderAsTreeTable(planDescription) should equal(
       """+-----------------------+----------------+-----------+-------------------------+
         || Operator              | Estimated Rows | Variables | Other                   |
@@ -370,9 +369,8 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
       ExpandExpression("  UNNAMED123", "R", Seq("WHOOP"), "  UNNAMED24", SemanticDirection.OUTGOING, 1, Some(1)),
       EstimatedRows(1))
 
-    val plan = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NAME", NoChildren, arguments, Set("n", "  UNNAMED123", "  " +
-      "FRESHID12", "  " +
-      "AGGREGATION255"))
+    val variables = Set("n", "  UNNAMED123", "  FRESHID12", "  AGGREGATION255")
+    val plan = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NAME", NoChildren, arguments, variables)
     renderAsTreeTable(plan) should equal(
       """+----------+----------------+------+---------+-----------------------------------+------------------+
         || Operator | Estimated Rows | Rows | DB Hits | Variables                         | Other            |
