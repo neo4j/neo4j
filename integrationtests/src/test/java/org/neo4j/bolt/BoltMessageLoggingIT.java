@@ -177,9 +177,7 @@ public class BoltMessageLoggingIT
         }
 
         String contents = readFile( boltLogFile );
-        assertThat( contents, containsString( "C RUN " +
-                "\"CREATE (n:Person {name: 'Beta Ray Bill'}) \\nRETURN 42\""
-                + " {}" ) );
+        assertThat( contents, containsString( "C RUN -" ) );
     }
 
     private String readFile( File file ) throws IOException
