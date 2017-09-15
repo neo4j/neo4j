@@ -65,18 +65,12 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        Statement statement = tx.acquireStatement();
-        try
+        try ( Statement statement = tx.acquireStatement() )
         {
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
             List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ) );
             return labelResults.stream();
-        }
-        catch ( Throwable t )
-        {
-            statement.close();
-            throw t;
         }
     }
 
@@ -84,19 +78,14 @@ public class BuiltInProcedures
     @Procedure( name = "db.propertyKeys", mode = READ )
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
-        Statement statement = tx.acquireStatement();
-        try
+        try ( Statement statement = tx.acquireStatement() )
         {
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
             List<PropertyKeyResult> propertyKeys =
                     asList( TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ) );
-            return propertyKeys.stream();
-        }
-        catch ( Throwable t )
-        {
             statement.close();
-            throw t;
+            return propertyKeys.stream();
         }
     }
 
@@ -104,19 +93,13 @@ public class BuiltInProcedures
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
-        Statement statement = tx.acquireStatement();
-        try
+        try ( Statement statement = tx.acquireStatement() )
         {
             // Ownership of the reference to the acquired statement is transfered to the returned iterator stream,
             // but we still want to eagerly consume the labels, so we can catch any exceptions,
             List<RelationshipTypeResult> relationshipTypes =
                     asList( TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ) );
             return relationshipTypes.stream();
-        }
-        catch ( Throwable t )
-        {
-            statement.close();
-            throw t;
         }
     }
 
