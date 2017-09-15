@@ -20,19 +20,18 @@
 
 package org.neo4j.bolt.logging;
 
-import io.netty.channel.Channel;
-import io.netty.util.AttributeKey;
-import org.codehaus.jackson.map.ObjectMapper;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+
+import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -112,10 +111,9 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
         clientEvent( "INIT", () -> userAgent);
     }
 
-    @Override
-    public void logRun( String statement, Supplier<MapValue> parametersSupplier )
+    public void logRun()
     {
-        clientEvent( "RUN", () -> format( "%s %s", json( statement ), formatAnyValue( parametersSupplier.get() ) ) );
+        clientEvent( "RUN", PLACEHOLDER_DETAIL_SUPPLIER );
     }
 
     @Override

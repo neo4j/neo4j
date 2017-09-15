@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.logging;
 
+import java.net.InetSocketAddress;
+
 import io.netty.channel.Channel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.Attribute;
@@ -28,19 +30,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.net.InetSocketAddress;
-
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.helpers.ValueUtils;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
 import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -138,9 +135,9 @@ public class BoltMessageLoggerImplTest
     public void logRun() throws Exception
     {
         // when
-        boltMessageLogger.logRun( "RETURN 42", () -> asMapValue( singletonMap( "param1", "value" ) ) );
+        boltMessageLogger.logRun();
         // then
-        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN \"RETURN 42\" {param1: \"value\"}" );
+        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN -" );
     }
 
     @Test
