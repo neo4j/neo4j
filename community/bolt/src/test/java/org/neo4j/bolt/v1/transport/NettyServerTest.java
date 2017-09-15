@@ -54,7 +54,6 @@ public class NettyServerTest
 
             // Expect
             exception.expect( PortBindException.class );
-            exception.expectMessage( "Address localhost:16000 is already in use" );
 
             // When
             Map<BoltConnector,NettyServer.ProtocolInitializer> initializersMap =

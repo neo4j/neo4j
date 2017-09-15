@@ -27,7 +27,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 
-import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
@@ -116,12 +115,7 @@ public class NettyServer extends LifecycleAdapter
                 // We catch throwable here because netty uses clever tricks to have method signatures that look like they do not
                 // throw checked exceptions, but they actually do. The compiler won't let us catch them explicitly because in theory
                 // they shouldn't be possible, so we have to catch Throwable and do our own checks to grab them
-
-                if ( e instanceof BindException )
-                {
-                    throw new PortBindException( bootstrapEntry.getValue().address(), (BindException) e );
-                }
-                throw e;
+                throw new PortBindException( bootstrapEntry.getValue().address(), e );
             }
         }
     }
