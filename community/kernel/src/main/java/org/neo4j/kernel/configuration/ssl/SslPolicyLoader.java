@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
+import io.netty.handler.ssl.SslProvider;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -71,12 +72,14 @@ public class SslPolicyLoader
     private final Map<String,SslPolicy> policies = new ConcurrentHashMap<>();
     private final PkiUtils pkiUtils = new PkiUtils();
     private final Config config;
+    private final SslProvider sslProvider;
 
     private SslPolicy legacyPolicy;
 
     private SslPolicyLoader( Config config )
     {
         this.config = config;
+        this.sslProvider = config.get( SslSystemSettings.netty_ssl_provider );
     }
 
     /**
@@ -155,7 +158,7 @@ public class SslPolicyLoader
         X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
 
         return new SslPolicy( privateKey, keyCertChain, null, null,
-                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE );
+                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE, sslProvider );
     }
 
     private void load( Config config, Log log )
@@ -229,7 +232,7 @@ public class SslPolicyLoader
             List<String> tlsVersions = config.get( policyConfig.tls_versions );
             List<String> ciphers = config.get( policyConfig.ciphers );
 
-            SslPolicy sslPolicy = new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory );
+            SslPolicy sslPolicy = new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider );
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );
             policies.put( policyName, sslPolicy );
         }
