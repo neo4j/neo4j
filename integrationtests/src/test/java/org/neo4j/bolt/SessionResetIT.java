@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -59,6 +60,7 @@ import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.VerboseTimeout;
 
 import static java.util.Collections.newSetFromMap;
@@ -139,7 +141,16 @@ public class SessionResetIT
         // periodic commit query can't be terminated so but reset must fail the transaction
         Future<Void> queryResult = runQueryInDifferentThreadAndResetSession( LONG_PERIODIC_COMMIT_QUERY, true );
 
-        assertNull( queryResult.get( 1, MINUTES ) );
+        try
+        {
+            assertNull( queryResult.get( 1, MINUTES ) );
+        }
+        catch ( TimeoutException e )
+        {
+            System.err.println( "Unable to get query result, dumping all stacktraces:" );
+            ThreadTestUtils.dumpAllStackTraces();
+            throw e;
+        }
         assertDatabaseIsIdle();
 
         // termination must cause transaction failure and no nodes should be committed
