@@ -68,11 +68,14 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     val query = "FOREACH( n in range( 0, 1 ) | CREATE (p:Person) )"
 
     // when
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("Foreach", "CreateNode")
+      }, Configs.AllRulePlanners))
 
     // then
     assertStats(result, nodesCreated = 2, labelsAdded = 2)
-    result should use("Foreach", "CreateNode")
     result shouldBe empty
   }
 

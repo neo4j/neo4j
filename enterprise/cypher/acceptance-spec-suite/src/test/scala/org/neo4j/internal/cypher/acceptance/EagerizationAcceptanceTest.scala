@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.procedure.Mode
 import org.scalatest.prop.TableDrivenPropertyChecks
 
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 class EagerizationAcceptanceTest
@@ -740,9 +741,11 @@ class EagerizationAcceptanceTest
   test("should not introduce eagerness for leaf create match") {
     val query = "CREATE () WITH * MATCH () RETURN count(*)"
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0))
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should not(useOperators("ReadOnly"))
+        assertNumberOfEagerness(plan, 0) should be(true)
+      }))
     assertStats(result, nodesCreated = 1)
-    result should not(use("ReadOnly"))
     result.columnAs[Long]("count(*)").next shouldBe 1
   }
 
@@ -2767,10 +2770,10 @@ class EagerizationAcceptanceTest
                                               expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
                                               optimalEagerCount: Int = -1) = {
     val failureMessage = s"Unexpected number of eagers. Expected $expectedEagerCount" + (if(optimalEagerCount != -1) s", optimal $optimalEagerCount" else "")
-    ComparePlansWithPredicate((plan) => assertNumberOfEagerness0(plan, expectedEagerCount), expectPlansToFailPredicate, failureMessage)
+    ComparePlansWithPredicate((plan) => assertNumberOfEagerness(plan, expectedEagerCount), expectPlansToFailPredicate, failureMessage)
   }
 
-  private def assertNumberOfEagerness0(planDescription: InternalPlanDescription, expectedEagerCount: Int): Boolean = {
+  private def assertNumberOfEagerness(planDescription: InternalPlanDescription, expectedEagerCount: Int): Boolean = {
     val plan = planDescription.toString
     val eagers = EagerRegEx.findAllIn(plan).length
     if (VERBOSE && expectedEagerCount > 0) {
