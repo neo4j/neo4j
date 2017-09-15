@@ -35,5 +35,6 @@ trait ExecutionPlan {
 
   def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapper): Boolean
 
-  def plannerInfo: PlannerInfo
+  // This is to force eager calculation
+  val plannerInfo: PlannerInfo
 }
