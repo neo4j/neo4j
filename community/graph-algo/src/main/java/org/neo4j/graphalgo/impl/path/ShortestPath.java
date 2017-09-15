@@ -162,7 +162,7 @@ public class ShortestPath implements PathFinder<Path>
                 goOneStep( endData, startData, hits, startData, stopAsap );
             }
             Collection<Hit> least = hits.least();
-            return least != null ? filterPaths( hitsToPaths( least, start, end, stopAsap ) ) : Collections.emptyList();
+            return least != null ? filterPaths( hitsToPaths( least, start, end, stopAsap, maxResultCount ) ) : Collections.emptyList();
         }
     }
 
@@ -601,7 +601,7 @@ public class ShortestPath implements PathFinder<Path>
         }
     }
 
-    private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap )
+    private static Collection<Path> hitsToPaths( Collection<Hit> depthHits, Node start, Node end, boolean stopAsap, int maxResultCount )
     {
         LinkedHashMap<String,Path> paths = new LinkedHashMap<>();
         for ( Hit hit : depthHits )
@@ -609,6 +609,10 @@ public class ShortestPath implements PathFinder<Path>
             for ( Path path : hitToPaths( hit, start, end, stopAsap ) )
             {
                 paths.put( path.toString(), path );
+                if ( paths.size() >= maxResultCount )
+                {
+                    break;
+                }
             }
         }
         return paths.values();
