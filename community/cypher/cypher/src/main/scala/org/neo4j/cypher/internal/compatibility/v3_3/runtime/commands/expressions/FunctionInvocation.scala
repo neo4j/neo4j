@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElemen
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.v3_3.logical.plans.UserFunctionSignature
 import org.neo4j.values._
+import org.neo4j.values.storable.Values
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
@@ -36,7 +37,7 @@ case class FunctionInvocation(signature: UserFunctionSignature, arguments: Index
       query.asObject(arg(ctx, state))
     })
     val result = query.callFunction(signature.name, argValues, signature.allowed)
-    valueConverter(result)
+    if (result == null) Values.NO_VALUE else valueConverter(result)
   }
 
   override def rewrite(f: (Expression) => Expression) =

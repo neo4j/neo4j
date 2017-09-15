@@ -207,6 +207,54 @@ public class UserFunctionIT
     }
 
     @Test
+    public void shouldCallFunctionWithMapArgumentContainingNullFromParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "RETURN org.neo4j.procedure.mapArgument({foo: $p}) AS someVal", map("p", null) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 1L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFunctionWithNull() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "RETURN org.neo4j.procedure.mapArgument(null) AS someVal" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 0L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallFunctionWithNullFromParameter() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "RETURN org.neo4j.procedure.mapArgument($p) AS someVal", map("p", null) );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "someVal", 0L ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
     public void shouldCallFunctionWithNodeReturn() throws Throwable
     {
         // Given
@@ -622,6 +670,20 @@ public class UserFunctionIT
     }
 
     @Test
+    public void shouldHandleNullInList()
+    {
+        try ( Transaction ignore = db.beginTx() )
+        {
+            db.createNode( Label.label( "Person" ) );
+            assertEquals(
+                    db.execute( "MATCH (n:Person) RETURN org.neo4j.procedure.nodeListArgument([n, null]) AS someVal" )
+                            .next()
+                            .get( "someVal" ),
+                    1L );
+        }
+    }
+
+    @Test
     public void shouldWorkWhenUsingWithToProjectList()
     {
         try ( Transaction ignore = db.beginTx() )
@@ -668,6 +730,17 @@ public class UserFunctionIT
     }
 
     @Test
+    public void shouldHandleNullAsParameter() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute( "RETURN org.neo4j.procedure.defaultValues($p) AS result", map( "p", null ) );
+
+        // Then
+        assertThat( res.next().get( "result" ), equalTo( "null,42,3.14,true" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
     public void shouldCallFunctionWithOneProvidedRestDefaultArgument() throws Throwable
     {
         //Given/When
@@ -710,6 +783,18 @@ public class UserFunctionIT
 
         // Then
         assertThat( res.next().get( "result" ), equalTo( "another string,1337,2.72,false" ) );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallFunctionReturningNull() throws Throwable
+    {
+        //Given/When
+        Result res = db.execute(
+                "RETURN org.neo4j.procedure.node(-1) AS result" );
+
+        // Then
+        assertThat( res.next().get( "result" ), equalTo( null) );
         assertFalse( res.hasNext() );
     }
 
@@ -886,7 +971,15 @@ public class UserFunctionIT
         @UserFunction
         public long nodeListArgument( @Name( "nodes" ) List<Node> nodes )
         {
-            return nodes.size();
+            long count = 0L;
+            for ( Node node : nodes )
+            {
+                if (node != null)
+                {
+                    count++;
+                }
+            }
+            return count;
         }
 
         @UserFunction
@@ -924,12 +1017,20 @@ public class UserFunctionIT
         @UserFunction
         public long mapArgument( @Name( "map" ) Map<String,Object> map )
         {
+            if ( map == null )
+            {
+                return 0;
+            }
             return map.size();
         }
 
         @UserFunction
         public Node node( @Name( "id" ) long id )
         {
+            if ( id < 0 )
+            {
+                return null;
+            }
             return db.getNodeById( id );
         }
 
