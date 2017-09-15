@@ -98,7 +98,9 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
       "UNION " +
       "CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType as result " +
       "UNION " +
-      "CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey as result"
+      "CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey as result " +
+      "UNION " +
+      "CALL db.labels() YIELD label RETURN label as result"
 
     val result = graph.execute(query)
 
