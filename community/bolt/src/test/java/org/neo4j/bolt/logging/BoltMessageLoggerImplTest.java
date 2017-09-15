@@ -19,7 +19,10 @@
  */
 package org.neo4j.bolt.logging;
 
+import java.net.InetSocketAddress;
+
 import io.netty.channel.Channel;
+import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.Attribute;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,18 +30,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.net.InetSocketAddress;
-
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.helpers.ValueUtils;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
 import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -47,7 +46,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BoltMessageLoggerImplTest
 {
 
-    private static final String REMOTE_ADDRESS = "localhost/127.0.0.1:60297";
+    private static final String REMOTE_ADDRESS = "127.0.0.1:60297";
     private static final String CORRELATION_ID = "Bolt-CorrelationId-1234";
     private static String errorMessage = "Oh my woes!";
     private static Neo4jError error = Neo4jError.from( new DeadlockDetectedException( errorMessage ) );
@@ -77,6 +76,21 @@ public class BoltMessageLoggerImplTest
         boltMessageLogger.clientEvent( "TEST", () -> "details" );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C TEST details" );
+    }
+
+    @Test
+    public void getRemoteAddressAsIsIncaseOfNonSocketChannel() throws Exception
+    {
+        // given
+        Channel channel = mock( Channel.class );
+        when( channel.attr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( correlationIdAttribute );
+        when( correlationIdAttribute.get() ).thenReturn( CORRELATION_ID );
+        when( channel.remoteAddress() ).thenReturn( new DomainSocketAddress( "socketPath" ) );
+        // when
+        BoltMessageLoggerImpl boltMessageLogger = new BoltMessageLoggerImpl( boltMessageLog, channel );
+        boltMessageLogger.clientEvent( "TEST", () -> "details" );
+        // then
+        verify( boltMessageLog ).info( "socketPath", CORRELATION_ID, "C TEST details" );
     }
 
     @Test
@@ -121,9 +135,9 @@ public class BoltMessageLoggerImplTest
     public void logRun() throws Exception
     {
         // when
-        boltMessageLogger.logRun( "RETURN 42", () -> asMapValue( singletonMap( "param1", "value" ) ) );
+        boltMessageLogger.logRun();
         // then
-        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN \"RETURN 42\" {param1: \"value\"}" );
+        verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C RUN -" );
     }
 
     @Test

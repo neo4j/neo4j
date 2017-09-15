@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.logging;
 
-import io.netty.channel.Channel;
-
 import java.io.File;
 import java.util.concurrent.Executor;
+
+import io.netty.channel.Channel;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -52,7 +52,7 @@ public class BoltMessageLogging
     public BoltMessageLogger newLogger( Channel channel )
     {
         return boltMessageLog == null ? NullBoltMessageLogger.getInstance()
-                                      : new BoltMessageLoggerImpl( boltMessageLog, channel );
+                : new BoltMessageLoggerImpl( boltMessageLog, channel );
     }
 
     private static BoltMessageLog createBoltMessageLog( FileSystemAbstraction fs, JobScheduler scheduler,

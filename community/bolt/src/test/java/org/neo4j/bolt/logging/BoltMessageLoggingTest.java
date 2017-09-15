@@ -20,6 +20,7 @@
 package org.neo4j.bolt.logging;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import io.netty.channel.Channel;
 import org.junit.Test;
@@ -56,12 +57,14 @@ public class BoltMessageLoggingTest
     private Log log;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private Channel channel;
+    private static InetSocketAddress inetSocketAddress = new InetSocketAddress( "127.0.0.1", 7476 );
 
     @Test
     public void shouldCreateNullLoggerWhenDisabled()
     {
         Config config = newConfig( false );
 
+        when( channel.remoteAddress() ).thenReturn( inetSocketAddress );
         BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
         BoltMessageLogger logger = logging.newLogger( channel );
 
@@ -87,6 +90,7 @@ public class BoltMessageLoggingTest
     {
         Config config = newConfig( true );
 
+        when( channel.remoteAddress() ).thenReturn( this.inetSocketAddress );
         BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
         BoltMessageLogger logger = logging.newLogger( channel );
 

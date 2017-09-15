@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.logging;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.exceptions.Status;
@@ -78,8 +77,7 @@ public class NullBoltMessageLogger implements BoltMessageLogger
     {
     }
 
-    @Override
-    public void logRun( String statement, Supplier<MapValue> parametersSupplier )
+    public void logRun()
     {
     }
 
