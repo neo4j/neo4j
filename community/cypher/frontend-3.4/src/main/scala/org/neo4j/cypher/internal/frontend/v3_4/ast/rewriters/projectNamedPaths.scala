@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Rewriter, topDown}
+import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Ref, Rewriter, topDown}
 import org.neo4j.cypher.internal.apa.v3_4.Foldable.FoldableAny
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.Ref
 
 import scala.annotation.tailrec
 

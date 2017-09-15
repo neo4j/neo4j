@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.CypherOrdering
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+//noinspection TypeAnnotation
 class ComparablePredicateTest extends CypherFunSuite {
 
   val numericalValues = Seq[Number](
@@ -50,9 +51,9 @@ class ComparablePredicateTest extends CypherFunSuite {
     Double.NaN,
     null
   ).flatMap {
-    case v if v == null => Seq(v)
-    case v if  v.doubleValue().isNaN => Seq(v.doubleValue(), v.floatValue(), v)
-    case v => Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
+    case v: Number if v == null => Seq(v)
+    case v: Number if  v.doubleValue().isNaN => Seq(v.doubleValue(), v.floatValue(), v)
+    case v: Number => Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
 
   val textualValues = Seq(
@@ -66,7 +67,7 @@ class ComparablePredicateTest extends CypherFunSuite {
     null,
     "\uD801\uDC37"
   ).flatMap {
-    case v if v == null => Seq(v)
+    case v: String if v == null => Seq(v)
     case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 

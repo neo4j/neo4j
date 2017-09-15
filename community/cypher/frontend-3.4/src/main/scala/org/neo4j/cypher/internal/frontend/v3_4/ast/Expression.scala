@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Ref, Rewriter, bottomUp}
 
 import scala.collection.immutable.Stack
 

@@ -16,13 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException, Ref}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTGraphRef, TypeSpec}
-import org.neo4j.cypher.internal.frontend.v3_4.{Ref, SemanticCheck, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, ast}
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps

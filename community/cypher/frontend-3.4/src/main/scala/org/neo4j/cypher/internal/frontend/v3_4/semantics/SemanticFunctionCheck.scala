@@ -54,7 +54,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Collect =>
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTAny.covariant, invocation.arguments(0)) chain
-            specifyType(invocation.arguments(0).types(_).wrapInList, invocation)
+            specifyType(types(invocation.arguments(0))(_).wrapInList, invocation)
         }
 
       case Exists =>
@@ -77,7 +77,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       case Last =>
         def possibleTypes(expression: ast.Expression) : TypeGenerator = s =>
-          (expression.types(s) constrain CTList(CTAny)).unwrapLists
+          (types(expression)(s) constrain CTList(CTAny)).unwrapLists
 
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTList(CTAny).covariant, invocation.arguments.head) chain
@@ -120,7 +120,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Tail =>
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTList(CTAny).covariant, invocation.arguments(0)) chain
-            specifyType(invocation.arguments(0).types, invocation)
+            specifyType(types(invocation.arguments(0)), invocation)
         }
 
       case ToBoolean =>

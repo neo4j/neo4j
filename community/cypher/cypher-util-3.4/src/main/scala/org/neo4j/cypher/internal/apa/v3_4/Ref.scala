@@ -14,23 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4
+package org.neo4j.cypher.internal.apa.v3_4
 
-import org.neo4j.cypher.internal.apa.v3_4.Ref
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.Scope
+object Ref {
+  def apply[T <: AnyRef](v: T) = new Ref[T](v)
+}
 
-import scala.compat.Platform.EOL
+final class Ref[+T <: AnyRef](val value: T) {
+  if (value == null)
+    throw new InternalException("Attempt to instantiate Ref(null)")
 
-object ScopeTreeVerifier {
-  def verify(root: Scope): Seq[String] = {
-    val localSymbolTableIssues = root.allScopes.flatMap {
-      scope =>
-        scope.symbolTable.collect {
-          case (name, symbol) if name != symbol.name =>
-            s"'$name' points to symbol with different name '$symbol' in scope #${Ref(scope).toIdString}. Scope tree:$EOL$root"
-        }
-    }
-    localSymbolTableIssues
+  def toIdString = Integer.toHexString(java.lang.System.identityHashCode(value))
+
+  override def toString = s"Ref@$toIdString($value)"
+
+  override def hashCode = java.lang.System.identityHashCode(value)
+
+  override def equals(that: Any) = that match {
+    case other: Ref[_] => value eq other.value
+    case _             => false
   }
-
 }
