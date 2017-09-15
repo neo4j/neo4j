@@ -92,7 +92,6 @@ public class LuceneSchemaIndexPopulatorTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
         indexPopulator.create();
-        indexPopulator.configureSampling( true );
     }
 
     @After

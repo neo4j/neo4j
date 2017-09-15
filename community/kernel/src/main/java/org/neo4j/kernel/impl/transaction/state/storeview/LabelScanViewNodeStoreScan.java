@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import java.util.Collection;
 import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -56,11 +54,5 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     public PrimitiveLongResourceIterator getNodeIdIterator()
     {
         return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
-    }
-
-    @Override
-    public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
-    {
-        populations.forEach( population -> population.populator.configureSampling( false ) );
     }
 }

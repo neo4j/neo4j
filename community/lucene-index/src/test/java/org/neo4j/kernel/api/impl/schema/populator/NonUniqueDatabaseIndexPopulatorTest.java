@@ -156,7 +156,6 @@ public class NonUniqueDatabaseIndexPopulatorTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         NonUniqueLuceneIndexPopulator populator = new NonUniqueLuceneIndexPopulator( index, samplingConfig );
         populator.create();
-        populator.configureSampling( true );
         return populator;
     }
 }

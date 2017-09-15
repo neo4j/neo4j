@@ -49,12 +49,6 @@ class NativeUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE 
     }
 
     @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        // nothing to configure so far
-    }
-
-    @Override
     public IndexSample sampleResult()
     {
         return sampler.result();

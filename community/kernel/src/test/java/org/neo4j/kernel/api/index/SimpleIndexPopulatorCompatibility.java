@@ -121,7 +121,6 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
             p.create();
-            p.configureSampling( true );
             long nodeId = 1;
             PropertyAccessor propertyAccessor =
                     ( nodeId1, propertyKeyId ) -> propertyValue;

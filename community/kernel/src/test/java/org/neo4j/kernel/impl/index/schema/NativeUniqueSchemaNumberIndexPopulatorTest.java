@@ -114,7 +114,6 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
     {
         // GIVEN
         populator.create();
-        populator.configureSampling( true ); // has no effect, really
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN

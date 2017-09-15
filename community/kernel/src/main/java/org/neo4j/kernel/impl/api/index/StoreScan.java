@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collection;
-
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -34,6 +32,4 @@ public interface StoreScan<FAILURE extends Exception>
             long currentlyIndexedNodeId );
 
     PopulationProgress getProgress();
-
-    void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations );
 }

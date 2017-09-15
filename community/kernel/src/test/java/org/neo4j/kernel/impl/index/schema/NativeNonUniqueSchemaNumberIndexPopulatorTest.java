@@ -108,7 +108,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     {
         // GIVEN
         populator.create();
-        populator.configureSampling( false );
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( updates ) );
 
@@ -127,7 +126,6 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     {
         // GIVEN
         populator.create();
-        populator.configureSampling( true );
         IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
         Number[] updates = array( 101, 102, 102, 103, 103 );
