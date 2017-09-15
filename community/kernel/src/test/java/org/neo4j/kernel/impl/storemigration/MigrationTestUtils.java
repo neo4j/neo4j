@@ -188,7 +188,7 @@ public class MigrationTestUtils
         LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, logEntryReader, NullLogService.getInstance() );
         LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
 
-        if ( logTailInformation.commitsAfterLastCheckPoint )
+        if ( logTailInformation.commitsAfterLastCheckpoint() )
         {
             // done already
             return;

@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation.NO_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 public class PositionToRecoverFromTest
@@ -47,8 +47,8 @@ public class PositionToRecoverFromTest
     public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() throws Throwable
     {
         // given
-        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( null, false, NO_TRANSACTION_ID, logVersion,
-                currentLogVersion, LogEntryVersion.CURRENT ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( false,
+                NO_TRANSACTION_ID, logVersion, currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
@@ -79,7 +79,7 @@ public class PositionToRecoverFromTest
     public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
     {
         // given
-        when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( null, true, 10L, INITIAL_LOG_VERSION,
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( true, 10L, INITIAL_LOG_VERSION,
                 currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
@@ -95,8 +95,8 @@ public class PositionToRecoverFromTest
     {
         // given
         long oldestLogVersionFound = 1L;
-        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( null, true, 10L, oldestLogVersionFound,
-                currentLogVersion, LogEntryVersion.CURRENT ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailScanner.LogTailInformation( true, 10L,
+            oldestLogVersionFound, currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
         try

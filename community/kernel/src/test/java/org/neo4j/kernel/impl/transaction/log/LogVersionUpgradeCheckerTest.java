@@ -76,7 +76,7 @@ public class LogVersionUpgradeCheckerTest
     {
         OnlyVersionTailInformation( LogEntryVersion logEntryVersion )
         {
-            super( null, false, 0, 0, 0, logEntryVersion );
+            super( false, 0, 0, 0, logEntryVersion );
         }
     }
 }

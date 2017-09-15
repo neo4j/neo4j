@@ -87,7 +87,7 @@ public class PositionToRecoverFrom implements ThrowingSupplier<LogPosition,IOExc
     public LogPosition get() throws IOException
     {
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
-        if ( !logTailInformation.commitsAfterLastCheckPoint )
+        if ( !logTailInformation.commitsAfterLastCheckpoint() )
         {
             monitor.noCommitsAfterLastCheckPoint(
                     logTailInformation.lastCheckPoint != null ? logTailInformation.lastCheckPoint.getLogPosition() : null );

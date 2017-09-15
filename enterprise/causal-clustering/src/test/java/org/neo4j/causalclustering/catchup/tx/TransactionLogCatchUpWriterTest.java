@@ -124,7 +124,7 @@ public class TransactionLogCatchUpWriterTest
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
         assertNotNull( tailInformation.lastCheckPoint );
-        assertTrue( tailInformation.commitsAfterLastCheckPoint );
+        assertTrue( tailInformation.commitsAfterLastCheckpoint() );
     }
 
     private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException

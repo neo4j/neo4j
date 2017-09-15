@@ -135,7 +135,7 @@ public class UpgradableDatabase
         // check version
         try
         {
-            if ( !tailScanner.getTailInformation().commitsAfterLastCheckPoint )
+            if ( !tailScanner.getTailInformation().commitsAfterLastCheckpoint() )
             {
                 return new Result( Result.Outcome.ok, null, null );
             }

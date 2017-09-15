@@ -52,7 +52,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation.NO_TRANSACTION_ID;
+import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
 
 @RunWith( Parameterized.class )
@@ -204,6 +204,22 @@ public class LogTailScannerTest
     }
 
     @Test
+    public void twoLogFilesStartAndCommitInDifferentFiles() throws Exception
+    {
+        // given
+        long txId = 6;
+        setupLogFiles(
+                logFile( start() ),
+                logFile( commit( txId ) ) );
+
+        // when
+        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+
+        // then
+        assertLatestCheckPoint( false, true, 6, startLogVersion, logTailInformation );
+    }
+
+    @Test
     public void latestLogFileContainingACheckPointOnly() throws Throwable
     {
         // given
@@ -239,11 +255,41 @@ public class LogTailScannerTest
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
-        LogTailInformation
-                logTailInformation = tailScanner.latestCheckPoint( endLogVersion, endLogVersion, startEntry,
-                endLogVersion, checkPoint, latestLogEntryVersion, false );
+        LogTailInformation logTailInformation = tailScanner.checkpointTailInformation( endLogVersion, startEntry,
+                endLogVersion, latestLogEntryVersion, checkPoint, false);
 
         assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
+    }
+
+    @Test
+    public void twoLogFilesSecondIsCorruptedBeforeCommit() throws IOException
+    {
+        setupLogFiles( logFile( checkPoint() ), logFile( start(), commit( 2 ) ) );
+
+        File highestLogFile = logFiles.getHighestLogFile();
+        fsRule.truncate( highestLogFile, fsRule.getFileSize( highestLogFile ) - 3 );
+
+        // when
+        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+
+        // then
+        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
+    }
+
+    @Test
+    public void twoLogFilesSecondIsCorruptedBeforeAfterCommit() throws IOException
+    {
+        int firstTxId = 2;
+        setupLogFiles( logFile( checkPoint() ), logFile( start(), commit( firstTxId ), start(), commit( 3 ) ) );
+
+        File highestLogFile = logFiles.getHighestLogFile();
+        fsRule.truncate( highestLogFile, fsRule.getFileSize( highestLogFile ) - 3 );
+
+        // when
+        LogTailInformation logTailInformation = tailScanner.getTailInformation();
+
+        // then
+        assertLatestCheckPoint( true, true, firstTxId, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -532,7 +578,7 @@ public class LogTailScannerTest
             long firstTxIdAfterLastCheckPoint, long logVersion, LogTailInformation logTailInformation )
     {
         assertEquals( hasCheckPointEntry, logTailInformation.lastCheckPoint != null );
-        assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckPoint );
+        assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckpoint() );
         if ( commitsAfterLastCheckPoint )
         {
             assertEquals( firstTxIdAfterLastCheckPoint, logTailInformation.firstTxIdAfterLastCheckPoint );
@@ -553,20 +599,11 @@ public class LogTailScannerTest
         }
 
         @Override
-        public LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
-                LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint,
-                LogEntryVersion latestLogEntryVersion, boolean commitsAfterCheckPoint )
-                throws IOException
+        protected ExtractedTransactionRecord extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion )
         {
-            return super.latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
-                    latestCheckPoint, latestLogEntryVersion, commitsAfterCheckPoint );
-        }
-
-        @Override
-        protected long extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion )
-                throws IOException
-        {
-            return txId;
+            ExtractedTransactionRecord record = new ExtractedTransactionRecord();
+            record.setId( txId );
+            return record;
         }
     }
 }
