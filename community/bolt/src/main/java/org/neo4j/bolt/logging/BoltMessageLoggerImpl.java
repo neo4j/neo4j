@@ -25,7 +25,9 @@ import io.netty.util.AttributeKey;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -195,10 +197,19 @@ class BoltMessageLoggerImpl implements BoltMessageLogger
 
     private static String remoteAddress( Channel channel )
     {
-        InetSocketAddress remoteAddress = (InetSocketAddress) channel.remoteAddress();
-        String hostAddress = remoteAddress.getAddress().getHostAddress();
-        int port = remoteAddress.getPort();
-        return format( "%s:%s", hostAddress, port );
+        try
+        {
+            InetSocketAddress remoteAddress = (InetSocketAddress) channel.remoteAddress();
+            InetAddress address = remoteAddress.getAddress();
+            String hostAddress = address.getHostAddress();
+            int port = remoteAddress.getPort();
+            return format( "%s:%s", hostAddress, port );
+        }
+        catch ( ClassCastException e )
+        {
+            SocketAddress remoteAddress = channel.remoteAddress();
+            return remoteAddress.toString();
+        }
     }
 
     private static String json( Object arg )

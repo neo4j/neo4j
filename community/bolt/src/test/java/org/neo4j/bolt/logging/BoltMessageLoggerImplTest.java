@@ -20,6 +20,7 @@
 package org.neo4j.bolt.logging;
 
 import io.netty.channel.Channel;
+import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.Attribute;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
@@ -77,6 +79,21 @@ public class BoltMessageLoggerImplTest
         boltMessageLogger.clientEvent( "TEST", () -> "details" );
         // then
         verify( boltMessageLog ).info( REMOTE_ADDRESS, CORRELATION_ID, "C TEST details" );
+    }
+
+    @Test
+    public void getRemoteAddressAsIsIncaseOfNonSocketChannel() throws Exception
+    {
+        // given
+        Channel channel = mock( Channel.class );
+        when( channel.attr( CORRELATION_ATTRIBUTE_KEY ) ).thenReturn( correlationIdAttribute );
+        when( correlationIdAttribute.get() ).thenReturn( CORRELATION_ID );
+        when( channel.remoteAddress() ).thenReturn( new DomainSocketAddress( "socketPath" ) );
+        // when
+        BoltMessageLoggerImpl boltMessageLogger = new BoltMessageLoggerImpl( boltMessageLog, channel );
+        boltMessageLogger.clientEvent( "TEST", () -> "details" );
+        // then
+        verify( boltMessageLog ).info( "socketPath", CORRELATION_ID, "C TEST details" );
     }
 
     @Test
