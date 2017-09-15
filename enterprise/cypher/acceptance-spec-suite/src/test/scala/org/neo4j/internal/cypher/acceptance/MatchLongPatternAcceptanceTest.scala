@@ -87,7 +87,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
   test("should plan a very long relationship pattern without combinatorial explosion") {
     // GIVEN
-    makeLargeMatrixDataset(100)
+    makeLargeMatrixDataset(150)
 
     // WHEN
     val numberOfPatternRelationships = 20
@@ -206,10 +206,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
-          val counts = countExpandsAndJoins(result.executionPlanDescription())
-          counts("joins") should be > 1
-          counts("joins") should be < numberOfPatternRelationships / 2
+          innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
           acc(configValue) = monitor.maxStartIteration
       }
       acc

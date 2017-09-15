@@ -278,7 +278,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val root1 = createLabeledNode(Map("uuid" -> "b"), "Company")
     val root2 = createLabeledNode(Map("uuid" -> "a"), "Company")
     val root3 = createLabeledNode(Map("uuid" -> "c"), "Company")
-    createLabeledNode(Map("uuid" -> "z"), "Company")
+    for(_ <- 1 to 10) createLabeledNode(Map("uuid" -> "z"), "Company")
 
     // When
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
@@ -296,7 +296,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val root1 = createLabeledNode(Map("uuid" -> 1), "Company")
     val root2 = createLabeledNode(Map("uuid" -> 2), "Company")
     val root3 = createLabeledNode(Map("uuid" -> 3), "Company")
-    createLabeledNode(Map("uuid" -> 6), "Company")
+    for(_ <- 1 to 10) createLabeledNode(Map("uuid" -> 6), "Company")
 
     // When
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(

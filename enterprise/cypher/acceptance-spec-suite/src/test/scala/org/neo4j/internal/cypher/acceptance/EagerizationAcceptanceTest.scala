@@ -1347,11 +1347,11 @@ class EagerizationAcceptanceTest
     createLabeledNode("Two")
     createLabeledNode("Two")
     createNode()
-    val query = "MATCH (a:Two), (b) MERGE (q {p: 1}) RETURN count(*) AS c"
+    val query = "MATCH (a), (b:Two) MERGE (q:Two {p: 1}) RETURN count(*) AS c"
 
     val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
-    assertStats(result, nodesCreated = 1, propertiesWritten = 1)
+    assertStats(result, nodesCreated = 1, propertiesWritten = 1, labelsAdded = 1)
     result.toList should equal(List(Map("c" -> 6)))
   }
 
@@ -1812,6 +1812,7 @@ class EagerizationAcceptanceTest
 
     val result: InternalExecutionResult = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+
     assertStats(result, labelsAdded = 1)
     result.toList should equal(List(Map("c" -> 12)))
   }
@@ -1922,7 +1923,7 @@ class EagerizationAcceptanceTest
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
-    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+
     result.columnAs[Long]("count(*)").next shouldBe 1
   }
 
@@ -1934,7 +1935,7 @@ class EagerizationAcceptanceTest
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
-    //    expectedDifferentPlans = Configs.AllRulePlanners + Configs.Cost3_1)
+
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, propertiesWritten = 1)
   }
@@ -2227,6 +2228,7 @@ class EagerizationAcceptanceTest
 
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+
     assertStats(result, labelsRemoved = 2)
     result.toList should equal(List(Map("c" -> 12)))
   }
