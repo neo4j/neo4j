@@ -974,7 +974,7 @@ public class UserFunctionIT
             long count = 0L;
             for ( Node node : nodes )
             {
-                if (node != null)
+                if ( node != null )
                 {
                     count++;
                 }
