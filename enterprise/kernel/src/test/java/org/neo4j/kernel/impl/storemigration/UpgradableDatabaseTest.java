@@ -36,7 +36,6 @@ import java.util.Collections;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -44,10 +43,11 @@ import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -99,8 +99,7 @@ public class UpgradableDatabaseTest
             workingDirectory = testDirectory.graphDbDir();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, workingDirectory );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
-            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
-                    NullLogService.getInstance() );
+            tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(), new Monitors() );
         }
 
         boolean storeFilesUpgradeable( File storeDirectory, UpgradableDatabase upgradableDatabase )
@@ -160,9 +159,8 @@ public class UpgradableDatabaseTest
 
         private UpgradableDatabase getUpgradableDatabase()
         {
-            return new UpgradableDatabase(
-                    new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ), getRecordFormat(), tailScanner,
-                    NullLogService.getInstance() );
+            return new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
+                    getRecordFormat(), tailScanner );
         }
     }
 
@@ -205,7 +203,7 @@ public class UpgradableDatabaseTest
                     MetaDataStore.versionStringToLong( version ) );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
             tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
-                    NullLogService.getInstance() );
+                    new Monitors() );
         }
 
         @Test
@@ -251,7 +249,7 @@ public class UpgradableDatabaseTest
         private UpgradableDatabase getUpgradableDatabase()
         {
             return new UpgradableDatabase( new StoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    getRecordFormat(), tailScanner, NullLogService.getInstance() );
+                    getRecordFormat(), tailScanner );
         }
     }
 

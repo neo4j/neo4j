@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.ExplicitIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
 
@@ -81,8 +81,7 @@ public class DatabaseMigrator
     public void migrate( File storeDir )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
-        UpgradableDatabase upgradableDatabase =
-                new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner, logService );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 

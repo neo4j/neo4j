@@ -43,9 +43,9 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 
 import static java.lang.String.format;
@@ -224,7 +224,8 @@ public class CheckConsistencyCommand implements AdminCommand
               PageCache pageCache = ConfigurableStandalonePageCacheFactory
                       .createPageCache( fileSystem, additionalConfiguration ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, NullLogService.getInstance() );
+            RecoveryRequiredChecker requiredChecker =
+                    new RecoveryRequiredChecker( fileSystem, pageCache, new Monitors() );
             if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new CommandFailed(

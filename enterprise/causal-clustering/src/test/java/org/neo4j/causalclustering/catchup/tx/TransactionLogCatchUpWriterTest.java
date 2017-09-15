@@ -30,13 +30,10 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -51,6 +48,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
@@ -120,7 +120,7 @@ public class TransactionLogCatchUpWriterTest
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader, NullLogService.getInstance() );
+        final LogTailScanner logTailScanner = new LogTailScanner( logFiles, fs, logEntryReader, new Monitors() );
 
         LogTailInformation tailInformation = logTailScanner.getTailInformation();
         assertNotNull( tailInformation.lastCheckPoint );

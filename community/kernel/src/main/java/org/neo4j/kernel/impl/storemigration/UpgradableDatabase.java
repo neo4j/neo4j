@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -33,7 +32,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFil
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.recovery.LogTailScanner;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -44,15 +43,13 @@ public class UpgradableDatabase
     private final StoreVersionCheck storeVersionCheck;
     private final RecordFormats format;
     private final LogTailScanner tailScanner;
-    private final LogService logService;
 
     public UpgradableDatabase( StoreVersionCheck storeVersionCheck, RecordFormats format,
-            LogTailScanner tailScanner, LogService logService )
+            LogTailScanner tailScanner )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.format = format;
         this.tailScanner = tailScanner;
-        this.logService = logService;
     }
 
     /**

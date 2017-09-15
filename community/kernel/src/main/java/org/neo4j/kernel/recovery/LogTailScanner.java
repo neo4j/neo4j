@@ -17,14 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -32,7 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
-import org.neo4j.logging.Log;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.lang.String.format;
@@ -48,20 +55,20 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL
  */
 public class LogTailScanner
 {
-    public static long NO_TRANSACTION_ID = -1;
+    static long NO_TRANSACTION_ID = -1;
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fileSystem;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private LogTailInformation logTailInformation;
-    private final Log log;
+    private final LogTailScannerMonitor monitor;
 
     public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
     {
         this.logFiles = logFiles;
         this.fileSystem = fileSystem;
         this.logEntryReader = logEntryReader;
-        this.log = logService.getInternalLog( LogTailScanner.class );
+        this.monitor = monitors.newMonitor( LogTailScannerMonitor.class );
     }
 
     private LogTailInformation findLogTail() throws IOException
@@ -130,8 +137,7 @@ public class LogTailScanner
                 {
                     if ( FeatureToggles.flag( LogTailScanner.class, "force", false ) )
                     {
-                        log.warn( "Unsupported log version was found in transactional logs, but log processing was " +
-                                        "forced.", t );
+                        monitor.forced( t );
                     }
                     else
                     {
@@ -142,7 +148,7 @@ public class LogTailScanner
                     }
                 }
                 corruptedTransactionLogs = true;
-                log.warn( format( "Fail to read transaction log version %d.", version ), t );
+                monitor.corruptedLogFile( version, t );
             }
 
             if ( latestCheckPoint != null )
@@ -218,9 +224,9 @@ public class LogTailScanner
                         }
                     }
                 }
-                catch ( Exception e )
+                catch ( Throwable t )
                 {
-                    // TODO: propagate error whats was wrong
+                    monitor.corruptedLogFile( currentPosition.getLogVersion(), t );
                     transactionRecord.setFailure( true );
                     return transactionRecord;
                 }

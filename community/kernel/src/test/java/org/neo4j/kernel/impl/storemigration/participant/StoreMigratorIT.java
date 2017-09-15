@@ -48,10 +48,11 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -74,6 +75,7 @@ public class StoreMigratorIT
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final LogService logService = new SimpleLogService( logProvider );
+    private final Monitors monitors = new Monitors();
     private final FileSystemAbstraction fs = fileSystemRule.get();
 
     @Parameterized.Parameter( 0 )
@@ -113,7 +115,7 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( logService, pageCache, tailScanner );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -154,7 +156,7 @@ public class StoreMigratorIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
 
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( logService, pageCache, tailScanner );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -192,7 +194,7 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( logService, pageCache, tailScanner );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -229,7 +231,7 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( logService, pageCache, tailScanner );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -256,7 +258,7 @@ public class StoreMigratorIT
         LogService logService = NullLogService.getInstance();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         LogTailScanner tailScanner = getTailScanner( storeDirectory );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( logService, pageCache, tailScanner );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradeable( storeDirectory ).storeVersion();
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
@@ -272,16 +274,15 @@ public class StoreMigratorIT
         assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationDir ) ) );
     }
 
-    private UpgradableDatabase getUpgradableDatabase( LogService logService, PageCache pageCache,
-            LogTailScanner tailScanner )
+    private UpgradableDatabase getUpgradableDatabase( PageCache pageCache, LogTailScanner tailScanner )
     {
-        return new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner, logService );
+        return new UpgradableDatabase( new StoreVersionCheck( pageCache ), selectFormat(), tailScanner );
     }
 
     private LogTailScanner getTailScanner( File storeDirectory )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
-        return new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), logService );
+        return new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), monitors );
     }
 
     private RecordFormats selectFormat()

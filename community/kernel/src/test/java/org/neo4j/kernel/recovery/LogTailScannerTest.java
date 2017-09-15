@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.recovery;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,10 +36,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -47,13 +52,15 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
+import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
 public class LogTailScannerTest
@@ -65,7 +72,7 @@ public class LogTailScannerTest
     private LogTailScanner tailScanner;
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
-    private final LogService logService = new SimpleLogService( logProvider );
+    private final Monitors monitors = new Monitors();
     private PhysicalLogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
@@ -88,7 +95,7 @@ public class LogTailScannerTest
     {
         fsRule.get().mkdirs( directory );
         logFiles = new PhysicalLogFiles( directory, fsRule.get() );
-        tailScanner = new LogTailScanner( logFiles, fsRule.get(), reader, logService );
+        tailScanner = new LogTailScanner( logFiles, fsRule.get(), reader, monitors );
     }
 
     @Test
@@ -251,7 +258,7 @@ public class LogTailScannerTest
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
         LogTailScanner tailScanner =
-                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader, logService );
+                new FirstTxIdConfigurableTailScanner( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader, monitors );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
@@ -592,9 +599,9 @@ public class LogTailScannerTest
         private final long txId;
 
         FirstTxIdConfigurableTailScanner( long txId, PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
-                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
+                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
         {
-            super( logFiles, fileSystem, logEntryReader, logService );
+            super( logFiles, fileSystem, logEntryReader, monitors );
             this.txId = txId;
         }
 

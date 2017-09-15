@@ -23,18 +23,17 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
+import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 public class PositionToRecoverFromTest
 {

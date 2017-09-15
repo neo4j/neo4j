@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -60,7 +59,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.TransactionLogPruner;
@@ -102,6 +103,7 @@ public class RecoveryTest
     private LogEntry expectedStartEntry;
     private LogEntry expectedCommitEntry;
     private LogEntry expectedCheckPointEntry;
+    private Monitors monitors = new Monitors();
 
     @Test
     public void shouldRecoverExistingData() throws Exception
@@ -146,7 +148,7 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader, logService );
+            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
@@ -251,7 +253,7 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader, logService );
+            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
@@ -394,7 +396,7 @@ public class RecoveryTest
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
             final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystemRule.get(), reader, logService );
+            LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache( 100 );
             LogHeaderCache logHeaderCache = new LogHeaderCache( 10 );
@@ -422,6 +424,12 @@ public class RecoveryTest
             life.shutdown();
         }
         return recoveryRequired.get();
+    }
+
+    private LogTailScanner getTailScanner( PhysicalLogFiles logFiles,
+            LogEntryReader<ReadableClosablePositionAwareChannel> reader )
+    {
+        return new LogTailScanner( logFiles, fileSystemRule.get(), reader, monitors );
     }
 
     private void writeSomeData( File file,
