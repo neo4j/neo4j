@@ -155,9 +155,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, varLength) =>
       val dir3_3 = direction match {
-        case INCOMING => v3_4.SemanticDirection.INCOMING
-        case OUTGOING => v3_4.SemanticDirection.OUTGOING
-        case BOTH => v3_4.SemanticDirection.BOTH
+        case INCOMING => v3_4.semantics.SemanticDirection.INCOMING
+        case OUTGOING => v3_4.semantics.SemanticDirection.OUTGOING
+        case BOTH => v3_4.semantics.SemanticDirection.BOTH
       }
       InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
 

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{DummyExpression, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, Argument => LPArgument}
 

@@ -16,16 +16,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ContainerIndex, Function}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticError}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticError, ast}
 
 case object Exists extends Function {
   def name = "EXISTS"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
     checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments.head.expectType(CTAny.covariant) chain
+      SemanticAnalysis.expectType(CTAny.covariant, invocation.arguments.head) chain
         (invocation.arguments.head match {
           case _: ast.Property => None
           case _: ast.PatternExpression => None
@@ -33,5 +34,5 @@ case object Exists extends Function {
           case e =>
             Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
         })
-    } chain invocation.specifyType(CTBoolean)
+    } chain SemanticAnalysis.specifyType(CTBoolean, invocation)
 }

@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticChecking, SemanticError}
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -100,9 +101,9 @@ abstract class Function extends SemanticChecking {
   def name: String
 
   def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    when(invocation.distinct) {
+    SemanticAnalysis.when(invocation.distinct) {
       SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.position)
-    } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
+    } chain SemanticAnalysis.semanticCheck(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
 
   protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
 
@@ -136,14 +137,16 @@ trait SimpleTypedFunction extends ExpressionCallTypeChecking {
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, signatureLengths.min) chain
     checkMaxArgs(invocation, signatureLengths.max) chain
-    typeChecker.checkTypes(invocation)
+    SemanticAnalysis.checkTypes(invocation, signatures)
 }
 
 abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    when(ctx == ast.Expression.SemanticContext.Simple) {
+    SemanticAnalysis.when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
-    } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
+    } chain
+      SemanticAnalysis.semanticCheck(ctx, invocation.arguments) chain
+      semanticCheck(ctx, invocation)
 
 
   /*

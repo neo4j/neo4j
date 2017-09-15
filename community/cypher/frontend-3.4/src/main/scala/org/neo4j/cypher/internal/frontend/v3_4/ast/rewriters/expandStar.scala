@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticFeature, SemanticState}
 
 case class expandStar(state: SemanticState) extends Rewriter {
 

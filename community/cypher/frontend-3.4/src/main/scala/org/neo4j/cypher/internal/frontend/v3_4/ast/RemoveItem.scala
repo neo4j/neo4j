@@ -17,19 +17,19 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
 sealed trait RemoveItem extends ASTNode with SemanticCheckable
 
 case class RemoveLabelItem(variable: Variable, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
   def semanticCheck =
-    variable.semanticCheck(Expression.SemanticContext.Simple) chain
-    variable.expectType(CTNode.covariant)
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, variable) chain
+    SemanticAnalysis.expectType(CTNode.covariant, variable)
 }
 
 case class RemovePropertyItem(property: Property) extends RemoveItem {
   def position = property.position
 
-  def semanticCheck = property.semanticCheck(Expression.SemanticContext.Simple)
+  def semanticCheck = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property)
 }

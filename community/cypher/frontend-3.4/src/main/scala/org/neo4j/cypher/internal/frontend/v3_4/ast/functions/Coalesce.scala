@@ -18,13 +18,14 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Coalesce extends Function {
   def name = "coalesce"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
     checkMinArgs(invocation, 1) chain
-    invocation.arguments.expectType(CTAny.covariant) chain
-    invocation.specifyType(invocation.arguments.leastUpperBoundsOfTypes)
+    SemanticAnalysis.expectType(CTAny.covariant, invocation.arguments) chain
+    SemanticAnalysis.specifyType(SemanticAnalysis.leastUpperBoundsOfTypes(invocation.arguments), invocation)
 }

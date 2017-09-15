@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticErrorDef
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticErrorDef
 
 class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                       val tracer: CompilationPhaseTracer,

@@ -17,18 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition)
-  extends Expression with SimpleTyping {
-
-  protected def possibleTypes = CTBoolean
-
-  override def semanticCheck(ctx: SemanticContext) =
-    expression.semanticCheck(ctx) chain
-    expression.expectType(CTNode.covariant) chain
-    super.semanticCheck(ctx)
+case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression {
 
   override def asCanonicalStringVal = s"${expression.asCanonicalStringVal}${labels.map(_.asCanonicalStringVal).mkString(":", ":", "")}"
 }

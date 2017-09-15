@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.ASTNode
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticCheckable, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTInteger
 
 // Skip/Limit
 trait ASTSlicingPhrase extends SemanticCheckable {
@@ -30,8 +31,8 @@ trait ASTSlicingPhrase extends SemanticCheckable {
   def semanticCheck: SemanticCheck =
     containsNoVariables chain
       literalShouldBeUnsignedInteger chain
-      expression.semanticCheck(Expression.SemanticContext.Simple) chain
-      expression.expectType(CTInteger.covariant)
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression) chain
+      SemanticAnalysis.expectType(CTInteger.covariant, expression)
 
   private def containsNoVariables: SemanticCheck = {
     val deps = dependencies

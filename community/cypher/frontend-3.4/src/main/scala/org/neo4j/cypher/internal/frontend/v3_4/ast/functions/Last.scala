@@ -16,17 +16,18 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysis
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Last extends Function {
   def name = "last"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments.head.expectType(CTList(CTAny).covariant) chain
-      invocation.specifyType(possibleInnerTypes(invocation.arguments.head))
+      SemanticAnalysis.expectType(CTList(CTAny).covariant, invocation.arguments.head) chain
+      SemanticAnalysis.specifyType(possibleInnerTypes(invocation.arguments.head), invocation)
     }
 
   private def possibleInnerTypes(expression: ast.Expression) : TypeGenerator = s =>

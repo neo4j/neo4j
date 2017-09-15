@@ -18,14 +18,15 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AggregatingFunction
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Collect extends AggregatingFunction  {
   def name = "collect"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation)  =
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation)  =
     checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments(0).expectType(CTAny.covariant) chain
-      invocation.specifyType(invocation.arguments(0).types(_).wrapInList)
+      SemanticAnalysis.expectType(CTAny.covariant, invocation.arguments(0)) chain
+      SemanticAnalysis.specifyType(invocation.arguments(0).types(_).wrapInList, invocation)
     }
 }

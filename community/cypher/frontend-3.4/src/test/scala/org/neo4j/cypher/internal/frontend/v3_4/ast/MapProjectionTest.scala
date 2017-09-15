@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 
 class MapProjectionTest extends ParserTest[Any, Any] with Expressions {
 

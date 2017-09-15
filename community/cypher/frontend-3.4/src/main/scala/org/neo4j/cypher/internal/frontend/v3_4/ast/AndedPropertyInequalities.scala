@@ -16,13 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 
-case class AndedPropertyInequalities(variable: Variable, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
+case class AndedPropertyInequalities(
+                                      variable: Variable,
+                                      property: Property,
+                                      inequalities: NonEmptyList[InequalityExpression]
+                                    ) extends Expression {
   def position = variable.position
-
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    inequalities.map(_.semanticCheck(ctx)).reduceLeft(_ chain _)
 }

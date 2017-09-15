@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{ExpressionSignature, Function, FunctionInvocation, SimpleTypedFunction}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LengthOnNonPathNotification
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState}
 
 case object Length extends Function with SimpleTypedFunction {
   def name = "length"

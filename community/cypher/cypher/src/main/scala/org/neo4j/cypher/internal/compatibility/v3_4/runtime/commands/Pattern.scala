@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection.{INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 import scala.collection.{Map, Seq}

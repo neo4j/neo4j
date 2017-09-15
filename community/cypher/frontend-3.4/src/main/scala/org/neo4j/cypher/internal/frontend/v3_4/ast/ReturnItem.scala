@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticChecking {
   /**
@@ -62,7 +63,7 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
     copy(items = f(items))(position)
 
   override def declareVariables(previousScope: Scope): SemanticCheck =
-    when (includeExisting) {
+    SemanticAnalysis.when (includeExisting) {
       s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
@@ -90,7 +91,7 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def name: String
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
 
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
+  def semanticCheck = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Results, expression)
 }
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {

@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, ast, _}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 

@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
 
@@ -176,7 +177,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
     val error2 = SemanticError("another error", DummyPosition(0))
     val func2: SemanticState => Option[SemanticError] = s => Some(error2)
 
-    val chain: SemanticCheck = func1 chain when(condition = true) { func2 }
+    val chain: SemanticCheck = func1 chain SemanticAnalysis.when(condition = true) { func2 }
     val result = chain(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error1, error2))
@@ -188,7 +189,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
     val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error))
     val func2: SemanticCheck = s => fail("Second check was incorrectly run")
 
-    val chain: SemanticCheck = func1 chain when(condition = false) { func2 }
+    val chain: SemanticCheck = func1 chain SemanticAnalysis.when(condition = false) { func2 }
     val result = chain(SemanticState.clean)
     result.state should equal(state1)
     result.errors should equal(Seq(error))

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 import org.neo4j.values.storable.Values.{stringArray, stringValue}
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, edgeValue, nodeValue}

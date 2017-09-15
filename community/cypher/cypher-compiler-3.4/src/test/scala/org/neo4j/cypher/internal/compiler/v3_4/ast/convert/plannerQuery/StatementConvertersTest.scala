@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{LogicalPlanningTestSupport, _}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._

@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.{ContextGraphs, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 sealed trait SingleGraphAs extends ASTNode with SemanticCheckable with SemanticChecking {
 
@@ -82,7 +83,7 @@ final case class GraphAs(ref: Variable, as: Option[Variable], generated: Boolean
   override def withNewName(newName: Variable): GraphAs = copy(as = Some(newName))(position)
   override def asGenerated: GraphAs = copy(generated = true)(position)
 
-  override def semanticCheck: SemanticCheck = ref.ensureGraphDefined()
+  override def semanticCheck: SemanticCheck = SemanticAnalysis.ensureGraphDefined(ref)
   override def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.implicitGraph)
 }
 

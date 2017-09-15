@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, HasLabels}
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.LabelId
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 

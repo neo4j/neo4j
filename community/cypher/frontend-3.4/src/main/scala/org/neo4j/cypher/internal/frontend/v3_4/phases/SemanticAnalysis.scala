@@ -19,9 +19,10 @@ package org.neo4j.cypher.internal.frontend.v3_4.phases
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.{StatementCondition, containsNoNodesOfType}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticChecker, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticChecker, SemanticFeature, SemanticState}
 
-case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*) extends Phase[BaseContext, BaseState, BaseState] {
+case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
+  extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
     val SemanticCheckResult(state, errors) = SemanticChecker.check(from.statement(), features: _*)

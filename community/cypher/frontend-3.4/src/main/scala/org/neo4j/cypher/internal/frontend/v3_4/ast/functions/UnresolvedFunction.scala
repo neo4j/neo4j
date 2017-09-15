@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult
 
 case object UnresolvedFunction extends Function {
   def name = "UNKNOWN"

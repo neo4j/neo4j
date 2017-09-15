@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.apa.v3_4.{InternalException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v3_4.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v3_4.{NoHeaders, _}

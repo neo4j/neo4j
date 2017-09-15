@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{DummyExpression, Expression, FilteringExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticError, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticError, SemanticState}
 
 class FilteringExpressionTest extends CypherFunSuite {
 
@@ -43,15 +43,15 @@ class FilteringExpressionTest extends CypherFunSuite {
     val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val error = SemanticError("dummy error", DummyPosition(8))
-    val predicate = new DummyExpression(CTAny, DummyPosition(7)) {
-      override def semanticCheck(ctx: SemanticContext) = s => {
+    val predicate = CustomExpression(
+      (ctx, self) => s => {
         s.symbolTypes("x") should equal(CTNode | CTString)
         SemanticCheckResult.error(s, error)
       }
-    }
+    )
 
     val filter = TestableFilteringExpression(Variable("x")(DummyPosition(2)), expression, Some(predicate))
-    val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)
   }

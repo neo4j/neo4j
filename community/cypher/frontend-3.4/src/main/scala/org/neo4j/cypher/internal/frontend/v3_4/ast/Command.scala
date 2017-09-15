@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticChecking, SemanticError}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
 
 sealed trait Command extends Statement {
@@ -43,8 +44,8 @@ trait PropertyConstraintCommand extends Command with SemanticChecking {
 
   def semanticCheck =
     variable.declareVariable(entityType) chain
-      property.semanticCheck(Expression.SemanticContext.Simple) chain
-      when(!property.map.isInstanceOf[ast.Variable]) {
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property) chain
+      SemanticAnalysis.when(!property.map.isInstanceOf[ast.Variable]) {
         SemanticError("Cannot index nested properties", property.position)
       }
 }
@@ -60,13 +61,14 @@ trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
 
   def semanticCheck =
     variable.declareVariable(entityType) chain
-      properties.foldSemanticCheck(_.semanticCheck(Expression.SemanticContext.Simple)) chain
-      properties.foldSemanticCheck { property =>
-        when(!property.map.isInstanceOf[ast.Variable]) {
-          SemanticError("Cannot index nested properties", property.position)
-        }
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, properties) chain
+      SemanticAnalysis.semanticCheckFold(properties) {
+        property =>
+          SemanticAnalysis.when(!property.map.isInstanceOf[ast.Variable]) {
+            SemanticError("Cannot index nested properties", property.position)
+          }
       } chain
-      when(restrictedToSingleProperty && properties.size > 1) {
+      SemanticAnalysis.when(restrictedToSingleProperty && properties.size > 1) {
         SemanticError("Only single property uniqueness constraints are supported", properties(1).position)
       }
 }

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.ir.v3_4
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.RelTypeName
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: SemanticDirection,
                                      types: Seq[RelTypeName], length: PatternLength) {

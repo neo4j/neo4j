@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTPath, TypeSpec}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 
 sealed trait PathStep {
   def dependencies: Set[Variable]
@@ -40,6 +39,4 @@ case object NilPathStep extends PathStep {
   def dependencies = Set.empty[Variable]
 }
 
-case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes: TypeSpec = CTPath
-}
+case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression

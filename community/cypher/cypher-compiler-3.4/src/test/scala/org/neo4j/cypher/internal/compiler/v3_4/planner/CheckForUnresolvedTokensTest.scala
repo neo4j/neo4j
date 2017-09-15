@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotificatio
 import org.neo4j.cypher.internal.frontend.v3_4.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport {
 

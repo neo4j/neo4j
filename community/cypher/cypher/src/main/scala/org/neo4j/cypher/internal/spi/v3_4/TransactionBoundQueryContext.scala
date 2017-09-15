@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_4.{IndexDescriptor, _}
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.javacompat.ValueToObjectSerializer
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName

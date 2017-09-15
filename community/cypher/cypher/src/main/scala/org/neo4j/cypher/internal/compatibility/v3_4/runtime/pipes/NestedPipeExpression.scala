@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult
 
 case class NestedPipeExpression(pipe: Pipe, projection: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success

@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.UnboundedShortestPathNotification
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 object Pattern {
   sealed trait SemanticContext
@@ -264,7 +265,7 @@ case class NodePattern(variable: Option[Variable],
         ctx match {
           case SemanticContext.Expression =>
             variable.ensureVariableDefined() chain
-              variable.expectType(CTNode.covariant)
+              SemanticAnalysis.expectType(CTNode.covariant, variable)
           case _                          =>
             variable.implicitVariable(CTNode)
         }
@@ -281,7 +282,8 @@ case class NodePattern(variable: Option[Variable],
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, properties) chain
+        SemanticAnalysis.expectType(CTMap.covariant, properties)
   }
 
   override def allVariables: Set[Variable] = variable.toSet
@@ -303,7 +305,8 @@ case class RelationshipPattern(
 
         ctx match {
           case SemanticContext.Match      => variable.implicitVariable(possibleType)
-          case SemanticContext.Expression => variable.ensureVariableDefined() chain variable.expectType(possibleType.covariant)
+          case SemanticContext.Expression => variable.ensureVariableDefined() chain
+                                              SemanticAnalysis.expectType(possibleType.covariant, variable)
           case _                          => variable.declareVariable(possibleType)
         }
     }
@@ -324,7 +327,7 @@ case class RelationshipPattern(
   }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
-    when (!isSingleLength) {
+    SemanticAnalysis.when (!isSingleLength) {
       ctx match {
         case SemanticContext.Merge =>
           SemanticError("Variable length relationships cannot be used in MERGE", position)
@@ -344,7 +347,8 @@ case class RelationshipPattern(
   }
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck =
-    properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, properties) chain
+      SemanticAnalysis.expectType(CTMap.covariant, properties)
 
   def isSingleLength = length.isEmpty
 

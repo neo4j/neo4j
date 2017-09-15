@@ -17,17 +17,20 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTString
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckable, SemanticChecking}
 
 final case class GraphUrl(url: Either[Parameter, StringLiteral])(val position: InputPosition)
-  extends ASTNode with SemanticCheckable with SemanticChecking {
+  extends ASTNode with SemanticCheckable {
 
   override def semanticCheck: SemanticCheck = url match {
     case Left(parameter) =>
-      parameter.semanticCheck(Expression.SemanticContext.Simple) chain parameter.expectType(CTString.covariant)
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, parameter) chain
+        SemanticAnalysis.expectType(CTString.covariant, parameter)
 
     case Right(literal) =>
-      literal.semanticCheck(Expression.SemanticContext.Simple) chain literal.expectType(CTString.covariant)
+      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, literal) chain
+        SemanticAnalysis.expectType(CTString.covariant, literal)
   }
 }

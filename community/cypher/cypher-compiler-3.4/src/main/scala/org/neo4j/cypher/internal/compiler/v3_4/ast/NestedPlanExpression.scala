@@ -23,10 +23,15 @@ import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 
-case class NestedPlanExpression(plan: LogicalPlan, projection: Expression)(val position: InputPosition) extends Expression {
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
+case class NestedPlanExpression(
+                                 plan: LogicalPlan,
+                                 projection: Expression
+                               )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def asCanonicalStringVal: String = {
     val planDescription = plan.flatten.map(_.getClass.getSimpleName).mkString("-")

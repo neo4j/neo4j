@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_4.planner._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.v3_4._
 
 class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {

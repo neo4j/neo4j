@@ -27,7 +27,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.parser
  */
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.parboiled.scala._
 
 trait Patterns extends Parser

@@ -16,14 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-
-case class PatternExpression(pattern: RelationshipsPattern) extends Expression with SimpleTyping {
+case class PatternExpression(pattern: RelationshipsPattern) extends Expression {
   def position = pattern.position
-  protected def possibleTypes = CTList(CTPath)
-
-  override def semanticCheck(ctx: SemanticContext) =
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
-    super.semanticCheck(ctx)
 }

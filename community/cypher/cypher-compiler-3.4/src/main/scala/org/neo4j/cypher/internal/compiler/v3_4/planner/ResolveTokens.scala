@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, _}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
 
 object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {

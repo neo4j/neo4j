@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.phases
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition}
-import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, SemanticState, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 

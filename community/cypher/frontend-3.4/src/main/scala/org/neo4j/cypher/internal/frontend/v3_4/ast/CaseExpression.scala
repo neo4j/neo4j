@@ -17,29 +17,22 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case class CaseExpression(expression: Option[Expression], alternatives: IndexedSeq[(Expression, Expression)], default: Option[Expression])(val position: InputPosition) extends Expression {
+case class CaseExpression(
+                           expression: Option[Expression],
+                           alternatives: IndexedSeq[(Expression, Expression)],
+                           default: Option[Expression]
+                         )(val position: InputPosition) extends Expression {
 
+  lazy val possibleExpressions: IndexedSeq[Expression] = alternatives.map(_._2) ++ default
 
-  lazy val possibleExpressions = alternatives.map(_._2) ++ default
-
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = {
-    val possibleTypes = possibleExpressions.unionOfTypes
-
-    expression.semanticCheck(ctx) chain
-    alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) chain
-    default.semanticCheck(ctx) chain
-    when (expression.isEmpty) {
-      alternatives.map(_._1).expectType(CTBoolean.covariant)
-    } chain this.specifyType(possibleTypes)
-  }
 }
 
 object CaseExpression {
-  def apply(expression: Option[Expression], alternatives: List[(Expression, Expression)], default: Option[Expression])(position: InputPosition):CaseExpression =
+  def apply(
+             expression: Option[Expression],
+             alternatives: List[(Expression, Expression)],
+             default: Option[Expression]
+           )(position: InputPosition):CaseExpression =
     CaseExpression(expression, alternatives.toIndexedSeq, default)(position)
-
 }

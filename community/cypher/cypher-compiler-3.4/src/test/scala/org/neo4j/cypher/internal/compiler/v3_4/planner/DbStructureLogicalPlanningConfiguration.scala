@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
 

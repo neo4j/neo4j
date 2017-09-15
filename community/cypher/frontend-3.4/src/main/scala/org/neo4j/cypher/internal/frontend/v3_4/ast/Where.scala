@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckable
 
 case class Where(expression: Expression)(val position: InputPosition)
   extends ASTNode with SemanticCheckable {
@@ -26,6 +26,6 @@ case class Where(expression: Expression)(val position: InputPosition)
   def dependencies = expression.dependencies
 
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-    expression.expectType(CTBoolean.covariant)
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression) chain
+    SemanticAnalysis.expectType(CTBoolean.covariant, expression)
 }

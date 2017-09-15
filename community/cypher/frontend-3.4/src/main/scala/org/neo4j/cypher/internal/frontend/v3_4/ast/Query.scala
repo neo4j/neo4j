@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticChecking, SemanticError, _}
+import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
   extends Statement with SemanticChecking {
@@ -27,7 +28,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
   override def semanticCheck =
     part.semanticCheck chain
     periodicCommitHint.semanticCheck chain
-    when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
+    SemanticAnalysis.when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
       SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
 }

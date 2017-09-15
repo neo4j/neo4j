@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.HardcodedGraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CardinalityCostModel, ExpressionEvaluator, Metrics, StatisticsBackedCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, Cost, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 

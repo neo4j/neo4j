@@ -17,10 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -97,7 +96,7 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
       case (state, inner) => state.specifyType(inner, inner.possibleTypes).right.get
     }
     val expr = TypeExpr(argExpressions)
-    val check = ExpressionCallTypeChecker(ExpressionSignatures).checkTypes(expr)(semanticState)
+    val check = SemanticAnalysis.checkTypes(expr, ExpressionSignatures)(semanticState)
     (expr, check)
   }
 
@@ -113,7 +112,6 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
   }
 
   case class TypeExpr(override val arguments: Seq[Expression]) extends Expression {
-    override def semanticCheck(ctx: SemanticContext): SemanticCheck = ???
     override def position: InputPosition = pos
   }
 }

@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{AstNode, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 
 import scala.collection.Map
 

@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{Scope, SemanticTable, SymbolUse}
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   type VariableRenamings = Map[Ref[Variable], Variable]

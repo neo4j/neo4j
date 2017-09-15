@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_4.logical
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ResolvedCall, StandAloneProcedureCall}
+import org.neo4j.cypher.internal.v3_4.logical.plans
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ResolvedCall}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands
@@ -46,50 +46,50 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
       case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
         errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
-        Some(StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
+        Some(plans.StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props) =>
-        Some(logical.plans.CreateNodeKeyConstraint(IdName.fromVariable(node), label, props))
+        Some(plans.CreateNodeKeyConstraint(IdName.fromVariable(node), label, props))
 
 
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case DropNodeKeyConstraint(_, label, props) =>
-        Some(logical.plans.DropNodeKeyConstraint(label, props))
+        Some(plans.DropNodeKeyConstraint(label, props))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
       case CreateUniquePropertyConstraint(node, label, props) =>
-        Some(logical.plans.CreateUniquePropertyConstraint(IdName.fromVariable(node), label, props))
+        Some(plans.CreateUniquePropertyConstraint(IdName.fromVariable(node), label, props))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
       case DropUniquePropertyConstraint(_, label, props) =>
-        Some(logical.plans.DropUniquePropertyConstraint(label, props))
+        Some(plans.DropUniquePropertyConstraint(label, props))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case CreateNodePropertyExistenceConstraint(_, label, prop) =>
-        Some(logical.plans.CreateNodePropertyExistenceConstraint(label, prop))
+        Some(plans.CreateNodePropertyExistenceConstraint(label, prop))
 
       // DROP CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
       case DropNodePropertyExistenceConstraint(_, label, prop) =>
-        Some(logical.plans.DropNodePropertyExistenceConstraint(label, prop))
+        Some(plans.DropNodePropertyExistenceConstraint(label, prop))
 
       // CREATE CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        Some(logical.plans.CreateRelationshipPropertyExistenceConstraint(relType, prop))
+        Some(plans.CreateRelationshipPropertyExistenceConstraint(relType, prop))
 
       // DROP CONSTRAINT ON ()-[r:R]-() ASSERT r.prop EXISTS
       case DropRelationshipPropertyExistenceConstraint(_, relType, prop) =>
-        Some(logical.plans.DropRelationshipPropertyExistenceConstraint(relType, prop))
+        Some(plans.DropRelationshipPropertyExistenceConstraint(relType, prop))
 
       // CREATE INDEX ON :LABEL(prop)
       case CreateIndex(label, props) =>
-        Some(logical.plans.CreateIndex(label, props))
+        Some(plans.CreateIndex(label, props))
 
       // DROP INDEX ON :LABEL(prop)
       case DropIndex(label, props) =>
-        Some(logical.plans.DropIndex(label, props))
+        Some(plans.DropIndex(label, props))
 
       case _ => None
     }

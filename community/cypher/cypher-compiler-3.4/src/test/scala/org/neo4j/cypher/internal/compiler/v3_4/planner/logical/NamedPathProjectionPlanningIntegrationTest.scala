@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, FunctionInvocation}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticError, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState}
 
 case object ToBoolean extends Function {
 
@@ -29,7 +30,7 @@ case object ToBoolean extends Function {
     checkMinArgs(invocation, 1) ifOkChain
       checkMaxArgs(invocation, 1) ifOkChain
       checkTypeOfArgument(invocation) ifOkChain
-      invocation.specifyType(CTBoolean)
+      SemanticAnalysis.specifyType(CTBoolean, invocation)
 
   private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
     val argument = invocation.args.head

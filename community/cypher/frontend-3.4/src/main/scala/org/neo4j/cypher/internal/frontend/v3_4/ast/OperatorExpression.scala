@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 trait OperatorExpression {
   self: Expression =>
 
+  def signatures: Seq[ExpressionSignature] = Seq.empty
+
   def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase
 }
 

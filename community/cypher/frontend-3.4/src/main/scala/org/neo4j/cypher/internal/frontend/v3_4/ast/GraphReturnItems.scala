@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticState, _}
+import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 sealed trait GraphReturnItem extends ASTNode {
   def graphs: Set[SingleGraphAs]
@@ -80,7 +81,9 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    unless(items.isEmpty) { requireMultigraphSupport("Projecting and returning graphs", position) } chain(
+    SemanticAnalysis.unless(items.isEmpty) {
+      requireMultigraphSupport("Projecting and returning graphs", position)
+    } chain (
       graphs.semanticCheck chain
       checkNoMultipleSources chain
       checkNoMultipleTargets chain
@@ -106,7 +109,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
       }
     }
     (
-      when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
+      SemanticAnalysis.when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
       items.flatMap(_.graphs).foldSemanticCheck(_.declareGraph) chain
       items.flatMap(_.graphs).foldSemanticCheck(_.implicitGraph(previousScope.contextGraphs)) chain
       updateContext

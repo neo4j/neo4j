@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 
 /*
  * Calculates how to transform a pattern (a)-[:R1:R2...]->() to getDegree call

@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Function, SimpleTypedFunction, _}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticError}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticError}
 
 case object Point extends Function with SimpleTypedFunction {
 

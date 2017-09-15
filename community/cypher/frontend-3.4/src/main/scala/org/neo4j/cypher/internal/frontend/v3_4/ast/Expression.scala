@@ -16,12 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecking
 
 import scala.collection.immutable.Stack
 
@@ -33,33 +31,6 @@ object Expression {
   }
 
   val DefaultTypeMismatchMessageGenerator = (expected: String, existing: String) => s"expected $expected but was $existing"
-
-  implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
-    def semanticCheck(ctx: SemanticContext): SemanticCheck =
-      option.fold(success) { _.semanticCheck(ctx) }
-
-    def expectType(possibleTypes: => TypeSpec): SemanticCheck =
-      option.fold(success) { _.expectType(possibleTypes) }
-  }
-
-  implicit class SemanticCheckableExpressionTraversable[A <: SemanticCheckableWithContext](traversable: TraversableOnce[A]) extends SemanticChecking {
-    def semanticCheck(ctx: SemanticContext): SemanticCheck =
-      traversable.foldSemanticCheck { _.semanticCheck(ctx) }
-  }
-
-  implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
-    def unionOfTypes: TypeGenerator = state =>
-      TypeSpec.union(traversable.map(_.types(state)).toSeq: _*)
-
-    def leastUpperBoundsOfTypes: TypeGenerator =
-      if (traversable.isEmpty)
-        _ => CTAny.invariant
-      else
-        state => traversable.map { _.types(state) } reduce { _ leastUpperBounds _ }
-
-    def expectType(possibleTypes: => TypeSpec): SemanticCheck =
-      traversable.foldSemanticCheck { _.expectType(possibleTypes) }
-  }
 
   final case class TreeAcc[A](data: A, stack: Stack[Set[Variable]] = Stack.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
@@ -73,12 +44,7 @@ object Expression {
   }
 }
 
-trait SemanticCheckableWithContext {
-  def semanticCheck(ctx: SemanticContext): SemanticCheck
-}
-
-
-abstract class Expression extends ASTNode with SemanticChecking with SemanticCheckableWithContext {
+abstract class Expression extends ASTNode with SemanticChecking {
 
   self =>
 
@@ -145,60 +111,17 @@ abstract class Expression extends ASTNode with SemanticChecking with SemanticChe
           (newAcc, Some(identity))
     }.data
 
-  def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
-    s => specifyType(typeGen(s))(s)
-  def specifyType(possibleTypes: => TypeSpec): SemanticState => Either[SemanticError, SemanticState] =
-    _.specifyType(this, possibleTypes)
-
-  def expectType(typeGen: TypeGenerator): SemanticState => SemanticCheckResult =
-    s => expectType(typeGen(s))(s)
-  def expectType(typeGen: TypeGenerator, messageGen: (String, String) => String): SemanticState => SemanticCheckResult =
-    s => expectType(typeGen(s), messageGen)(s)
-
-  def expectType(possibleTypes: => TypeSpec, messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator): SemanticState => SemanticCheckResult = s => {
-    s.expectType(this, possibleTypes) match {
-      case (ss, TypeSpec.none) =>
-        val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
-        val expectedTypesString = possibleTypes.mkString(", ", " or ")
-        SemanticCheckResult.error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
-      case (ss, _)             =>
-        success(ss)
-    }
-  }
-
-  def typeSwitch(choice: TypeSpec => SemanticCheck): SemanticCheck =
-    (state: SemanticState) => choice(types(state))(state)
-
-  def containsAggregate = this.treeExists {
+  /**
+    * Return true is this expression contains an aggregating expression.
+    */
+  def containsAggregate: Boolean = this.treeExists {
     case IsAggregate(_) => true
   }
-}
 
-trait SimpleTyping {
-  self: Expression =>
-
-  protected def possibleTypes: TypeSpec
-
-  def semanticCheck(ctx: SemanticContext): SemanticCheck = specifyType(possibleTypes)
-}
-
-trait FunctionTyping extends ExpressionCallTypeChecking {
-  self: Expression =>
-
-  override def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
-    arguments.semanticCheck(ctx) chain
-    typeChecker.checkTypes(self)
-}
-
-trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>
-  def rhs: Expression
-}
-
-trait PostfixFunctionTyping extends FunctionTyping { self: Expression =>
-  def lhs: Expression
-}
-
-trait InfixFunctionTyping extends FunctionTyping { self: Expression =>
-  def lhs: Expression
-  def rhs: Expression
+  /**
+    * Returns the first encountered aggregate expression, or None if none existed.
+    */
+  def findAggregate:Option[Expression] = this.treeFind[Expression] {
+    case IsAggregate(_) => true
+  }
 }

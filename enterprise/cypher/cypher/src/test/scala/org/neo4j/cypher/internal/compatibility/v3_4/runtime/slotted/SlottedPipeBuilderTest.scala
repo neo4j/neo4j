@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.EnterprisePipeBuilderFactory
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Literal, Property, Variable}
@@ -37,9 +38,9 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._

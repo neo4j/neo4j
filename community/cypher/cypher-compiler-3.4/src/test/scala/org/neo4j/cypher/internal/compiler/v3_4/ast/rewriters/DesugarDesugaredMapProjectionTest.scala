@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{desugarMapProjection, normalizeReturnClauses, normalizeWithClauses, recordScopes}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 
 class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
 

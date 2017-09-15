@@ -17,16 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTAny.covariant
-
-  override def semanticCheck(ctx: SemanticContext) =
-    map.semanticCheck(ctx) chain
-      map.expectType(CTMap.covariant | CTAny.invariant) chain
-      super.semanticCheck(ctx)
-
+case class Property(map: Expression, propertyKey: PropertyKeyName)(val position: InputPosition) extends Expression {
   override def asCanonicalStringVal = s"${map.asCanonicalStringVal}.${propertyKey.asCanonicalStringVal}"
 }

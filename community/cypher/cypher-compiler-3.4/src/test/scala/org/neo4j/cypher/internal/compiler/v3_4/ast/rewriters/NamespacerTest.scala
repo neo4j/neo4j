@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer

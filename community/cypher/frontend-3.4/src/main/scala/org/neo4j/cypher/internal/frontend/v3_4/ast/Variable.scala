@@ -17,26 +17,13 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticError, SemanticState, SymbolUse}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, SemanticCheckResult, SemanticError, SemanticState, SymbolUse}
 
 case class Variable(name: String)(val position: InputPosition) extends Expression {
 
   def toSymbolUse = SymbolUse(name, position)
-
-  // check the variable is defined and, if not, define it so that later errors are suppressed
-  //
-  // this is used in expressions; in graphs we must make sure to sem check variables explicitly (!)
-  //
-  def semanticCheck(ctx: SemanticContext): (SemanticState) => SemanticCheckResult = s => this.ensureVariableDefined()(s) match {
-    case Right(ss) => SemanticCheckResult.success(ss)
-    case Left(error) => declareVariable(CTAny.covariant)(s) match {
-        // if the variable is a graph, declaring it will fail
-      case Right(ss) => SemanticCheckResult.error(ss, error)
-      case Left(_error) => SemanticCheckResult.error(s, _error)
-    }
-  }
 
   // double-dispatch helpers
 
@@ -61,11 +48,6 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
 
   def implicitVariable(possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).implicitVariable(this, possibleType)
-
-  def ensureGraphDefined(): SemanticCheck = {
-    val ensured = (_: SemanticState).ensureGraphDefined(this)
-    ensured chain expectType(CTGraphRef.covariant)
-  }
 
   def ensureVariableDefined(): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).ensureVariableDefined(this)

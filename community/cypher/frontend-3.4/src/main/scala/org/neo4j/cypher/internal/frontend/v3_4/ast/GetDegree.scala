@@ -17,16 +17,10 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
 
-case class GetDegree(node: Expression, relType: Option[RelTypeName], dir: SemanticDirection)(val position: InputPosition)
-  extends Expression with SimpleTyping {
-  protected def possibleTypes = CTAny.covariant
-
-  override def semanticCheck(ctx: SemanticContext) =
-      node.semanticCheck(ctx) chain
-      node.expectType(CTNode.covariant) chain
-      super.semanticCheck(ctx)
-}
+case class GetDegree(
+                      node: Expression,
+                      relType: Option[RelTypeName],
+                      dir: SemanticDirection
+                    )(val position: InputPosition) extends Expression

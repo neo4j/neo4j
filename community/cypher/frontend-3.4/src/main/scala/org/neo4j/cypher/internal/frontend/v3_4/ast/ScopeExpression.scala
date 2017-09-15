@@ -17,8 +17,6 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult
 
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
@@ -34,16 +32,13 @@ trait ScopeExpression extends Expression {
 }
 
 case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(variable)
 }
 
 case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(variable)
 }
 
 case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
-  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(accumulator, variable)
 }

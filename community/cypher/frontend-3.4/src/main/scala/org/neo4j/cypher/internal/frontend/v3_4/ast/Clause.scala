@@ -18,11 +18,12 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{CartesianProductNotification, DeprecatedStartNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
@@ -40,8 +41,8 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   override def name: String = "LOAD CSV"
 
   override def semanticCheck: SemanticCheck =
-    urlString.semanticCheck(Expression.SemanticContext.Simple) chain
-      urlString.expectType(CTString.covariant) chain
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, urlString) chain
+      SemanticAnalysis.expectType(CTString.covariant, urlString) chain
       checkFieldTerminator chain
       typeCheck
 
@@ -113,7 +114,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graphs.foldSemanticCheck(_.ensureGraphDefined()) chain
+    SemanticAnalysis.semanticCheckFold(graphs)(SemanticAnalysis.ensureGraphDefined(_)) chain
     SemanticState.recordCurrentScope(this)
 }
 
@@ -377,9 +378,9 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
   override def name = "DELETE"
 
   override def semanticCheck: SemanticCheck =
-    expressions.semanticCheck(Expression.SemanticContext.Simple) chain
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expressions) chain
       warnAboutDeletingLabels chain
-      expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
+      SemanticAnalysis.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
 
   private def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
@@ -393,12 +394,16 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def semanticCheck: SemanticCheck = items.semanticCheck
 }
 
-case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
+case class Foreach(
+                    variable: Variable,
+                    expression: Expression,
+                    updates: Seq[Clause]
+                  )(val position: InputPosition) extends UpdateClause with SemanticChecking {
   override def name = "FOREACH"
 
   override def semanticCheck: SemanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-      expression.expectType(CTList(CTAny).covariant) chain
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression) chain
+      SemanticAnalysis.expectType(CTList(CTAny).covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
@@ -410,8 +415,8 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
   override def name = "UNWIND"
 
   override def semanticCheck: SemanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Results) chain
-      expression.expectType(CTList(CTAny).covariant) ifOkChain {
+    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Results, expression) chain
+      SemanticAnalysis.expectType(CTList(CTAny).covariant, expression) ifOkChain {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
       variable.declareVariable(possibleInnerTypes)
     }
@@ -435,7 +440,8 @@ case class UnresolvedCall(procedureNamespace: Namespace,
     declaredResult.map(_.items.map(_.variable.name).toList).getOrElse(List.empty)
 
   override def semanticCheck: SemanticCheck = {
-    val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
+    val argumentCheck = declaredArguments.map(
+      SemanticAnalysis.semanticCheck(SemanticContext.Results, _)).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>

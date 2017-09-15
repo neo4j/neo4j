@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{Scope, ScopeTreeVerifier}
+import org.neo4j.cypher.internal.frontend.v3_4.ScopeTreeVerifier
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.Scope
 
 class ScopeTreeVerificationTest extends CypherFunSuite {
 

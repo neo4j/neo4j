@@ -17,15 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression with SimpleTyping {
-  protected def possibleTypes = CTMap
-
-  override def semanticCheck(ctx: SemanticContext) =
-    items.map(_._2).semanticCheck(ctx) chain
-      super.semanticCheck(ctx)
+case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position: InputPosition) extends Expression {
 
   override def asCanonicalStringVal: String = items.map {
     case (key, value) => s"${key.asCanonicalStringVal}: ${value.asCanonicalStringVal}"

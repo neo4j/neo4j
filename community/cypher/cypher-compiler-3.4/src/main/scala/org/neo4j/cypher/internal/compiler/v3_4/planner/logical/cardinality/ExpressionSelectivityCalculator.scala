@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v3_4.{IndexDescriptor, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.LabelId
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, Selections, Selectivity}
 
 trait Expression2Selectivity {

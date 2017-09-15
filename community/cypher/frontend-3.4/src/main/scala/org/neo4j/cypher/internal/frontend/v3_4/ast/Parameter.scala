@@ -21,9 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case class Parameter(name: String,
                      parameterType: CypherType)(val position: InputPosition)
-  extends Expression with SimpleTyping {
-
-  protected def possibleTypes: TypeSpec = parameterType.covariant
+  extends Expression {
 
   override def asCanonicalStringVal: String = s"{$name}"
 }

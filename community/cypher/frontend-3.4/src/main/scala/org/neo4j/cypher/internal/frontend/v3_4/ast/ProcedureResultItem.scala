@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.error
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.error
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticChecking, SemanticError, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 object ProcedureResultItem {

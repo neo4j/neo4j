@@ -18,14 +18,15 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case object Tail extends Function {
   def name = "tail"
 
-  def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
     checkArgs(invocation, 1) ifOkChain {
-      invocation.arguments(0).expectType(CTList(CTAny).covariant) chain
-      invocation.specifyType(invocation.arguments(0).types)
+      SemanticAnalysis.expectType(CTList(CTAny).covariant, invocation.arguments(0)) chain
+      SemanticAnalysis.specifyType(invocation.arguments(0).types, invocation)
     }
 }
