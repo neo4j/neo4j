@@ -240,6 +240,7 @@ public class TransactionLogAnalyzerTest
     private void writeCheckpoint() throws IOException
     {
         transactionLogWriter.checkPoint( writer.getCurrentPosition( new LogPositionMarker() ).newPosition() );
+        writer.prepareForFlush().flush();
         monitor.expectCheckpointAfter( lastCommittedTxId.get() );
     }
 
