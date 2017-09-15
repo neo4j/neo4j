@@ -33,23 +33,28 @@ sealed trait Clause extends ASTNode with SemanticCheckable {
     throw new InternalException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
 
-sealed trait UpdateClause extends Clause {
+sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
   override def returnColumns: List[String] = List.empty
 }
 
-case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(
+                    withHeaders: Boolean,
+                    urlString: Expression,
+                    variable: Variable,
+                    fieldTerminator: Option[StringLiteral]
+                  )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name: String = "LOAD CSV"
 
   override def semanticCheck: SemanticCheck =
-    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, urlString) chain
-      SemanticAnalysis.expectType(CTString.covariant, urlString) chain
+    SemanticExpressionCheck.simple(urlString) chain
+      expectType(CTString.covariant, urlString) chain
       checkFieldTerminator chain
       typeCheck
 
   private def checkFieldTerminator: SemanticCheck = {
     fieldTerminator match {
       case Some(literal) if literal.value.length != 1 =>
-        SemanticError("CSV field terminator can only be one character wide", literal.position)
+        error("CSV field terminator can only be one character wide", literal.position)
       case _ => SemanticCheckResult.success
     }
   }
@@ -64,7 +69,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   }
 }
 
-sealed trait MultipleGraphClause extends Clause with SemanticChecking {
+sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
 
   override def semanticCheck: SemanticCheck =
     requireMultigraphSupport(s"The `$name` clause", position)
@@ -81,7 +86,7 @@ sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
     graph.declareGraph chain
-    of.foldSemanticCheck(_.semanticCheck(Pattern.SemanticContext.Create))
+    of.fold(SemanticCheckResult.success)(_.semanticCheck(Pattern.SemanticContext.Create))
 }
 
 final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
@@ -95,16 +100,14 @@ final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Opti
 final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
-  override def semanticCheck: SemanticCheck =
-    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
+  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
 
 }
 
 final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
-  override def semanticCheck: SemanticCheck =
-    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
+  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
 }
 
 final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)
@@ -114,7 +117,7 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    SemanticAnalysis.semanticCheckFold(graphs)(SemanticAnalysis.ensureGraphDefined(_)) chain
+    SemanticExpressionCheck.semanticCheckFold(graphs)(SemanticExpressionCheck.ensureGraphDefined) chain
     SemanticState.recordCurrentScope(this)
 }
 
@@ -190,7 +193,12 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 
 }
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
+case class Match(
+                  optional: Boolean,
+                  pattern: Pattern,
+                  hints: Seq[UsingHint],
+                  where: Option[Where]
+                )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "MATCH"
 
   override def semanticCheck: SemanticCheck =
@@ -378,9 +386,9 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
   override def name = "DELETE"
 
   override def semanticCheck: SemanticCheck =
-    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expressions) chain
+    SemanticExpressionCheck.simple(expressions) chain
       warnAboutDeletingLabels chain
-      SemanticAnalysis.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
+      expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
 
   private def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
@@ -398,12 +406,12 @@ case class Foreach(
                     variable: Variable,
                     expression: Expression,
                     updates: Seq[Clause]
-                  )(val position: InputPosition) extends UpdateClause with SemanticChecking {
+                  )(val position: InputPosition) extends UpdateClause {
   override def name = "FOREACH"
 
   override def semanticCheck: SemanticCheck =
-    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression) chain
-      SemanticAnalysis.expectType(CTList(CTAny).covariant, expression) chain
+    SemanticExpressionCheck.simple(expression) chain
+      expectType(CTList(CTAny).covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
@@ -415,8 +423,8 @@ case class Unwind(expression: Expression, variable: Variable)(val position: Inpu
   override def name = "UNWIND"
 
   override def semanticCheck: SemanticCheck =
-    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Results, expression) chain
-      SemanticAnalysis.expectType(CTList(CTAny).covariant, expression) ifOkChain {
+    SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
+      SemanticExpressionCheck.expectType(CTList(CTAny).covariant, expression) ifOkChain {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
       variable.declareVariable(possibleInnerTypes)
     }
@@ -441,7 +449,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(
-      SemanticAnalysis.semanticCheck(SemanticContext.Results, _)).getOrElse(success)
+      SemanticExpressionCheck.check(SemanticContext.Results, _)).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>
@@ -461,12 +469,12 @@ case class UnresolvedCall(procedureNamespace: Namespace,
   override def containsNoUpdates = false
 }
 
-sealed trait HorizonClause extends Clause with SemanticChecking {
+sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
   override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
-sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
+sealed trait ProjectionClause extends HorizonClause {
   def distinct: Boolean
   def returnItems: ReturnItemsDef
   def graphReturnItems: Option[GraphReturnItems]

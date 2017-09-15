@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_4.PropertyKeyId
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure

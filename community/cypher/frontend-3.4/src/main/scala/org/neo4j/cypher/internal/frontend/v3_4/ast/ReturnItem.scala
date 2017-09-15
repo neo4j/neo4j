@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.suc
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
-sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticChecking {
+sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   /**
     * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
     * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
@@ -46,7 +46,10 @@ final case class DiscardCardinality()(val position: InputPosition) extends Retur
   private def _success(s: SemanticState) = success(s)
 }
 
-final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItemsDef {
+final case class ReturnItems(
+                              includeExisting: Boolean,
+                              items: Seq[ReturnItem]
+                            )(val position: InputPosition) extends ReturnItemsDef with SemanticAnalysisTooling {
 
   override def withExisting(includeExisting: Boolean): ReturnItemsDef =
     copy(includeExisting = includeExisting)(position)
@@ -63,7 +66,7 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
     copy(items = f(items))(position)
 
   override def declareVariables(previousScope: Scope): SemanticCheck =
-    SemanticAnalysis.when (includeExisting) {
+    when (includeExisting) {
       s => success(s.importValuesFromScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
@@ -91,7 +94,7 @@ sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def name: String
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
 
-  def semanticCheck = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Results, expression)
+  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
 }
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {

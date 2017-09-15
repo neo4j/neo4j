@@ -27,7 +27,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTMap).right.get
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors shouldBe empty
   }
@@ -38,7 +38,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTNode).right.get
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors shouldBe empty
   }
@@ -49,7 +49,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTRelationship).right.get
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors shouldBe empty
   }
@@ -60,7 +60,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTAny).right.get
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors shouldBe empty
   }
@@ -71,7 +71,7 @@ class PropertyTest extends SemanticFunSuite {
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTInteger).right.get
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, property(mapExpr, propertyKey))(beforeState)
+    val result = SemanticExpressionCheck.simple(property(mapExpr, propertyKey))(beforeState)
 
     result.errors should equal(List(SemanticError("Type mismatch: expected Any, Map, Node or Relationship but was Integer", pos)))
   }

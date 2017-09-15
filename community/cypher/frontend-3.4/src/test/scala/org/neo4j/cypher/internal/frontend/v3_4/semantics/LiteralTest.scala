@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
+import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
@@ -23,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 class LiteralTest extends SemanticFunSuite {
   test("has type CTString") {
     val literal = StringLiteral("foo")(pos)
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, literal)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)
     val expressionType = result.state.expressionType(literal).actual
 
     assert(expressionType === CTString.invariant)
@@ -106,8 +107,25 @@ class LiteralTest extends SemanticFunSuite {
     assertSemanticError(decimalDouble("1e9999"), "floating point number is too large")
   }
 
+  test("correctly parses octal numbers") {
+    assert(signedOctal("022").value === 0x12)
+    assert(signedOctal("00").value === 0x0)
+    assert(signedOctal("0734").value === 0x1dc)
+    assert(signedOctal("0034").value === 0x1c)
+  }
+
+  test("throws error for invalid octal numbers") {
+    assertSemanticError(signedOctal("0393"), "invalid literal number")
+    assertSemanticError(signedOctal("03f4"), "invalid literal number")
+    assertSemanticError(signedOctal("-0934"), "invalid literal number")
+  }
+
+  test("throws error for too large octal numbers") {
+    assertSemanticError(signedOctal("077777777777777777777777777777"), "integer is too large")
+  }
+
   private def assertSemanticError(literal: Literal, errorMessage: String) {
-    val result = SemanticAnalysis.semanticCheck(SemanticContext.Simple, literal)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(literal)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, pos)))
   }
 }

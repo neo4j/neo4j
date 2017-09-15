@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecking
 
 import scala.collection.immutable.Stack
 
@@ -44,7 +43,7 @@ object Expression {
   }
 }
 
-abstract class Expression extends ASTNode with SemanticChecking {
+abstract class Expression extends ASTNode {
 
   self =>
 

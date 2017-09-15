@@ -81,8 +81,8 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
           //default values are checked at load time
           signature.inputSignature.zip(callArguments).map {
             case (field, arg) =>
-              SemanticAnalysis.semanticCheck(SemanticContext.Results, arg) chain
-                SemanticAnalysis.expectType(field.typ.covariant, arg)
+              SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
+                SemanticExpressionCheck.expectType(field.typ.covariant, arg)
           }.foldLeft(success)(_ chain _)
         } else {
           val msg = (if (signature.inputSignature.isEmpty) "arguments"

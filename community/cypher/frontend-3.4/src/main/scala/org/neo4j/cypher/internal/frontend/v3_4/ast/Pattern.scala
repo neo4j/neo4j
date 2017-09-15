@@ -257,7 +257,7 @@ class InvalidNodePattern(val id: Variable)(position: InputPosition) extends Node
 case class NodePattern(variable: Option[Variable],
                        labels: Seq[LabelName],
                        properties: Option[Expression])(val position: InputPosition)
-  extends PatternElement with SemanticChecking {
+  extends PatternElement with SemanticAnalysisTooling {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {
@@ -265,7 +265,7 @@ case class NodePattern(variable: Option[Variable],
         ctx match {
           case SemanticContext.Expression =>
             variable.ensureVariableDefined() chain
-              SemanticAnalysis.expectType(CTNode.covariant, variable)
+              expectType(CTNode.covariant, variable)
           case _                          =>
             variable.implicitVariable(CTNode)
         }
@@ -278,12 +278,14 @@ case class NodePattern(variable: Option[Variable],
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      error("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      error("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
     case _                                           =>
-      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, properties) chain
-        SemanticAnalysis.expectType(CTMap.covariant, properties)
+      SemanticExpressionCheck.simple(properties) chain
+        expectType(CTMap.covariant, properties)
   }
 
   override def allVariables: Set[Variable] = variable.toSet
@@ -296,7 +298,8 @@ case class RelationshipPattern(
                                 length: Option[Option[Range]],
                                 properties: Option[Expression],
                                 direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode with SemanticChecking {
+                                legacyTypeSeparator: Boolean = false
+                              )(val position: InputPosition) extends ASTNode with SemanticAnalysisTooling {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
     variable.fold(SemanticCheckResult.success) {
@@ -306,7 +309,7 @@ case class RelationshipPattern(
         ctx match {
           case SemanticContext.Match      => variable.implicitVariable(possibleType)
           case SemanticContext.Expression => variable.ensureVariableDefined() chain
-                                              SemanticAnalysis.expectType(possibleType.covariant, variable)
+                                              expectType(possibleType.covariant, variable)
           case _                          => variable.declareVariable(possibleType)
         }
     }
@@ -320,35 +323,37 @@ case class RelationshipPattern(
   private def checkNotUndirectedWhenCreating(ctx: SemanticContext): SemanticCheck = {
     ctx match {
       case SemanticContext.Create if direction == SemanticDirection.BOTH =>
-        SemanticError("Only directed relationships are supported in CREATE", position)
+        error("Only directed relationships are supported in CREATE", position)
       case _ =>
         SemanticCheckResult.success
     }
   }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
-    SemanticAnalysis.when (!isSingleLength) {
+    when (!isSingleLength) {
       ctx match {
         case SemanticContext.Merge =>
-          SemanticError("Variable length relationships cannot be used in MERGE", position)
+          error("Variable length relationships cannot be used in MERGE", position)
         case SemanticContext.Create | SemanticContext.CreateUnique =>
-          SemanticError("Variable length relationships cannot be used in CREATE", position)
+          error("Variable length relationships cannot be used in CREATE", position)
         case _                          => None
       }
     }
 
   private def checkNoParamMapsWhenMatching(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      error("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e
+        .position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      error("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e
+        .position)
     case _                                           =>
       None
   }
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck =
-    SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, properties) chain
-      SemanticAnalysis.expectType(CTMap.covariant, properties)
+    SemanticExpressionCheck.simple(properties) chain
+      expectType(CTMap.covariant, properties)
 
   def isSingleLength = length.isEmpty
 

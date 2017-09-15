@@ -32,7 +32,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
   test("pattern comprehension on a property returns the expected type") {
     val expression = PatternComprehension(None, pattern, None, property)(pos)
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
     expression.types(result.state) should equal(CTList(CTAny).covariant)
@@ -41,7 +41,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
   test("pattern comprehension with literal string projection has correct type") {
     val expression = PatternComprehension(None, pattern, None, stringLiteral)(pos)
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe empty
     expression.types(result.state) should equal(CTList(CTString).invariant)
@@ -50,7 +50,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
   test("inner projection using missing identifier reports error") {
     val expression = PatternComprehension(None, pattern, None, failingProperty)(pos)
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -58,7 +58,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
   test("inner filter using missing identifier reports error") {
     val expression = PatternComprehension(None, pattern, Some(failingProperty), stringLiteral)(pos)
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(expression)(SemanticState.clean)
 
     result.errors shouldBe Seq(SemanticError("Variable `missing` not defined", pos))
   }
@@ -67,7 +67,7 @@ class PatternComprehensionTest extends SemanticFunSuite {
     val expression = PatternComprehension(None, pattern, None, stringLiteral)(pos)
 
     val semanticState = SemanticState.clean.declareVariable(variable("n"), CTBoolean).right.get
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression)(semanticState)
+    val result = SemanticExpressionCheck.simple(expression)(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n already defined with conflicting type Boolean (expected Node)", pos, pos)

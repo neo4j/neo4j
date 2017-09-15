@@ -21,14 +21,14 @@ import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
-  extends Statement with SemanticChecking {
+  extends Statement with SemanticAnalysisTooling {
 
   override def returnColumns = part.returnColumns
 
   override def semanticCheck =
     part.semanticCheck chain
     periodicCommitHint.semanticCheck chain
-    SemanticAnalysis.when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
+    when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
       SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
 }
@@ -135,7 +135,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 }
 
-sealed trait Union extends QueryPart with SemanticChecking {
+sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def part: QueryPart
   def query: SingleQuery
 

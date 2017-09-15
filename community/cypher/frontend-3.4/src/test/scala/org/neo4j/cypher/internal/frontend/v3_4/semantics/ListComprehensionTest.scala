@@ -27,7 +27,7 @@ class ListComprehensionTest extends SemanticFunSuite {
 
   test("withoutExtractExpressionShouldHaveCollectionTypesOfInnerExpression") {
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
@@ -36,7 +36,7 @@ class ListComprehensionTest extends SemanticFunSuite {
     val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
     val filter = ListComprehension(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
@@ -46,7 +46,7 @@ class ListComprehensionTest extends SemanticFunSuite {
     val predicate = ErrorExpression(error, CTAny, DummyPosition(7))
 
     val filter = ListComprehension(Variable("x")(DummyPosition(2)), dummyExpression, Some(predicate), None)(DummyPosition(0))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)
   }

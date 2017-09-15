@@ -17,9 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.error
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticChecking, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 object ProcedureResultItem {
@@ -31,7 +30,7 @@ object ProcedureResultItem {
 }
 
 case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variable)(val position: InputPosition)
-  extends ASTNode with SemanticChecking {
+  extends ASTNode with SemanticAnalysisTooling {
 
   val outputName: String = output.map(_.name).getOrElse(variable.name)
 
@@ -44,5 +43,5 @@ case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variab
     types
       .get(outputName)
       .map { typ => variable.declareVariable(typ): SemanticCheck }
-      .getOrElse(error(_: SemanticState, SemanticError(s"Unknown procedure output: `$outputName`", position)))
+      .getOrElse(error(s"Unknown procedure output: `$outputName`", position))
 }

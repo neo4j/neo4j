@@ -18,10 +18,10 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticCheckable}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
-sealed trait Hint extends ASTNode with SemanticCheckable {
+sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variables: NonEmptyList[Variable]
 }
 
@@ -56,14 +56,14 @@ case class UsingIndexHint(
                            properties: Seq[PropertyKeyName]
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureVariableDefined chain SemanticAnalysis.expectType(CTNode.covariant, variable)
+  def semanticCheck = variable.ensureVariableDefined chain expectType(CTNode.covariant, variable)
 
   override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureVariableDefined chain SemanticAnalysis.expectType(CTNode.covariant, variable)
+  def semanticCheck = variable.ensureVariableDefined chain expectType(CTNode.covariant, variable)
 
   override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
 }
@@ -77,7 +77,7 @@ object UsingJoinHint {
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
-    variables.map { variable => variable.ensureVariableDefined chain SemanticAnalysis.expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
+    variables.map { variable => variable.ensureVariableDefined chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
 
   override def toString: String = s"USING JOIN ON ${variables.map(_.name).toIndexedSeq.mkString(", ")}"
 }

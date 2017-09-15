@@ -17,13 +17,10 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{DummyExpression, Expression}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends SemanticFunSuite {
-
-  protected val context: SemanticContext = SemanticContext.Simple
 
   protected def testValidTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec)(expected: TypeSpec) {
     val (result, expression) = evaluateWithTypes(lhsTypes, rhsTypes)
@@ -43,7 +40,7 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
 
     val expression = ctr(lhs, rhs)
 
-    val state = SemanticAnalysis.semanticCheck(context, Seq(lhs, rhs))(SemanticState.clean).state
-    (SemanticAnalysis.semanticCheck(context, expression)(state), expression)
+    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(SemanticState.clean).state
+    (SemanticExpressionCheck.simple(expression)(state), expression)
   }
 }

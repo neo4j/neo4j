@@ -30,7 +30,7 @@ class ListSliceTest extends SemanticFunSuite {
                                 Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
     )(DummyPosition(4))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, slice)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(slice)(SemanticState.clean)
     result.errors shouldBe empty
     slice.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
@@ -38,7 +38,7 @@ class ListSliceTest extends SemanticFunSuite {
   test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {
     val slice = ListSlice(dummyList, None, None)(DummyPosition(4))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, slice)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(slice)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)))
   }
 
@@ -46,7 +46,7 @@ class ListSliceTest extends SemanticFunSuite {
     val to = DecimalDoubleLiteral("1.3")(DummyPosition(5))
     val slice = ListSlice(dummyList, None, Some(to))(DummyPosition(4))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, slice)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(slice)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)))
   }
 }

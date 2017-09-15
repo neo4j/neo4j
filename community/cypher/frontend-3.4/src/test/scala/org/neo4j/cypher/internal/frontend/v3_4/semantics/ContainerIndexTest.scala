@@ -33,7 +33,7 @@ class ContainerIndexTest extends SemanticFunSuite {
     val rhs = dummyInteger
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, index)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
     assertIsList(lhs.types(result.state))
     rhs.types(result.state) should equal(CTInteger.covariant)
@@ -45,7 +45,7 @@ class ContainerIndexTest extends SemanticFunSuite {
     val rhs = dummyString
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, index)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
     assertIsMap(lhs.types(result.state))
     rhs.types(result.state) should equal(CTString.covariant)
@@ -57,7 +57,7 @@ class ContainerIndexTest extends SemanticFunSuite {
     val rhs = dummyAny
     val index = ContainerIndex(lhs, rhs)(DummyPosition(10))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, index)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
     lhs.types(result.state) should equal(CTAny.contravariant)
     rhs.types(result.state) should equal(CTAny.contravariant)
@@ -69,7 +69,7 @@ class ContainerIndexTest extends SemanticFunSuite {
                                SignedDecimalIntegerLiteral("1")(DummyPosition(5))
     )(DummyPosition(4))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, index)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors shouldBe empty
     index.types(result.state) should equal(CTNode | CTString)
   }
@@ -79,7 +79,7 @@ class ContainerIndexTest extends SemanticFunSuite {
                                DecimalDoubleLiteral("1.3")(DummyPosition(5))
     )(DummyPosition(4))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, index)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(index)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))
   }
 

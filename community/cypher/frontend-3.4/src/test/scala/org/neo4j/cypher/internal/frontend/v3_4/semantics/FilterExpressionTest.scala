@@ -32,7 +32,7 @@ class FilterExpressionTest extends SemanticFunSuite {
       expression = dummyExpression,
       innerPredicate = Some(True()(DummyPosition(5)))
     )(DummyPosition(0))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTList(CTNode) | CTList(CTString))
   }
@@ -43,7 +43,7 @@ class FilterExpressionTest extends SemanticFunSuite {
       expression = dummyExpression,
       innerPredicate = None
     )(DummyPosition(0))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("filter(...) requires a WHERE predicate", DummyPosition(0))))
   }
 }

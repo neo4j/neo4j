@@ -30,7 +30,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
         s => {
           s.symbolTypes("x") should equal(CTString.invariant)
           s.symbolTypes("y") should equal(CTInteger.invariant)
-          (SemanticAnalysis.specifyType(CTString, self) chain error)(s)
+          (specifyType(CTString, self) chain error)(s)
         }
       )
 
@@ -42,7 +42,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") shouldBe empty
     result.state.symbol("y") shouldBe empty
@@ -57,7 +57,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
         s => {
           s.symbolTypes("x") should equal(CTString | CTFloat)
           s.symbolTypes("y") should equal(listType.innerType.invariant)
-          (SemanticAnalysis.specifyType(CTFloat, self) chain SemanticCheckResult.success)(s)
+          (specifyType(CTFloat, self) chain SemanticCheckResult.success)(s)
         }
       )
 
@@ -69,7 +69,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors shouldBe empty
     filter.types(result.state) should equal(CTAny | CTFloat)
   }
@@ -83,7 +83,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
         s => {
           s.symbolTypes("x") should equal(accumulatorType)
           s.symbolTypes("y") should equal(listType.innerType.invariant)
-          (SemanticAnalysis.specifyType(CTNode, self) chain SemanticCheckResult.success)(s)
+          (specifyType(CTNode, self) chain SemanticCheckResult.success)(s)
         }
       )
 
@@ -95,7 +95,7 @@ class ReduceExpressionTest extends SemanticFunSuite {
       expression = reduceExpression
     )(DummyPosition(0))
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.msg should equal("Type mismatch: accumulator is Number or String but expression has type Node")
     result.errors.head.position should equal(reduceExpression.position)

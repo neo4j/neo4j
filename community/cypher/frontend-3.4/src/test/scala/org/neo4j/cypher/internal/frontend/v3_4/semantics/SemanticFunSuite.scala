@@ -20,14 +20,14 @@ import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 
-class SemanticFunSuite extends CypherFunSuite {
+class SemanticFunSuite extends CypherFunSuite with SemanticAnalysisTooling {
 
   override def initTest(): Unit = {
-    SemanticAnalysis.semanticCheckFallback =
+    SemanticExpressionCheck.semanticCheckFallback =
       (ctx, e) =>
         e match {
           case x:DummyExpression =>
-            SemanticAnalysis.specifyType(x.possibleTypes, x)
+            specifyType(x.possibleTypes, x)
 
           case x:ErrorExpression =>
             s => SemanticCheckResult.error(s, x.error)
@@ -36,7 +36,7 @@ class SemanticFunSuite extends CypherFunSuite {
             x.semanticCheck(ctx, x)
 
           case x:Expression =>
-            SemanticAnalysis.crashOnUnknownExpression(ctx, x)
+            SemanticExpressionCheck.crashOnUnknownExpression(ctx, x)
         }
   }
 
@@ -49,6 +49,7 @@ class SemanticFunSuite extends CypherFunSuite {
   def unsignedDecimal(str:String) = UnsignedDecimalIntegerLiteral(str)(pos)
   def signedDecimal(str:String) = SignedDecimalIntegerLiteral(str)(pos)
   def decimalDouble(str:String) = SignedDecimalIntegerLiteral(str)(pos)
+  def signedOctal(str:String) = SignedOctalIntegerLiteral(str)(pos)
 
   def variable(name: String): Variable = Variable(name)(pos)
   def propertyKeyName(name: String) = PropertyKeyName("prop")(pos)

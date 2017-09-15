@@ -22,19 +22,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 class SemanticAnalysisToolingTest extends CypherFunSuite {
 
-  override def initTest(): Unit = {
-    SemanticAnalysis.semanticCheckFallback =
-      (ctx, e) =>
-        e match {
-          case x:DummyExpression =>
-            SemanticAnalysis.specifyType(x.types, x)
-
-          case x:Expression =>
-            SemanticAnalysis.crashOnUnknownExpression(ctx, x)
-        }
-  }
-
   val expression = DummyExpression(CTAny)
+
+  val toTest = new SemanticAnalysisTooling {}
 
   test("shouldReturnCalculatedType") {
     SemanticState.clean.expressionType(expression).actual should equal(TypeSpec.all)
@@ -42,8 +32,8 @@ class SemanticAnalysisToolingTest extends CypherFunSuite {
 
   test("shouldReturnSpecifiedAndConstrainedTypes") {
     val state = (
-      SemanticAnalysis.specifyType(CTNode | CTInteger, expression) chain
-        SemanticAnalysis.expectType(CTNumber.covariant, expression)
+      toTest.specifyType(CTNode | CTInteger, expression) chain
+        toTest.expectType(CTNumber.covariant, expression)
       )(SemanticState.clean).state
 
     state.expressionType(expression).actual should equal(CTInteger.invariant)
@@ -51,8 +41,8 @@ class SemanticAnalysisToolingTest extends CypherFunSuite {
 
   test("shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
-      SemanticAnalysis.specifyType(CTNode | CTInteger, expression) chain
-        SemanticAnalysis.expectType(CTString.covariant, expression)
+      toTest.specifyType(CTNode | CTInteger, expression) chain
+        toTest.expectType(CTString.covariant, expression)
       )(SemanticState.clean)
 
     result.errors should have size 1
@@ -63,8 +53,8 @@ class SemanticAnalysisToolingTest extends CypherFunSuite {
 
   test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
-      SemanticAnalysis.specifyType(CTNode | CTInteger, expression) chain
-        SemanticAnalysis.expectType(CTString.covariant, expression,
+      toTest.specifyType(CTNode | CTInteger, expression) chain
+        toTest.expectType(CTString.covariant, expression,
           (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
       )(SemanticState.clean)
 

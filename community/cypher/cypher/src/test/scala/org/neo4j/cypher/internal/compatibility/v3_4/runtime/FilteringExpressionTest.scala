@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckResult, SemanticError, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 class FilteringExpressionTest extends CypherFunSuite {
@@ -51,7 +50,7 @@ class FilteringExpressionTest extends CypherFunSuite {
     )
 
     val filter = TestableFilteringExpression(Variable("x")(DummyPosition(2)), expression, Some(predicate))
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, filter)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(filter)(SemanticState.clean)
     result.errors should equal(Seq(error))
     result.state.symbol("x") should equal(None)
   }

@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticChecking, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticCheckResult, SemanticError, SemanticExpressionCheck}
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -97,13 +97,13 @@ object Function {
   val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 }
 
-abstract class Function extends SemanticChecking {
+abstract class Function extends SemanticAnalysisTooling {
   def name: String
 
   def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    SemanticAnalysis.when(invocation.distinct) {
+    when(invocation.distinct) {
       SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.position)
-    } chain SemanticAnalysis.semanticCheck(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
+    } chain SemanticExpressionCheck.check(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
 
   protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
 
@@ -137,15 +137,15 @@ trait SimpleTypedFunction extends ExpressionCallTypeChecking {
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, signatureLengths.min) chain
     checkMaxArgs(invocation, signatureLengths.max) chain
-    SemanticAnalysis.checkTypes(invocation, signatures)
+    checkTypes(invocation, signatures)
 }
 
 abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    SemanticAnalysis.when(ctx == ast.Expression.SemanticContext.Simple) {
+    when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
     } chain
-      SemanticAnalysis.semanticCheck(ctx, invocation.arguments) chain
+      SemanticExpressionCheck.check(ctx, invocation.arguments) chain
       semanticCheck(ctx, invocation)
 
 

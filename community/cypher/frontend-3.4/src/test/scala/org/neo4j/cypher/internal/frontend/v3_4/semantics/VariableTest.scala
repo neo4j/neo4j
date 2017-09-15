@@ -26,7 +26,7 @@ class VariableTest extends SemanticFunSuite {
     val position = DummyPosition(0)
     val variable = Variable("x")(position)
 
-    val result = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, variable)(SemanticState.clean)
+    val result = SemanticExpressionCheck.simple(variable)(SemanticState.clean)
     result.errors should have size 1
     result.errors.head.position should equal(position)
     result.state.symbol("x").isDefined should equal(true)

@@ -17,12 +17,12 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.ASTNode
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticCheckable, SemanticError}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTInteger
 
 // Skip/Limit
-trait ASTSlicingPhrase extends SemanticCheckable {
+trait ASTSlicingPhrase extends SemanticCheckable with SemanticAnalysisTooling {
   self: ASTNode =>
   def name: String
   def dependencies: Set[Variable] = expression.dependencies
@@ -31,14 +31,14 @@ trait ASTSlicingPhrase extends SemanticCheckable {
   def semanticCheck: SemanticCheck =
     containsNoVariables chain
       literalShouldBeUnsignedInteger chain
-      SemanticAnalysis.semanticCheck(Expression.SemanticContext.Simple, expression) chain
-      SemanticAnalysis.expectType(CTInteger.covariant, expression)
+      SemanticExpressionCheck.simple(expression) chain
+      expectType(CTInteger.covariant, expression)
 
   private def containsNoVariables: SemanticCheck = {
     val deps = dependencies
     if (deps.nonEmpty) {
       val id = deps.toSeq.minBy(_.position)
-      SemanticError(s"It is not allowed to refer to variables in $name", id.position)
+      error(s"It is not allowed to refer to variables in $name", id.position)
     }
     else SemanticCheckResult.success
   }
@@ -47,7 +47,8 @@ trait ASTSlicingPhrase extends SemanticCheckable {
     expression match {
       case _: UnsignedDecimalIntegerLiteral => SemanticCheckResult.success
       case i: SignedDecimalIntegerLiteral if i.value >= 0 => SemanticCheckResult.success
-      case lit: Literal => SemanticError(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, must be a positive integer", lit.position)
+      case lit: Literal => error(s"Invalid input '${lit.asCanonicalStringVal}' is not a valid value, " +
+                                  "must be a positive integer", lit.position)
       case _ => SemanticCheckResult.success
     }
   }

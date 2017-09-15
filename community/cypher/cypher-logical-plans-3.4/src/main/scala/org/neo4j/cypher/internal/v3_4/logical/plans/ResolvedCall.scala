@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticError, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
 
 object ResolvedCall {
@@ -104,8 +104,8 @@ case class ResolvedCall(signature: ProcedureSignature,
         //default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
           case (field, arg) =>
-            SemanticAnalysis.semanticCheck(SemanticContext.Results, arg) chain
-              SemanticAnalysis.expectType(field.typ.covariant, arg)
+            SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
+              SemanticExpressionCheck.expectType(field.typ.covariant, arg)
         }.foldLeft(success)(_ chain _)
       } else {
         val msg = (if (signature.inputSignature.isEmpty) "arguments"

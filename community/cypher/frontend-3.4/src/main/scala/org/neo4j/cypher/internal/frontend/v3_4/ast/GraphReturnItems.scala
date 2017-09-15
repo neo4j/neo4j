@@ -70,7 +70,7 @@ object PassAllGraphReturnItems {
 
 final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
-  extends ASTNode with SemanticCheckable with SemanticChecking {
+  extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def isGraphsStarOnly: Boolean = includeExisting && items.isEmpty
 
@@ -81,7 +81,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    SemanticAnalysis.unless(items.isEmpty) {
+    unless(items.isEmpty) {
       requireMultigraphSupport("Projecting and returning graphs", position)
     } chain (
       graphs.semanticCheck chain
@@ -109,7 +109,7 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
       }
     }
     (
-      SemanticAnalysis.when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
+      when (includeExisting) { s => success(s.importGraphsFromScope(previousScope)) } chain
       items.flatMap(_.graphs).foldSemanticCheck(_.declareGraph) chain
       items.flatMap(_.graphs).foldSemanticCheck(_.implicitGraph(previousScope.contextGraphs)) chain
       updateContext

@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
@@ -49,7 +49,7 @@ abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
       arguments
     )(DummyPosition(5))
 
-    val state = SemanticAnalysis.semanticCheck(context, arguments)(SemanticState.clean).state
-    (SemanticAnalysis.semanticCheck(context, invocation)(state), invocation)
+    val state = SemanticExpressionCheck.check(context, arguments)(SemanticState.clean).state
+    (SemanticExpressionCheck.check(context, invocation)(state), invocation)
   }
 }

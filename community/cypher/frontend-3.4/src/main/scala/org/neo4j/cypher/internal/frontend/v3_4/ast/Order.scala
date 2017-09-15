@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysis, SemanticCheckable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckable}
 
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
@@ -28,7 +28,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
 sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
-  def semanticCheck = SemanticAnalysis.semanticCheck(Expression.SemanticContext.Results, expression)
+  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
 
   def mapExpression(f: Expression => Expression): SortItem
 }

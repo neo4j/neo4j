@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 
@@ -27,19 +26,6 @@ object SemanticCheckResult {
 }
 
 case class SemanticCheckResult(state: SemanticState, errors: Seq[SemanticErrorDef])
-
-trait SemanticChecking {
-
-  protected def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck = {
-    val error: SemanticCheck = FeatureError(s"$msg is not available in this implementation of Cypher due to lack of support for multiple graphs.", position)
-    error.unlessFeatureEnabled(SemanticFeature.MultipleGraphs)
-  }
-
-  private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
-  private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
-  protected def withScopedState(check: => SemanticCheck): SemanticCheck =
-    pushStateScope chain check chain popStateScope
-}
 
 class OptionSemanticChecking[A](val option: Option[A]) extends AnyVal {
   def foldSemanticCheck(check: A => SemanticCheck): SemanticCheck =
