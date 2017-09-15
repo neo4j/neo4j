@@ -192,6 +192,18 @@ public class UserAggregationFunctionIT
     }
 
     @Test
+    public void shouldHandleNullPath()
+    {
+        // When
+        Result result = db.execute(
+                "MATCH p=()-[:T*]->() WITH org.neo4j.procedure.longestPath(p) AS longest RETURN longest");
+
+        // Then
+        assertThat( result.next(), equalTo( map( "longest", null ) ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
     public void shouldHandleNumberArgumentAggregationFunction()
     {
         // Given, When

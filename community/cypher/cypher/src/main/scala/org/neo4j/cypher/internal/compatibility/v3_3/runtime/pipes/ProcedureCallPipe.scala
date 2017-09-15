@@ -57,10 +57,7 @@ case class ProcedureCallPipe(source: Pipe,
     case PassThroughRow => internalCreateResultsByPassingThrough _
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-
-    rowProcessor(input, state)
-  }
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = rowProcessor(input, state)
 
   private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
