@@ -34,7 +34,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
-import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.shell.impl.AbstractClient;
@@ -42,8 +42,8 @@ import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -52,6 +52,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
@@ -78,7 +79,7 @@ public class StartClientIT extends AbstractShellIT
         StartClient.main( new String[]{"-file", getClass().getResource( "/testshell.txt" ).getFile()} );
 
         // Then
-        assertNodeExists( 0, "foo", "bar" );
+        assertNodeExists( "testshell_foo", "testshell_bar" );
     }
 
     @Test
@@ -91,7 +92,7 @@ public class StartClientIT extends AbstractShellIT
         InputStream realStdin = System.in;
         try
         {
-            System.setIn( new ByteArrayInputStream( "CREATE (n {foo:'bar'});".getBytes() ) );
+            System.setIn( new ByteArrayInputStream( "CREATE (n {stdin_foo:'stdin_bar'});".getBytes() ) );
             StartClient.main( new String[]{"-file", "-"} );
         }
         finally
@@ -100,7 +101,7 @@ public class StartClientIT extends AbstractShellIT
         }
 
         // Then
-        assertNodeExists( 0, "foo", "bar" );
+        assertNodeExists( "stdin_foo", "stdin_bar" );
     }
 
     @Test
@@ -226,27 +227,16 @@ public class StartClientIT extends AbstractShellIT
         }
     }
 
-    private void assertNodeExists( long id, String property, Object value )
+    private void assertNodeExists( String property, Object value )
     {
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( db.getNodeById( id ).getProperty( property ), equalTo( value ) );
+            Result result = db.execute( "MATCH (n {" + property + ": $value}) RETURN count(n) AS res",
+                    singletonMap( "value", value ) );
+
+            long count = (long) single( result ).getOrDefault( "res", 0 );
+            assertEquals( 1, count );
             tx.success();
-        }
-        catch ( NotFoundException e )
-        {
-            System.out.println( "Unable to find either node with id 0 of it's property 'foo'" );
-            e.printStackTrace( System.out );
-
-            System.out.println( "Printing database content:" );
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.getAllNodes().forEach( node ->
-                        System.out.println( "Node [" + node.getId() + "] with props: " + node.getAllProperties() ) );
-                tx.success();
-            }
-
-            throw e;
         }
     }
 
