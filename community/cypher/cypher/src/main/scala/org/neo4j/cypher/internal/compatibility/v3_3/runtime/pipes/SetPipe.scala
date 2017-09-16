@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 case class SetPipe(src: Pipe, setOperation: SetOperation)
-                  (val id: Id = new Id) extends PipeWithSource(src) {
+                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(src) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>

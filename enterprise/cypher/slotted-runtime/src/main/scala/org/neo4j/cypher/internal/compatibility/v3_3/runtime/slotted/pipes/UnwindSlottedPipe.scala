@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 
 case class UnwindSlottedPipe(source: Pipe, collection: Expression, offset: Int, pipeline: PipelineInformation)
-                            (val id: Id = new Id) extends PipeWithSource(source) with ListSupport {
+                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with ListSupport {
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     new UnwindIterator(input, state)
 

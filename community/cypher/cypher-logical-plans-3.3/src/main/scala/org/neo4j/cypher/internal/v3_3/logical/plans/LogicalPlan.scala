@@ -45,33 +45,28 @@ abstract class LogicalPlan
   def solved: PlannerQuery with CardinalityEstimation
   def availableSymbols: Set[IdName]
 
+  /*
+  A id for the logical plan operator, unique inside of the given query tree. These identifiers will be
+  copied to a rewritten version of the logical plan, as long as there is a one-to-one mapping between
+  rewritten plans. In other words - once ids have been assigned, plan rewriting should not collapse multiple
+  operators into one, or split a single one into multiple new ones.
+   */
   def assignedId: LogicalPlanId = _id.getOrElse(throw new InternalException("Plan has not had an id assigned yet"))
+
   def assignIds(): Unit = {
-    if(_id.nonEmpty)
+    if (_id.nonEmpty)
       throw new InternalException("Id has already been assigned")
 
-    val builder = new IdAssigner
-    builder.assignIds()
+    var count = 0
+    val plans = this.findByAllClass[LogicalPlan]
+    plans.foreach { lp =>
+      lp._id = Some(new LogicalPlanId(count))
+      count = count + 1
+    }
     assignedId
   }
 
   private var _id: Option[LogicalPlanId] = None
-
-  private class IdAssigner extends TreeBuilder[Int] {
-    def assignIds() = create(self)
-
-    private var count = 0
-
-    override protected def build(plan: LogicalPlan) = {
-      plan._id = Some(new LogicalPlanId(count))
-      count = count + 1
-      count
-    }
-
-    override protected def build(plan: LogicalPlan, source: Int) = build(plan)
-
-    override protected def build(plan: LogicalPlan, lhs: Int, rhs: Int) = build(plan)
-  }
 
   override def rememberMe(old: AnyRef): Unit = _id = old.asInstanceOf[LogicalPlan]._id
 
@@ -206,6 +201,16 @@ final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: 
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
 final case class ExplicitNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class ExplicitRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage
+
+object LogicalPlanId {
+  // This is probably a safe way of assigning ids, but should only be used in tests
+  private var counter = 0
+  def DEFAULT: LogicalPlanId = {
+    val id = new LogicalPlanId(counter)
+    counter += 1
+    id
+  }
+}
 
 class LogicalPlanId(val underlying: Int) extends AnyVal {
   def ++ : LogicalPlanId = new LogicalPlanId(underlying + 1)

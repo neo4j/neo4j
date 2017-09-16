@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.ValueUtils
@@ -48,7 +48,7 @@ case class VarLengthExpandSlottedPipe(source: Pipe,
                                       nodePredicate: Predicate,
                                       edgePredicate: Predicate,
                                       longsToCopy: Int)
-                                     (val id: Id = new Id) extends PipeWithSource(source) {
+                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
   type LNode = Long
 
   private def varLengthExpand(node: LNode,

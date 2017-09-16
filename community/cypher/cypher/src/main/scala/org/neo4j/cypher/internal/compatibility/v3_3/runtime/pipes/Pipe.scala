@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 /**
   * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -45,10 +45,10 @@ trait Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
 
   // Used by profiling to identify where to report dbhits and rows
-  def id: Id
+  def id: LogicalPlanId
 }
 
-case class SingleRowPipe()(val id: Id = new Id) extends Pipe {
+case class SingleRowPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.createOrGetInitialContext())

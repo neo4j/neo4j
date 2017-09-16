@@ -224,7 +224,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
   private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[_]) = {
     val codeGen = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode)
     val packageName = "foo"
-    implicit val context = new CodeGenContext(SemanticTable(), Map.empty, Map.empty)
+    implicit val context = new CodeGenContext(SemanticTable(), Map.empty)
     val clazz = using(codeGen.generateClass(packageName, "Test")) { body =>
       val fields = Fields(
         closer = body.field(typeRef[TaskCloser], "closer"),

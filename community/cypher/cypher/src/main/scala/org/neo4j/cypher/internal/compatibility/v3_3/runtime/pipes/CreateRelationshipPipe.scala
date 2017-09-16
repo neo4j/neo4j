@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.helpers.ValueUtils
@@ -87,7 +87,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
 case class CreateRelationshipPipe(src: Pipe,
                                   key: String, startNode: String, typ: LazyType, endNode: String,
                                   properties: Option[Expression])
-                                 (val id: Id = new Id)
+                                 (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
   override protected def handleNull(key: String) {
     //do nothing
@@ -96,7 +96,7 @@ case class CreateRelationshipPipe(src: Pipe,
 
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                        properties: Option[Expression])
-                                      (val id: Id = new Id)
+                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
 
   override protected def handleNull(key: String) {

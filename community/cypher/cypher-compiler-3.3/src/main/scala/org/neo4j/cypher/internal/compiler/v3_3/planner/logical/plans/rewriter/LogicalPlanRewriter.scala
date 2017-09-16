@@ -57,6 +57,7 @@ trait LogicalPlanRewriter extends Phase[CompilerContext, LogicalPlanState, Logic
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val rewritten = from.logicalPlan.endoRewrite(instance(context))
+    rewritten.assignIds() // This should be the only place where ids are assigned.
     from.copy(maybeLogicalPlan = Some(rewritten))
   }
 }

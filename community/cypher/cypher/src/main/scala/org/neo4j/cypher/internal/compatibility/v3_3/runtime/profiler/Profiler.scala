@@ -23,8 +23,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
@@ -37,9 +38,9 @@ import scala.collection.mutable
 class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends PipeDecorator {
   outerProfiler =>
 
-  val pageCacheStats: mutable.Map[Id, (Long, Long)] = mutable.Map.empty
-  val dbHitsStats: mutable.Map[Id, ProfilingPipeQueryContext] = mutable.Map.empty
-  val rowStats: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
+  val pageCacheStats: mutable.Map[LogicalPlanId, (Long, Long)] = mutable.Map.empty
+  val dbHitsStats: mutable.Map[LogicalPlanId, ProfilingPipeQueryContext] = mutable.Map.empty
+  val rowStats: mutable.Map[LogicalPlanId, ProfilingIterator] = mutable.Map.empty
   private var parentPipe: Option[Pipe] = None
 
 
@@ -66,7 +67,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     state.withQueryContext(decoratedContext)
   }
 
-  private def updatePageCacheStatistics(pipeId: Id) = {
+  private def updatePageCacheStatistics(pipeId: LogicalPlanId) = {
     val context = dbHitsStats(pipeId)
     val statisticProvider = context.transactionalContext.kernelStatisticProvider
     val currentStat = pageCacheStats(pipeId)
@@ -173,8 +174,9 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 
-class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,
-                        updatePageCacheStatistics:Id => Unit) extends Iterator[ExecutionContext] with Counter {
+class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: LogicalPlanId,
+                        updatePageCacheStatistics: LogicalPlanId => Unit) extends Iterator[ExecutionContext]
+  with Counter {
 
   _count = startValue
 

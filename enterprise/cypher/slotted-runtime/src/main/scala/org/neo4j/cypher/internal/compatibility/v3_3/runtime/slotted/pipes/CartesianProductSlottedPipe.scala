@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 case class CartesianProductSlottedPipe(lhs: Pipe, rhs: Pipe,
                                        lhsLongCount: Int, lhsRefCount: Int,
                                        pipelineInformation: PipelineInformation)
-                                      (val id: Id = new Id) extends Pipe {
+                                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     lhs.createResults(state) flatMap {

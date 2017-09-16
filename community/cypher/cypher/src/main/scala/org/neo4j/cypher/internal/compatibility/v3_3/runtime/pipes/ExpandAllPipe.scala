@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
@@ -34,7 +34,7 @@ case class ExpandAllPipe(source: Pipe,
                          toName: String,
                          dir: SemanticDirection,
                          types: LazyTypes)
-                        (val id: Id = new Id) extends PipeWithSource(source) {
+                        (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {

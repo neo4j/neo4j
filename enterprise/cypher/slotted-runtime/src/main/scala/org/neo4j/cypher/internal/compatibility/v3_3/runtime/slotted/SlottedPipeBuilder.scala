@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ColumnOrder => _, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -41,7 +40,6 @@ import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
-                         idMap: Map[LogicalPlan, Id],
                          monitors: Monitors,
                          pipelines: Map[LogicalPlanId, PipelineInformation],
                          readOnly: Boolean,
@@ -55,7 +53,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     val pipelineInformation = pipelines(plan.assignedId)
 
     plan match {
@@ -93,7 +91,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     val pipeline = pipelines(plan.assignedId)
 
     plan match {
@@ -308,7 +306,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id = idMap.getOrElse(plan, new Id)
+    val id = plan.assignedId
     val pipeline = pipelines(plan.assignedId)
 
     plan match {

@@ -36,13 +36,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(i))
 
     val lhsLP = AllNodesScan(IdName("a"), Set.empty)(2)
-    val lhsPD = PlanDescriptionImpl(new Id, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("a"))
+    val lhsPD = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("a"))
 
-    val rhsPD = PlanDescriptionImpl(new Id, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("b"))
+    val rhsPD = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "AllNodesScan", NoChildren, Seq(EstimatedRows(2)), Set("b"))
     val rhsLP = AllNodesScan(IdName("b"), Set.empty)(2)
 
     val pos = InputPosition(0, 0, 0)
-    val id = new Id
+    val id = LogicalPlanId.DEFAULT
     val modeCombinations = Table(
       "logical plan" -> "expected plan description",
 
@@ -78,15 +78,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
-        val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap, IDPPlannerName)
+        logicalPlan.assignIds()
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName)
 
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {
           withClue("name")(a.name should equal(b.name))
           withClue("arguments")(a.arguments should equal(b.arguments))
           withClue("variables")(a.variables should equal(b.variables))
         }
-        withClue("id")(producedPlanDescription.id should equal(idMap(logicalPlan)))
 
         shouldBeEqual(producedPlanDescription, expectedPlanDescription)
 

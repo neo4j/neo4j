@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.v3_3.logical.plans.ProcedureSignature
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
-  def apply(signature: ProcedureSignature) =
+  def apply(signature: ProcedureSignature): ProcedureCallRowProcessing =
     if (signature.isVoid) PassThroughRow else FlatMapAndAppendToRow
 }
 
@@ -45,7 +45,7 @@ case class ProcedureCallPipe(source: Pipe,
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
                              resultIndices: Seq[(Int, String)])
-                            (val id: Id = new Id)
+                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
 
   extends PipeWithSource(source) {
 

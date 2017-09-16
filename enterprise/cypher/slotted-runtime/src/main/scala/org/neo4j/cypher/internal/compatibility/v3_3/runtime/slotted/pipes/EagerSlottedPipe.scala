@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
-case class EagerSlottedPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: Id = new Id)
+case class EagerSlottedPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

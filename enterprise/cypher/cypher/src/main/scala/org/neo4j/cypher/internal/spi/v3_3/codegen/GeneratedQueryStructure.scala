@@ -34,8 +34,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.javacompat.ResultRecord
@@ -96,7 +97,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   override def generateQuery(className: String,
                              columns: Seq[String],
-                             operatorIds: Map[String, Id],
+                             operatorIds: Map[String, LogicalPlanId],
                              conf: CodeGenConfiguration)
                             (methodStructure: MethodStructure[_] => Unit)
                             (implicit codeGenContext: CodeGenContext): GeneratedQueryStructureResult = {
@@ -141,7 +142,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
     val clazz: Class[_] = execution.loadClass()
     operatorIds.foreach {
-      case (key, id) => setStaticField(clazz, key, id)
+      case (key, id) =>
+        val anyRefId = id.asInstanceOf[AnyRef]
+        setStaticField(clazz, key, anyRefId)
     }
     GeneratedQueryStructureResult(query, sourceSaver.sourceCode, sourceSaver.bytecode)
   }
@@ -183,9 +186,9 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     clazz.generate(Templates.FIELD_NAMES)
   }
 
-  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, Id]) = {
+  private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, LogicalPlanId]) = {
     operatorIds.keys.foreach { opId =>
-      clazz.staticField(typeRef[Id], opId)
+      clazz.staticField(typeRef[LogicalPlanId], opId)
     }
   }
 

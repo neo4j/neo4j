@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.ShortestPath
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{ListValue, PathValue, VirtualValues}
 
@@ -35,7 +35,7 @@ import scala.collection.JavaConverters._
  */
 case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
-                           (val id: Id = new Id)
+                           (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack, disallowSameNode)

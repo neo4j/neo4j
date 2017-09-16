@@ -24,7 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
@@ -37,10 +36,10 @@ class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
                                pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
-  def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])
+  def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
 
-    val topLevelPipe = buildPipe(plan, idMap)
+    val topLevelPipe = buildPipe(plan)
 
     val fingerprint = planContext.statistics match {
       case igs: InstrumentedGraphStatistics =>
@@ -73,12 +72,11 @@ class PipeExecutionPlanBuilder(clock: Clock,
    Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two pipes from the pipe stack to
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
-  private def buildPipe(plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
+  private def buildPipe(plan: LogicalPlan)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
     val pipeBuilder = pipeBuilderFactory(
       monitors = monitors,
-      recurse = p => buildPipe(p, idMap),
+      recurse = p => buildPipe(p),
       readOnly = plan.solved.all(_.queryGraph.readOnly),
-      idMap = idMap,
       expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()
@@ -149,10 +147,10 @@ class PipeExecutionPlanBuilder(clock: Clock,
 
 object CommunityPipeBuilderFactory extends PipeBuilderFactory {
   def apply(monitors: Monitors, recurse: LogicalPlan => Pipe,
-            readOnly: Boolean, idMap: Map[LogicalPlan, Id],
+            readOnly: Boolean,
             expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
-    CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, recursePipes(recurse, planContext))
+    CommunityPipeBuilder(monitors, recurse, readOnly, expressionConverters, recursePipes(recurse, planContext))
   }
 
 }

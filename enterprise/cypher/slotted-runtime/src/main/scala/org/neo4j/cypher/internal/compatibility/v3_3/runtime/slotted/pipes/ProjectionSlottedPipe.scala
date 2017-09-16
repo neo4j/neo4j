@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, RefSlot, Slot}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
 case class ProjectionSlottedPipe(source: Pipe, introducedExpressions: Map[Slot, Expression])
-                                (val id: Id = new Id) extends PipeWithSource(source) {
+                                (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
 
   introducedExpressions.values.foreach(_.registerOwningPipe(this))
 

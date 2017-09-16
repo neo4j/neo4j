@@ -28,25 +28,25 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id], PlannerName) => InternalPlanDescription) {
+object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => InternalPlanDescription) {
 
-  override def apply(input: LogicalPlan, idMap: Map[LogicalPlan, Id],
+  override def apply(input: LogicalPlan,
                      plannerName: PlannerName): InternalPlanDescription = {
     val readOnly = input.solved.readOnly
-    new LogicalPlan2PlanDescription(idMap, readOnly).create(input)
+    new LogicalPlan2PlanDescription(readOnly).create(input)
       .addArgument(Version("CYPHER 3.3"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
   }
 }
 
-case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Boolean)
+case class LogicalPlan2PlanDescription(readOnly: Boolean)
   extends TreeBuilder[InternalPlanDescription] {
 
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
     assert(plan.isLeaf)
 
-    val id = idMap(plan)
+    val id = plan.assignedId
     val variables = plan.availableSymbols.map(_.name)
 
     val result: InternalPlanDescription = plan match {
@@ -120,7 +120,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.isEmpty)
 
-    val id = idMap(plan)
+    val id = plan.assignedId
     val variables = plan.availableSymbols.map(_.name)
     val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
 
@@ -153,17 +153,17 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case _: EmptyResult =>
         PlanDescriptionImpl(id, "EmptyResult", children, Seq.empty, variables)
       case NodeCountFromCountStore(IdName(id), labelName, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeCountFromCountStore", NoChildren,
+        PlanDescriptionImpl(id = plan.assignedId, "NodeCountFromCountStore", NoChildren,
                             Seq(CountNodesExpression(id, labelName.map(l => l.map(_.name)))), variables)
 
       case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "RelationshipCountFromCountStore", NoChildren,
+        PlanDescriptionImpl(id = plan.assignedId, "RelationshipCountFromCountStore", NoChildren,
                             Seq(
                               CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
       case NodeUniqueIndexSeek(IdName(id), label, propKeys, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren,
+        PlanDescriptionImpl(id = plan.assignedId, "NodeUniqueIndexSeek", NoChildren,
                             Seq(Index(label.name, propKeys.map(_.name))), variables)
 
       case _: ErrorPlan =>
@@ -294,7 +294,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.nonEmpty)
 
-    val id = idMap(plan)
+    val id = plan.assignedId
     val variables = plan.availableSymbols.map(_.name)
     val children = TwoChildren(lhs, rhs)
 
@@ -327,7 +327,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)
 
       case row: SingleRow =>
-        SingleRowPlanDescription(id = idMap(plan), Seq.empty, row.argumentIds.map(_.name))
+        SingleRowPlanDescription(id = plan.assignedId, Seq.empty, row.argumentIds.map(_.name))
 
       case LetSelectOrAntiSemiApply(_, _, _, predicate) =>
         PlanDescriptionImpl(id, "LetSelectOrSemiApply", children, Seq(Expression(predicate)), variables)

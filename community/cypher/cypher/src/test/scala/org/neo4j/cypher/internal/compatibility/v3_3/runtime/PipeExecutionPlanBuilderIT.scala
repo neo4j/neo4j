@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.Toke
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
@@ -56,9 +55,10 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors, expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
   }
 
-  def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
+  private def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)
-    planBuilder.build(None, logicalPlan, new FakeIdMap)
+    logicalPlan.assignIds()
+    planBuilder.build(None, logicalPlan)
   }
 
   test("projection only query") {

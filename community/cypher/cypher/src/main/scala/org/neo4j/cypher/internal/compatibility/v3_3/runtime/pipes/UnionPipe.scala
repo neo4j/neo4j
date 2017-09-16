@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 case class UnionPipe(l: Pipe, r: Pipe)
-                    (val id: Id = new Id) extends Pipe {
+                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     l.createResults(state) ++ r.createResults(state)
 }

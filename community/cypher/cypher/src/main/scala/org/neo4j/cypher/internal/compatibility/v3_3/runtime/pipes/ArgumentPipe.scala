@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
-case class ArgumentPipe()(val id: Id = new Id) extends Pipe {
+case class ArgumentPipe()(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
   def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
     Iterator(state.initialContext.get)
 }

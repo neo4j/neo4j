@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import scala.collection.JavaConverters._
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
-                      (val id: Id = new Id)
+                      (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =

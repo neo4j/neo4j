@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.indexQuery
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_3.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QueryExpression}
 import org.neo4j.helpers.ValueUtils.fromNodeProxy
 
 case class NodeIndexSeekPipe(ident: String,
@@ -33,7 +32,7 @@ case class NodeIndexSeekPipe(ident: String,
                              propertyKeys: Seq[PropertyKeyToken],
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek)
-                            (val id: Id = new Id) extends Pipe {
+                            (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   private val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 

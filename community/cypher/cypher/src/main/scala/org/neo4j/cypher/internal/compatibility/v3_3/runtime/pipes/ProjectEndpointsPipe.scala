@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.virtual.VirtualValues.reverse
 import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
@@ -30,7 +30,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
                                 relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
-                               (val id: Id = new Id) extends PipeWithSource(source)
+                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source)
   with ListSupport  {
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 

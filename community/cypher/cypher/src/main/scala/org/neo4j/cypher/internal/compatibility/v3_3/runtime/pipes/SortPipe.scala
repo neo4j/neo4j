@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
-                   (val id: Id = new Id)
+                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 

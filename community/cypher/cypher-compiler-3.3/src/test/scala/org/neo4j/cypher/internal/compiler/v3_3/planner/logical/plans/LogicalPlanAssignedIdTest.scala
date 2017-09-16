@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, Rewriter, topDown}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Apply, Projection, SingleRow}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("assignedId survives rewriting") {
@@ -63,13 +65,13 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
 
     applyAll.assignIds()
 
-    applyAll.assignedId.underlying should equal(6)
-    applyA.assignedId.underlying should equal(5)
-    sr1A.assignedId.underlying should equal(4)
+    applyAll.assignedId.underlying should equal(0)
+    applyA.assignedId.underlying should equal(1)
+    sr1A.assignedId.underlying should equal(2)
     sr2A.assignedId.underlying should equal(3)
-    applyB.assignedId.underlying should equal(2)
-    sr1B.assignedId.underlying should equal(1)
-    sr2B.assignedId.underlying should equal(0)
+    applyB.assignedId.underlying should equal(4)
+    sr1B.assignedId.underlying should equal(5)
+    sr2B.assignedId.underlying should equal(6)
   }
 
   test("cant assign ids twice") {
@@ -77,6 +79,16 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
     val pr = Projection(sr1, Map.empty)(solved)
     pr.assignIds()
     intercept[CypherException](pr.assignIds())
+  }
+
+  test("can assign inside expressions as well") {
+    val singleRow = SingleRow()(solved)
+    val inner = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val filter = Selection(Seq(NestedPlanExpression(inner, literalInt(42))(pos)), singleRow)(solved)
+
+    filter.assignIds()
+
+    val x = inner.assignedId // should not fail
   }
 
 }

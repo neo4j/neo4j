@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 case class OptionalSlottedPipe(source: Pipe, nullableOffsets: Seq[Int],
                                pipelineInformation: PipelineInformation)
-                              (val id: Id = new Id)
+                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(source) with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {

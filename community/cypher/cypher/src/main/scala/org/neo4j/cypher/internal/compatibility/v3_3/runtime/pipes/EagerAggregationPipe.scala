@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
 
@@ -33,7 +33,7 @@ import scala.collection.mutable.{Map => MutableMap}
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
-                               (val id: Id = new Id) extends PipeWithSource(source) {
+                               (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
   keyExpressions.values.foreach(_.registerOwningPipe(this))

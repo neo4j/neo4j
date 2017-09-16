@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 
-  private val ID = new Id
+  private val ID = LogicalPlanId.DEFAULT
 
   test("flatten behaves like expected for plan with two children") {
     val child1 = PlanDescriptionImpl(ID, "child1", NoChildren, Seq.empty, Set())

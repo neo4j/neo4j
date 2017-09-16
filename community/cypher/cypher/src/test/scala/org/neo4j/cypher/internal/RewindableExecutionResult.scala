@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.v3_3.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
@@ -228,7 +228,7 @@ object RewindableExecutionResult {
         case v2_3.planDescription.InternalPlanDescription.Arguments.SourceCode(className, sourceCode) =>
           Arguments.SourceCode(className, sourceCode)
       }
-      PlanDescriptionImpl(new Id, name, children, arguments, planDescription.identifiers)
+      PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.identifiers)
     }
 
 
@@ -352,7 +352,7 @@ object RewindableExecutionResult {
           val procName = QualifiedName(procedureName.namespace, procedureName.name)
           Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
       }
-      PlanDescriptionImpl(new Id, name, children, arguments, planDescription.variables)
+      PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
     }
 
     override def close(): Unit = inner.close()
@@ -490,7 +490,7 @@ object RewindableExecutionResult {
           val procName = QualifiedName(procedureName.namespace, procedureName.name)
           Arguments.Signature(procName, Seq.empty, results.map(pair => (pair._1, lift(pair._2))))
       }
-      PlanDescriptionImpl(new Id, name, children, arguments, planDescription.variables)
+      PlanDescriptionImpl(LogicalPlanId.DEFAULT, name, children, arguments, planDescription.variables)
     }
 
     override def close(): Unit = inner.close()

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
@@ -34,7 +34,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
                                           min: Int,
                                           max: Int,
                                           filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
-                                         (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
+                                         (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {
   self =>
 
   assert(min <= max)

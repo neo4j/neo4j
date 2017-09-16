@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
@@ -85,7 +85,7 @@ abstract class BaseCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineIn
 
 case class CreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
                                  labels: Seq[LazyLabel], properties: Option[Expression])
-                                (val id: Id = new Id)
+                                (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends BaseCreateNodeSlottedPipe(source, ident, pipelineInformation, labels, properties) {
 
   override protected def handleNull(key: String) {
@@ -95,7 +95,7 @@ case class CreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformatio
 
 case class MergeCreateNodeSlottedPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
                                       labels: Seq[LazyLabel], properties: Option[Expression])
-                                     (val id: Id = new Id)
+                                     (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends BaseCreateNodeSlottedPipe(source, ident, pipelineInformation, labels, properties) {
 
   override protected def handleNull(key: String) {

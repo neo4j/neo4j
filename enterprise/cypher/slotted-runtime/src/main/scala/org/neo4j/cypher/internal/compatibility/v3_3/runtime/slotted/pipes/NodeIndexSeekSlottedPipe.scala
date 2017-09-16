@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.indexQuery
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_3.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QueryExpression}
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,
@@ -35,7 +34,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
                                     valueExpr: QueryExpression[Expression],
                                     indexMode: IndexSeekMode = IndexSeek,
                                     pipelineInformation: PipelineInformation)
-                                   (val id: Id = new Id) extends Pipe {
+                                   (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
