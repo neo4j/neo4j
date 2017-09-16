@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{PatternExpressionSolver, aggregation, projection, sortSkipAndLimit}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
@@ -46,11 +46,13 @@ case object PlanEventHorizon
         if (queryProjection.projections.isEmpty && query.tail.isEmpty)
           context.logicalPlanProducer.planEmptyProjection(plan)
         else
-          projection(sortedAndLimited, queryProjection.projections, distinct = false)
+          projection(sortedAndLimited, queryProjection.projections)
 
       case queryProjection: DistinctQueryProjection =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
-        projection(sortedAndLimited, queryProjection.projections, distinct = true)
+        val projections = queryProjection.projections
+        val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, projections)
+        val distinctPlan = context.logicalPlanProducer.planDistinct(inner, projectionsMap, projections)
+        sortSkipAndLimit(distinctPlan, query)
 
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression)

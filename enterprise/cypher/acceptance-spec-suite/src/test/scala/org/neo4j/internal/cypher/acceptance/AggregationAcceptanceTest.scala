@@ -131,4 +131,54 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val result = executeWith(Configs.AllExceptSlotted, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
     result.toList should equal(List(Map("count(r)" -> 2)))
   }
+
+  test("should support DISTINCT followed by LIMIT and SKIP") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val query = "MATCH (a) RETURN DISTINCT a ORDER BY a.prop SKIP 1 LIMIT 1"
+
+    val result = executeWith(Configs.All, query)
+
+    result.toList should equal(List(Map("a" -> node2)))
+  }
+
+  test("should support DISTINCT projection followed by LIMIT and SKIP") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val query = "MATCH (a) RETURN DISTINCT a.prop ORDER BY a.prop SKIP 1 LIMIT 1"
+
+    val result = executeWith(Configs.All, query)
+
+    result.toList should equal(List(Map("a.prop" -> 2)))
+  }
+
+  test("should support DISTINCT projection followed by SKIP") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val query = "MATCH (a) RETURN DISTINCT a.prop ORDER BY a.prop SKIP 1"
+
+    val result = executeWith(Configs.All, query)
+
+    result.toList should equal(List(Map("a.prop" -> 2)))
+  }
+
+  test("should support DISTINCT projection followed by LIMIT") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val query = "MATCH (a) RETURN DISTINCT a.prop ORDER BY a.prop LIMIT 1"
+
+    val result = executeWith(Configs.All, query)
+
+    result.toList should equal(List(Map("a.prop" -> 1)))
+  }
+
+  test("should support DISTINCT followed by LIMIT and SKIP with no ORDER BY") {
+    val node1 = createNode(Map("prop" -> 1))
+    val node2 = createNode(Map("prop" -> 2))
+    val query = "MATCH (a) WITH DISTINCT a SKIP 1 LIMIT 1 RETURN count(a)"
+
+    val result = executeWith(Configs.Interpreted, query)
+
+    result.toList should equal(List(Map("count(a)" -> 1)))
+  }
 }
