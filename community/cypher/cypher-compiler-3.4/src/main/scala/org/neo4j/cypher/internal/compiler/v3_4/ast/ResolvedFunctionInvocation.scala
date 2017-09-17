@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.{CoerceTo, Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v3_4.functions.UserDefinedFunctionInvocation
 
 object ResolvedFunctionInvocation {
 

@@ -19,24 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Variable("a")(pos)), Seq.empty, None)_
-  val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Variable("b")(pos)), Seq.empty, None)_
-  val unnamedVariable: ast.Variable = ast.Variable("  UNNAMED1")_
-  val anonymousNode: ast.NodePattern = ast.NodePattern(Some(unnamedVariable), Seq.empty, None)_
-  val rRel: ast.RelationshipPattern = ast.RelationshipPattern(Some(ast.Variable("r")(pos)), Seq.empty, None, None, SemanticDirection.OUTGOING)_
-  val TYP: ast.RelTypeName = ast.RelTypeName("TYP")_
+  val aNode: NodePattern = NodePattern(Some(Variable("a")(pos)), Seq.empty, None)_
+  val bNode: NodePattern = NodePattern(Some(Variable("b")(pos)), Seq.empty, None)_
+  val unnamedVariable: Variable = Variable("  UNNAMED1")_
+  val anonymousNode: NodePattern = NodePattern(Some(unnamedVariable), Seq.empty, None)_
+  val rRel: RelationshipPattern = RelationshipPattern(Some(Variable("r")(pos)), Seq.empty, None, None, SemanticDirection.OUTGOING)_
+  val TYP: RelTypeName = RelTypeName("TYP")_
 
-  val rRelWithType: ast.RelationshipPattern = rRel.copy(types = Seq(TYP)) _
+  val rRelWithType: RelationshipPattern = rRel.copy(types = Seq(TYP)) _
   val planRel = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
 
@@ -87,7 +85,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("(a)-[r]->(b:Label)") {
-    val labelName: ast.LabelName = ast.LabelName("Label")_
+    val labelName: LabelName = LabelName("Label")_
     // Given
     val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName))(pos))
 
@@ -95,13 +93,13 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val qg = patternExpression.asQueryGraph
 
     // Then
-    val predicate: ast.HasLabels = ast.HasLabels(ast.Variable("b")(pos), Seq(labelName))_
+    val predicate: HasLabels = HasLabels(Variable("b")(pos), Seq(labelName))_
     qg.selections should equal(Selections(Set(Predicate(Set(IdName("b")), predicate))))
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
   }
 
-  def createPatternExpression(n1: ast.NodePattern, r: ast.RelationshipPattern, n2: ast.NodePattern): ast.PatternExpression =
-    ast.PatternExpression(ast.RelationshipsPattern(ast.RelationshipChain(n1, r, n2) _) _)
+  def createPatternExpression(n1: NodePattern, r: RelationshipPattern, n2: NodePattern): PatternExpression =
+    PatternExpression(RelationshipsPattern(RelationshipChain(n1, r, n2) _) _)
 }

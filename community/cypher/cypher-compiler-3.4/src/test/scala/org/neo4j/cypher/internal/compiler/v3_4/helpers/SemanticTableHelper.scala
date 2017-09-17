@@ -25,7 +25,7 @@ object SemanticTableHelper {
   implicit class RichSemanticTable(table: SemanticTable) {
     def transplantResolutionOnto(target: SemanticTable) =
       target.copy(
-        resolvedLabelIds = table.resolvedLabelIds,
+        resolvedLabelIds = table.resolvedLabelNames,
         resolvedPropertyKeyNames = table.resolvedPropertyKeyNames,
         resolvedRelTypeNames = table.resolvedRelTypeNames
       )

@@ -18,7 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticCheckable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckable, SemanticExpressionCheck}
+import org.neo4j.cypher.internal.v3_4.expressions.Variable
 
 final case class GraphRef(name: Variable)(val position: InputPosition)
   extends ASTNode with SemanticCheckable {

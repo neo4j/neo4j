@@ -294,6 +294,12 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-util-3.3</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- neo4j-cypher test -->
 
     <dependency>

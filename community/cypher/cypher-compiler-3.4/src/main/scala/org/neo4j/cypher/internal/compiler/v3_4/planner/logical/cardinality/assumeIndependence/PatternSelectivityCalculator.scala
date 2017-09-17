@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Selections, _}
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, RelTypeName, SemanticDirection}
 
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -151,7 +151,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     else
       input.toIndexedSeq.map {
         case label =>
-          label.id.map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
+          semanticTable.id(label).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       }
 
 
@@ -161,6 +161,6 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     else
       input.toIndexedSeq.map {
         case rel =>
-          rel.id.map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
+          semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       }
 }

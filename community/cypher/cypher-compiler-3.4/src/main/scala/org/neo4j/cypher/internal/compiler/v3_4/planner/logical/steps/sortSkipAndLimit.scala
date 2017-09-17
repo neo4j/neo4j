@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, DescSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
@@ -48,15 +48,15 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
     case _ => plan
   }
 
-  private def columnOrder(in: ast.SortItem): ColumnOrder = in match {
-    case ast.AscSortItem(ast.Variable(key)) => Ascending(IdName(key))
-    case ast.DescSortItem(ast.Variable(key)) => Descending(IdName(key))
+  private def columnOrder(in: SortItem): ColumnOrder = in match {
+    case AscSortItem(Variable(key)) => Ascending(IdName(key))
+    case DescSortItem(Variable(key)) => Descending(IdName(key))
     case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 
-  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
+  private def addSkip(s: Option[Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
     s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x))
 
-  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
+  private def addLimit(s: Option[Expression], plan: LogicalPlan)(implicit context: LogicalPlanningContext) =
     s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x))
 }

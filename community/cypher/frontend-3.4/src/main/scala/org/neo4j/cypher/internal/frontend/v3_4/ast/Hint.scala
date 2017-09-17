@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticCheckable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait Hint extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variables: NonEmptyList[Variable]
@@ -56,14 +56,14 @@ case class UsingIndexHint(
                            properties: Seq[PropertyKeyName]
                          )(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureVariableDefined chain expectType(CTNode.covariant, variable)
+  def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
   override def toString: String = s"USING INDEX ${variable.name}:${label.name}(${properties.map(_.name).mkString(", ")})"
 }
 
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition) extends UsingHint with NodeHint {
   def variables = NonEmptyList(variable)
-  def semanticCheck = variable.ensureVariableDefined chain expectType(CTNode.covariant, variable)
+  def semanticCheck = ensureDefined(variable) chain expectType(CTNode.covariant, variable)
 
   override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
 }
@@ -77,20 +77,20 @@ object UsingJoinHint {
 
 case class UsingJoinHint(variables: NonEmptyList[Variable])(val position: InputPosition) extends UsingHint with NodeHint {
   def semanticCheck =
-    variables.map { variable => variable.ensureVariableDefined chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
+    variables.map { variable => ensureDefined(variable) chain expectType(CTNode.covariant, variable) }.reduceLeft(_ chain _)
 
   override def toString: String = s"USING JOIN ON ${variables.map(_.name).toIndexedSeq.mkString(", ")}"
 }
 
 // start items
 
-sealed trait StartItem extends ASTNode with SemanticCheckable {
+sealed trait StartItem extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   def variable: Variable
   def name = variable.name
 }
 
 sealed trait NodeStartItem extends StartItem {
-  def semanticCheck = variable.declareVariable(CTNode)
+  def semanticCheck = declareVariable(variable, CTNode)
 }
 
 case class NodeByIdentifiedIndex(variable: Variable, index: String, key: String, value: Expression)(val position: InputPosition)
@@ -103,7 +103,7 @@ case class NodeByParameter(variable: Variable, parameter: Parameter)(val positio
 case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
-  def semanticCheck = variable.declareVariable(CTRelationship)
+  def semanticCheck = declareVariable(variable, CTRelationship)
 }
 
 case class RelationshipByIds(variable: Variable, ids: Seq[UnsignedIntegerLiteral])(val position: InputPosition) extends RelationshipStartItem

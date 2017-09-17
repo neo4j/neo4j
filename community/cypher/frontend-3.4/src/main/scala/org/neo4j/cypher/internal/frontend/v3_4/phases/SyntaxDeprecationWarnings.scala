@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.phases
 
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.replaceAliasedFunctionInvocations.aliases
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{FunctionInvocation, FunctionName, RelationshipPattern, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{DeprecatedFunctionNotification, DeprecatedRelTypeSeparatorNotification, DeprecatedVarLengthBindingNotification, InternalNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName, RelationshipPattern}
 
 object SyntaxDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
   override def visit(state: BaseState, context: BaseContext): Unit = {

@@ -19,8 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 

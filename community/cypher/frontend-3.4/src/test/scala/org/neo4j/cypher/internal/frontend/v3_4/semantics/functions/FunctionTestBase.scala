@@ -17,11 +17,11 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics.functions
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticExpressionCheck, SemanticFunSuite, SemanticState}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName}
 
 abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
 
@@ -39,11 +39,11 @@ abstract class FunctionTestBase(funcName: String) extends SemanticFunSuite {
     result.errors.head.msg should equal(message)
   }
 
-  protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.FunctionInvocation) = {
+  protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, FunctionInvocation) = {
     val arguments = argumentTypes.map(DummyExpression(_))
 
-    val invocation = ast.FunctionInvocation(
-      ast.FunctionName(funcName)(DummyPosition(6)),
+    val invocation = FunctionInvocation(
+      FunctionName(funcName)(DummyPosition(6)),
       distinct = false,
       arguments
     )(DummyPosition(5))

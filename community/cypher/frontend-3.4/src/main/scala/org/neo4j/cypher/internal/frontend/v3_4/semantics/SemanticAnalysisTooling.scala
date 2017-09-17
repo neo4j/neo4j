@@ -17,24 +17,32 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{DefaultTypeMismatchMessageGenerator, SemanticContext}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
+import org.neo4j.cypher.internal.apa.v3_4.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.{DefaultTypeMismatchMessageGenerator, SemanticContext}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 /**
   * This class holds methods for performing semantic analysis.
   */
 trait SemanticAnalysisTooling {
 
-  def semanticCheckFold[Exp <: Expression](
-                     traversable: Traversable[Exp]
+  def semanticCheckFold[A](
+                     traversable: Traversable[A]
                    )(
-                    f:Exp => SemanticCheck
+                    f:A => SemanticCheck
   ): SemanticCheck =
     state => traversable.foldLeft(SemanticCheckResult.success(state)){
-      (r1:SemanticCheckResult, o:Exp) => {
+      (r1:SemanticCheckResult, o:A) => {
         val r2 = f(o)(r1.state)
+        SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
+      }
+    }
+
+  def semanticCheck[A <: SemanticCheckable](traversable: TraversableOnce[A]): SemanticCheck =
+    state => traversable.foldLeft(SemanticCheckResult.success(state)){
+      (r1:SemanticCheckResult, o:A) => {
+        val r2 = o.semanticCheck(r1.state)
         SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
       }
     }
@@ -162,11 +170,6 @@ trait SemanticAnalysisTooling {
   def ensureDefined(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).ensureVariableDefined(v)
 
-  def ensureGraphDefined(v:Variable): SemanticCheck = {
-    val ensured = (_: SemanticState).ensureGraphDefined(v)
-    ensured chain expectType(CTGraphRef.covariant, v)
-  }
-
   def declareVariable(v:Variable, possibleTypes: TypeSpec): (SemanticState) => Either[SemanticError, SemanticState] =
     (_: SemanticState).declareVariable(v, possibleTypes)
 
@@ -176,6 +179,26 @@ trait SemanticAnalysisTooling {
                        positions: Set[InputPosition] = Set.empty
                      ): (SemanticState) => Either[SemanticError, SemanticState] =
     (s: SemanticState) => s.declareVariable(v, typeGen(s), positions)
+
+  def implicitVariable(v:Variable, possibleType: CypherType): (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).implicitVariable(v, possibleType)
+
+  def declareGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).declareGraph(v)
+
+  def declareGraphMarkedAsGenerated(v:Variable): SemanticCheck = {
+    val declare = (_: SemanticState).declareGraph(v)
+    val mark = (_: SemanticState).localMarkAsGenerated(v)
+    declare chain mark
+  }
+
+  def implicitGraph(v:Variable): (SemanticState) => Either[SemanticError, SemanticState] =
+    (_: SemanticState).implicitGraph(v)
+
+  def ensureGraphDefined(v:Variable): SemanticCheck = {
+    val ensured = (_: SemanticState).ensureGraphDefined(v)
+    ensured chain expectType(CTGraphRef.covariant, v)
+  }
 
   def requireMultigraphSupport(msg: String, position: InputPosition): SemanticCheck =
     s => {
@@ -189,14 +212,6 @@ trait SemanticAnalysisTooling {
 
   def error(msg: String, position: InputPosition)(state: SemanticState): SemanticCheckResult =
     SemanticCheckResult(state, Vector(SemanticError(msg, position)))
-
-  def semanticCheck[A <: SemanticCheckable](traversable: TraversableOnce[A]): SemanticCheck =
-    state => traversable.foldLeft(SemanticCheckResult.success(state)){
-      (r1:SemanticCheckResult, o:A) => {
-        val r2 = o.semanticCheck(r1.state)
-        SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
-      }
-    }
 
   def possibleTypes(expression: Expression) : TypeGenerator =
     types(expression)(_).unwrapLists

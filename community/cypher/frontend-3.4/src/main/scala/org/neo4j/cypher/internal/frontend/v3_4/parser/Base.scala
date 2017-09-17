@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException, SyntaxException}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.expressions.{Namespace => ASTNamespace}
 import org.parboiled.Context
 import org.parboiled.errors.{InvalidInputError, ParseError}
 import org.parboiled.scala._
@@ -109,8 +109,8 @@ trait Base extends Parser {
     ) memoMismatches) ~~> (_.reduce(_ + '`' + _))
   }
 
-  def Namespace: Rule1[ast.Namespace] = rule("namespace of a procedure") {
-    zeroOrMore(SymbolicNameString ~ ".") ~~>> (ast.Namespace(_))
+  def Namespace: Rule1[ASTNamespace] = rule("namespace of a procedure") {
+    zeroOrMore(SymbolicNameString ~ ".") ~~>> (ASTNamespace(_))
   }
 
   def parseOrThrow[T](input: String, initialOffset: Option[InputPosition], rule: Rule1[Seq[T]]): T = {

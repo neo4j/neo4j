@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
 
 object SemanticCheckResult {
   val success: SemanticCheck = SemanticCheckResult(_, Vector())

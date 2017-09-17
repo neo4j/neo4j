@@ -32,12 +32,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Compl
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.apa.v3_4.symbols
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_4.codegen.{GeneratedMethodStructure, Methods, _}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager

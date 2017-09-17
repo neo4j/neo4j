@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{DummyExpression, Expression}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expression) extends SemanticFunSuite {
 
@@ -34,7 +34,7 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
     result.errors.head.msg should equal(message)
   }
 
-  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec): (SemanticCheckResult, ast.Expression) = {
+  protected def evaluateWithTypes(lhsTypes: TypeSpec, rhsTypes: TypeSpec): (SemanticCheckResult, Expression) = {
     val lhs = DummyExpression(lhsTypes)
     val rhs = DummyExpression(rhsTypes)
 

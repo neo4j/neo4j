@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.LabelName
 import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 case class LazyLabel(name: String) {
   private var id: Option[LabelId] = None
@@ -48,7 +48,7 @@ case class LazyLabel(name: String) {
   // yuck! this is only used by tests...
   def id(table: SemanticTable): Option[LabelId] = id match {
     case None => {
-      id = table.resolvedLabelIds.get(name)
+      id = table.resolvedLabelNames.get(name)
       id
     }
     case x => x
@@ -58,7 +58,7 @@ case class LazyLabel(name: String) {
 object LazyLabel {
   def apply(name: LabelName)(implicit table: SemanticTable): LazyLabel = {
     val label = new LazyLabel(name.name)
-    label.id = name.id
+    label.id = table.id(name)
     label
   }
 }

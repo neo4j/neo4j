@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.aggregation.MinFunction
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 
 case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new MinFunction(anInner)

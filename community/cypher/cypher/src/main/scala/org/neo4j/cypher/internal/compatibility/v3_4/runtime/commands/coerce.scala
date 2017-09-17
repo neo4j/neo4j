@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
 import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{IsList, IsMap}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.values._
 import org.neo4j.values.storable._

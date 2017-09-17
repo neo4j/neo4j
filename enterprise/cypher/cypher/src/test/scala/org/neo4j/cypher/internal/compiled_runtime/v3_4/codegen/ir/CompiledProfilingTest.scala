@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.ir
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ProfileMode
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
@@ -31,12 +30,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Provid
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.KernelStatisticProvider
-import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_4.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical.plans
+import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 import org.neo4j.kernel.api._

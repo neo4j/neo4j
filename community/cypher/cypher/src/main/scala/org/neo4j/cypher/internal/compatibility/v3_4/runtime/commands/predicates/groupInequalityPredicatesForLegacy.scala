@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates
 
+import org.neo4j.cypher.internal.apa.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Property, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 
 // This transforms
 //

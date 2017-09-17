@@ -24,12 +24,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, VisitorPhase}
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, Property, PropertyKeyName, RelTypeName}
 
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
     val table = value.semanticTable
-    def isEmptyLabel(label: String) = !table.resolvedLabelIds.contains(label)
+    def isEmptyLabel(label: String) = !table.resolvedLabelNames.contains(label)
     def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 

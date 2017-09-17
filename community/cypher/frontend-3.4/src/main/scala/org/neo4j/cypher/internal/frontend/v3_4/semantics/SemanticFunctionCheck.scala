@@ -16,12 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.LengthOnNonPathNotification
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTBoolean, CTList, CTPath, CTString}
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions._
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
@@ -38,7 +38,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case Reduce =>
         error(s"${Reduce.name}(...) requires '| expression' (an accumulation expression)", invocation.position)
 
-      case f:ast.Function =>
+      case f:Function =>
         when(invocation.distinct) {
           error(s"Invalid use of DISTINCT with function '${f.name}'", invocation.position)
         } chain SemanticExpressionCheck.check(ctx, invocation.arguments) chain semanticCheck(ctx, invocation)
@@ -61,8 +61,8 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         checkArgs(invocation, 1) ifOkChain {
           expectType(CTAny.covariant, invocation.arguments.head) chain
             (invocation.arguments.head match {
-              case _: ast.Property => None
-              case _: ast.PatternExpression => None
+              case _: Property => None
+              case _: PatternExpression => None
               case _: ContainerIndex => None
               case e =>
                 Some(SemanticError(s"Argument to ${Exists.name}(...) is not a property or pattern", e.position, invocation.position))
@@ -76,7 +76,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         }
 
       case Last =>
-        def possibleTypes(expression: ast.Expression) : TypeGenerator = s =>
+        def possibleTypes(expression: Expression) : TypeGenerator = s =>
           (types(expression)(s) constrain CTList(CTAny)).unwrapLists
 
         checkArgs(invocation, 1) ifOkChain {
@@ -149,16 +149,16 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       checkMaxArgs(invocation, f.signatureLengths.max) chain
       checkTypes(invocation, f.signatures)
 
-  protected def checkArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkArgs(invocation: FunctionInvocation, n: Int): Option[SemanticError] =
     Vector(checkMinArgs(invocation, n), checkMaxArgs(invocation, n)).flatten.headOption
 
-  protected def checkMaxArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkMaxArgs(invocation: FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length > n)
       Some(SemanticError(s"Too many parameters for function '${invocation.function.name}'", invocation.position))
     else
       None
 
-  protected def checkMinArgs(invocation: ast.FunctionInvocation, n: Int): Option[SemanticError] =
+  protected def checkMinArgs(invocation: FunctionInvocation, n: Int): Option[SemanticError] =
     if (invocation.arguments.length < n)
       Some(SemanticError(s"Insufficient parameters for function '${invocation.function.name}'", invocation.position))
     else

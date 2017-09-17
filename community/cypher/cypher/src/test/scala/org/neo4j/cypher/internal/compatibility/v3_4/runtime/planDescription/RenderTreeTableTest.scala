@@ -22,12 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 import java.util.Locale
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Equals, FunctionInvocation, FunctionName, HasLabels, Not, Property, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlanId, SingleRow}
 import org.scalatest.BeforeAndAfterAll
 
@@ -421,7 +419,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val arguments = Seq(
       Rows(42),
       DbHits(33),
-      Expression(HasLabels(Variable("x")(pos), Seq(ast.LabelName("Artist")(pos)))(pos)),
+      Expression(HasLabels(Variable("x")(pos), Seq(ASTLabelName("Artist")(pos)))(pos)),
       EstimatedRows(1))
 
     val plan = PlanDescriptionImpl(LogicalPlanId.DEFAULT, "NAME", NoChildren, arguments, Set("n"))

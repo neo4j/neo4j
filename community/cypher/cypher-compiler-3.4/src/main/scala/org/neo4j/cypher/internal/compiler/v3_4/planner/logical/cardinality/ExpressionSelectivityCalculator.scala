@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v3_4.{IndexDescriptor, PrefixRange}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, Selections, Selectivity}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
@@ -40,7 +40,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label
     case HasLabels(_, label :: Nil) =>
-      calculateSelectivityForLabel(label.id)
+      calculateSelectivityForLabel(semanticTable.id(label))
 
     // WHERE false
     case False() =>
@@ -134,7 +134,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val labels = selections.labelsOnNode(IdName(variable))
     val indexSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
-        (labelName.id, propertyKey.id) match {
+        (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
             val descriptor = IndexDescriptor(labelId, propertyKeyId)
             val selectivities: Option[Selectivity] = stats.indexSelectivity(descriptor)
@@ -207,7 +207,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val labels = selections.labelsOnNode(IdName(variable))
     val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap {
       labelName =>
-        (labelName.id, propertyKey.id) match {
+        (semanticTable.id(labelName), semanticTable.id(propertyKey)) match {
           case (Some(labelId), Some(propertyKeyId)) =>
             val descriptor = IndexDescriptor(labelId, propertyKeyId)
             val selectivity: Option[Selectivity] = stats.indexPropertyExistsSelectivity(descriptor)

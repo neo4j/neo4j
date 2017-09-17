@@ -48,7 +48,7 @@ object DbStructureLogicalPlanningConfiguration {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
         resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
-        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
+        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelNames.put(keyName, LabelId(keyId)) }
         resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
         table
       }

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.ir.v3_4
 
 import org.neo4j.cypher.internal.apa.v3_4.InternalException
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Hint, LabelName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Hint
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, Variable}
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce

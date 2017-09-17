@@ -17,13 +17,12 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Property, PropertyKeyName}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.expressions.{ContainerIndex, Property, PropertyKeyName, StringLiteral}
 
 case object replaceLiteralDynamicPropertyLookups extends Rewriter {
 
   private val instance = bottomUp(Rewriter.lift {
-    case index @ ast.ContainerIndex(expr, lit: ast.StringLiteral) =>
+    case index @ ContainerIndex(expr, lit: StringLiteral) =>
       Property(expr, PropertyKeyName(lit.value)(lit.position))(index.position)
   })
 

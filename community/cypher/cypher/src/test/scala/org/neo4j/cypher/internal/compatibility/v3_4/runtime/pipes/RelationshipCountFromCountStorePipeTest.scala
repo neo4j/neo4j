@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.NameId._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, LabelName, RelTypeName}
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.NameId._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, RelTypeId}
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, RelTypeName}
 import org.neo4j.values.storable.Values.longValue
 
 class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -54,7 +55,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
   test("should return a count for relationships with a type and start label") {
     implicit val table = new SemanticTable()
     table.resolvedRelTypeNames.put("X", RelTypeId(22))
-    table.resolvedLabelIds.put("A", LabelId(12))
+    table.resolvedLabelNames.put("A", LabelId(12))
 
     val pipe = RelationshipCountFromCountStorePipe("count(r)", Some(LazyLabel(LabelName("A") _)), LazyTypes(Seq(RelTypeName("X")(pos))), None)()
 

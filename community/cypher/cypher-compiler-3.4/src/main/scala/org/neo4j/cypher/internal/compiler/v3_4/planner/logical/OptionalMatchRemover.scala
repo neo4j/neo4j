@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
 import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, LogicalPlanState}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, FunctionInvocation, _}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
-import org.neo4j.cypher.internal.ir.v3_4.{RegularPlannerQuery, UnionQuery, _}
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

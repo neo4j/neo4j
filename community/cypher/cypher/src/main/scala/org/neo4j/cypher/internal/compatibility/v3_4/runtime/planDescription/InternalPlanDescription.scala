@@ -24,10 +24,10 @@ import java.util
 import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
+import org.neo4j.cypher.internal.apa.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 

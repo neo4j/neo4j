@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.phases
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.rewriters.{IfNoParameter, LiteralExtraction}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 
 object CompilationPhases {

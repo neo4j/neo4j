@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
 import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.Exists
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions.Exists
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
@@ -145,9 +143,9 @@ object PatternExpressionSolver {
 
     def createPathExpression(pattern: PatternExpression): PathExpression = {
       val pos = pattern.position
-      val path = ast.EveryPath(pattern.pattern.element)
+      val path = EveryPath(pattern.pattern.element)
       val step: PathStep = pathStepBuilder(path)
-      ast.PathExpression(step)(pos)
+      PathExpression(step)(pos)
     }
 
     ListSubQueryExpressionSolver[PatternExpression](

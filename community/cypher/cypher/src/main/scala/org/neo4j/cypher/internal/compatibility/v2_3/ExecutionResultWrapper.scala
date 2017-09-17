@@ -36,6 +36,8 @@ import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.frontend.{v2_3, v3_4}
+import org.neo4j.cypher.internal.v3_4.expressions
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
@@ -155,9 +157,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, varLength) =>
       val dir3_3 = direction match {
-        case INCOMING => v3_4.semantics.SemanticDirection.INCOMING
-        case OUTGOING => v3_4.semantics.SemanticDirection.OUTGOING
-        case BOTH => v3_4.semantics.SemanticDirection.BOTH
+        case INCOMING => SemanticDirection.INCOMING
+        case OUTGOING => expressions.SemanticDirection.OUTGOING
+        case BOTH => expressions.SemanticDirection.BOTH
       }
       InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
 

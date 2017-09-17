@@ -31,7 +31,7 @@ import cypher.feature.parser.SideEffects.Values
 import cypher.feature.parser._
 import cypher.feature.parser.matchers.ResultWrapper
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.apa.v3_4.symbols.{CypherType, _}
 import org.neo4j.graphdb.factory.{EnterpriseGraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.api.KernelAPI

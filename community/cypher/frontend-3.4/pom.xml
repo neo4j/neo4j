@@ -35,6 +35,21 @@
 
   <build>
     <plugins>
+
+      <plugin>
+        <groupId>net.alchim31.maven</groupId>
+        <artifactId>scala-maven-plugin</artifactId>
+        <configuration>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+          <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+            <arg>-Xlint</arg>
+          </args>
+        </configuration>
+      </plugin>
+
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
@@ -74,6 +89,7 @@
           </properties>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
 
@@ -91,6 +107,12 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-expression-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-util-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
@@ -102,11 +124,13 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.scala-lang</groupId>
       <artifactId>scala-reflect</artifactId>
+      <groupId>org.scala-lang</groupId>
+      <version>${scala.version}</version>
     </dependency>
 
     <!-- scala test dependencies -->

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_4.PropertyKeyId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_4.expressions.PropertyKeyName
 
 case class LazyPropertyKey(name: String) {
   private var id: Option[PropertyKeyId] = None
@@ -39,7 +39,7 @@ object LazyPropertyKey {
 
   def apply(name: PropertyKeyName)(implicit table: SemanticTable): LazyPropertyKey = {
     val property = new LazyPropertyKey(name.name)
-    property.id = name.id
+    property.id = table.id(name)
     property
   }
 }

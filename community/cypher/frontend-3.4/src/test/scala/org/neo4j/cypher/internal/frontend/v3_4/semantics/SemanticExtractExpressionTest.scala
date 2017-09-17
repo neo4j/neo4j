@@ -17,8 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.DummyExpression
+import org.neo4j.cypher.internal.v3_4.expressions.{ExtractExpression, True, Variable}
 
 class SemanticExtractExpressionTest extends SemanticFunSuite {
 

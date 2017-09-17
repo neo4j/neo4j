@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{EagerReadWriteCallMode, LazyReadOnlyCallMode}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.symbols
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryContextAdaptation}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
@@ -38,7 +38,7 @@ class ProcedureCallPipeTest
     with AstConstructionTestSupport {
 
   val procedureName = QualifiedName(List.empty, "foo")
-  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", symbols.CTAny))), None, ProcedureReadOnlyAccess(Array.empty))
+  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))), None, ProcedureReadOnlyAccess(Array.empty))
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {

@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{HasLabels, Property}
-import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Property}
 
 object CardinalityCostModel extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
-  private val PROBE_BUILD_COST: CostPerRow = 3.1
-  private val PROBE_SEARCH_COST: CostPerRow = 2.4
+  private val PROBE_BUILD_COST: CostPerRow = 19.4
+  private val PROBE_SEARCH_COST: CostPerRow = 11.5
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
@@ -38,10 +38,9 @@ object CardinalityCostModel extends CostModel {
      * see ActualCostCalculationTest
      */
 
-    case _: NodeByLabelScan |
-         _: NodeIndexScan |
-         _: ProjectEndpoints
-    => 1.0
+    case _: NodeByLabelScan  => 1.0
+    case _: NodeIndexScan |
+         _: ProjectEndpoints => 2.4
 
     // Filtering on labels and properties
     case Selection(predicates, _) =>
@@ -55,22 +54,22 @@ object CardinalityCostModel extends CostModel {
         DEFAULT_COST_PER_ROW
 
     case _: AllNodesScan
-    => 1.2
+    => 1.8
 
     case _: Expand |
          _: VarExpand
-    => 1.5
+    => 5.0
 
     case _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
          _: NodeIndexContainsScan |
          _: NodeIndexEndsWithScan
-    => 1.9
+    => 2.3
 
     case _: NodeByIdSeek |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek
-    => 6.2
+    => 25.0
 
     case _: NodeHashJoin |
          _: Aggregation |

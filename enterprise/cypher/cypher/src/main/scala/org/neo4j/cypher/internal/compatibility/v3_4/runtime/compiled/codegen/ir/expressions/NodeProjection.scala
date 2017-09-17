@@ -21,12 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 
 case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
 
-  assert(nodeIdVar.codeGenType.asInstanceOf[CypherCodeGenType].ct == symbols.CTNode)
+  assert(nodeIdVar.codeGenType.asInstanceOf[CypherCodeGenType].ct == CTNode)
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 

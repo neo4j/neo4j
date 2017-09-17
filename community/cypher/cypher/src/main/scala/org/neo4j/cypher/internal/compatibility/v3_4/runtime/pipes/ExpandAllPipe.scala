@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 import org.neo4j.cypher.internal.apa.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.AnyValue

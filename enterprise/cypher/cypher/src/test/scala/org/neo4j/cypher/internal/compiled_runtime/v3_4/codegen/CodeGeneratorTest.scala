@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen
+package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
 
 import java.util
 import java.util.function.BiConsumer
@@ -38,13 +38,14 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_4.PropertyKeyId
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, Descending, _}
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb._
 import org.neo4j.helpers.ValueUtils
@@ -915,7 +916,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -934,7 +935,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -953,7 +954,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val node = ast.Variable("a")(pos)
+    val node = Variable("a")(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
     val aggregation = Aggregation(scan, Map.empty, Map("count(a)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a)"), aggregation)
@@ -972,9 +973,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
-    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
 
     //when
@@ -1001,9 +1002,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
-    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
 
     //when
@@ -1030,9 +1031,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val node = ast.Variable("a")(pos)
+    val node = Variable("a")(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
-    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("count(a)" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("count(a)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a)"), aggregation)
 
     //when
@@ -1060,7 +1061,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
 
     val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
@@ -1082,7 +1083,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
 
@@ -1103,8 +1104,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(ast.Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
-    val node = ast.Variable("a")(pos)
+    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val node = Variable("a")(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
 
     val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a)" -> invocation))(solved)
@@ -1286,7 +1287,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val property = literalInt(42) // <== This cannot be nullable
 
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
-    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("c" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("c" -> invocation))(solved)
     val plan = ProduceResult(List("c"), aggregation)
 
     //when
@@ -1317,7 +1318,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val property = literalInt(42) // <== This cannot be nullable
 
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
-    val aggregation = Aggregation(scan, Map("a" -> ast.Variable("a")(pos)), Map("c" -> invocation))(solved)
+    val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("c" -> invocation))(solved)
     val plan = ProduceResult(List("c"), aggregation)
 
     //when

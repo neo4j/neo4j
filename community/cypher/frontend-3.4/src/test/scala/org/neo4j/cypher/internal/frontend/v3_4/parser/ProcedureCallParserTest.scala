@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ProcedureResult, ProcedureResultItem}
 import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 
 class ProcedureCallParserTest
   extends ParserAstTest[ast.UnresolvedCall]
@@ -30,56 +30,60 @@ class ProcedureCallParserTest
   implicit val parser = Call
 
   test("CALL foo") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos)))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos)))
   }
 
   test("CALL foo()") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty)))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos), Some(Seq.empty)))
   }
 
   test("CALL foo('Test', 1+2)") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos),
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos),
                               Some(Vector(
-        ast.StringLiteral("Test")(pos),
-        ast.Add(
-          ast.SignedDecimalIntegerLiteral("1")(pos),
-          ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+        exp.StringLiteral("Test")(pos),
+        exp.Add(
+          exp.SignedDecimalIntegerLiteral("1")(pos),
+          exp.SignedDecimalIntegerLiteral("2")(pos))(pos)
       )))
     )
   }
 
   test("CALL foo.bar.baz('Test', 1+2)") {
-    yields(ast.UnresolvedCall(ast.Namespace(List("foo", "bar"))(pos), ast.ProcedureName("baz")(pos),
+    yields(ast.UnresolvedCall(exp.Namespace(List("foo", "bar"))(pos), exp.ProcedureName("baz")(pos),
                               Some(Vector(
-        ast.StringLiteral("Test")(pos),
-        ast.Add(
-          ast.SignedDecimalIntegerLiteral("1")(pos),
-          ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+        exp.StringLiteral("Test")(pos),
+        exp.Add(
+          exp.SignedDecimalIntegerLiteral("1")(pos),
+          exp.SignedDecimalIntegerLiteral("2")(pos))(pos)
       )))
     )
   }
 
   test("CALL foo YIELD bar") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(ProcedureResult.from(result("bar"))(pos))))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos), None, Some(ast.ProcedureResult.from
+    (result("bar"))(pos))))
   }
 
   test("CALL foo YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), None, Some(ProcedureResult.from(result("bar"), result("baz"))(pos))))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos), None, Some(ast.ProcedureResult.from
+    (result("bar"), result("baz"))(pos))))
   }
 
   test("CALL foo() YIELD bar") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(ProcedureResult.from(result("bar"))(pos))))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos), Some(Seq.empty), Some
+    (ast.ProcedureResult.from(result("bar"))(pos))))
   }
 
   test("CALL foo() YIELD bar, baz") {
-    yields(ast.UnresolvedCall(ast.Namespace()(pos), ast.ProcedureName("foo")(pos), Some(Seq.empty), Some(ProcedureResult.from(result("bar"), result("baz"))(pos))))
+    yields(ast.UnresolvedCall(exp.Namespace()(pos), exp.ProcedureName("foo")(pos), Some(Seq.empty), Some
+    (ast.ProcedureResult.from(result("bar"), result("baz"))(pos))))
   }
 
-  private def result(name: String): ProcedureResultItem =
-    ast.ProcedureResultItem(ast.Variable(name)(pos))(pos)
+  private def result(name: String): ast.ProcedureResultItem =
+    ast.ProcedureResultItem(exp.Variable(name)(pos))(pos)
 
-  private def result(output: String, name: String): ProcedureResultItem =
-    ast.ProcedureResultItem(ast.ProcedureOutput(output)(pos), ast.Variable(name)(pos))(pos)
+  private def result(output: String, name: String): ast.ProcedureResultItem =
+    ast.ProcedureResultItem(exp.ProcedureOutput(output)(pos), exp.Variable(name)(pos))(pos)
 
   private implicit val pos = DummyPosition(-1)
 

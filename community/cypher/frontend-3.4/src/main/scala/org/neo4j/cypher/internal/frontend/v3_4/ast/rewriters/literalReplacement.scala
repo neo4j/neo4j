@@ -14,12 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
+package org.neo4j.cypher.internal.frontend.v3_4.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, Literal, Parameter}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTBoolean, CTFloat, CTInteger, CTList, CTString}
-import org.neo4j.cypher.internal.frontend.v3_4.{IdentityMap, ast}
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.apa.v3_4.symbols.{CTAny, CTBoolean, CTFloat, CTInteger, CTList, CTString}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
 
 object literalReplacement {
 
@@ -35,55 +36,55 @@ object literalReplacement {
   }
 
   private val literalMatcher: PartialFunction[Any, LiteralReplacements => (LiteralReplacements, Option[LiteralReplacements => LiteralReplacements])] = {
-    case _: ast.Match |
-         _: ast.Create |
-         _: ast.CreateUnique |
-         _: ast.Merge |
-         _: ast.SetClause |
-         _: ast.Return |
-         _: ast.With |
-         _: ast.CallClause =>
+    case _: Match |
+         _: Create |
+         _: CreateUnique |
+         _: Merge |
+         _: SetClause |
+         _: Return |
+         _: With |
+         _: CallClause =>
       acc => (acc, Some(identity))
-    case _: ast.Clause |
-         _: ast.PeriodicCommitHint |
-         _: ast.Limit =>
+    case _: Clause |
+         _: PeriodicCommitHint |
+         _: Limit =>
       acc => (acc, None)
-    case n: ast.NodePattern =>
+    case n: NodePattern =>
       acc => (n.properties.treeFold(acc)(literalMatcher), None)
-    case r: ast.RelationshipPattern =>
+    case r: RelationshipPattern =>
       acc => (r.properties.treeFold(acc)(literalMatcher), None)
-    case ast.ContainerIndex(_, _: ast.StringLiteral) =>
+    case ContainerIndex(_, _: StringLiteral) =>
       acc => (acc, None)
-    case _: ast.GraphUrl =>
+    case _: GraphUrl =>
       acc => (acc, None)
-    case l: ast.StringLiteral =>
+    case l: StringLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = ast.Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
+          val parameter = Parameter(s"  AUTOSTRING${acc.size}", CTString)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
-    case l: ast.IntegerLiteral =>
+    case l: IntegerLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = ast.Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
+          val parameter = Parameter(s"  AUTOINT${acc.size}", CTInteger)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
-    case l: ast.DoubleLiteral =>
+    case l: DoubleLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = ast.Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
+          val parameter = Parameter(s"  AUTODOUBLE${acc.size}", CTFloat)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
-    case l: ast.BooleanLiteral =>
+    case l: BooleanLiteral =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = ast.Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
+          val parameter = Parameter(s"  AUTOBOOL${acc.size}", CTBoolean)(l.position)
           (acc + (l -> LiteralReplacement(parameter, l.value)), None)
         }
-    case l: ast.ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
+    case l: ListLiteral if l.expressions.forall(_.isInstanceOf[Literal]) =>
       acc =>
         if (acc.contains(l)) (acc, None) else {
-          val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
+          val parameter = Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
           val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value).toIndexedSeq
           (acc + (l -> LiteralReplacement(parameter, values)), None)
         }

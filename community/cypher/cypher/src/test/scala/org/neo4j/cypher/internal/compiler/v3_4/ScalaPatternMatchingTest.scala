@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.PatternMatchingBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 
 class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {

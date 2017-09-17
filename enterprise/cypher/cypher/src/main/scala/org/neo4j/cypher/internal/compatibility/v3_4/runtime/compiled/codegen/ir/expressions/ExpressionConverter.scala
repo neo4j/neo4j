@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.helpers.LiteralTypeSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 
 object ExpressionConverter {
 
@@ -122,14 +121,14 @@ object ExpressionConverter {
         RelationshipExpression(context.getVariable(name))
 
       case ast.Property(node@ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
-        val token = propKey.id(context.semanticTable).map(_.id)
+        val token = context.semanticTable.id(propKey).map(_.id)
         NodeProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
       case ast.Property(rel@ast.Variable(name), propKey) if context.semanticTable.isRelationship(rel) =>
-        val token = propKey.id(context.semanticTable).map(_.id)
+        val token = context.semanticTable.id(propKey).map(_.id)
         RelProperty(token, propKey.name, context.getVariable(name), context.namer.newVarName())
 
-      case ast.Property(variable@ast.Variable(name), PropertyKeyName(propKeyName)) =>
+      case ast.Property(variable@ast.Variable(name), ast.PropertyKeyName(propKeyName)) =>
         MapProperty(context.getVariable(name), propKeyName)
 
       case ast.Parameter(name, cypherType) =>

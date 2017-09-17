@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_4.LabelId
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, NodeByLabelScan}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.mutable
 
@@ -53,7 +53,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     })
 
     val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
+    when(semanticTable.resolvedLabelNames).thenReturn(mutable.Map.empty[String, LabelId])
 
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
@@ -86,7 +86,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     })
 
     implicit val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
+    when(semanticTable.resolvedLabelNames).thenReturn(mutable.Map("Awesome" -> labelId))
 
     implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,

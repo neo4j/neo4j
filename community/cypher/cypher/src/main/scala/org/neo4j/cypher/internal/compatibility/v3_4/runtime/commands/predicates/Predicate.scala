@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates
 
-import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, NonEmptyList}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, Literal}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 

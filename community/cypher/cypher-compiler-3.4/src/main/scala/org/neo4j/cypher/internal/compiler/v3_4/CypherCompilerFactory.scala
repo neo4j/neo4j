@@ -23,12 +23,13 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{ASTRewriter, IfNoParameter}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.rewriters.IfNoParameter
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
-  val monitorTag = "cypher3.4"
+  val monitorTag = "cypher3.3"
 
   def costBasedCompiler(config: CypherCompilerConfiguration,
                         clock: Clock,

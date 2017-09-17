@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_4.RegularQueryProjection
+import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

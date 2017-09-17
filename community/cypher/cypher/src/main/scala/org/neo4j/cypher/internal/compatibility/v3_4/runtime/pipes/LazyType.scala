@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.RelTypeName
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.v3_4.expressions.RelTypeName
 
 case class LazyType(name: String) {
 
@@ -40,7 +40,7 @@ object LazyType {
 
   def apply(relTypeName: RelTypeName)(implicit table: SemanticTable): LazyType = {
     val typ = LazyType(relTypeName.name)
-    typ.id = relTypeName.id
+    typ.id = table.id(relTypeName)
     typ
   }
 }

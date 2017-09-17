@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues

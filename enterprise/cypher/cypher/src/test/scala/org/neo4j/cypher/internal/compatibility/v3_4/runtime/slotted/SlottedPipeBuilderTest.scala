@@ -38,12 +38,13 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.apa.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -165,7 +166,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val label = LabelName("label")(pos)
     val leaf = NodeByLabelScan(x, label, Set.empty)(solved)
-    val filter = Selection(Seq(ast.True()(pos)), leaf)(solved)
+    val filter = Selection(Seq(True()(pos)), leaf)(solved)
 
     // when
     val pipe = build(filter)

@@ -19,7 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticAnalysisTooling
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.{ProcedureOutput, Variable}
 
 object ProcedureResultItem {
   def apply(output: ProcedureOutput, variable: Variable)(position: InputPosition): ProcedureResultItem =
@@ -37,11 +38,11 @@ case class ProcedureResultItem(output: Option[ProcedureOutput], variable: Variab
   def semanticCheck: SemanticCheck =
     // This is needed to prevent the initial round of semantic checking from failing with type errors
     // when procedure signatures have not yet been resolved
-    variable.declareVariable(TypeSpec.all)
+    declareVariable(variable, TypeSpec.all)
 
   def semanticCheck(types: Map[String, CypherType]): SemanticCheck =
     types
       .get(outputName)
-      .map { typ => variable.declareVariable(typ): SemanticCheck }
+      .map { typ => declareVariable(variable, typ): SemanticCheck }
       .getOrElse(error(s"Unknown procedure output: `$outputName`", position))
 }

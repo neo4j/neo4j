@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, ast => parserAst}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression}
 
-trait RuntimeExpression extends parserAst.Expression with SemanticCheckableExpression {
-  override def semanticCheck(ctx: parserAst.Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
+trait RuntimeExpression extends ASTExpression with SemanticCheckableExpression {
+  override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def position: InputPosition = InputPosition.NONE
 }

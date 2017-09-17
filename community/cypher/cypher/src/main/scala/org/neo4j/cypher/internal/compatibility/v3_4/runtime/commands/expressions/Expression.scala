@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.apa.v3_4.symbols.CypherType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 

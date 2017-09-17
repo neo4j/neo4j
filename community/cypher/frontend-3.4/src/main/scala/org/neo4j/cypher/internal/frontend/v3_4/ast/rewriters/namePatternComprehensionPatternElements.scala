@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PatternComprehension
+import org.neo4j.cypher.internal.v3_4.expressions.PatternComprehension
 
 case object namePatternComprehensionPatternElements extends Rewriter {
 

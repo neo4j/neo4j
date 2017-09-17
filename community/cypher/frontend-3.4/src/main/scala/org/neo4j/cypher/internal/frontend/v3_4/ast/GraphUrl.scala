@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.apa.v3_4.symbols.CTString
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticCheckable, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTString
+import org.neo4j.cypher.internal.v3_4.expressions.{Parameter, StringLiteral}
 
 final case class GraphUrl(url: Either[Parameter, StringLiteral])(val position: InputPosition)
   extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {

@@ -16,15 +16,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.apa.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{CartesianProductNotification, DeprecatedStartNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -65,7 +67,7 @@ case class LoadCSV(
     else
       CTList(CTString)
 
-    variable.declareVariable(typ)
+    declareVariable(variable, typ)
   }
 }
 
@@ -85,8 +87,8 @@ sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graph.declareGraph chain
-    of.fold(SemanticCheckResult.success)(_.semanticCheck(Pattern.SemanticContext.Create))
+    declareGraph(graph) chain
+    of.fold(SemanticCheckResult.success)(SemanticPatternCheck.check(Pattern.SemanticContext.Create, _))
 }
 
 final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
@@ -202,7 +204,7 @@ case class Match(
   override def name = "MATCH"
 
   override def semanticCheck: SemanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+    SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
       hints.semanticCheck chain
       uniqueHints chain
       where.semanticCheck chain
@@ -342,8 +344,9 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
-      actions.semanticCheck chain checkRelTypes
+    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
+      actions.semanticCheck chain
+      checkRelTypes
 
   // Copied code from CREATE below
   private def checkRelTypes: SemanticCheck  =
@@ -357,7 +360,9 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE"
 
-  override def semanticCheck: SemanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
+  override def semanticCheck: SemanticCheck =
+    SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
+    checkRelTypes
 
   //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
   private def checkRelTypes: SemanticCheck  =
@@ -415,7 +420,7 @@ case class Foreach(
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
-        variable.declareVariable(possibleInnerTypes) chain updates.semanticCheck
+        declareVariable(variable, possibleInnerTypes) chain updates.semanticCheck
       }
 }
 
@@ -429,7 +434,7 @@ case class Unwind(
     SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
       expectType(CTList(CTAny).covariant, expression) ifOkChain {
       val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
-      variable.declareVariable(possibleInnerTypes)
+      declareVariable(variable, possibleInnerTypes)
     }
 }
 

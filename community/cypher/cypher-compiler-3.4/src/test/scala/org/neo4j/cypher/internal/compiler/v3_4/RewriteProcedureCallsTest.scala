@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.phases.RewriteProcedureCalls
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions.{Namespace, ProcedureName}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {

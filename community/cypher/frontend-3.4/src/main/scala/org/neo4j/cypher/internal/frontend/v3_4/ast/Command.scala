@@ -19,7 +19,8 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticError, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.apa.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait Command extends Statement {
   override def returnColumns = List.empty
@@ -43,9 +44,9 @@ trait PropertyConstraintCommand extends Command with SemanticAnalysisTooling {
   def entityType: CypherType
 
   def semanticCheck =
-    variable.declareVariable(entityType) chain
+    declareVariable(variable, entityType) chain
       SemanticExpressionCheck.simple(property) chain
-      when(!property.map.isInstanceOf[ast.Variable]) {
+      when(!property.map.isInstanceOf[Variable]) {
         error("Cannot index nested properties", property.position)
       }
 }
@@ -60,11 +61,11 @@ trait CompositePropertyConstraintCommand extends Command with SemanticAnalysisTo
   def restrictedToSingleProperty: Boolean
 
   def semanticCheck =
-    variable.declareVariable(entityType) chain
+    declareVariable(variable, entityType) chain
       SemanticExpressionCheck.simple(properties) chain
       semanticCheckFold(properties) {
         property =>
-          when(!property.map.isInstanceOf[ast.Variable]) {
+          when(!property.map.isInstanceOf[Variable]) {
             error("Cannot index nested properties", property.position)
           }
       } chain
@@ -75,14 +76,14 @@ trait CompositePropertyConstraintCommand extends Command with SemanticAnalysisTo
 
 trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 }
 
 trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 
@@ -91,7 +92,7 @@ trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand
 
 trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 
@@ -100,7 +101,7 @@ trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
 
 trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 
-  val entityType = symbols.CTRelationship
+  val entityType = CTRelationship
 
   def relType: RelTypeName
 }

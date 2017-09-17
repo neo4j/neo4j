@@ -16,11 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.ReduceExpression.AccumulatorExpressionTypeMismatchMessageGenerator
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
 
 import scala.util.Try
@@ -242,7 +242,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:PatternComprehension =>
         SemanticState.recordCurrentScope(x) chain
           withScopedState {
-            x.pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+            SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               x.namedPath.map(declareVariable(_, CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
               check(SemanticContext.Simple, x.predicate) chain
               check(SemanticContext.Simple, x.projection)
@@ -262,12 +262,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         specifyType(CTPath, x)
 
       case x:ShortestPathExpression =>
-        x.pattern.declareVariables(Pattern.SemanticContext.Expression) chain
-          x.pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
+        SemanticPatternCheck.declareVariables(Pattern.SemanticContext.Expression)(x.pattern) chain
+          SemanticPatternCheck.check(Pattern.SemanticContext.Expression)(x.pattern) chain
           specifyType(CTList(CTPath), x)
 
       case x:PatternExpression =>
-        x.pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
+        SemanticPatternCheck.check(Pattern.SemanticContext.Expression, x.pattern) chain
           specifyType(CTList(CTPath), x)
 
       case x:IterablePredicateExpression =>
@@ -502,7 +502,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case _ => SemanticCheckResult.success
     }
 
-  private def infixAddRhsTypes(lhs: ast.Expression): TypeGenerator = s => {
+  private def infixAddRhsTypes(lhs: Expression): TypeGenerator = s => {
     val lhsTypes = types(lhs)(s)
 
     // Strings
@@ -534,7 +534,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     valueTypes | lhsListTypes | rhsListTypes
   }
 
-  private def infixAddOutputTypes(lhs: ast.Expression, rhs: ast.Expression): TypeGenerator = s => {
+  private def infixAddOutputTypes(lhs: Expression, rhs: Expression): TypeGenerator = s => {
     val lhsTypes = types(lhs)(s)
     val rhsTypes = types(rhs)(s)
 

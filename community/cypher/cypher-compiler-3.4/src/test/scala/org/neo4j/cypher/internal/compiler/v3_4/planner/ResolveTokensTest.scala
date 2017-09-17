@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Match, Query, SingleQuery, Where, _}
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ResolveTokensTest extends CypherFunSuite {
 
@@ -49,7 +50,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
         ))) =>
             pkToken.name should equal("name")
-            pkToken.id should equal(Some(PropertyKeyId(12)))
+            semanticTable.id(pkToken) should equal(Some(PropertyKeyId(12)))
     }
   }
 
@@ -72,7 +73,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
         ))) =>
             pkToken.name should equal("name")
-            pkToken.id should equal(None)
+            semanticTable.id(pkToken) should equal(None)
     }
   }
 
@@ -95,7 +96,7 @@ class ResolveTokensTest extends CypherFunSuite {
         Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
       ))) =>
         labelToken.name should equal("Resolved")
-        labelToken.id should equal(Some(LabelId(12)))
+        semanticTable.id(labelToken) should equal(Some(LabelId(12)))
     }
   }
 
@@ -118,7 +119,7 @@ class ResolveTokensTest extends CypherFunSuite {
         Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
       ))) =>
         labelToken.name should equal("Unresolved")
-        labelToken.id should equal(None)
+        semanticTable.id(labelToken) should equal(None)
     }
   }
 
@@ -145,7 +146,7 @@ class ResolveTokensTest extends CypherFunSuite {
         Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
       ))) =>
         relTypeToken.name should equal("RESOLVED")
-        relTypeToken.id should equal(Some(RelTypeId(12)))
+        semanticTable.id(relTypeToken) should equal(Some(RelTypeId(12)))
     }
   }
 
@@ -172,7 +173,7 @@ class ResolveTokensTest extends CypherFunSuite {
         Return(false, ReturnItems(true, Seq()), _, None, None, None, _)
       ))) =>
         relTypeToken.name should equal("UNRESOLVED")
-        relTypeToken.id should equal(None)
+        semanticTable.id(relTypeToken) should equal(None)
     }
   }
 

@@ -23,14 +23,15 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.apa.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.apa.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName}
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.stringValue

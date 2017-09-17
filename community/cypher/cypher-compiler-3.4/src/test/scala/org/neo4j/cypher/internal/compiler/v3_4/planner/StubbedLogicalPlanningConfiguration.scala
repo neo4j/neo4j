@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, HasLabels}
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
@@ -67,7 +67,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
     (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
       val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
         case (name: String, cardinality: Cardinality) =>
-          semanticTable.resolvedLabelIds(name) -> cardinality
+          semanticTable.resolvedLabelNames(name) -> cardinality
       }
       val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 &&
@@ -85,8 +85,9 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
     val labelMap: Map[IdName, Set[HasLabels]] = queryGraph.selections.labelPredicates
     val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
-      case label if label.id(semanticTable).isDefined && labelIdCardinality.contains(label.id(semanticTable).get) =>
-        labelIdCardinality(label.id(semanticTable).get)
+      case label if semanticTable.id(label).isDefined &&
+                    labelIdCardinality.contains(semanticTable.id(label).get) =>
+        labelIdCardinality(semanticTable.id(label).get)
     }
     results.headOption
   }

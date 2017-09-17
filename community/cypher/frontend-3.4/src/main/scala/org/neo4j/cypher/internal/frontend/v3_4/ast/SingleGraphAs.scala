@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.{Pattern, Variable}
 
 sealed trait SingleGraphAs extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
@@ -36,7 +37,7 @@ sealed trait SingleGraphAs extends ASTNode with SemanticCheckable with SemanticA
   override def semanticCheck: SemanticCheck = SemanticCheckResult.success
 
   def declareGraph: SemanticCheck =
-    as.foldSemanticCheck(v => if (generated) v.declareGraphMarkedAsGenerated else v.declareGraph)
+    semanticCheckFold(as)(v => if (generated) declareGraphMarkedAsGenerated(v) else declareGraph(v))
 
   def implicitGraph(context: Option[ContextGraphs]): SemanticCheck = SemanticCheckResult.success
 }
@@ -50,7 +51,7 @@ sealed trait BoundContextGraphAs extends BoundGraphAs {
   protected def contextGraphName: String
 
   override def declareGraph: SemanticCheck = as match {
-    case Some(v) => if (generated) v.declareGraphMarkedAsGenerated else v.declareGraph
+    case Some(v) => if (generated) declareGraphMarkedAsGenerated(v) else declareGraph(v)
     case None => SemanticCheckResult.success
   }
 
@@ -84,7 +85,7 @@ final case class GraphAs(ref: Variable, as: Option[Variable], generated: Boolean
   override def asGenerated: GraphAs = copy(generated = true)(position)
 
   override def semanticCheck: SemanticCheck = SemanticExpressionCheck.ensureGraphDefined(ref)
-  override def declareGraph: SemanticCheck = as.foldSemanticCheck(v => v.implicitGraph)
+  override def declareGraph: SemanticCheck = semanticCheckFold(as)(v => implicitGraph(v))
 }
 
 sealed trait NewGraphAs extends SingleGraphAs
@@ -95,7 +96,7 @@ final case class GraphOfAs(of: Pattern, as: Option[Variable], generated: Boolean
   override def withNewName(newName: Variable): GraphOfAs = copy(as = Some(newName))(position)
   override def asGenerated: GraphOfAs = copy(generated = true)(position)
 
-  override def semanticCheck: SemanticCheck = of.semanticCheck(Pattern.SemanticContext.Create)
+  override def semanticCheck: SemanticCheck = SemanticPatternCheck.check(Pattern.SemanticContext.Create, of)
 }
 
 final case class GraphAtAs(at: GraphUrl, as: Option[Variable], generated: Boolean = false)(val position: InputPosition)

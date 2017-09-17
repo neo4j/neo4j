@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast
 
 import org.neo4j.cypher.internal.apa.v3_4.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions._
+import org.neo4j.cypher.internal.v3_4.functions._
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}

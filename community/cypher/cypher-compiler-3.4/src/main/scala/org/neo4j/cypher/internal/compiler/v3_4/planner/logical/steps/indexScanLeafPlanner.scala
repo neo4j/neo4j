@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfill
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
@@ -89,13 +90,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels;
          indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName);
-         labelId <- labelName.id)
+         labelId <- semanticTable.id(labelName))
       yield {
         val hint = qg.hints.collectFirst {
           case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties)
             if properties.map(_.name) == Seq(propertyKeyName) => hint
         }
-        val keyToken = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
+        val keyToken = PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head)
         val labelToken = LabelToken(labelName, labelId)
         val predicates = Seq(predicate, labelPredicate)
         planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)

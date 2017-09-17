@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {
   private val condition: (Any => Seq[String]) = containsNamedPathOnlyForShortestPath

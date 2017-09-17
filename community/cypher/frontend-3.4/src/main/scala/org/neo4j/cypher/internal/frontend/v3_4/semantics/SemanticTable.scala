@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
 import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, Expression, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, symbols}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.mutable
 
@@ -30,11 +31,11 @@ object SemanticTable {
 }
 
 class SemanticTable(
-    val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
-    val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
-    val resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
-    val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
-    val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+                     val types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = ASTAnnotationMap.empty,
+                     val recordedScopes: ASTAnnotationMap[ASTNode, Scope] = ASTAnnotationMap.empty,
+                     val resolvedLabelNames: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
+                     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
+                     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
   ) extends Cloneable {
 
   def getTypeFor(s: String): TypeSpec = try {
@@ -56,25 +57,31 @@ class SemanticTable(
     case _ => false
   }
 
+  def id(labelName:LabelName):Option[LabelId] = resolvedLabelNames.get(labelName.name)
+
+  def id(propertyKeyName:PropertyKeyName):Option[PropertyKeyId] = resolvedPropertyKeyNames.get(propertyKeyName.name)
+
+  def id(resolvedRelTypeName:RelTypeName):Option[RelTypeId] = resolvedRelTypeNames.get(resolvedRelTypeName.name)
+
   def seen(expression: Expression) = types.contains(expression)
 
-  def isNode(expr: String) = getTypeFor(expr) == symbols.CTNode.invariant
+  def isNode(expr: String) = getTypeFor(expr) == CTNode.invariant
 
-  def isRelationship(expr: String) = getTypeFor(expr) == symbols.CTRelationship.invariant
+  def isRelationship(expr: String) = getTypeFor(expr) == CTRelationship.invariant
 
-  def isRelationshipCollection(expr: String) = getTypeFor(expr) == symbols.CTList(symbols.CTRelationship).invariant
+  def isRelationshipCollection(expr: String) = getTypeFor(expr) == CTList(CTRelationship).invariant
 
-  def isNodeCollection(expr: String) = getTypeFor(expr) == symbols.CTList(symbols.CTNode).invariant
+  def isNodeCollection(expr: String) = getTypeFor(expr) == CTList(CTNode).invariant
 
-  def isNode(expr: Variable) = types(expr).specified == symbols.CTNode.invariant
+  def isNode(expr: Variable) = types(expr).specified == CTNode.invariant
 
-  def isRelationship(expr: Variable) = types(expr).specified == symbols.CTRelationship.invariant
+  def isRelationship(expr: Variable) = types(expr).specified == CTRelationship.invariant
 
   def addNode(expr: Variable) =
-    copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTNode.invariant, None)))
+    copy(types = types.updated(expr, ExpressionTypeInfo(CTNode.invariant, None)))
 
   def addRelationship(expr: Variable) =
-    copy(types = types.updated(expr, ExpressionTypeInfo(symbols.CTRelationship.invariant, None)))
+    copy(types = types.updated(expr, ExpressionTypeInfo(CTRelationship.invariant, None)))
 
   def replaceVariables(replacements: (Variable, Variable)*): SemanticTable =
     copy(types = types.replaceKeys(replacements: _*), recordedScopes = recordedScopes.replaceKeys(replacements: _*))
@@ -88,11 +95,11 @@ class SemanticTable(
   override def clone() = copy()
 
   def copy(
-    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
-    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
-    resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelIds,
-    resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
-    resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
+            types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+            recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
+            resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelNames,
+            resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
+            resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
   ) =
     new SemanticTable(types, recordedScopes, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
 }

@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.NonEmptyList
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Not, Ors, Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 
 class OrsTest extends CypherFunSuite {

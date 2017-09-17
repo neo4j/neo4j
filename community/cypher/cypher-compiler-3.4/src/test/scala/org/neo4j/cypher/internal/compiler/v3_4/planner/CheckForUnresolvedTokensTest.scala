@@ -50,8 +50,8 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
   test("don't warn when labels are there") {
     //given
     val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelIds.put("A", LabelId(42))
-    semanticTable.resolvedLabelIds.put("B", LabelId(84))
+    semanticTable.resolvedLabelNames.put("A", LabelId(42))
+    semanticTable.resolvedLabelNames.put("B", LabelId(84))
 
     //when
     val ast = parse("MATCH (a:A)-->(b:B) RETURN *")
@@ -63,8 +63,8 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
   test("warn when missing relationship type") {
     //given
     val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelIds.put("A", LabelId(42))
-    semanticTable.resolvedLabelIds.put("B", LabelId(84))
+    semanticTable.resolvedLabelNames.put("A", LabelId(42))
+    semanticTable.resolvedLabelNames.put("B", LabelId(84))
 
     //when
     val ast = parse("MATCH (a:A)-[r:R1|R2]->(b:B) RETURN *")
@@ -78,8 +78,8 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
   test("don't warn when relationship types are there") {
     //given
     val semanticTable = new SemanticTable
-    semanticTable.resolvedLabelIds.put("A", LabelId(42))
-    semanticTable.resolvedLabelIds.put("B", LabelId(84))
+    semanticTable.resolvedLabelNames.put("A", LabelId(42))
+    semanticTable.resolvedLabelNames.put("B", LabelId(84))
     semanticTable.resolvedRelTypeNames.put("R1", RelTypeId(1))
     semanticTable.resolvedRelTypeNames.put("R2", RelTypeId(2))
 

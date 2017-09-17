@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.{StatementConditio
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.v3_4.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.v3_4.expressions.FunctionInvocation
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
 case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, BaseState] {

@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition, InternalExcep
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, MapProjection, Variable}
 
 sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   /**
@@ -71,8 +72,8 @@ final case class ReturnItems(
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        variable.declareVariable(types(item.expression), positions)
-      case Some(variable) => variable.declareVariable(types(item.expression))
+        declareVariable(variable, types(item.expression), positions)
+      case Some(variable) => declareVariable(variable, types(item.expression))
       case None           => (state) => SemanticCheckResult(state, Seq.empty)
     })
 
@@ -107,6 +108,10 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult =
     throw new InternalException("Should have been aliased before this step")
+}
+
+object AliasedReturnItem {
+  def apply(v:Variable):AliasedReturnItem = AliasedReturnItem(v.copyId, v.copyId)(v.position)
 }
 
 //TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't

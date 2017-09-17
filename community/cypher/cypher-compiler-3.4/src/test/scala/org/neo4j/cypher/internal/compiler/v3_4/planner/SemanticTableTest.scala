@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, AstConstructionTestSupport, Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{ASTAnnotationMap, AstConstructionTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -47,7 +48,7 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
     val table1 = SemanticTable()
     val table2 = table1.copy()
 
-    (table1.resolvedLabelIds eq table2.resolvedLabelIds) should be(false)
+    (table1.resolvedLabelNames eq table2.resolvedLabelNames) should be(false)
     (table1.resolvedPropertyKeyNames eq table2.resolvedPropertyKeyNames) should be(false)
     (table1.resolvedRelTypeNames eq table2.resolvedRelTypeNames) should be(false)
   }

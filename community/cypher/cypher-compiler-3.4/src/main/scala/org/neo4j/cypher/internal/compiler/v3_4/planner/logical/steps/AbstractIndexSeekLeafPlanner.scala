@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.LabelId
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 
@@ -98,7 +99,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     implicit val semanticTable: SemanticTable = context.semanticTable
     for (labelPredicate <- labelPredicates;
          labelName <- labelPredicate.labels;
-         labelId: LabelId <- labelName.id.toSeq;
+         labelId: LabelId <- semanticTable.id(labelName).toSeq;
          indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId);
          plannables: Seq[IndexPlannableExpression] <- plannablesForIndex(indexDescriptor, nodePlannables))
       yield
@@ -124,7 +125,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     val queryExpression: QueryExpression[Expression] = mergeQueryExpressionsToSingleOne(plannables)
 
-    val propertyKeyTokens = plannables.map(p => p.propertyKeyName).map(n => PropertyKeyToken(n, n.id.head))
+    val propertyKeyTokens = plannables.map(p => p.propertyKeyName).map(n => PropertyKeyToken(n, semanticTable.id(n).head))
     val entryConstructor: Seq[Expression] => LogicalPlan =
       constructPlan(idName, LabelToken(labelName, labelId), propertyKeyTokens, queryExpression, hint, argumentIds)
 
@@ -174,7 +175,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
   private def plannablesForIndex(indexDescriptor: IndexDescriptor, plannables: Set[IndexPlannableExpression])
                                 (implicit semanticTable: SemanticTable): Option[Seq[IndexPlannableExpression]] = {
     val foundPredicates: Seq[IndexPlannableExpression] = indexDescriptor.properties.flatMap { propertyKeyId =>
-      plannables find (p => p.propertyKeyName.id.contains(propertyKeyId))
+      plannables find (p => semanticTable.id(p.propertyKeyName).contains(propertyKeyId))
     }
 
     // Currently we only support using the composite index if ALL properties are specified, but this could be generalized

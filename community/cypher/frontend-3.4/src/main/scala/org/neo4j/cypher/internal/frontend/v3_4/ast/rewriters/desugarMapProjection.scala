@@ -17,8 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, Rewriter, topDown}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
@@ -33,7 +33,9 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case e@MapProjection(id, items, scope) =>
+    case e@MapProjection(id, items) =>
+
+      val scope = state.recordedScopes(e)
 
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
