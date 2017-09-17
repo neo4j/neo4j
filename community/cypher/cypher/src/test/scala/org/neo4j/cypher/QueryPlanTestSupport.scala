@@ -58,27 +58,29 @@ trait QueryPlanTestSupport {
     override def apply(result: InternalExecutionResult): MatchResult = useOperators(operators:_*)(result.executionPlanDescription())
   }
 
-  def useIndex(otherText: String*): Matcher[InternalExecutionResult] = useOperationWith("NodeIndexSeek", otherText: _*)
+  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult]  = new Matcher[InternalExecutionResult] {
+    override def apply(result: InternalExecutionResult): MatchResult = useOperatorWithText("Projection", otherText: _*)(result.executionPlanDescription())
+  }
 
-  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult] = useOperationWith("Projection", otherText: _*)
-
-  def useOperationWith(operation:String, otherText: String*): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
+  def useOperatorWithText(operator: String, otherText: String*): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
+    override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(
-        matches = otherText.forall(o => plan.find(operation).exists(_.toString.contains(o))),
-        rawFailureMessage = s"Plan should use $operation with ${otherText.mkString(",")}:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use $operation with ${otherText.mkString(",")}:\n$plan")
+        matches = otherText.forall(o => plan.find(operator).exists(_.toString.contains(o))),
+        rawFailureMessage = s"Plan should use $operator with ${otherText.mkString(",")}:\n$plan",
+        rawNegatedFailureMessage = s"Plan should not use $operator with ${otherText.mkString(",")}:\n$plan")
     }
   }
 
   def useOperationTimes(operation:String, times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
+    override def apply(result: InternalExecutionResult): MatchResult = useOperatorTimes(operation, times)(result.executionPlanDescription())
+  }
+
+  def useOperatorTimes(operator: String, times: Int): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
+    override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(
-        matches = plan.find(operation).size == times,
-        rawFailureMessage = s"Plan should use $operation ${times} times:\n$plan",
-        rawNegatedFailureMessage = s"Plan should not use $operation ${times} times:\n$plan")
+      matches = plan.find(operator).size == times,
+      rawFailureMessage = s"Plan should use $operator ${times} times:\n$plan",
+      rawNegatedFailureMessage = s"Plan should not use $operator ${times} times:\n$plan")
     }
   }
 
@@ -87,7 +89,7 @@ trait QueryPlanTestSupport {
       MatchResult(
         matches = count == result.toList.length,
         rawFailureMessage = s"Result should have $count rows",
-        rawNegatedFailureMessage = s"Plan should not have $count rows")
+        rawNegatedFailureMessage = s"Result should not have $count rows")
     }
   }
 
