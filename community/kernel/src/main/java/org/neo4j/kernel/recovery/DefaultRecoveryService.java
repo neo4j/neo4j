@@ -43,9 +43,7 @@ public class DefaultRecoveryService implements RecoveryService
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
 
-    public DefaultRecoveryService(
-            StorageEngine storageEngine,
-            LogTailScanner logTailScanner,
+    public DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
             PositionToRecoverFrom.Monitor monitor )
     {

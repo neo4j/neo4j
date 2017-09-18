@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.recovery;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -41,15 +42,17 @@ public class Recovery extends LifecycleAdapter
     private final RecoveryMonitor monitor;
     private final StartupStatisticsProvider startupStatistics;
     private final TransactionLogPruner logPruner;
+    private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
     public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
-            TransactionLogPruner logPruner, RecoveryMonitor monitor )
+            TransactionLogPruner logPruner, RecoveryMonitor monitor, boolean failOnCorruptedLogFiles )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
         this.logPruner = logPruner;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
@@ -101,16 +104,20 @@ public class Recovery extends LifecycleAdapter
                 }
             }
         }
-        catch ( Exception e )
+        catch ( Throwable t )
         {
+            if ( failOnCorruptedLogFiles )
+            {
+                throw Exceptions.launderedException( t );
+            }
             if ( lastTransaction != null )
             {
                 LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-                monitor.failToRecoverTransactionsAfterCommit( e, commitEntry, recoveryToPosition );
+                monitor.failToRecoverTransactionsAfterCommit( t, commitEntry, recoveryToPosition );
             }
             else
             {
-                monitor.failToRecoverTransactionsAfterPosition( e, recoveryFromPosition );
+                monitor.failToRecoverTransactionsAfterPosition( t, recoveryFromPosition );
                 recoveryToPosition = recoveryFromPosition;
             }
         }

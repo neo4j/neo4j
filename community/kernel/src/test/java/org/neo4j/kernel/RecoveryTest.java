@@ -157,8 +157,6 @@ public class RecoveryTest
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
-            AssertableLogProvider logProvider = new AssertableLogProvider( true );
-
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
@@ -208,7 +206,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor, false ) );
 
             life.start();
 
@@ -262,8 +260,6 @@ public class RecoveryTest
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
-            AssertableLogProvider logProvider = new AssertableLogProvider( true );
-
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
@@ -272,7 +268,7 @@ public class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor ));
+            }, new StartupStatisticsProvider(), logPruner, monitor, false ));
 
             life.start();
 
@@ -404,8 +400,6 @@ public class RecoveryTest
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
-            AssertableLogProvider logProvider = new AssertableLogProvider( true );
-
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
@@ -414,7 +408,7 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor, false ) );
 
             life.start();
         }
@@ -428,7 +422,7 @@ public class RecoveryTest
     private LogTailScanner getTailScanner( PhysicalLogFiles logFiles,
             LogEntryReader<ReadableClosablePositionAwareChannel> reader )
     {
-        return new LogTailScanner( logFiles, fileSystemRule.get(), reader, monitors );
+        return new LogTailScanner( logFiles, fileSystemRule.get(), reader, monitors, false );
     }
 
     private void writeSomeData( File file,

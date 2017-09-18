@@ -31,12 +31,6 @@ public class LoggingLogTailScannerMonitor implements LogTailScannerMonitor
     }
 
     @Override
-    public void forced( Throwable t )
-    {
-        log.warn( "Unsupported log version was found in transactional logs, but log processing was forced.", t );
-    }
-
-    @Override
     public void corruptedLogFile( long version, Throwable t )
     {
         log.warn( String.format( "Fail to read transaction log version %d.", version ), t );

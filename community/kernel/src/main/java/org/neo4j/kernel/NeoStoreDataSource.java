@@ -168,6 +168,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -232,6 +233,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+    private final boolean failOnCorruptedLogFiles = FeatureToggles.flag( NeoStoreDataSource.class,
+            "failOnCorruptedLogFiles", false );
 
     private final Monitors monitors;
     private final Tracers tracers;
@@ -431,7 +434,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Check the tail of transaction logs and validate version
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME, fs );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader, monitors );
+
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader, monitors, failOnCorruptedLogFiles );
         monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
@@ -693,10 +697,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore )
     {
-        RecoveryService
-                spi = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
+        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                logicalTransactionStore, positionMonitor );
         TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
-        Recovery recovery = new Recovery( spi, startupStatistics, logPruner, recoveryMonitor );
+        Recovery recovery = new Recovery( recoveryService, startupStatistics, logPruner, recoveryMonitor, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 

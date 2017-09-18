@@ -38,11 +38,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
@@ -61,14 +58,23 @@ public class LogTailScanner
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private LogTailInformation logTailInformation;
     private final LogTailScannerMonitor monitor;
+    private final boolean failOnCorruptedLogFiles;
 
     public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
+    {
+        this( logFiles, fileSystem, logEntryReader, monitors, false );
+    }
+
+    public LogTailScanner( PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors,
+            boolean failOnCorruptedLogFiles )
     {
         this.logFiles = logFiles;
         this.fileSystem = fileSystem;
         this.logEntryReader = logEntryReader;
         this.monitor = monitors.newMonitor( LogTailScannerMonitor.class );
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     private LogTailInformation findLogTail() throws IOException
@@ -133,22 +139,12 @@ public class LogTailScanner
             }
             catch ( Throwable t )
             {
-                if ( Exceptions.contains( t, UnsupportedLogVersionException.class ) )
+                monitor.corruptedLogFile( version, t );
+                if ( failOnCorruptedLogFiles )
                 {
-                    if ( FeatureToggles.flag( LogTailScanner.class, "force", false ) )
-                    {
-                        monitor.forced( t );
-                    }
-                    else
-                    {
-                        throw new RuntimeException( format( "Unsupported transaction log version found. " +
-                                "To force transactional processing anyway and trip non recognised transactions please " +
-                                "use %s. By using this flag you can lose part of your transactions log. This operation is irretrievable." +
-                                " ", FeatureToggles.toggle( LogTailScanner.class, "force", true ) ), t );
-                    }
+                    throw Exceptions.launderedException( t );
                 }
                 corruptedTransactionLogs = true;
-                monitor.corruptedLogFile( version, t );
             }
 
             if ( latestCheckPoint != null )

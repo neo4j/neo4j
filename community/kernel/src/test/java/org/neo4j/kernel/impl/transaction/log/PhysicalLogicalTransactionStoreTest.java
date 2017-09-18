@@ -49,7 +49,6 @@ import org.neo4j.kernel.recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.TransactionLogPruner;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
@@ -198,7 +197,6 @@ public class PhysicalLogicalTransactionStoreTest
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
-        AssertableLogProvider logProvider = new AssertableLogProvider( true );
         TransactionLogPruner logPruner = new TransactionLogPruner( testDir, logFiles, fileSystemRule.get() );
         life.add( new Recovery( new RecoveryService()
         {
@@ -237,7 +235,7 @@ public class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction )
             {
             }
-        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ) ) );
+        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ), false ) );
 
         // WHEN
         try

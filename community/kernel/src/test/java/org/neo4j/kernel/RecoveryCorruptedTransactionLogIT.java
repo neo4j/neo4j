@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -107,11 +106,33 @@ public class RecoveryCorruptedTransactionLogIT
     @After
     public void tearDown()
     {
-        FeatureToggles.set( LogTailScanner.class, "force", false );
+        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", false );
     }
 
     @Test
-    public void doNotTruncateNewerTransactionLogFile() throws IOException
+    public void evenTruncateNewerTransactionLogFile() throws IOException
+    {
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        TransactionIdStore transactionIdStore = getTransactionIdStore( database );
+        long lastClosedTrandactionBeforeStart = transactionIdStore.getLastClosedTransactionId();
+        for ( int i = 0; i < 10; i++ )
+        {
+            generateTransaction( database );
+        }
+        long numberOfClosedTransactions = getTransactionIdStore( database ).getLastClosedTransactionId() -
+                lastClosedTrandactionBeforeStart;
+        database.shutdown();
+        removeLastCheckpointRecordFromLastLogFile();
+        addRandomLongsToLastLogFile();
+
+        database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        database.shutdown();
+
+        assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
+    }
+
+    @Test
+    public void doNotTruncateNewerTransactionLogFileWhenFailOnError() throws IOException
     {
         GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
         for ( int i = 0; i < 10; i++ )
@@ -122,6 +143,7 @@ public class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomLongsToLastLogFile();
 
+        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
         expectedException.expectCause( new RootCauseMatcher<>( UnsupportedLogVersionException.class ) );
 
         database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
@@ -143,13 +165,11 @@ public class RecoveryCorruptedTransactionLogIT
         removeLastCheckpointRecordFromLastLogFile();
         addRandomLongsToLastLogFile();
 
-        FeatureToggles.set( LogTailScanner.class, "force", true );
         database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0. Last valid transaction start offset is: 5668." );
-        logProvider.assertContainsMessageContaining( "Unsupported log version was found in transactional logs, but log processing was forced." );
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
     }
 
@@ -172,6 +192,18 @@ public class RecoveryCorruptedTransactionLogIT
         MultiSet<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles, versionRepository );
         assertEquals( 1, logEntriesDistribution.size() );
         assertEquals( 1, logEntriesDistribution.count( CheckPoint.class ) );
+    }
+
+    @Test
+    public void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruption() throws IOException
+    {
+        PositiveLogFilesBasedLogVersionRepository versionRepository = addCorruptedCommandsToLastLogFile();
+
+        FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
+        expectedException.expectCause( new RootCauseMatcher<>( NegativeArraySizeException.class ) );
+
+        GraphDatabaseService recoveredDatabase = databaseFactory.newEmbeddedDatabase( storeDir );
+        recoveredDatabase.shutdown();
     }
 
     @Test
