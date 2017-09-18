@@ -71,10 +71,6 @@ trait QueryPlanTestSupport {
     }
   }
 
-  def useOperationTimes(operation:String, times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = useOperatorTimes(operation, times)(result.executionPlanDescription())
-  }
-
   def useOperatorTimes(operator: String, times: Int): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
     override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(
