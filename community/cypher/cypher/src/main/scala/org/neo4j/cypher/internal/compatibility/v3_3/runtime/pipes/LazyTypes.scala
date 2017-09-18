@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_4.ast.RelTypeName
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 case class LazyTypes(names:Seq[String]) {

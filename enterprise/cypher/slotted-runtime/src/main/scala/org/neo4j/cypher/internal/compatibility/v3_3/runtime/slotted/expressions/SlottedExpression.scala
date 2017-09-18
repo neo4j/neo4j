@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.expressions
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 
 trait SlottedExpression {
   self: Expression =>

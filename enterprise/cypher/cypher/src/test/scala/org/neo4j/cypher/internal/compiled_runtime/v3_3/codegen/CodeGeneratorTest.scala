@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
+package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen
 
 import java.util
 import java.util.function.BiConsumer
@@ -28,17 +28,17 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_4.logical
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}

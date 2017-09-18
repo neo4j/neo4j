@@ -23,12 +23,12 @@ import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_4.spi._
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_3.spi._
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherExecutionException, symbols}
+import org.neo4j.cypher.internal.v3_3.logical.plans._
 import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.Neo4jTypes.AnyType

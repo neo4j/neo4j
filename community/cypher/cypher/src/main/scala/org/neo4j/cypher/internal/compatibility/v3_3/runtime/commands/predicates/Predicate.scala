@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, IsMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.values.storable.{BooleanValue, TextValue, Value, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 

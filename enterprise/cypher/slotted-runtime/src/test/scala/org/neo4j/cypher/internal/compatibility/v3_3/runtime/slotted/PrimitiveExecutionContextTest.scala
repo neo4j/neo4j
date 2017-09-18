@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue

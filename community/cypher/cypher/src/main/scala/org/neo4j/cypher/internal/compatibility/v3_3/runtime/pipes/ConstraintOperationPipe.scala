@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_4._
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 
 class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
                              (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {

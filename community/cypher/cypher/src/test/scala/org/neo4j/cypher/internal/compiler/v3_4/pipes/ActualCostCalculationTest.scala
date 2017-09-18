@@ -24,14 +24,14 @@ import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Property, Variable}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equals
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Literal, Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Equals
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection, ast}
-import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_4.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_4.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._

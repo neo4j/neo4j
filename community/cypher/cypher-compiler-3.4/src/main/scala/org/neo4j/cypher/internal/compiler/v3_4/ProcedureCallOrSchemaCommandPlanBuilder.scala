@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition, Phase}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.v3_4.logical
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, StandAloneProcedureCall}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ResolvedCall, StandAloneProcedureCall}
 
 /**
   * This planner takes on queries that requires no planning such as procedures and schema commands

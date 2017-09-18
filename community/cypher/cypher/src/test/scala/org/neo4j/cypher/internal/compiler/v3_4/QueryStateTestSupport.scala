@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.GraphDatabaseTestSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP

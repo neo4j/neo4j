@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper, UpdateCountingQueryContext}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory

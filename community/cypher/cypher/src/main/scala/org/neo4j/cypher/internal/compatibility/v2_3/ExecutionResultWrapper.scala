@@ -25,8 +25,8 @@ import java.util
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
@@ -191,11 +191,11 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = inner.accept(visitor)
 
-  override def executionMode: compatibility.v3_3.runtime.ExecutionMode = {
+  override def executionMode: compatibility.v3_4.runtime.ExecutionMode = {
     val et = inner.executionType
-    if (et.isExplained) compatibility.v3_3.runtime.ExplainMode
-    else if (et.isProfiled) compatibility.v3_3.runtime.ProfileMode
-    else compatibility.v3_3.runtime.NormalMode
+    if (et.isExplained) compatibility.v3_4.runtime.ExplainMode
+    else if (et.isProfiled) compatibility.v3_4.runtime.ProfileMode
+    else compatibility.v3_4.runtime.NormalMode
   }
 
   override def withNotifications(notification: Notification*): internal.InternalExecutionResult =

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CandidateGenerat
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, _}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Equals
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Equals}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 

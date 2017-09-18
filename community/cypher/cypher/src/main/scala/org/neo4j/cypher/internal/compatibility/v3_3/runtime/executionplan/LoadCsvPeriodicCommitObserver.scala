@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 import java.net.URL
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, LoadCsvStatusWrapCypherException}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, LoadCsvStatusWrapCypherException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)

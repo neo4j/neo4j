@@ -17,6 +17,6 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
 case class IdFromSlot(offset: Int) extends RuntimeExpression

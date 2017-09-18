@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}
 

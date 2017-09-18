@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
+package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.ir
 
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
@@ -28,11 +28,11 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.ReadOperations

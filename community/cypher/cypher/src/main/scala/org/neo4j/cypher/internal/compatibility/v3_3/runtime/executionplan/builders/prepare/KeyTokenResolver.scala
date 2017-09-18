@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.build
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
+import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 
 class KeyTokenResolver {
   @deprecated

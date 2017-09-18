@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.PatternGraphBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternMatchingBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.RelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.PatternGraphBuilder
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.PatternMatchingBuilder
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 

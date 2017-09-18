@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CartesianPoint;
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.GeographicPoint;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CartesianPoint;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.GeographicPoint;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
@@ -516,13 +516,13 @@ class ParameterConverter implements AnyValueWriter<RuntimeException>
             if ( crs.code() == CoordinateReferenceSystem.WGS84.code() )
             {
                 return new GeographicPoint( coordinates[0], coordinates[1],
-                        new org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS( crs.name, crs.code,
+                        new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
                                 crs.href ) );
             }
             else if ( crs.code() == CoordinateReferenceSystem.Cartesian.code() )
             {
                 return new CartesianPoint( coordinates[0], coordinates[1],
-                        new org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS( crs.name, crs.code,
+                        new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( crs.name, crs.code,
                                 crs.href ) );
             }
             else

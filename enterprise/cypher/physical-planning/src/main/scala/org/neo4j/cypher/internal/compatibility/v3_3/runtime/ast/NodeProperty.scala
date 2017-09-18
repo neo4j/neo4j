@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
 case class NodeProperty(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
   override def asCanonicalStringVal: String = name

@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_3._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
+import org.neo4j.cypher.internal.compatibility.v3_4._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
 import org.neo4j.cypher.internal.compiler.v3_4.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
@@ -291,7 +291,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       GraphDatabaseSettings.csv_legacy_quote_escaping.getDefaultValue.toBoolean
     )
 
-    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_2) || (version != CypherVersion.v3_3)) &&
+    if (((version != CypherVersion.v2_3) || (version != CypherVersion.v3_1) || (version != CypherVersion.v3_4) || (version != CypherVersion.v3_3)) &&
       (planner == CypherPlanner.greedy || planner == CypherPlanner.idp || planner == CypherPlanner.dp)) {
       val message = s"Cannot combine configurations: ${GraphDatabaseSettings.cypher_parser_version.name}=${version.name} " +
         s"with ${GraphDatabaseSettings.cypher_planner.name} = ${planner.name}"

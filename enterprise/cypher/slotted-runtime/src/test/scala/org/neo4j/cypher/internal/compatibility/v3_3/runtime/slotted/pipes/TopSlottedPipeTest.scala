@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryStateHelper}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes.TopSlottedPipeTestSupport._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipelineInformation, RefSlot}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, QueryStateHelper}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes.TopSlottedPipeTestSupport._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{LongSlot, PipelineInformation, RefSlot}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.helpers.ValueUtils

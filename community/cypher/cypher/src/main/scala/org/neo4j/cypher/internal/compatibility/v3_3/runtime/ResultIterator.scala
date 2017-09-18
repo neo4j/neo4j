@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.frontend.v3_4.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.values.AnyValue
 
 import scala.collection.immutable

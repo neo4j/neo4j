@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.v3_3.executionplan;
+package org.neo4j.cypher.internal.v3_4.executionplan;
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode;
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable;
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionMode;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Completable;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.result.QueryResult;
 
 public interface GeneratedQueryExecution

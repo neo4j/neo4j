@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.compiler.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, ast}
+import org.neo4j.cypher.internal.compiler.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.DesugaredMapProjection
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
 
 object CommunityExpressionConverter extends ExpressionConverter {
 

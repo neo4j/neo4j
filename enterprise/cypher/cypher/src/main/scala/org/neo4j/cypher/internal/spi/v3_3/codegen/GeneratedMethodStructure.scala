@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_3.codegen
+package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util
 import java.util.PrimitiveIterator
@@ -30,17 +30,17 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, symbols}
-import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
-import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
-import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates._
+import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedMethodStructure.CompletableFinalizer
+import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
+import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.ValueUtils

@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.CodeStructure
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CommunityRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition}
-import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
+import org.neo4j.cypher.internal.v3_4.executionplan.GeneratedQuery
 
 class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                                override val tracer: CompilationPhaseTracer,

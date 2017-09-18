@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, Rewriter, topDown}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.v3_4.logical.plans._

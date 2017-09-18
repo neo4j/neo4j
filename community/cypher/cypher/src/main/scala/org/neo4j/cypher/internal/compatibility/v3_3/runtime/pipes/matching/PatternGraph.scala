@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, RelatedTo}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effects, ReadsRelationshipsWithTypes}
-import org.neo4j.cypher.internal.frontend.v3_4.PatternException
+import org.neo4j.cypher.internal.frontend.v3_3.PatternException
 
 case class PatternGraph(patternNodes: Map[String, PatternNode],
                         patternRels: Map[String, Seq[PatternRelationship]],

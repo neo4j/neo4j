@@ -23,9 +23,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_4.CypherOrdering
-import org.neo4j.cypher.internal.compiler.v3_4.common.CypherOrderability
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{NodeIdWrapper, RelationshipIdWrapper}
+import org.neo4j.cypher.internal.compiler.v3_3.CypherOrdering
+import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{BooleanValue, NumberValue, TextValue}
 import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}

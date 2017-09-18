@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.helpers
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.helpers
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{BoolType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.IsList
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 

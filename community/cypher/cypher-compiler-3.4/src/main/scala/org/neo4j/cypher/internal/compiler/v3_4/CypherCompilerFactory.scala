@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
-  val monitorTag = "cypher3.3"
+  val monitorTag = "cypher3.4"
 
   def costBasedCompiler(config: CypherCompilerConfiguration,
                         clock: Clock,

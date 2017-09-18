@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._

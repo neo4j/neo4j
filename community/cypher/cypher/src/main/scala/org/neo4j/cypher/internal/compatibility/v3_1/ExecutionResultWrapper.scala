@@ -26,8 +26,8 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
@@ -123,12 +123,12 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def next(): Map[String, Any] = inner.next()
   override def close(): Unit = inner.close()
 
-  override def queryType: compatibility.v3_3.runtime.executionplan.InternalQueryType = inner.executionType match {
-      case READ_ONLY => compatibility.v3_3.runtime.executionplan.READ_ONLY
-      case READ_WRITE => compatibility.v3_3.runtime.executionplan.READ_WRITE
-      case WRITE => compatibility.v3_3.runtime.executionplan.WRITE
-      case SCHEMA_WRITE => compatibility.v3_3.runtime.executionplan.SCHEMA_WRITE
-      case DBMS => compatibility.v3_3.runtime.executionplan.DBMS
+  override def queryType: compatibility.v3_4.runtime.executionplan.InternalQueryType = inner.executionType match {
+      case READ_ONLY => compatibility.v3_4.runtime.executionplan.READ_ONLY
+      case READ_WRITE => compatibility.v3_4.runtime.executionplan.READ_WRITE
+      case WRITE => compatibility.v3_4.runtime.executionplan.WRITE
+      case SCHEMA_WRITE => compatibility.v3_4.runtime.executionplan.SCHEMA_WRITE
+      case DBMS => compatibility.v3_4.runtime.executionplan.DBMS
   }
 
   override def notifications: Iterable[Notification] = inner.notifications.map(asKernelNotification(offset)) ++ preParsingNotification

@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner, PlannerImpl}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner, PlannerImpl}
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts

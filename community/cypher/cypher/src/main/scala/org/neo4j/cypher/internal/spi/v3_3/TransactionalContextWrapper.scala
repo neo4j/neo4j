@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.ProfileKernelStatisticProvider
-import org.neo4j.cypher.internal.compiler.v3_4.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
 import org.neo4j.graphdb.{Lock, PropertyContainer}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Revertable

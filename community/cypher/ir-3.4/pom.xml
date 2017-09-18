@@ -23,7 +23,9 @@
   </scm>
 
   <properties>
-    <version-package>cypher.internal.ir.v3_3</version-package>
+    <version-package>cypher.internal.ir.v3_4</version-package>
+    <scala.version>2.11.11</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>

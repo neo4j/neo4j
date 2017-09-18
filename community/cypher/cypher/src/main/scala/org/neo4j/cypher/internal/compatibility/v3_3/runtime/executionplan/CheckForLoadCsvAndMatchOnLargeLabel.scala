@@ -20,17 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.LabelId
-import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
-import org.neo4j.cypher.internal.ir.v3_4.Cardinality
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 
 case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
   def apply(pipe: Pipe) = {
-    import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+    import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 
     sealed trait SearchState
     case object NoneFound extends SearchState

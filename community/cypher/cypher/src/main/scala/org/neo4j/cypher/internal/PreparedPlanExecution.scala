@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
-import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ValueConversion
+import org.neo4j.cypher.internal.spi.v3_4.TransactionalContextWrapper
 import org.neo4j.graphdb.Result
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
 

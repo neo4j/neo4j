@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{Co
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelName, PropertyKeyName, RelTypeName}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
+import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 

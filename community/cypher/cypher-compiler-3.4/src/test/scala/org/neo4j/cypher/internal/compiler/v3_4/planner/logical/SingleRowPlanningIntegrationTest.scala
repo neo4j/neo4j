@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Projection, SingleRow}
 
 class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

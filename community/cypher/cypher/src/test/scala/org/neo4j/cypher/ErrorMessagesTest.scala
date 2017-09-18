@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CypherSerializer
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CypherSerializer
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {

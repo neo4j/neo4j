@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{ProcedureResultItem, Stateme
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{DeprecatedFieldNotification, DeprecatedProcedureNotification, InternalNotification, ProcedureWarningNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.v3_4.logical.plans.FieldSignature
+import org.neo4j.cypher.internal.v3_4.logical.plans.{FieldSignature, ProcedureSignature, ResolvedCall}
 
 object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
   override def visit(value: BaseState, context: BaseContext): Unit = {

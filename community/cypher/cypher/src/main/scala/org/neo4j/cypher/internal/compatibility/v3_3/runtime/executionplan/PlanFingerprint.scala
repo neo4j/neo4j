@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, GraphStatisticsSnapshot}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, GraphStatisticsSnapshot}
 
 case class PlanFingerprint(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot)
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CartesianPoint;
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.GeographicPoint;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.CartesianPoint;
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.GeographicPoint;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
@@ -52,13 +52,13 @@ public class ValueToObjectSerializer extends BaseToObjectValueWriter<RuntimeExce
     protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
     {
         return new GeographicPoint( longitude, latitude,
-                new org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS( name, code, href ) );
+                new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( name, code, href ) );
     }
 
     @Override
     protected Point newCartesianPoint( double x, double y, String name, int code, String href )
     {
         return new CartesianPoint( x, y,
-                new org.neo4j.cypher.internal.compatibility.v3_3.runtime.CRS( name, code, href ) );
+                new org.neo4j.cypher.internal.compatibility.v3_4.runtime.CRS( name, code, href ) );
     }
 }

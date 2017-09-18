@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
-import org.neo4j.cypher.internal.frontend.v3_4.ParameterNotFoundException
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue

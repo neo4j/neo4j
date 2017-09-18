@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EagerPipe, LoadCSVPipe, Pipe}
-import org.neo4j.cypher.internal.frontend.v3_4.notification.{EagerLoadCsvNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v3_3.notification.{EagerLoadCsvNotification, InternalNotification}
 
 object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
 
   def apply(pipe: Pipe) = {
-    import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+    import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
     sealed trait SearchState
     case object NoEagerFound extends SearchState
     case object EagerFound extends SearchState

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDec
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
 import org.neo4j.kernel.impl.api.RelationshipVisitor

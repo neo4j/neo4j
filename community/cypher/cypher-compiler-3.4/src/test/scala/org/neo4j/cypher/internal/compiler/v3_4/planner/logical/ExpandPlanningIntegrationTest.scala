@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_4.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, PlannerQuery, RegularPlannerQuery}
 import org.neo4j.cypher.internal.v3_4.logical.plans._

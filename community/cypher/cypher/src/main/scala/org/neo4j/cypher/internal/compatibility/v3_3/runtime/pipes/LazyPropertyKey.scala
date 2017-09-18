@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_4.{PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.{PropertyKeyId, SemanticTable}
 
 case class LazyPropertyKey(name: String) {
   private var id: Option[PropertyKeyId] = None

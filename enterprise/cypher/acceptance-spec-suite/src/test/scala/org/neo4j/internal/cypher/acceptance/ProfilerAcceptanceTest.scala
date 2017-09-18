@@ -20,8 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString

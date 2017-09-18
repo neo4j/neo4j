@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 
 case class ExpandAllLoopDataGenerator(opName: String, fromVar: Variable, dir: SemanticDirection,

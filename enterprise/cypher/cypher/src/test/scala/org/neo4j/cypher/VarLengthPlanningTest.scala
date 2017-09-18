@@ -20,8 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_4.ast.NoneIterablePredicate
 import org.neo4j.graphdb.Direction._
 import org.neo4j.graphdb.{Direction, Node}

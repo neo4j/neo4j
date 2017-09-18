@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{IndexSeekByRange, UniqueIndexSeekByRange}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
