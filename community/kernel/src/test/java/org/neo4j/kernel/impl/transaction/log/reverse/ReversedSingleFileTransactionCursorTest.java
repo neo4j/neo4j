@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,15 +28,25 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeRule;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -64,6 +74,9 @@ public class ReversedSingleFileTransactionCursorTest
     public final RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( life );
 
     private long txId = TransactionIdStore.BASE_TX_ID;
+    private LogProvider logProvider = new AssertableLogProvider( true );
+    private ReverseTransactionCursorLoggingMonitor monitor = new ReverseTransactionCursorLoggingMonitor(
+            logProvider.getLog( ReversedSingleFileTransactionCursor.class ) );
     private PhysicalLogFile logFile;
 
     @Before
@@ -136,7 +149,7 @@ public class ReversedSingleFileTransactionCursorTest
         // when
         try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
         {
-            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(), monitor );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
@@ -170,7 +183,7 @@ public class ReversedSingleFileTransactionCursorTest
     {
         return new ReversedSingleFileTransactionCursor(
                 (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ),
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitor );
     }
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException

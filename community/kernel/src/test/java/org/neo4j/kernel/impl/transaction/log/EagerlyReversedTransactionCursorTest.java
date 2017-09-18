@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.transaction.log;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given;

@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -75,6 +74,7 @@ public class PhysicalLogicalTransactionStoreTest
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory();
     private File testDir;
+    private Monitors monitors = new Monitors();
 
     @Before
     public void setup()
@@ -96,7 +96,7 @@ public class PhysicalLogicalTransactionStoreTest
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fileSystemRule.get() );
-        Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
+        Monitor monitor = monitors.newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
                 transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
@@ -120,7 +120,7 @@ public class PhysicalLogicalTransactionStoreTest
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( emptyLogFile, positionCache,
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitors );
         verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, store );
     }
@@ -135,7 +135,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fileSystemRule.get() );
-        Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
+        Monitor monitor = monitors.newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
                 transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
@@ -169,7 +169,7 @@ public class PhysicalLogicalTransactionStoreTest
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fileSystemRule.get() );
-        Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
+        Monitor monitor = monitors.newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
                 transactionIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
@@ -193,7 +193,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore::getLastCommittedTransactionId,
                 mock( LogVersionRepository.class ), monitor, logHeaderCache ) );
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, positionCache,
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitors );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
@@ -267,7 +267,7 @@ public class PhysicalLogicalTransactionStoreTest
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fileSystemRule.get() );
-        Monitor monitor = new Monitors().newMonitor( PhysicalLogFile.Monitor.class );
+        Monitor monitor = monitors.newMonitor( PhysicalLogFile.Monitor.class );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 1000,
                 txIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
@@ -288,7 +288,7 @@ public class PhysicalLogicalTransactionStoreTest
                 txIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache,
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitors );
 
         // WHEN
         life.start();
@@ -313,7 +313,7 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitors );
 
         try
         {
@@ -348,7 +348,7 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
-                new VersionAwareLogEntryReader<>(), NullLogService.getInstance() );
+                new VersionAwareLogEntryReader<>(), monitors );
 
         try
         {

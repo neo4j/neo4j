@@ -23,7 +23,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -31,6 +30,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -47,15 +49,15 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
-    private final LogService logService;
+    private final Monitors monitors;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
-        this.logService = logService;
+        this.monitors = monitors;
     }
 
     @Override
@@ -68,7 +70,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
             IOException
     {
-        return ReversedMultiFileTransactionCursor.fromLogFile( logFile, backToPosition, logService );
+        return ReversedMultiFileTransactionCursor
+                .fromLogFile( logFile, backToPosition, monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
     }
 
     @Override

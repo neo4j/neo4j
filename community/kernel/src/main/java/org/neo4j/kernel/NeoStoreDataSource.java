@@ -131,6 +131,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
@@ -437,6 +439,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader, monitors, failOnCorruptedLogFiles );
         monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
@@ -659,7 +662,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, logService );
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, monitors );
 
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =

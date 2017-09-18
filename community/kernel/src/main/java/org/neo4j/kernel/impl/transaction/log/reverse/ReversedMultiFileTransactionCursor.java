@@ -17,19 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
 
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-import static org.neo4j.kernel.impl.transaction.log.EagerlyReversedTransactionCursor.eagerlyReverse;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor.eagerlyReverse;
 
 /**
  * Similar to {@link PhysicalTransactionCursor} and actually uses it internally. This main difference is that transactions
@@ -43,7 +49,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
  *
  * @see ReversedSingleFileTransactionCursor
  */
-class ReversedMultiFileTransactionCursor implements TransactionCursor
+public class ReversedMultiFileTransactionCursor implements TransactionCursor
 {
     private final LogPosition backToPosition;
     private final ThrowingFunction<LogPosition,TransactionCursor,IOException> cursorFactory;
@@ -57,13 +63,13 @@ class ReversedMultiFileTransactionCursor implements TransactionCursor
      *
      * @param logFile {@link LogFile} to supply log entries forming transactions.
      * @param backToPosition {@link LogPosition} to read backwards to.
-     * @param logService logging service used to to create log.
+     * @param monitor reverse transaction cursor monitor
      * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
      * @throws IOException on I/O error.
      */
-    static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition, LogService logService ) throws
-            IOException
+    public static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition,
+            ReversedTransactionCursorMonitor monitor ) throws IOException
     {
         long highestVersion = logFile.currentLogVersion();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -74,7 +80,7 @@ class ReversedMultiFileTransactionCursor implements TransactionCursor
             {
                 // This is a channel which can be positioned explicitly and is the typical case for such channels
                 // Let's take advantage of this fact and use a bit smarter reverse implementation
-                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader, logService );
+                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader, monitor );
             }
 
             // Fall back to simply eagerly reading each single log file and reversing in memory

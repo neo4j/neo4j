@@ -156,7 +156,8 @@ public class RecoveryTest
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader,
+                    monitors );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
@@ -259,7 +260,7 @@ public class RecoveryTest
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
@@ -399,7 +400,7 @@ public class RecoveryTest
             LogFile logFile = life.add( new PhysicalLogFile( fileSystemRule.get(), logFiles, 50,
                     transactionIdStore::getLastCommittedTransactionId, logVersionRepository,
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
-            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, logService );
+            LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {

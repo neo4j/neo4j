@@ -17,17 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
@@ -57,16 +62,16 @@ import static java.lang.String.format;
  *
  * @see ReversedMultiFileTransactionCursor
  */
-class ReversedSingleFileTransactionCursor implements TransactionCursor
+public class ReversedSingleFileTransactionCursor implements TransactionCursor
 {
     // Should this be passed in or extracted from the read-ahead channel instead?
     private static final int CHUNK_SIZE = ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 
     private final ReadAheadLogChannel channel;
+    private final ReversedTransactionCursorMonitor monitor;
     private final TransactionCursor transactionCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of ReadAheadLogChannel
     private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>( 20 );
-    private final Log log;
     private CommittedTransactionRepresentation currentChunkTransaction;
     // May be longer than required, offsetLength holds the actual length.
     private final long[] offsets;
@@ -75,19 +80,18 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     private long totalSize;
 
     ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, LogService logService )
-            throws IOException
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
+            ReversedTransactionCursorMonitor monitor ) throws IOException
     {
         this.channel = channel;
+        this.monitor = monitor;
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
         this.transactionCursor = new PhysicalTransactionCursor<>( channel, logEntryReader );
-        this.log = logService.getInternalLog( ReversedSingleFileTransactionCursor.class );
         this.offsets = sketchOutTransactionStartOffsets();
     }
 
     // Also initializes offset indexes
-    // This method could use some way of reading log entries w/o creating objects. Would be great
     private long[] sketchOutTransactionStartOffsets() throws IOException
     {
         // Grows on demand. Initially sized to be able to hold all transaction start offsets for a single log file
@@ -110,7 +114,7 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
         }
         catch ( Throwable t )
         {
-            log.warn( buildReadErrorMessage( offsets, offsetCursor, logVersion ), t );
+            monitor.transactionalLogRecordReadFailure( t, offsets, offsetCursor, logVersion );
         }
 
         if ( channel.getVersion() != logVersion )
