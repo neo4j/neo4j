@@ -19,6 +19,7 @@
  */
 package recovery;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +27,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +41,10 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -59,17 +65,19 @@ public class RecoveryCleanupIT
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-    private Barrier.Control recoveryCompleteBarrier;
     private GraphDatabaseService db;
     private File storeDir;
-    private ExecutorService executor = Executors.newFixedThreadPool( 2 );
-    private Label label = Label.label( "label" );
+    private final TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+    private final ExecutorService executor = Executors.newFixedThreadPool( 2 );
+    private final Label label = Label.label( "label" );
+    private final String propKey = "propKey";
+    private Map<Setting,String> testSpecificConfig = new HashMap<>();
 
     @Before
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
+        testSpecificConfig.clear();
     }
 
     @After
@@ -89,7 +97,7 @@ public class RecoveryCleanupIT
             dirtyDatabase();
 
             // WHEN
-            recoveryCompleteBarrier = new Barrier.Control();
+            Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
             LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
             setMonitor( recoveryBarrierMonitor );
             db = startDatabase();
@@ -129,11 +137,25 @@ public class RecoveryCleanupIT
         logProvider.assertContainsLogCallContaining( "Scan store recovery completed" );
     }
 
-    private void setMonitor( Object monitor )
+    @Test
+    public void nativeIndexMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
-        Monitors monitors = new Monitors();
-        monitors.addMonitorListener( monitor );
-        factory.setMonitors( monitors );
+        // given
+        setTestConfig( GraphDatabaseSettings.enable_native_schema_index, "true" );
+        dirtyDatabase();
+
+        // when
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        factory.setUserLogProvider( logProvider );
+        factory.setInternalLogProvider( logProvider );
+        startDatabase().shutdown();
+
+        // then
+        logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
+                "Schema index recovery completed",
+                "pages visited",
+                "cleaned crashed pointers",
+                "Time spent" ) ) );
     }
 
     private void dirtyDatabase() throws IOException
@@ -141,12 +163,39 @@ public class RecoveryCleanupIT
         db = startDatabase();
 
         DatabaseHealth databaseHealth = databaseHealth( db );
+        index( db );
         someData( db );
         checkpoint( db );
         someData( db );
         databaseHealth.panic( new Throwable( "Trigger recovery on next startup" ) );
         db.shutdown();
         db = null;
+    }
+
+    private void setTestConfig( Setting<Boolean> setting, String value )
+    {
+        testSpecificConfig.put( setting, value );
+    }
+
+    private void setMonitor( Object monitor )
+    {
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        factory.setMonitors( monitors );
+    }
+
+    private void index( GraphDatabaseService db )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().indexFor( label ).on( propKey ).create();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
     }
 
     private void reportError( Race.ThrowingRunnable checkpoint, AtomicReference<Throwable> error )
@@ -171,7 +220,8 @@ public class RecoveryCleanupIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.createNode( label );
+            db.createNode( label ).setProperty( propKey, 1 );
+            db.createNode( label ).setProperty( propKey, "string" );
             tx.success();
         }
     }
@@ -191,7 +241,9 @@ public class RecoveryCleanupIT
 
     private GraphDatabaseService startDatabase()
     {
-        return factory.newEmbeddedDatabase( storeDir );
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
+        testSpecificConfig.forEach( builder::setConfig );
+        return builder.newGraphDatabase();
     }
 
     private DatabaseHealth databaseHealth( GraphDatabaseService db )

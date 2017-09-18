@@ -79,9 +79,11 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig );
+            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig,
+                    log, descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout() );
+            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout(), log, descriptor,
+                    indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
@@ -104,7 +106,8 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector );
+        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, log, descriptor,
+                indexId );
     }
 
     @Override
