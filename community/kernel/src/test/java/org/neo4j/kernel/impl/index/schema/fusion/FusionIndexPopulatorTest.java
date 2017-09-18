@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.DropAction;
 import org.neo4j.values.storable.Value;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertThat;
@@ -45,9 +46,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyCallFail;
 
@@ -411,16 +409,5 @@ public class FusionIndexPopulatorTest
             verify( lucenePopulator ).includeSample( update );
             reset( lucenePopulator );
         }
-    }
-
-    @Test
-    public void shouldConfigureSamplingOnBothPopulators() throws Exception
-    {
-        // when
-        fusionIndexPopulator.configureSampling( true );
-
-        // then
-        verify( nativePopulator ).configureSampling( true );
-        verify( lucenePopulator ).configureSampling( true );
     }
 }

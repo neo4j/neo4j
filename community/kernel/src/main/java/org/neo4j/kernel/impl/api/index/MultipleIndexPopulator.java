@@ -169,7 +169,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         IntPredicate propertyKeyIdFilter = propertyKeyId -> contains( propertyKeyIds, propertyKeyId );
 
         storeScan = storeView.visitNodes( labelIds, propertyKeyIdFilter, new NodePopulationVisitor(), null, false );
-        storeScan.configure( populations );
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {
             @Override
@@ -284,12 +283,6 @@ public class MultipleIndexPopulator implements IndexPopulator
     public void includeSample( IndexEntryUpdate<?> update )
     {
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
-    }
-
-    @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        throw new UnsupportedOperationException( "Multiple index populator can't be configured." );
     }
 
     @Override
@@ -613,12 +606,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         public PopulationProgress getProgress()
         {
             return delegate.getProgress();
-        }
-
-        @Override
-        public void configure( Collection<IndexPopulation> populations )
-        {
-            delegate.configure( populations );
         }
     }
 }

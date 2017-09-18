@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -446,11 +445,6 @@ public class BatchingMultipleIndexPopulatorTest
         public PopulationProgress getProgress()
         {
             return PopulationProgress.NONE;
-        }
-
-        @Override
-        public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
-        {
         }
     }
 }

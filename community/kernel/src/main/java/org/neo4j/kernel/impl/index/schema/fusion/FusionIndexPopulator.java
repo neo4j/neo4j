@@ -135,13 +135,6 @@ class FusionIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        nativePopulator.configureSampling( onlineSampling );
-        lucenePopulator.configureSampling( onlineSampling );
-    }
-
-    @Override
     public IndexSample sampleResult()
     {
         return combineSamples( nativePopulator.sampleResult(), lucenePopulator.sampleResult() );

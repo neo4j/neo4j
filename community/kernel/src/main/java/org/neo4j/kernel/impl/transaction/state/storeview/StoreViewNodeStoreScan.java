@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.IntPredicate;
 
@@ -151,12 +150,6 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends NodeStore
         {
             updater.process( update );
         }
-    }
-
-    @Override
-    public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
-    {
-        populations.forEach( population -> population.populator.configureSampling( true ) );
     }
 
     private class PropertyBlockIterator extends PrefetchingIterator<PropertyBlock>

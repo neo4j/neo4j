@@ -137,14 +137,6 @@ public interface IndexPopulator
     void includeSample( IndexEntryUpdate<?> update );
 
     /**
-     * Configure specific type of sampling that should be used during index population.
-     * Depends from type of node scan that is used during index population
-     *
-     * @param onlineSampling should online (sampling based on index population and updates) be used
-     */
-    void configureSampling( boolean onlineSampling );
-
-    /**
      * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
     IndexSample sampleResult();
@@ -185,11 +177,6 @@ public interface IndexPopulator
 
         @Override
         public void includeSample( IndexEntryUpdate<?> update )
-        {
-        }
-
-        @Override
-        public void configureSampling( boolean onlineSampling )
         {
         }
 

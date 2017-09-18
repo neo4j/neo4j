@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.Test;
 
-import java.util.Collection;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -68,12 +67,6 @@ public class NodeStoreScanTest
             @Override
             public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
                     long currentlyIndexedNodeId )
-            {
-                // no-op
-            }
-
-            @Override
-            public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
             {
                 // no-op
             }
