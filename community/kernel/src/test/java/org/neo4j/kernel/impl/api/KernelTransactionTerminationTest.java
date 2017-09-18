@@ -63,7 +63,7 @@ public class KernelTransactionTerminationTest
 {
     private static final int TEST_RUN_TIME_MS = 5_000;
 
-    @Test( timeout = TEST_RUN_TIME_MS * 2 )
+    @Test( timeout = TEST_RUN_TIME_MS * 20 )
     public void transactionCantBeTerminatedAfterItIsClosed() throws Throwable
     {
         runTwoThreads(
@@ -77,7 +77,7 @@ public class KernelTransactionTerminationTest
         );
     }
 
-    @Test( timeout = TEST_RUN_TIME_MS * 2 )
+    @Test( timeout = TEST_RUN_TIME_MS * 20 )
     public void closeTransaction() throws Throwable
     {
         BlockingQueue<Boolean> committerToTerminator = new LinkedBlockingQueue<>( 1 );
