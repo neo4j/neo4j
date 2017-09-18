@@ -570,8 +570,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
         |UNWIND nodes(p)[1..-1] as n
         |RETURN id(n) as n, count(*) as c""".stripMargin)
 
-    result.toList should equal(List(
-      Map("n" -> 5, "c" -> 4), Map("n" -> 6, "c" -> 4)
+    result.toSet should equal(Set(
+      Map("n" -> a2.getId, "c" -> 4), Map("n" -> a3.getId, "c" -> 4)
     ))
 
     result.close()

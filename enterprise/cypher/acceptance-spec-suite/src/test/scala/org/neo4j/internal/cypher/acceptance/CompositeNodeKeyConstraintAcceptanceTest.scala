@@ -127,13 +127,13 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("composite NODE KEY constraint should fail when we have nodes with same properties") {
     // When
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    val a = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User").getId
+    val b = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User").getId
+    val c = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User").getId
 
     // Then
     val query = "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY"
-    val errorMessage = "Both Node(0) and Node(2) have the label `User` and properties `firstname` = 'Joe', `lastname` = 'Soap'"
+    val errorMessage = "Both Node(%d) and Node(%d) have the label `User` and properties `firstname` = 'Joe', `lastname` = 'Soap'".format(a, c)
     failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3, query, errorMessage)
   }
 
@@ -166,8 +166,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
   }
 
   test("trying to add a composite node key constraint when duplicates exist") {
-    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
-    createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person")
+    val a = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
+    val b = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
 
     val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
@@ -175,14 +175,14 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and properties `name` = 'A', `surname` = 'B'")
+      ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%s" +
+        "Both Node(%d) and Node(%d) have the label `Person` and properties `name` = 'A', `surname` = 'B'").format(String.format("%n"), a, b)
     )
   }
 
   test("trying to add a node key constraint when duplicates exist") {
-    createLabeledNode(Map("name" -> "A"), "Person")
-    createLabeledNode(Map("name" -> "A"), "Person")
+    val a = createLabeledNode(Map("name" -> "A"), "Person").getId
+    val b = createLabeledNode(Map("name" -> "A"), "Person").getId
 
     val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
@@ -190,8 +190,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
+      ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%s" +
+        "Both Node(%d) and Node(%d) have the label `Person` and property `name` = 'A'").format(String.format("%n"), a, b)
     )
   }
 

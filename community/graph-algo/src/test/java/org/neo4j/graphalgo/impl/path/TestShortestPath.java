@@ -60,6 +60,7 @@ import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.PathExpanders.allTypesAndDirections;
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class TestShortestPath extends Neo4jAlgoTestCase
 {
@@ -467,6 +468,24 @@ public class TestShortestPath extends Neo4jAlgoTestCase
         final Node end = graph.getNode( "end" );
         assertThat( new ShortestPath( 2, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
         assertThat( new ShortestPath( 3, allTypesAndDirections(), 42 ).findSinglePath( start, end ).length(), is( 2 ) );
+    }
+
+    @Test
+    public void shouldMakeSureResultLimitIsRespectedForMultiPathHits() throws Exception
+    {
+        /*       _____
+         *      /     \
+         *    (a)-----(b)
+         *      \_____/
+         */
+        for ( int i = 0; i < 3; i++ )
+        {
+            graph.makeEdge( "a", "b" );
+        }
+
+        Node a = graph.getNode( "a" );
+        Node b = graph.getNode( "b" );
+        testShortestPathFinder( finder -> assertEquals( 1, count( finder.findAllPaths( a, b ) ) ), allTypesAndDirections(), 2, 1 );
     }
 
     private void testShortestPathFinder( PathFinderTester tester, PathExpander expander, int maxDepth )

@@ -67,9 +67,9 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         .map(_.mapValues {
           case l: Seq[Any] => l.toSet
           case x => x
-        }).toList
+        }).toSet
 
-      result should equal(List(
+      result should equal(Set(
         Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
         Map("p" -> 42),
         Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),

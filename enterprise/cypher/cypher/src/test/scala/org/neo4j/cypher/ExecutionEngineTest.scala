@@ -257,7 +257,12 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("shouldBeAbleToTakeParamsInDifferentTypes") {
-    createNodes("A", "B", "C", "D", "E")
+    val nodes = createNodes("A", "B", "C", "D", "E")
+    val a = nodes.apply(0).getId
+    val b = nodes.apply(1).getId
+    val c = nodes.apply(2).getId
+    val d = nodes.apply(3).getId
+    val e = nodes.apply(4).getId
 
     val query =
       """
@@ -267,11 +272,11 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       """.stripMargin
 
     val result = executeWithAllPlannersAndCompatibilityMode(query,
-      "a" -> Seq[Long](0),
-      "b" -> 1,
-      "c" -> Seq(2L).asJava,
-      "0" -> Seq(3).asJava,
-      "1" -> List(4)
+      "a" -> Seq[Long](a),
+      "b" -> b.toInt,
+      "c" -> Seq(c).asJava,
+      "0" -> Seq(d.toInt).asJava,
+      "1" -> List(e)
     )
 
     result.toList should have size 1
@@ -353,14 +358,14 @@ return r""")
   }
 
   test("shouldHandleAggregationAndSortingOnSomeOverlappingColumns") {
-    createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
-    createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
+    val a = createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1).getId
+    val b = createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2).getId
 
     val result = executeWithAllPlannersAndCompatibilityMode( """
 match (a)
-where id(a) IN [0, 1]
+where id(a) IN [%d, %d]
 return a.COL1, a.COL2, avg(a.num)
-order by a.COL1""")
+order by a.COL1""".format(a, b))
 
     result.toList should equal(List(
       Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
@@ -669,10 +674,10 @@ order by a.COL1""")
     // GIVEN
     val a = createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
-    createNode()
+    val c = createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [0, 1, 2] AND n:foo RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [%d, %d, %d] AND n:foo RETURN n".format(a.getId, b.getId, c.getId))
 
     // THEN
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
@@ -693,12 +698,13 @@ order by a.COL1""")
 
   test("should filter nodes by multiple labels") {
     // GIVEN
-    createLabeledNode("foo")
+    val a = createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
-    createNode()
+    val c = createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [0, 1, 2] AND n:foo:bar RETURN n")
+    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [%d, %d, %d] AND n:foo:bar RETURN n"
+        .format(a.getId, b.getId, c.getId))
 
     // THEN
     result.toList should equal(List(Map("n" -> b)))

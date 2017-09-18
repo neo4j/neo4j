@@ -1098,7 +1098,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners), params = Map("param" -> matchingChar))
 
-    result.toList should equal(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
+    result.toSet should equal(Set(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
   }
 
   test("should plan range index seeks matching strings against character properties (coerced to string wrt the inequality)") {
@@ -1122,7 +1122,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
         plan should useOperators(IndexSeekByRange.name)
       }, Configs.AllRulePlanners), params = Map("param" -> matchingChar.toString))
 
-    result.toList should equal(List(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
+    result.toSet should equal(Set(Map("prop" -> matchingChar), Map("prop" -> matchingChar.toString)))
   }
 
   test("rule planner should plan index seek for inequality match") {
