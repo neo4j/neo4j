@@ -35,31 +35,31 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_A
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_PROPERTIES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_METADATA_DOC;
 
-public class FulltextIndexConfiguration
+class FulltextIndexConfiguration
 {
-    public static Term TERM = new Term( FIELD_METADATA_DOC );
+    static Term TERM = new Term( FIELD_METADATA_DOC );
 
     private final Set<String> properties;
     private final String analyzerClassName;
 
-    public FulltextIndexConfiguration( Document doc )
+    FulltextIndexConfiguration( Document doc )
     {
         properties = new HashSet<String>( Arrays.asList( doc.getValues( FIELD_CONFIG_PROPERTIES ) ) );
         analyzerClassName = doc.get( FIELD_CONFIG_ANALYZER );
     }
 
-    public FulltextIndexConfiguration( Analyzer analyzer, Set<String> properties )
+    FulltextIndexConfiguration( Analyzer analyzer, Set<String> properties )
     {
         this.properties = properties;
         this.analyzerClassName = analyzer.getClass().getCanonicalName();
     }
 
-    public boolean matches( String analyzerClassName, Set<String> properties )
+    boolean matches( String analyzerClassName, Set<String> properties )
     {
         return this.analyzerClassName.equals( analyzerClassName ) && this.properties.equals( properties );
     }
 
-    public Document asDocument()
+    Document asDocument()
     {
         Document doc = new Document();
         doc.add( new StringField( FIELD_METADATA_DOC, "", NO ) );
