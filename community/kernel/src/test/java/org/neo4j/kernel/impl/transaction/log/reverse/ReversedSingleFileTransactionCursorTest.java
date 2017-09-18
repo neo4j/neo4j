@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.reverse;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.AssertableLogProvider;
@@ -62,6 +65,7 @@ import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhau
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
 public class ReversedSingleFileTransactionCursorTest
 {
@@ -69,9 +73,11 @@ public class ReversedSingleFileTransactionCursorTest
     private final TestDirectory directory = TestDirectory.testDirectory( fs );
     private final LifeRule life = new LifeRule( true );
     private final RandomRule random = new RandomRule();
+    private final ExpectedException expectedException = ExpectedException.none();
 
     @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( fs ).around( directory ).around( life );
+    public final RuleChain rules = RuleChain.outerRule( random ).around( fs )
+            .around( directory ).around( life ).around( expectedException );
 
     private long txId = TransactionIdStore.BASE_TX_ID;
     private LogProvider logProvider = new AssertableLogProvider( true );
@@ -160,9 +166,42 @@ public class ReversedSingleFileTransactionCursorTest
         }
     }
 
+    @Test
+    public void readCorruptedTransactionLog() throws IOException
+    {
+        int readableTransactions = 10;
+        writeTransactions( readableTransactions, 1, 1 );
+        appendCorruptedTransaction();
+        writeTransactions( readableTransactions, 1, 1 );
+        CommittedTransactionRepresentation[] committedTransactionRepresentations = readAllFromReversedCursor();
+        assertTransactionRange( committedTransactionRepresentations,
+                readableTransactions + TransactionIdStore.BASE_TX_ID, TransactionIdStore.BASE_TX_ID );
+    }
+
+    @Test
+    public void failToReadCorruptedTransactionLogWhenConfigured() throws IOException
+    {
+        int readableTransactions = 10;
+        writeTransactions( readableTransactions, 1, 1 );
+        appendCorruptedTransaction();
+        writeTransactions( readableTransactions, 1, 1 );
+
+        expectedException.expect( UnsupportedLogVersionException.class );
+
+        readAllFromReversedCursorFailOnCorrupted();
+    }
+
     private CommittedTransactionRepresentation[] readAllFromReversedCursor() throws IOException
     {
-        try ( ReversedSingleFileTransactionCursor cursor = txCursor() )
+        try ( ReversedSingleFileTransactionCursor cursor = txCursor( false ) )
+        {
+            return exhaust( cursor );
+        }
+    }
+
+    private CommittedTransactionRepresentation[] readAllFromReversedCursorFailOnCorrupted() throws IOException
+    {
+        try ( ReversedSingleFileTransactionCursor cursor = txCursor( true ) )
         {
             return exhaust( cursor );
         }
@@ -171,20 +210,19 @@ public class ReversedSingleFileTransactionCursorTest
     private void assertTransactionRange( CommittedTransactionRepresentation[] readTransactions, long highTxId, long lowTxId )
     {
         long expectedTxId = highTxId;
-        for ( int i = 0; i < readTransactions.length; i++ )
+        for ( CommittedTransactionRepresentation tx : readTransactions )
         {
-            CommittedTransactionRepresentation tx = readTransactions[i];
             assertEquals( expectedTxId, tx.getCommitEntry().getTxId() );
             expectedTxId--;
         }
         assertEquals( expectedTxId, lowTxId );
     }
 
-    private ReversedSingleFileTransactionCursor txCursor() throws IOException
+    private ReversedSingleFileTransactionCursor txCursor( boolean failOnCorruptedLogFiles ) throws IOException
     {
         return new ReversedSingleFileTransactionCursor(
                 (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ),
-                new VersionAwareLogEntryReader<>(), true, monitor );
+                new VersionAwareLogEntryReader<>(), failOnCorruptedLogFiles, monitor );
     }
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException
@@ -197,6 +235,13 @@ public class ReversedSingleFileTransactionCursorTest
         }
         channel.prepareForFlush().flush();
         // Don't close the channel, LogFile owns it
+    }
+
+    private void appendCorruptedTransaction() throws IOException
+    {
+        FlushablePositionAwareChannel channel = logFile.getWriter();
+        TransactionLogWriter writer = new TransactionLogWriter( new CorruptedLogEntryWriter( channel ) );
+        writer.append( tx( random.intBetween( 100, 1000 ) ), ++txId );
     }
 
     private TransactionRepresentation tx( int size )
@@ -212,5 +257,21 @@ public class ReversedSingleFileTransactionCursorTest
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return tx;
+    }
+
+    private static class CorruptedLogEntryWriter extends LogEntryWriter
+    {
+
+        CorruptedLogEntryWriter( FlushableChannel channel )
+        {
+            super( channel );
+        }
+
+        @Override
+        public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+                byte[] additionalHeaderData ) throws IOException
+        {
+            writeLogEntryHeader( TX_START );
+        }
     }
 }
