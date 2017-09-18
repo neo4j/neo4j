@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Condition
-import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
+import org.neo4j.cypher.internal.ir.v3_4.UnionQuery
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 import scala.reflect.ClassTag

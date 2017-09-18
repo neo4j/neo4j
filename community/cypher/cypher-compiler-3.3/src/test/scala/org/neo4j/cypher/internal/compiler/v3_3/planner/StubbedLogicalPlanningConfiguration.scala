@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, HasLabels}
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)

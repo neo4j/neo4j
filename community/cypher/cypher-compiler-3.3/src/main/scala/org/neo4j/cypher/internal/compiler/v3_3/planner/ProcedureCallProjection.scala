@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureReadOnlyAccess, ResolvedCall}
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {

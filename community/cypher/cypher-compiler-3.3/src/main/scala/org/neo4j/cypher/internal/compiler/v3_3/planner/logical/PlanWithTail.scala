@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
-import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 /*

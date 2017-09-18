@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.flattenBooleanOpera
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, Rewriter, SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
+import org.neo4j.cypher.internal.ir.v3_4.UnionQuery
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

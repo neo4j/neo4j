@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, Rewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_3.{RegularPlannerQuery, UnionQuery, _}
+import org.neo4j.cypher.internal.ir.v3_4.{RegularPlannerQuery, UnionQuery, _}
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue

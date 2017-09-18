@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelName, RelTypeName}
-import org.neo4j.cypher.internal.ir.v3_3.{Selections, _}
+import org.neo4j.cypher.internal.ir.v3_4.{Selections, _}
 
 trait Pattern2Selectivity {
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable, selections: Selections): Selectivity

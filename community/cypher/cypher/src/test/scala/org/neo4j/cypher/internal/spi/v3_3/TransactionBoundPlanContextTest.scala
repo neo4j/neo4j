@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_4.Cardinality
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type._

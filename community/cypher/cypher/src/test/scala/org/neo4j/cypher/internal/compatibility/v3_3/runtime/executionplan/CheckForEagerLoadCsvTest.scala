@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{AllNodesScanPipe, EagerPipe, LoadCSVPipe}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.HasHeaders
+import org.neo4j.cypher.internal.ir.v3_4.HasHeaders
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite {
 

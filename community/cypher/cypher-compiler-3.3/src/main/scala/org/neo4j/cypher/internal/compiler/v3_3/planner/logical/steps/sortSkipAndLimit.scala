@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, ast}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PlannerQuery, QueryProjection}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, PlannerQuery, QueryProjection}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
 
 object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {

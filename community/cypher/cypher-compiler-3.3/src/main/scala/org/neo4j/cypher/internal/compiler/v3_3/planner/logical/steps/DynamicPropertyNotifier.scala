@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 
 object DynamicPropertyNotifier {
 

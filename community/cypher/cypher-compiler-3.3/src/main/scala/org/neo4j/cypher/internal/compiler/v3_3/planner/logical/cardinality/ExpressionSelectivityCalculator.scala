@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics._
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, PrefixRange}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, IdName, Selections, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, Selections, Selectivity}
 
 trait Expression2Selectivity {
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity

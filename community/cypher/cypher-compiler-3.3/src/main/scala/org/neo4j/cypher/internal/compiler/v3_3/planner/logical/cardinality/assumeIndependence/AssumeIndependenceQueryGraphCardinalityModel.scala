@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.{Expr
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.ast.LabelName
-import org.neo4j.cypher.internal.ir.v3_3.{QueryGraph, _}
+import org.neo4j.cypher.internal.ir.v3_4.{QueryGraph, _}
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {

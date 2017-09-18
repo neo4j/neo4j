@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4._
 
 case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: SemanticTable, returns: Seq[IdName] = Seq.empty)
   extends ListSupport {

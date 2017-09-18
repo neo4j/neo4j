@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{RelTypeId, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 import scala.collection.mutable

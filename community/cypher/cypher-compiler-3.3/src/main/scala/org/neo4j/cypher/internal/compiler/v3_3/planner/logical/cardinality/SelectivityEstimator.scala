@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{Selections, Selectivity}
+import org.neo4j.cypher.internal.ir.v3_4.{Selections, Selectivity}
 
 trait SelectivityEstimator extends (Expression => Selectivity) {
   self: SelectivityEstimator =>

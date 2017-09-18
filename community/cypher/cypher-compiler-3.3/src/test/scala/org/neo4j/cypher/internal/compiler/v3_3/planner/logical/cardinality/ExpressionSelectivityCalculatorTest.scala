@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, LabelId, PropertyKeyId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4._
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 

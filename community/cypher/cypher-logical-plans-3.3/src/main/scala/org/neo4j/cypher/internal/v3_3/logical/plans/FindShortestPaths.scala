@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery, ShortestPathPattern}
 
 case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,

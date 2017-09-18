@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, ast}
-import org.neo4j.cypher.internal.ir.v3_3._
-import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.ir.v3_4.helpers.ExpressionConverters._
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.LateAstRewriting
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheckResult, SemanticChecker, SemanticTable, inSequence}
-import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, QueryGraph}
 import org.scalatest.mock.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {

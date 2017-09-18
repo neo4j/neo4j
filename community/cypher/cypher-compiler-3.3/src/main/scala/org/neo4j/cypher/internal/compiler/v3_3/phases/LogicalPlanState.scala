@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.phases
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, Condition}
 import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, PlannerName, SemanticState, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 /*

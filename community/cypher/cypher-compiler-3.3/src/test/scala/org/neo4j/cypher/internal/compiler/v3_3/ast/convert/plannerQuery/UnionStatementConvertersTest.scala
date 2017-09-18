@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.v3_4.RegularQueryProjection
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Equals, FunctionInvocation, FunctionName, HasLabels, Not, Property, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticDirection, ast}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Expand, ExpandAll, LogicalPlanId, SingleRow}
 import org.scalatest.BeforeAndAfterAll
 

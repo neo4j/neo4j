@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticDirection, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{VarPatternLength, _}
+import org.neo4j.cypher.internal.ir.v3_4.{VarPatternLength, _}
 
 import scala.collection.mutable
 

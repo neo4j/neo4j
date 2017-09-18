@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, SignedDecimalInt
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticTable, ast => frontEndAst}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 

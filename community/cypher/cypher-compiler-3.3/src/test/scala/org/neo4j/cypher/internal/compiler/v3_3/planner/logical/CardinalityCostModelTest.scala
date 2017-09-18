@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, HasLabels, LabelName}
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cost, LazyMode}
+import org.neo4j.cypher.internal.ir.v3_4.{Cost, LazyMode}
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {

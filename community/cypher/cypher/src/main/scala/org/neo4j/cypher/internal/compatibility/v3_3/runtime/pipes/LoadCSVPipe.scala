@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.LoadExternalResourceException
-import org.neo4j.cypher.internal.ir.v3_3.{CSVFormat, HasHeaders, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_4.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}

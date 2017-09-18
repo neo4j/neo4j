@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, Pip
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 import org.neo4j.time.Clocks
 

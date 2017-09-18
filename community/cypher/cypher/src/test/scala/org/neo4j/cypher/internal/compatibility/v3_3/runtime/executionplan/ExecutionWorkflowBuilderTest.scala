@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_3.logical.plans.SingleRow
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP

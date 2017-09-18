@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and

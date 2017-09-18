@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, Ors}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {

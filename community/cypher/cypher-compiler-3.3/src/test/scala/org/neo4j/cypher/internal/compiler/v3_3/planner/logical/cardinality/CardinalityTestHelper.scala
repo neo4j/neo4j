@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.Cardinality.NumericCardinality
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.ir.v3_4.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.ir.v3_4._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable

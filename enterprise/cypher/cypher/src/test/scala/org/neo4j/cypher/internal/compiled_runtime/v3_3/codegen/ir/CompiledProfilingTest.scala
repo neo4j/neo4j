@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 import org.neo4j.cypher.internal.v3_3.logical.plans._
