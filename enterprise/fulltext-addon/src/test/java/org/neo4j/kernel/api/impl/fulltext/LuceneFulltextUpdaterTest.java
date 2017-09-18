@@ -698,8 +698,11 @@ public class LuceneFulltextUpdaterTest
         {
             Node node = db.createNode();
             Node node2 = db.createNode();
-            Relationship ignore1 = node.createRelationshipTo( node2, RELTYPE );
-            Relationship ignore2 = node.createRelationshipTo( node2, RELTYPE );
+
+            // skip a few rel ids, so the ones we work with are different from the node ids, just in case.
+            node.createRelationshipTo( node2, RELTYPE );
+            node.createRelationshipTo( node2, RELTYPE );
+
             Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
             Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
             firstNodeID = node.getId();
@@ -760,7 +763,7 @@ public class LuceneFulltextUpdaterTest
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
             String[] luceneSyntaxElements =
-                    { "+", "-", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "\\" };
+                    {"+", "-", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "\\"};
 
             long nodeId;
             try ( Transaction tx = db.beginTx() )
