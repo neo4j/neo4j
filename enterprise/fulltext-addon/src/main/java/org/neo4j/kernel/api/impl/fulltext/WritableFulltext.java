@@ -27,13 +27,25 @@ import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 
 class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
-
     private PartitionedIndexWriter indexWriter;
 
     WritableFulltext( LuceneFulltext luceneFulltext ) throws IOException
     {
         super( luceneFulltext );
+    }
+
+    @Override
+    public void open() throws IOException
+    {
+        super.open();
         indexWriter = luceneIndex.getIndexWriter( this );
+    }
+
+    @Override
+    public void drop() throws IOException
+    {
+        super.drop();
+        indexWriter = null;
     }
 
     PartitionedIndexWriter getIndexWriter()

@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Transaction;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
@@ -39,7 +40,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider() )
         {
             FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;
@@ -51,7 +52,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsNothing( reader, "and" );
                 assertExactQueryFindsNothing( reader, "in" );
@@ -69,7 +70,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( FulltextProvider provider = createProvider(); )
         {
             FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;
@@ -81,7 +82,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsIds( reader, "and", id );
                 assertExactQueryFindsIds( reader, "in", id );
@@ -96,56 +97,49 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        File storeDir = testDirectory.graphDbDir();
-
         long firstID;
         long secondID;
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, storeDir, ENGLISH, provider );
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
 
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello and hello again, in the end." );
-                node2.setProperty( "prop", "En apa och en tomte bodde i ett hus." );
+                firstID = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+                secondID = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
 
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
 
-                assertFalse( reader.query( "and" ).hasNext() );
-                assertFalse( reader.query( "in" ).hasNext() );
-                assertFalse( reader.query( "the" ).hasNext() );
-                assertEquals( secondID, reader.query( "en" ).next() );
-                assertEquals( secondID, reader.query( "och" ).next() );
-                assertEquals( secondID, reader.query( "ett" ).next() );
+                assertExactQueryFindsNothing( reader, "and" );
+                assertExactQueryFindsNothing( reader, "in" );
+                assertExactQueryFindsNothing( reader, "the" );
+                assertExactQueryFindsIds( reader, "en", secondID );
+                assertExactQueryFindsIds( reader, "och", secondID );
+                assertExactQueryFindsIds( reader, "ett", secondID );
             }
         }
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ); )
+        try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, storeDir, SWEDISH, provider );
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
             provider.awaitPopulation();
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
-                assertEquals( firstID, reader.query( "and" ).next() );
-                assertEquals( firstID, reader.query( "in" ).next() );
-                assertEquals( firstID, reader.query( "the" ).next() );
-                assertFalse( reader.query( "en" ).hasNext() );
-                assertFalse( reader.query( "och" ).hasNext() );
-                assertFalse( reader.query( "ett" ).hasNext() );
+                assertExactQueryFindsIds( reader, "and",  firstID );
+                assertExactQueryFindsIds( reader, "in",  firstID );
+                assertExactQueryFindsIds( reader, "the",  firstID );
+                assertExactQueryFindsNothing( reader, "en" );
+                assertExactQueryFindsNothing( reader, "och" );
+                assertExactQueryFindsNothing( reader, "ett" );
             }
         }
     }

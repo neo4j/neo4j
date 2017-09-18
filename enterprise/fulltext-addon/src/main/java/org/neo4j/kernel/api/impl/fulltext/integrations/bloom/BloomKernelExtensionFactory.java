@@ -43,7 +43,9 @@ import org.neo4j.scheduler.JobScheduler;
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
 
-    private static final String SERVICE_NAME = "bloom";
+    public static final String SERVICE_NAME = "bloom";
+    public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
+    public static final String BLOOM_NODES = "bloomNodes";
 
     public interface Dependencies
     {

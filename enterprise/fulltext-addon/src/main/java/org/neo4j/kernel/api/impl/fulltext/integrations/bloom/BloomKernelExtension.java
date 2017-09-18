@@ -36,13 +36,16 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
+
 class BloomKernelExtension extends LifecycleAdapter
 {
-    public static final String BLOOM_RELATIONSHIPS = "bloomRelationships";
-    public static final String BLOOM_NODES = "bloomNodes";
     private final File storeDir;
     private final Config config;
-    private final FileSystemAbstraction fileSystemAbstraction;
+    private final FileSystemAbstraction fileSystem;
     private final GraphDatabaseService db;
     private final Procedures procedures;
     private LogService logService;
@@ -50,14 +53,14 @@ class BloomKernelExtension extends LifecycleAdapter
     private final JobScheduler scheduler;
     private FulltextProvider provider;
 
-    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config,
+    BloomKernelExtension( FileSystemAbstraction fileSystem, File storeDir, Config config,
                           GraphDatabaseService db, Procedures procedures,
                           LogService logService, AvailabilityGuard availabilityGuard,
                           JobScheduler scheduler )
     {
         this.storeDir = storeDir;
         this.config = config;
-        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.fileSystem = fileSystem;
         this.db = db;
         this.procedures = procedures;
         this.logService = logService;
@@ -70,14 +73,14 @@ class BloomKernelExtension extends LifecycleAdapter
     {
         if ( config.get( LoadableBloomFulltextConfig.bloom_enabled ) )
         {
-            List<String> properties = getProperties( );
-        String analyzer = config.get( LoadableBloomFulltextConfig.bloom_analyzer);
+            List<String> properties = getProperties();
+            String analyzer = config.get( LoadableBloomFulltextConfig.bloom_analyzer );
 
             Log log = logService.getInternalLog( FulltextProvider.class );
             provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
-            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties );
-            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties );
+            FulltextFactory fulltextFactory = new FulltextFactory( fileSystem, storeDir, analyzer, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, properties );
+            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS, properties );
 
             provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );

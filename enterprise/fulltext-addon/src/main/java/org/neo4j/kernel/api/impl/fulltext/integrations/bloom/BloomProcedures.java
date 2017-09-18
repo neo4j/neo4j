@@ -36,8 +36,8 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtension.BLOOM_NODES;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtension.BLOOM_RELATIONSHIPS;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
 import static org.neo4j.procedure.Mode.READ;
 
 /**
