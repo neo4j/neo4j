@@ -20,20 +20,21 @@
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.{Scope, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.{Scope, SemanticCheckResult, SemanticFeature, SemanticState}
 import org.scalatest.Assertions
 
 object StatementHelper extends Assertions {
 
   implicit class RichStatement(ast: Statement) {
-    def semanticState: SemanticState = ast.semanticCheck(SemanticState.clean) match {
-      case SemanticCheckResult(state, errors) =>
-        if (errors.isEmpty) {
-          state
-        } else
-          fail(s"Failure during semantic checking of $ast with errors $errors")
-    }
+    def semanticState(features: SemanticFeature*): SemanticState =
+      ast.semanticCheck(SemanticState.clean.withFeatures(features: _*)) match {
+        case SemanticCheckResult(state, errors) =>
+          if (errors.isEmpty) {
+            state
+          } else
+            fail(s"Failure during semantic checking of $ast with errors $errors")
+      }
 
-    def scope: Scope = semanticState.scopeTree
+    def scope: Scope = semanticState().scopeTree
   }
 }
