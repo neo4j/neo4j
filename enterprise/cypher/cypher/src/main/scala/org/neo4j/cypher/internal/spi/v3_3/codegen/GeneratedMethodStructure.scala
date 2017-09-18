@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Dir
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
@@ -42,6 +41,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates._
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.kernel.api.ReadOperations

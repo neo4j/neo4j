@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{PatternExpressionSolver, aggregation, projection, sortSkipAndLimit}
 import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
 Planning event horizons means planning the WITH clauses between query patterns. Some of these clauses are inlined

@@ -25,7 +25,7 @@ import java.util.Map;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.QueryExecutionEvent;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider;
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer;
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId;
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId;
 import org.neo4j.helpers.MathUtil;
 
 public class ProfilingTracer implements QueryExecutionTracer

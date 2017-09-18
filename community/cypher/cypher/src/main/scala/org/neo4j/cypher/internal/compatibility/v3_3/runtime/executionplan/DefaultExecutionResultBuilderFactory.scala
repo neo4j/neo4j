@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Int
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, ProfilerStatisticsNotReadyException}
 import org.neo4j.cypher.internal.spi.v3_3.{CSVResources, QueryContext}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable

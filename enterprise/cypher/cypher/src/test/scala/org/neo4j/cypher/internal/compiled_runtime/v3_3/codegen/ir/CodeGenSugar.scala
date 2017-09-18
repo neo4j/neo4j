@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, LogicalPlanId}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId}
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService

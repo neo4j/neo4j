@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PatternExpression
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
-import org.neo4j.cypher.internal.v3_3.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.v3_4.logical.plans.AllNodesScan
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

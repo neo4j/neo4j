@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.{Rand, Timestamp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, FunctionInvocation, LabelName, Parameter}
 import org.neo4j.cypher.internal.ir.v3_4.{PlannerQuery, _}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 import scala.language.implicitConversions
 

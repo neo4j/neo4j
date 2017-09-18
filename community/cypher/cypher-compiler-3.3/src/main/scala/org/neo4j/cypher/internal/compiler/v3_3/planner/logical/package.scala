@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 package object logical {
   type Selector[P] = Iterable[P] => Option[P]

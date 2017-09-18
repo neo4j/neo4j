@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.v3_3.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.v3_4.logical.plans.UserFunctionSignature
 import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])

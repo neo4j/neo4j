@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_4.AggregatingQueryProjection
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): LogicalPlan = {

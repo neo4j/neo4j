@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class SingleRowSlottedPipe(pipelineInformation: PipelineInformation)(val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends Pipe {
 

@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.frontend.v3_4.{PeriodicCommitInOpenTransactionException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.v3_3.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue
 
 object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {

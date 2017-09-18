@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 class RenderSummaryTest extends CypherFunSuite {
 

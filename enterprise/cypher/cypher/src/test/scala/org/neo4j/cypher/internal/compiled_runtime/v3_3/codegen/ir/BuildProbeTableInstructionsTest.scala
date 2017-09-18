@@ -31,10 +31,9 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}

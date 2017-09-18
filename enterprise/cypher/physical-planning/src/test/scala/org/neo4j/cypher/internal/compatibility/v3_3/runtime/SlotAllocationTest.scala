@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery, VarPatternLength}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, _}
 import org.neo4j.cypher.internal.v3_3.logical.{plans => logicalPlans}
+import org.neo4j.cypher.internal.v3_4.logical.plans
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -52,7 +52,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("limit should not introduce slots") {
     // given
-    val plan = logicalPlans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
+    val plan = plans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
     plan.assignIds()
 
     // when
@@ -232,7 +232,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("let's skip this one") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val skip = logicalPlans.Skip(allNodesScan, literalInt(42))(solved)
+    val skip = plans.Skip(allNodesScan, literalInt(42))(solved)
     skip.assignIds()
 
     // when

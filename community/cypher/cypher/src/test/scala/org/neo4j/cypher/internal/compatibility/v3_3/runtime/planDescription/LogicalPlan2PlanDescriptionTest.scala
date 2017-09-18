@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelName => AstLabelName, _}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
-import org.neo4j.cypher.internal.v3_3.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {

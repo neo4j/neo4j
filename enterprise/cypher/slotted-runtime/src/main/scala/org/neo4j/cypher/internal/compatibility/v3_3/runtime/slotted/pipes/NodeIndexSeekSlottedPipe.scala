@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QueryExpression}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QueryExpression}
 
 case class NodeIndexSeekSlottedPipe(ident: String,
                                     label: LabelToken,

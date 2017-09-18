@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_3.{UpdateStrategy, defaultUpdateStrategy}
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object QueryPlannerConfiguration {
 

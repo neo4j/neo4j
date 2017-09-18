@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 object projection {
 

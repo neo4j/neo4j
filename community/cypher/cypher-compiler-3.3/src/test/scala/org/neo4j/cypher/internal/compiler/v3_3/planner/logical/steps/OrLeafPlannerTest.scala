@@ -25,9 +25,8 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{Ors, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph, Selections}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Distinct, Union}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Distinct, Union}
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

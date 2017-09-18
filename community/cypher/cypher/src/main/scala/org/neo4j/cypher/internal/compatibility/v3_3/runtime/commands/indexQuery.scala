@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphEleme
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InternalException}
-import org.neo4j.cypher.internal.v3_3.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

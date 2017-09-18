@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.DefaultComparatorTopTable
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._

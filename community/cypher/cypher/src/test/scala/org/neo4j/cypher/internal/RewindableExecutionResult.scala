@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, symbols}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QualifiedName}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}

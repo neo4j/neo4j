@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.{ExclusiveBound, InclusiveBound}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{QueryExpression, RangeQueryExpression, SeekableArgs, WithSeekableArgs}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression, SeekableArgs, WithSeekableArgs}
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {

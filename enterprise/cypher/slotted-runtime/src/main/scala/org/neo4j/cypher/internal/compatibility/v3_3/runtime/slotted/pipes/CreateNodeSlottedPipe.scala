@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values

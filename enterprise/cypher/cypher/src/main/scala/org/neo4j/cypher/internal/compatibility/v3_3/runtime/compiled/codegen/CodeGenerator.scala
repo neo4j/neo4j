@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, LogicalPlanId, ProduceResult}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, LogicalPlanId, ProduceResult}
 import org.neo4j.values.virtual.MapValue
 
 class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, conf: CodeGenConfiguration = CodeGenConfiguration() ) {

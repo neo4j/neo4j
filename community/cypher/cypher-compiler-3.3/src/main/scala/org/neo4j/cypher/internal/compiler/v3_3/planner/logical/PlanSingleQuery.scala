@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{countStorePlanner, verifyBestPlan}
 import org.neo4j.cypher.internal.ir.v3_4.PlannerQuery
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of

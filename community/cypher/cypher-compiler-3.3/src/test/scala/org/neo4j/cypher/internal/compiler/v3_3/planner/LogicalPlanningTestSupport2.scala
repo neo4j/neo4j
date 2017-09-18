@@ -37,10 +37,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.frontend.v3_4.{Foldable, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.scalatest.matchers.{BeMatcher, MatchResult}

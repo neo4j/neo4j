@@ -32,8 +32,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
-import org.neo4j.cypher.internal.v3_3.logical.plans
-import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.v3_3.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
+import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
@@ -410,7 +411,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
-  private def translateColumnOrder(s: ColumnOrder): pipes.ColumnOrder = s match {
+  private def translateColumnOrder(s: logical.plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => pipes.Ascending(name)
     case plans.Descending(IdName(name)) => pipes.Descending(name)
   }

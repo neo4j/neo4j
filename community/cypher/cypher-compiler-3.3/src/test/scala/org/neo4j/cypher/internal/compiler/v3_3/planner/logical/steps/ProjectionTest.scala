@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AscSortItem
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

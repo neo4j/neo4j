@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_3.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
 
 trait NodeStartItemVariables extends StartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTNode)

@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
-import org.neo4j.cypher.internal.v3_3.logical.plans.{CartesianProduct, NodeIndexSeek}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, IndexHintException, NewPlannerTestSupport, SyntaxException, _}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings

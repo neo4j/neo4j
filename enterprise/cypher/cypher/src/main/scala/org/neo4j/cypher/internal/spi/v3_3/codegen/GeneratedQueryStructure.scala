@@ -36,13 +36,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_4.symbols
 import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager

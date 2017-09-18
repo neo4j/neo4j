@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, VarPatternLength, _}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

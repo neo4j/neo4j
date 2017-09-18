@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, SeekableArgs}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, SeekableArgs}
 
 object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 

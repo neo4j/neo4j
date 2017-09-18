@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
-import org.neo4j.cypher.internal.v3_3.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.v3_4.logical.plans.IndexUsage
 import org.neo4j.values.virtual.MapValue
 
 object ExecutionPlanBuilder {

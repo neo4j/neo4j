@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 /**
   * Expand when both end-points are known, find all relationships of the given

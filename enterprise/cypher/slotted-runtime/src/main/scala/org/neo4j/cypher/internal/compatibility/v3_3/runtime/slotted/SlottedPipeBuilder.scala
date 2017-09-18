@@ -35,8 +35,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
-import org.neo4j.cypher.internal.v3_3.logical.plans
-import org.neo4j.cypher.internal.v3_3.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class SlottedPipeBuilder(fallback: PipeBuilder,
                          expressionConverters: ExpressionConverters,
@@ -257,7 +257,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-  private def translateColumnOrder(pipeline: PipelineInformation, s: plans.ColumnOrder): pipes.ColumnOrder = s match {
+  private def translateColumnOrder(pipeline: PipelineInformation, s: logical.plans.ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => {
       pipeline.get(name) match {
         case Some(slot) => pipes.Ascending(slot)

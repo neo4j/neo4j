@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, 
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, PlannerName, ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_3.logical.plans
-import org.neo4j.cypher.internal.v3_3.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => InternalPlanDescription) {
 
@@ -53,7 +53,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case _: AllNodesScan =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq.empty, variables)
 
-      case _: plans.Argument =>
+      case _: logical.plans.Argument =>
         PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
       case NodeByLabelScan(_, label, _) =>

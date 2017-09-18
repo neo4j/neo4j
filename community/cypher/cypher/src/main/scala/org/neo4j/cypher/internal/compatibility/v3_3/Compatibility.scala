@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{ExplicitNodeIndexUsage, ExplicitRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage}
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.query.IndexUsage.{explicitIndexUsage, schemaIndexUsage}

@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.indexScanLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{functions, _}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
-import org.neo4j.cypher.internal.v3_3.logical.plans.{NodeIndexContainsScan, NodeIndexScan}
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

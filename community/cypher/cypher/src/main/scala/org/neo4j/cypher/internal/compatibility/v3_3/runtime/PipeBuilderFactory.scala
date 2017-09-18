@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
 trait PipeBuilderFactory {
 

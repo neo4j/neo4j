@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 import org.neo4j.values.AnyValue
 
 case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {

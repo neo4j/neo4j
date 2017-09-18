@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWit
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.storable.Values
 
 case class ConditionalApplySlottedPipe(lhs: Pipe, rhs: Pipe, longOffsets: Seq[Int], refOffsets: Seq[Int], negated: Boolean,

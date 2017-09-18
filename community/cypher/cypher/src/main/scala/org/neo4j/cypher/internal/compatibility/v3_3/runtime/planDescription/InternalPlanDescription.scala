@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticDirection, ast}
-import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 

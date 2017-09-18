@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
