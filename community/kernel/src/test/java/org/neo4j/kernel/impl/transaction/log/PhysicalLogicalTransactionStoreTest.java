@@ -120,7 +120,7 @@ public class PhysicalLogicalTransactionStoreTest
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( emptyLogFile, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors );
+                new VersionAwareLogEntryReader<>(), monitors, true );
         verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, store );
     }
@@ -193,7 +193,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore::getLastCommittedTransactionId,
                 mock( LogVersionRepository.class ), monitor, logHeaderCache ) );
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors );
+                new VersionAwareLogEntryReader<>(), monitors, true );
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
@@ -288,7 +288,7 @@ public class PhysicalLogicalTransactionStoreTest
                 txIdStore::getLastCommittedTransactionId, mock( LogVersionRepository.class ), monitor,
                 logHeaderCache ) );
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFile, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors );
+                new VersionAwareLogEntryReader<>(), monitors, true );
 
         // WHEN
         life.start();
@@ -313,7 +313,7 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
-                new VersionAwareLogEntryReader<>(), monitors );
+                new VersionAwareLogEntryReader<>(), monitors, true );
 
         try
         {
@@ -348,7 +348,7 @@ public class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, cache,
-                new VersionAwareLogEntryReader<>(), monitors );
+                new VersionAwareLogEntryReader<>(), monitors, true );
 
         try
         {

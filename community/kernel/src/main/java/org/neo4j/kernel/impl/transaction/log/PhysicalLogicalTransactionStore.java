@@ -50,14 +50,17 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private final Monitors monitors;
+    private final boolean failOnCorruptedLogFiles;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors,
+            boolean failOnCorruptedLogFiles )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
         this.monitors = monitors;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
@@ -71,7 +74,8 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
             IOException
     {
         return ReversedMultiFileTransactionCursor
-                .fromLogFile( logFile, backToPosition, monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
+                .fromLogFile( logFile, backToPosition, failOnCorruptedLogFiles,
+                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
     }
 
     @Override

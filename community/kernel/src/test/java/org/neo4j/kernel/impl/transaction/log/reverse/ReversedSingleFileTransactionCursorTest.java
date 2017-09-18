@@ -149,7 +149,8 @@ public class ReversedSingleFileTransactionCursorTest
         // when
         try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
         {
-            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(), monitor );
+            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(),
+                    false, monitor );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
@@ -183,7 +184,7 @@ public class ReversedSingleFileTransactionCursorTest
     {
         return new ReversedSingleFileTransactionCursor(
                 (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS ),
-                new VersionAwareLogEntryReader<>(), monitor );
+                new VersionAwareLogEntryReader<>(), true, monitor );
     }
 
     private void writeTransactions( int transactionCount, int minTransactionSize, int maxTransactionSize ) throws IOException

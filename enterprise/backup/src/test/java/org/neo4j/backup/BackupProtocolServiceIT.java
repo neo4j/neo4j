@@ -60,7 +60,6 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -1033,7 +1032,7 @@ public class BackupProtocolServiceIT
         LifeSupport life = new LifeSupport();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         LogicalTransactionStore transactionStore =
-                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors, NullLogService.getInstance() ) );
+                life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, backupDir, monitors ) );
         life.start();
         try ( IOCursor<CommittedTransactionRepresentation> cursor =
                       transactionStore.getTransactions( txId ) )

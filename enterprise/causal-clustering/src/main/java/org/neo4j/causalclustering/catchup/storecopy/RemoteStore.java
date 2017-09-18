@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.NoSuchTransactionException;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
@@ -98,7 +97,7 @@ public class RemoteStore
         log.info( "Last Clean Tx Id: %d", lastCleanTxId );
 
         /* these are the transaction logs */
-        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors(), new SimpleLogService( logProvider ) );
+        ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
 
         long lastTxId = BASE_TX_ID;
         try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )

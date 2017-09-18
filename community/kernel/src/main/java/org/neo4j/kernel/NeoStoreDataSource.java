@@ -662,7 +662,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, monitors );
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, monitors, failOnCorruptedLogFiles );
 
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =

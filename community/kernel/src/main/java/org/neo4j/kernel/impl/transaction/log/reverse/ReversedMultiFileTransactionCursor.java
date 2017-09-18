@@ -63,13 +63,14 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      *
      * @param logFile {@link LogFile} to supply log entries forming transactions.
      * @param backToPosition {@link LogPosition} to read backwards to.
+     * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
      * @param monitor reverse transaction cursor monitor
      * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
      * @throws IOException on I/O error.
      */
     public static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition,
-            ReversedTransactionCursorMonitor monitor ) throws IOException
+            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor ) throws IOException
     {
         long highestVersion = logFile.currentLogVersion();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -80,7 +81,8 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
             {
                 // This is a channel which can be positioned explicitly and is the typical case for such channels
                 // Let's take advantage of this fact and use a bit smarter reverse implementation
-                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader, monitor );
+                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader,
+                        failOnCorruptedLogFiles, monitor );
             }
 
             // Fall back to simply eagerly reading each single log file and reversing in memory

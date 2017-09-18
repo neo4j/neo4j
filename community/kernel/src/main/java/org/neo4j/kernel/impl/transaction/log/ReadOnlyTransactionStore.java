@@ -52,7 +52,7 @@ public class ReadOnlyTransactionStore extends LifecycleAdapter implements Logica
                 monitors.newMonitor( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         physicalStore = new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader,
-                monitors );
+                monitors, true );
     }
 
     @Override
