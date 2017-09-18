@@ -19,8 +19,10 @@
  */
 package org.neo4j.helpers;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -92,6 +94,16 @@ public final class ValueUtils
             else if ( object instanceof Collection<?> )
             {
                 return asListValue( (Collection<?>) object );
+            }
+            else if ( object instanceof Iterator<?> )
+            {
+                ArrayList<Object> objects = new ArrayList<>();
+                Iterator<?> iterator = (Iterator<?>) object;
+                while ( iterator.hasNext() )
+                {
+                    objects.add( iterator.next() );
+                }
+                return asListValue( objects );
             }
             else if ( object instanceof Stream<?> )
             {

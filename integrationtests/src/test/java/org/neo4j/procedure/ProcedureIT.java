@@ -67,9 +67,11 @@ import org.neo4j.logging.Log;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -384,7 +386,7 @@ public class ProcedureIT
                     "CALL org.neo4j.procedure.listWithDefault" );
 
             // Then
-            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
+            assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -400,7 +402,39 @@ public class ProcedureIT
                     "CALL org.neo4j.procedure.genericListWithDefault" );
 
             // Then
-            assertThat( res.next(), equalTo( map( "list", Arrays.asList( 42L, 1337L ) ) ) );
+            assertThat( res.next(), equalTo( map( "list", asList( 42L, 1337L ) ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureListWithNull() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.genericListWithDefault(null)" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", null  ) ) );
+            assertFalse( res.hasNext() );
+        }
+    }
+
+    @Test
+    public void shouldCallProcedureListWithNullInList() throws Throwable
+    {
+        // Given
+        try ( Transaction ignore = db.beginTx() )
+        {
+            // When
+            Result res = db.execute(
+                    "CALL org.neo4j.procedure.genericListWithDefault([[42, null, 57]])" );
+
+            // Then
+            assertThat( res.next(), equalTo( map( "list", asList( 42L, null, 57L ) ) ) );
             assertFalse( res.hasNext() );
         }
     }
@@ -421,6 +455,24 @@ public class ProcedureIT
             assertThat( node.getId(), equalTo( nodeId ) );
             assertFalse( res.hasNext() );
         }
+    }
+
+    @Test
+    public void shouldCallProcedureReturningNull() throws Throwable
+    {
+        Result res = db.execute( "CALL org.neo4j.procedure.node(-1)");
+
+        assertThat( res.next().get( "node" ), nullValue() );
+        assertFalse( res.hasNext() );
+    }
+
+    @Test
+    public void shouldCallYieldProcedureReturningNull() throws Throwable
+    {
+        Result res = db.execute( "CALL org.neo4j.procedure.node(-1) YIELD node as node RETURN node");
+
+        assertThat( res.next().get( "node" ), nullValue() );
+        assertFalse( res.hasNext() );
     }
 
     @Test
@@ -1495,14 +1547,21 @@ public class ProcedureIT
         public Stream<ListOutput> genericListWithDefault( @Name( value = "list", defaultValue = "[[42, 1337]]" )
                 List<List<Long>> list )
         {
-            return Stream.of( new ListOutput( list.get( 0 ) ) );
+            return Stream.of( new ListOutput( list == null ? null : list.get( 0 ) ) );
         }
 
         @Procedure
         public Stream<NodeOutput> node( @Name( "id" ) long id )
         {
             NodeOutput nodeOutput = new NodeOutput();
-            nodeOutput.setNode( db.getNodeById( id ) );
+            if ( id < 0 )
+            {
+                nodeOutput.setNode( null );
+            }
+            else
+            {
+                nodeOutput.setNode( db.getNodeById( id ) );
+            }
             return Stream.of( nodeOutput );
         }
 
