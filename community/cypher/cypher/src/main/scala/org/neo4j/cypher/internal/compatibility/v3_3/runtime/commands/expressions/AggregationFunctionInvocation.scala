@@ -33,7 +33,9 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = null
 
-    override def result(state: QueryState): AnyValue = valueConverter(aggregator(state).result)
+    override def result(state: QueryState): AnyValue = {
+      valueConverter(aggregator(state).result)
+    }
 
     override def apply(data: ExecutionContext, state: QueryState): Unit = {
       val argValues = arguments.map(arg => {

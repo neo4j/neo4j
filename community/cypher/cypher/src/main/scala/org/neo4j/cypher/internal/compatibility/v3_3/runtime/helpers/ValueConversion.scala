@@ -34,20 +34,24 @@ import org.neo4j.values.virtual.{MapValue, VirtualValues}
 import scala.collection.JavaConverters._
 
 object ValueConversion {
-  def getValueConverter(cType: CypherType): Any => AnyValue = cType match {
-    case symbols.CTNode => n => ValueUtils.fromNodeProxy(n.asInstanceOf[Node])
-    case symbols.CTRelationship => r => ValueUtils.fromRelationshipProxy(r.asInstanceOf[Relationship])
-    case symbols.CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
-    case symbols.CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
-    case symbols.CTInteger => l => Values.longValue(l.asInstanceOf[Long])
-    case symbols.CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
-    case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
-    case symbols.CTPath => p => ValueUtils.asPathValue(p.asInstanceOf[Path])
-    case symbols.CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
-    case symbols.ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
-    case symbols.CTAny => o => ValueUtils.of(o)
-    case symbols.CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
-    case symbols.CTGeometry => o => ValueUtils.asPointValue(o.asInstanceOf[Geometry])
+  def getValueConverter(cType: CypherType): Any => AnyValue = {
+    val converter: Any => AnyValue = cType match {
+      case symbols.CTNode => n => ValueUtils.fromNodeProxy(n.asInstanceOf[Node])
+      case symbols.CTRelationship => r => ValueUtils.fromRelationshipProxy(r.asInstanceOf[Relationship])
+      case symbols.CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
+      case symbols.CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
+      case symbols.CTInteger => l => Values.longValue(l.asInstanceOf[Long])
+      case symbols.CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
+      case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
+      case symbols.CTPath => p => ValueUtils.asPathValue(p.asInstanceOf[Path])
+      case symbols.CTMap => m => ValueUtils.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+      case symbols.ListType(_)  => l => ValueUtils.asListValue(l.asInstanceOf[java.util.Collection[_]])
+      case symbols.CTAny => o => ValueUtils.of(o)
+      case symbols.CTPoint => o => ValueUtils.asPointValue(o.asInstanceOf[Point])
+      case symbols.CTGeometry => o => ValueUtils.asPointValue(o.asInstanceOf[Geometry])
+    }
+
+    (v) => if (v == null) Values.NO_VALUE else converter(v)
   }
 
   def asValues(params: Map[String, Any]): MapValue = VirtualValues.map(Eagerly.immutableMapValues(params, asValue).asJava)
