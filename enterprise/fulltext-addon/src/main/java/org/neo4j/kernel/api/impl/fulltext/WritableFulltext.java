@@ -41,8 +41,18 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         return indexWriter;
     }
 
-    Set<String> properties()
+    Set<String> getProperties()
     {
         return luceneIndex.getProperties();
+    }
+
+    public ReadOnlyFulltext getIndexReader() throws IOException
+    {
+        return luceneIndex.getIndexReader();
+    }
+
+    public String getAnalyzerName()
+    {
+        return luceneIndex.getAnalyzerName();
     }
 }

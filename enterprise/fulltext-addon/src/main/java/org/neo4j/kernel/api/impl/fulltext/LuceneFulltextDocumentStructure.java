@@ -70,8 +70,8 @@ class LuceneFulltextDocumentStructure
 
         private DocWithId()
         {
-            idField = new StringField( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, "", NO );
-            idValueField = new NumericDocValuesField( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, 0L );
+            idField = new StringField( FulltextProvider.FIELD_ENTITY_ID, "", NO );
+            idValueField = new NumericDocValuesField( FulltextProvider.FIELD_ENTITY_ID, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -100,7 +100,7 @@ class LuceneFulltextDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID ) )
+                if ( !fieldName.equals( FulltextProvider.FIELD_ENTITY_ID ) )
                 {
                     it.remove();
                 }
@@ -111,7 +111,6 @@ class LuceneFulltextDocumentStructure
 
     static Term newTermForChangeOrRemove( long id )
     {
-        return new Term( FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID, "" + id );
+        return new Term( FulltextProvider.FIELD_ENTITY_ID, "" + id );
     }
-
 }

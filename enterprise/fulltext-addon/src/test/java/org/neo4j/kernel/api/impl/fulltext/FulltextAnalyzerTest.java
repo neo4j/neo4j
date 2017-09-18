@@ -30,13 +30,16 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexT
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
+    private static final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+    private static final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new EnglishAnalyzer() );
         try ( FulltextProvider provider = createProvider() )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;
@@ -63,10 +66,10 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new SwedishAnalyzer() );
         try ( FulltextProvider provider = createProvider(); )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;

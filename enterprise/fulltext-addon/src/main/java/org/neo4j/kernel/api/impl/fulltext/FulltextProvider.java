@@ -36,7 +36,12 @@ import org.neo4j.scheduler.JobScheduler;
  */
 public class FulltextProvider implements AutoCloseable
 {
-    public static final String LUCENE_FULLTEXT_ADDON_INTERNAL_ID = "__lucene__fulltext__addon__internal__id__";
+    public static final String LUCENE_FULLTEXT_ADDON_PREFIX = "__lucene__fulltext__addon__";
+    public static final String FIELD_ENTITY_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "internal__id__";
+    public static final String FIELD_METADATA_DOC = LUCENE_FULLTEXT_ADDON_PREFIX + "metadata__doc__field__";
+    public static final String FIELD_CONFIG_ANALYZER = LUCENE_FULLTEXT_ADDON_PREFIX + "analyzer";
+    public static final String FIELD_CONFIG_PROPERTIES = LUCENE_FULLTEXT_ADDON_PREFIX + "properties";
+
     private final GraphDatabaseService db;
     private final Log log;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
@@ -75,13 +80,34 @@ public class FulltextProvider implements AutoCloseable
     {
         for ( WritableFulltext index : writableNodeIndices )
         {
-            applier.populateNodes( index, db );
+            index.open();
+            if ( !matchesConfiguration( index ) )
+            {
+                index.drop();
+                index.open();
+                applier.populateNodes( index, db );
+            }
         }
         for ( WritableFulltext index : writableRelationshipIndices )
         {
-            applier.populateRelationships( index, db );
+            index.open();
+            if ( !matchesConfiguration( index ) )
+            {
+                index.drop();
+                index.open();
+                applier.populateRelationships( index, db );
+            }
         }
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
+    }
+
+    private boolean matchesConfiguration( WritableFulltext index ) throws IOException
+    {
+        try ( ReadOnlyFulltext indexReader = index.getIndexReader() )
+        {
+            FulltextIndexConfiguration config = indexReader.getConfigurationDocument();
+            return config != null && config.matches( index.getAnalyzerName(), index.getProperties() );
+        }
     }
 
     /**
@@ -130,7 +156,6 @@ public class FulltextProvider implements AutoCloseable
 
     void register( LuceneFulltext fulltextIndex ) throws IOException
     {
-        fulltextIndex.open();
         if ( fulltextIndex.getType() == FulltextIndexType.NODES )
         {
             nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );

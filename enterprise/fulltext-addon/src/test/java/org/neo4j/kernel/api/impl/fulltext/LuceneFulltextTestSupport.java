@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneFulltextTestSupport
 {
-    protected static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
+    protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
     protected static final Log LOG = NullLog.getInstance();
 
     @Rule
@@ -68,12 +69,13 @@ public class LuceneFulltextTestSupport
         scheduler = dbRule.resolveDependency( JobScheduler.class );
         fs = dbRule.resolveDependency( FileSystemAbstraction.class );
         storeDir = dbRule.getStoreDir();
-        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
     }
 
-    protected FulltextProvider createProvider()
+    protected FulltextProvider createProvider() throws IOException
     {
-        return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
+        FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler );
+        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
+        return provider;
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )

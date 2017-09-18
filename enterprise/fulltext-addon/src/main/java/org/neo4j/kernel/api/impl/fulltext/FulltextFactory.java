@@ -31,6 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 
 /**
  * Used for creating {@link LuceneFulltext} and registering those to a {@link FulltextProvider}.
@@ -39,44 +40,64 @@ public class FulltextFactory
 {
     public static final String INDEX_DIR = "fulltext";
     private final FileSystemAbstraction fileSystem;
+    private final FulltextProvider provider;
     private final WritableIndexPartitionFactory partitionFactory;
     private final File indexDir;
     private final Analyzer analyzer;
 
     /**
      * Creates a factory for the specified location and analyzer.
+     *
      * @param fileSystem The filesystem to use.
      * @param storeDir Store directory of the database.
-     * @param analyzer The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
+     * @param analyzerClassName The Lucene analyzer to use for the {@link LuceneFulltext} created by this factory.
+     * @param provider The {@link FulltextProvider} to register the indexes with.
      * @throws IOException
      */
-    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, Analyzer analyzer ) throws IOException
+    public FulltextFactory( FileSystemAbstraction fileSystem, File storeDir, String analyzerClassName,
+                            FulltextProvider provider ) throws IOException
     {
-        this.analyzer = analyzer;
+        this.analyzer = getAnalyzer( analyzerClassName );
         this.fileSystem = fileSystem;
+        this.provider = provider;
         Factory<IndexWriterConfig> indexWriterConfigFactory = () -> IndexWriterConfigs.standard( analyzer );
         partitionFactory = new WritableIndexPartitionFactory( indexWriterConfigFactory );
         indexDir = new File( storeDir, INDEX_DIR );
     }
 
+    private Analyzer getAnalyzer( String analyzerClassName )
+    {
+        Analyzer analyzer;
+        try
+        {
+            Class configuredAnalyzer = Class.forName( analyzerClassName );
+            analyzer = (Analyzer) configuredAnalyzer.newInstance();
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Could not create the configured analyzer", e );
+        }
+        return analyzer;
+    }
+
     /**
      * Creates an instance of {@link LuceneFulltext} and registers it with the supplied {@link FulltextProvider}.
+     *
      * @param identifier The identifier of the new fulltext index
      * @param type The type of the new fulltext index
      * @param properties The properties to index
-     * @param provider The provider to register with
      * @throws IOException
      */
-    public void createFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type, List<String> properties, FulltextProvider provider )
+    public void createFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type,
+                                     List<String> properties )
             throws IOException
     {
-        // First delete any existing index, since we don't know if whatever it might contain actually matches our
-        // current configuration:
         File indexRootFolder = new File( indexDir, identifier );
-        fileSystem.deleteRecursively( indexRootFolder );
-
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
-        provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
+        PartitionedIndexStorage storage = storageBuilder.build();
+        LuceneFulltext index = new LuceneFulltext( storage, partitionFactory, properties, analyzer, identifier, type );
+
+        provider.register( index );
     }
 }

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import org.apache.lucene.analysis.Analyzer;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -72,14 +70,14 @@ class BloomKernelExtension extends LifecycleAdapter
     {
         if ( config.get( LoadableBloomFulltextConfig.bloom_enabled ) )
         {
-            List<String> properties = getProperties();
-            Analyzer analyzer = getAnalyzer();
+            List<String> properties = getProperties( );
+        String analyzer = config.get( LoadableBloomFulltextConfig.bloom_analyzer);
 
             Log log = logService.getInternalLog( FulltextProvider.class );
             provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
-            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
+            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties );
+            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties );
 
             provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
@@ -95,21 +93,6 @@ class BloomKernelExtension extends LifecycleAdapter
             throw new RuntimeException( "Properties to index must be configured for bloom fulltext" );
         }
         return properties;
-    }
-
-    private Analyzer getAnalyzer()
-    {
-        Analyzer analyzer;
-        try
-        {
-            Class configuredAnalayzer = Class.forName( config.get( LoadableBloomFulltextConfig.bloom_analyzer ) );
-            analyzer = (Analyzer) configuredAnalayzer.newInstance();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( "Could not create the configured analyzer", e );
-        }
-        return analyzer;
     }
 
     @Override

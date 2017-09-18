@@ -315,7 +315,7 @@ public class BloomIT
     public void shouldNotBeAbleToStartWithIllegalPropertyKey() throws Exception
     {
         expectedException.expect( InvalidSettingException.class );
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID + ", hello" );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.FIELD_ENTITY_ID + ", hello" );
         db = builder.newGraphDatabase();
     }
 

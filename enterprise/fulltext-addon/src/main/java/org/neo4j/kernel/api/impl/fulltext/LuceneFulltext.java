@@ -118,4 +118,18 @@ class LuceneFulltext extends AbstractLuceneIndex
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
+
+    @Override
+    public void close() throws IOException
+    {
+        PartitionedIndexWriter writer = getIndexWriter( new WritableFulltext( this ) );
+        FulltextIndexConfiguration config = new FulltextIndexConfiguration( analyzer, properties );
+        writer.updateDocument( FulltextIndexConfiguration.TERM, config.asDocument() );
+        super.close();
+    }
+
+    public String getAnalyzerName()
+    {
+        return analyzer.getClass().getCanonicalName();
+    }
 }
