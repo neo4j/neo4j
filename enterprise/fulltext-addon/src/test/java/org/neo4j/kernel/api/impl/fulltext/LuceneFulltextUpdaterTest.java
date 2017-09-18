@@ -699,4 +699,72 @@ public class LuceneFulltextUpdaterTest
             }
         }
     }
+
+    @Test
+    public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+
+        long firstNodeID;
+        long secondNodeID;
+        long firstRelID;
+        long secondRelID;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            Node node2 = db.createNode( LABEL );
+            Relationship ignore1 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship ignore2 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
+            firstNodeID = node.getId();
+            secondNodeID = node2.getId();
+            firstRelID = rel1.getId();
+            secondRelID = rel2.getId();
+            node.setProperty( "prop", "Hello. Hello again." );
+            node2.setProperty( "prop", "This string is slightly shorter than the zebra one" );
+            rel1.setProperty( "prop", "Goodbye" );
+            rel2.setProperty( "prop", "And now, something completely different" );
+
+            tx.success();
+        }
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
+            provider.init();
+            provider.awaitPopulation();
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( firstNodeID, hello.next() );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "string" );
+                assertEquals( secondNodeID, zebra.next() );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
+                assertFalse( goodbye.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertFalse( different.hasNext() );
+            }
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "string" );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
+                assertEquals( firstRelID, goodbye.next() );
+                assertFalse( goodbye.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertEquals( secondRelID, different.next() );
+                assertFalse( different.hasNext() );
+            }
+        }
+    }
 }

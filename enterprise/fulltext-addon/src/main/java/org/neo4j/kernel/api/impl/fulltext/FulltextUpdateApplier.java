@@ -46,6 +46,7 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.logging.Log;
 
+import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentForPopulation;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
@@ -168,7 +169,7 @@ class FulltextUpdateApplier
                     Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
                     if ( !properties.isEmpty() )
                     {
-                        documents.add( documentRepresentingProperties( entityId, properties ) );
+                        documents.add( documentForPopulation( entityId, properties ) );
                     }
 
                     if ( documents.size() > POPULATING_BATCH_SIZE )

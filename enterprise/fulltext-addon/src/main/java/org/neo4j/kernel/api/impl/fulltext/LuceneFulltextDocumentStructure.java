@@ -62,6 +62,14 @@ class LuceneFulltextDocumentStructure
         return LuceneFulltextFieldEncoding.encodeField( propertyKey, value );
     }
 
+    public static Document documentForPopulation( long entityId, Map<String,Object> properties )
+    {
+        DocWithId docWithId = new DocWithId();
+        docWithId.setId( entityId );
+        docWithId.setValues( properties );
+        return docWithId.document;
+    }
+
     private static class DocWithId
     {
         private final Document document;
