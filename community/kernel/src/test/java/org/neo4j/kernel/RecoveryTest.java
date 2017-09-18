@@ -207,7 +207,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ), monitor ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor ) );
 
             life.start();
 
@@ -271,8 +271,7 @@ public class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ),
-                    monitor ));
+            }, new StartupStatisticsProvider(), logPruner, monitor ));
 
             life.start();
 
@@ -414,8 +413,7 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, new StartupStatisticsProvider(), logPruner, new SimpleLogService( logProvider ),
-                    monitor ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor ) );
 
             life.start();
         }

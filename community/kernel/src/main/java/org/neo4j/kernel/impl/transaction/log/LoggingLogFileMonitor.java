@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
@@ -61,6 +62,21 @@ public class LoggingLogFileMonitor implements
         {
             log.info( "No recovery required" );
         }
+    }
+
+    @Override
+    public void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry, LogPosition recoveryToPosition )
+    {
+        log.warn( format( "Fail to recover all transactions. Last recoverable transaction id:%d, committed " +
+                        "at:%d. Any later transaction after %s are unreadable and will be truncated.",
+                commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition ), t );
+    }
+
+    @Override
+    public void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
+    {
+        log.warn( format( "Fail to recover all transactions. Any later transactions after position %s are " +
+                "unreadable and will be truncated.", recoveryFromPosition ), t );
     }
 
     @Override

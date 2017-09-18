@@ -319,8 +319,7 @@ public class LogTailScanner
                     latestLogEntryVersion );
         }
 
-        public LogTailInformation( CheckPoint lastCheckPoint, boolean recordAfterCheckpoint,
-                long firstTxIdAfterLastCheckPoint,
+        LogTailInformation( CheckPoint lastCheckPoint, boolean recordAfterCheckpoint, long firstTxIdAfterLastCheckPoint,
                 long oldestLogVersionFound, long currentLogVersion, LogEntryVersion latestLogEntryVersion )
         {
             this.lastCheckPoint = lastCheckPoint;

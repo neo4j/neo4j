@@ -23,17 +23,14 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
-import static java.lang.String.format;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
@@ -43,6 +40,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
  */
 public class Recovery extends LifecycleAdapter
 {
+    // TODO
     public interface Monitor
     {
         default void recoveryRequired( LogPosition recoveryPosition )
@@ -59,6 +57,17 @@ public class Recovery extends LifecycleAdapter
 
         default void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
         { // no-op by default
+        }
+
+        default void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry,
+                LogPosition recoveryToPosition )
+        {
+            // no-op
+        }
+
+        default void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
+        {
+            // no-op
         }
     }
 
@@ -86,17 +95,15 @@ public class Recovery extends LifecycleAdapter
     private final Monitor monitor;
     private final StartupStatisticsProvider startupStatistics;
     private final TransactionLogPruner logPruner;
-    private final Log log;
     private int numberOfRecoveredTransactions;
 
     public Recovery( SPI spi, StartupStatisticsProvider startupStatistics, TransactionLogPruner logPruner,
-            LogService logService, Monitor monitor )
+            Monitor monitor )
     {
         this.spi = spi;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
         this.logPruner = logPruner;
-        this.log = logService.getInternalLog( Recovery.class );
     }
 
     @Override
@@ -153,14 +160,11 @@ public class Recovery extends LifecycleAdapter
             if ( lastTransaction != null )
             {
                 LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-                log.warn( format( "Fail to recover all transactions. Last recoverable transaction id:%d, committed " +
-                                "at:%d. Any later transaction after %s are unreadable and will be truncated.",
-                        commitEntry.getTxId(), commitEntry.getTimeWritten(), recoveryToPosition ), e );
+                monitor.failToRecoverTransactionsAfterCommit( e, commitEntry, recoveryToPosition );
             }
             else
             {
-                log.warn( format( "Fail to recover all transactions. Any later transactions after position %s are " +
-                        "unreadable and will be truncated.", recoveryFromPosition ), e );
+                monitor.failToRecoverTransactionsAfterPosition( e, recoveryFromPosition );
                 recoveryToPosition = recoveryFromPosition;
             }
         }

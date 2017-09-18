@@ -693,7 +693,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         Recovery.SPI spi = new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
         TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
-        Recovery recovery = new Recovery( spi, startupStatistics, logPruner, logService, recoveryMonitor );
+        Recovery recovery = new Recovery( spi, startupStatistics, logPruner, recoveryMonitor );
         life.add( recovery );
     }
 
@@ -725,7 +725,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, guard, explicitIndexStore ) );
+                        constraintIndexCreator, databaseSchemaState, explicitIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
@@ -851,10 +851,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations(
-            StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
+    private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            Guard guard, ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:
