@@ -33,6 +33,7 @@ import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.scalatest.Assertions
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -164,7 +165,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
           case ComparePlansWithAssertion(assertion, expectPlansToFail) =>
             val comparePlans = expectSucceed - expectPlansToFail
             if (comparePlans.containsScenario(scenario)) {
-              assertion(result.executionPlanDescription())
+              withClue(s"plan for ${scenario.name}\n") {assertion(result.executionPlanDescription())}
             } else {
               val tryResult = Try(assertion(result.executionPlanDescription()))
               tryResult match {
@@ -253,9 +254,16 @@ trait CypherComparisonSupport extends CypherTestSupport {
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
     val innerResult = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
     RewindableExecutionResult(innerResult)
-
   }
 
+  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(actual: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = actual.toComparableResult == expected.toComparableSeq(replaceNaNs = false),
+        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
+        rawNegatedFailureMessage = s"Results are equal")
+    }
+  }
 }
 
 /**
