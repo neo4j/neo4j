@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -69,12 +70,6 @@ public class RecoveryCleanupIT
     public void setup()
     {
         storeDir = testDirectory.graphDbDir();
-
-        Monitors monitors = new Monitors();
-        recoveryCompleteBarrier = new Barrier.Control();
-        LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
-        monitors.addMonitorListener( recoveryBarrierMonitor );
-        factory.setMonitors( monitors );
     }
 
     @After
@@ -91,17 +86,12 @@ public class RecoveryCleanupIT
         AtomicReference<Throwable> error = new AtomicReference<>();
         try
         {
-            db = startDatabase();
-
-            DatabaseHealth databaseHealth = databaseHealth( db );
-            someData( db );
-            checkpoint( db );
-            someData( db );
-            databaseHealth.panic( new Throwable( "Trigger recovery on next startup" ) );
-            db.shutdown();
-            db = null;
+            dirtyDatabase();
 
             // WHEN
+            recoveryCompleteBarrier = new Barrier.Control();
+            LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
+            setMonitor( recoveryBarrierMonitor );
             db = startDatabase();
             recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
 
@@ -121,6 +111,42 @@ public class RecoveryCleanupIT
                 throw throwable;
             }
         }
+    }
+
+    @Test
+    public void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    {
+        // given
+        dirtyDatabase();
+
+        // when
+        AssertableLogProvider logProvider = new AssertableLogProvider( true );
+        factory.setUserLogProvider( logProvider );
+        factory.setInternalLogProvider( logProvider );
+        startDatabase().shutdown();
+
+        // then
+        logProvider.assertContainsLogCallContaining( "Scan store recovery completed" );
+    }
+
+    private void setMonitor( Object monitor )
+    {
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        factory.setMonitors( monitors );
+    }
+
+    private void dirtyDatabase() throws IOException
+    {
+        db = startDatabase();
+
+        DatabaseHealth databaseHealth = databaseHealth( db );
+        someData( db );
+        checkpoint( db );
+        someData( db );
+        databaseHealth.panic( new Throwable( "Trigger recovery on next startup" ) );
+        db.shutdown();
+        db = null;
     }
 
     private void reportError( Race.ThrowingRunnable checkpoint, AtomicReference<Throwable> error )
