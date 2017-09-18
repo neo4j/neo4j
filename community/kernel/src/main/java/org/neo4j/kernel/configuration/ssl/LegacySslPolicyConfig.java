@@ -30,24 +30,28 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 
+/**
+ * Deprecated in favour of {@link SslPolicyConfig}.
+ */
+@Deprecated
 @Description( "Legacy SSL policy settings" )
 public class LegacySslPolicyConfig implements LoadableConfig
 {
     public static final String LEGACY_POLICY_NAME = "legacy";
 
-    //@Deprecated to be deprecated in 3.3
+    @Deprecated
     @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
     public static Setting<File> certificates_directory =
             pathSetting( "dbms.directories.certificates", "certificates" );
 
-    //@Deprecated to be deprecated in 3.3
+    @Deprecated
     @Internal
     @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
     public static Setting<File> tls_certificate_file =
             derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
                     certificates -> new File( certificates, "neo4j.cert" ), PATH );
 
-    //@Deprecated to be deprecated in 3.3
+    @Deprecated
     @Internal
     @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
     public static final Setting<File> tls_key_file =
