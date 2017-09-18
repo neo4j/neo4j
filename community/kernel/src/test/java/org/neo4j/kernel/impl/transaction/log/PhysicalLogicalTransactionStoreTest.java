@@ -45,7 +45,9 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -198,7 +200,7 @@ public class PhysicalLogicalTransactionStoreTest
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         TransactionLogPruner logPruner = new TransactionLogPruner( testDir, logFiles, fileSystemRule.get() );
-        life.add( new Recovery( new Recovery.SPI()
+        life.add( new Recovery( new RecoveryService()
         {
             @Override
             public void startRecovery()
@@ -235,7 +237,7 @@ public class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction )
             {
             }
-        }, new StartupStatisticsProvider(), logPruner, mock( Recovery.Monitor.class ) ) );
+        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ) ) );
 
         // WHEN
         try

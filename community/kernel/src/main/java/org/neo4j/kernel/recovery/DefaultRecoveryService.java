@@ -31,20 +31,19 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
-public class DefaultRecoverySPI implements Recovery.SPI
+public class DefaultRecoveryService implements RecoveryService
 {
     private final PositionToRecoverFrom positionToRecoverFrom;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
 
-    public DefaultRecoverySPI(
+    public DefaultRecoveryService(
             StorageEngine storageEngine,
             LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,

@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.IOException;
-
-import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -29,7 +26,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -40,67 +36,17 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
  */
 public class Recovery extends LifecycleAdapter
 {
-    // TODO
-    public interface Monitor
-    {
-        default void recoveryRequired( LogPosition recoveryPosition )
-        { // no-op by default
-        }
 
-        default void transactionRecovered( long txId )
-        { // no-op by default
-        }
-
-        default void recoveryCompleted( int numberOfRecoveredTransactions )
-        { // no-op by default
-        }
-
-        default void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
-        { // no-op by default
-        }
-
-        default void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry,
-                LogPosition recoveryToPosition )
-        {
-            // no-op
-        }
-
-        default void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
-        {
-            // no-op
-        }
-    }
-
-    public interface RecoveryApplier extends Visitor<CommittedTransactionRepresentation,Exception>, AutoCloseable
-    {
-    }
-
-    public interface SPI
-    {
-        TransactionCursor getTransactions( LogPosition recoveryFromPosition ) throws IOException;
-
-        TransactionCursor getTransactionsInReverseOrder( LogPosition recoveryFromPosition ) throws IOException;
-
-        LogPosition getPositionToRecoverFrom() throws IOException;
-
-        void startRecovery();
-
-        RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception;
-
-        void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-                LogPosition positionAfterLastRecoveredTransaction );
-    }
-
-    private final SPI spi;
-    private final Monitor monitor;
+    private final RecoveryService recoveryService;
+    private final RecoveryMonitor monitor;
     private final StartupStatisticsProvider startupStatistics;
     private final TransactionLogPruner logPruner;
     private int numberOfRecoveredTransactions;
 
-    public Recovery( SPI spi, StartupStatisticsProvider startupStatistics, TransactionLogPruner logPruner,
-            Monitor monitor )
+    public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
+            TransactionLogPruner logPruner, RecoveryMonitor monitor )
     {
-        this.spi = spi;
+        this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
         this.logPruner = logPruner;
@@ -109,14 +55,14 @@ public class Recovery extends LifecycleAdapter
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryFromPosition = spi.getPositionToRecoverFrom();
+        LogPosition recoveryFromPosition = recoveryService.getPositionToRecoverFrom();
         if ( LogPosition.UNSPECIFIED.equals( recoveryFromPosition ) )
         {
             return;
         }
 
         monitor.recoveryRequired( recoveryFromPosition );
-        spi.startRecovery();
+        recoveryService.startRecovery();
 
         LogPosition recoveryToPosition = recoveryFromPosition;
         CommittedTransactionRepresentation lastTransaction = null;
@@ -124,8 +70,8 @@ public class Recovery extends LifecycleAdapter
         try
         {
             long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-            try ( TransactionCursor transactionsToRecover = spi.getTransactionsInReverseOrder( recoveryFromPosition );
-                    RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( REVERSE_RECOVERY ) )
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryFromPosition );
+                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
             {
                 while ( transactionsToRecover.next() )
                 {
@@ -141,8 +87,8 @@ public class Recovery extends LifecycleAdapter
 
             monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
 
-            try ( TransactionCursor transactionsToRecover = spi.getTransactions( recoveryFromPosition );
-                    RecoveryApplier recoveryVisitor = spi.getRecoveryApplier( RECOVERY ) )
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryFromPosition );
+                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
             {
                 while ( transactionsToRecover.next() )
                 {
@@ -170,7 +116,7 @@ public class Recovery extends LifecycleAdapter
         }
         logPruner.prune( recoveryToPosition );
 
-        spi.transactionsRecovered( lastTransaction, recoveryToPosition );
+        recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
         startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
         monitor.recoveryCompleted( numberOfRecoveredTransactions );
     }

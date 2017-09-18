@@ -68,7 +68,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -490,7 +489,7 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private static class RecoveryMonitor implements Recovery.Monitor
+    private static class RecoveryMonitor implements org.neo4j.kernel.recovery.RecoveryMonitor
     {
         private List<Long> recoveredTransactions = new ArrayList<>();
         private int numberOfRecoveredTransactions;

@@ -60,10 +60,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.DefaultRecoverySPI;
+import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.kernel.recovery.Recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -142,7 +143,7 @@ public class RecoveryTest
         } );
 
         LifeSupport life = new LifeSupport();
-        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
         try
         {
@@ -159,7 +160,7 @@ public class RecoveryTest
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 private int nr;
 
@@ -248,7 +249,7 @@ public class RecoveryTest
         } );
 
         LifeSupport life = new LifeSupport();
-        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
@@ -264,7 +265,7 @@ public class RecoveryTest
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
@@ -389,7 +390,7 @@ public class RecoveryTest
     private boolean recover( File storeDir, PhysicalLogFiles logFiles )
     {
         LifeSupport life = new LifeSupport();
-        Recovery.Monitor monitor = mock( Recovery.Monitor.class );
+        RecoveryMonitor monitor = mock( RecoveryMonitor.class );
         final AtomicBoolean recoveryRequired = new AtomicBoolean();
         try
         {
@@ -406,7 +407,7 @@ public class RecoveryTest
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()

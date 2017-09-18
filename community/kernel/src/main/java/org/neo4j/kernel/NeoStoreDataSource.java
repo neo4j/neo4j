@@ -148,11 +148,13 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.kernel.recovery.DefaultRecoverySPI;
+import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
@@ -463,7 +465,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             buildRecovery( fs,
                     transactionIdStore,
                     tailScanner,
-                    monitors.newMonitor( Recovery.Monitor.class ),
+                    monitors.newMonitor( RecoveryMonitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     logFiles, startupStatistics,
                     storageEngine, transactionLogModule.logicalTransactionStore()
@@ -684,14 +686,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final FileSystemAbstraction fileSystemAbstraction,
             TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner,
-            Recovery.Monitor recoveryMonitor,
+            RecoveryMonitor recoveryMonitor,
             PositionToRecoverFrom.Monitor positionMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
             LogicalTransactionStore logicalTransactionStore )
     {
-        Recovery.SPI spi = new DefaultRecoverySPI( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
+        RecoveryService
+                spi = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
         TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
         Recovery recovery = new Recovery( spi, startupStatistics, logPruner, recoveryMonitor );
         life.add( recovery );
