@@ -152,7 +152,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("START r=rel(0,1) RETURN r") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
-    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0,1) RETURN id(r)").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(%d,%d) RETURN id(r)".format(rel1, rel2)).toList
 
     result should equal(List(Map("id(r)"-> rel1),Map("id(r)"-> rel2)))
   }
@@ -168,7 +168,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("START r=rel(0),rr=rel(1) RETURN r") {
     val rel1 = relate(createNode(), createNode()).getId
     val rel2 = relate(createNode(), createNode()).getId
-    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(0),rr=rel(1) RETURN id(r), id(rr)").toList
+    val result = executeWithAllPlannersAndCompatibilityMode("START r=rel(%d),rr=rel(%d) RETURN id(r), id(rr)".format(rel1, rel2)).toList
 
     result should equal(List(Map("id(r)"-> rel1, "id(rr)"-> rel2)))
   }
@@ -267,10 +267,10 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val bd = relate(b, d)
     val ce = relate(c, e)
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """start a=node(0), ab=relationship(0), bd=relationship(2)
+      """start a=node(%d), ab=relationship(%d), bd=relationship(%d)
         |match (a)-[ab]->(b)-[bd]->(d)
         |return b, d
-      """.stripMargin)
+      """.format(a.getId, ab.getId, bd.getId).stripMargin)
 
     result.toList should equal(List(Map("b" -> b, "d" -> d)))
   }
@@ -284,10 +284,10 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val ac = relate(a, c)
     val ad = relate(a, d)
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """start a=node(0), ab=relationship(0, 1)
+      """start a=node(%d), ab=relationship(%d, %d)
         |match (a)-[ab]->(b)
         |return b
-      """.stripMargin)
+      """.format(a.getId, ab.getId, ac.getId).stripMargin)
 
     result.toSet should equal(Set(Map("b" -> c), Map("b" -> b)))
   }

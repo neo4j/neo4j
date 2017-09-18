@@ -35,7 +35,6 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
@@ -85,49 +84,10 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Test
-    public void shouldFailOnSampleBeforeConfiguredSampling() throws Exception
-    {
-        // GIVEN
-        populator.create();
-
-        // WHEN
-        try
-        {
-            populator.sampleResult();
-            fail();
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN good
-        }
-        populator.close( true );
-    }
-
-    @Test
-    public void shouldSampleWholeIndexIfConfiguredForPopulatingSampling() throws Exception
-    {
-        // GIVEN
-        populator.create();
-        populator.configureSampling( false );
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
-        populator.add( Arrays.asList( updates ) );
-
-        // WHEN
-        IndexSample sample = populator.sampleResult();
-
-        // THEN
-        assertEquals( updates.length, sample.sampleSize() );
-        assertEquals( countUniqueValues( updates ), sample.uniqueValues() );
-        assertEquals( updates.length, sample.indexSize() );
-        populator.close( true );
-    }
-
-    @Test
     public void shouldSampleUpdatesIfConfiguredForOnlineSampling() throws Exception
     {
         // GIVEN
         populator.create();
-        populator.configureSampling( true );
         IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
         populator.add( Arrays.asList( scanUpdates ) );
         Number[] updates = array( 101, 102, 102, 103, 103 );

@@ -47,31 +47,18 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
     {
         super( pageCache, fs, storeFile, layout );
         this.samplingConfig = samplingConfig;
+        this.sampler = new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        if ( updateSampling )
-        {
-            checkSampler();
-            sampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
-        }
-    }
-
-    @Override
-    public void configureSampling( boolean onlineSampling )
-    {
-        this.updateSampling = onlineSampling;
-        this.sampler = onlineSampling ? new DefaultNonUniqueIndexSampler( samplingConfig.sampleSizeLimit() )
-                                      : new FullScanNonUniqueIndexSampler<>( tree, layout, samplingConfig );
+        sampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        checkSampler();
-
         // Close the writer before scanning
         try
         {
@@ -96,14 +83,6 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VAL
             {
                 throw new UncheckedIOException( e );
             }
-        }
-    }
-
-    private void checkSampler()
-    {
-        if ( sampler == null )
-        {
-            throw new IllegalStateException( "Please configure populator sampler before using it." );
         }
     }
 }

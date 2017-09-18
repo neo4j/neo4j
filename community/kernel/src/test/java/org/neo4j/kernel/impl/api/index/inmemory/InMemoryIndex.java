@@ -164,12 +164,6 @@ class InMemoryIndex
         }
 
         @Override
-        public void configureSampling( boolean onlineSampling )
-        {
-            //nothing
-        }
-
-        @Override
         public IndexSample sampleResult()
         {
             try

@@ -23,7 +23,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.IntPredicate;
 
@@ -45,12 +44,10 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class LabelScanViewNodeStoreScanTest
@@ -85,24 +82,6 @@ public class LabelScanViewNodeStoreScanTest
 
         assertThat(visitedNodeIds, Matchers.hasSize( 4 ));
         assertThat( visitedNodeIds, Matchers.hasItems( 1L, 2L, 4L, 8L ) );
-    }
-
-    @Test
-    public void configureSamplersToNotUseOnlineSampling() throws Exception
-    {
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        IndexStoreView storeView = mock( IndexStoreView.class );
-        LabelScanTestMultipleIndexPopulator indexPopulator =
-                new LabelScanTestMultipleIndexPopulator( storeView, NullLogProvider.getInstance() );
-
-        List<MultipleIndexPopulator.IndexPopulation> populations =
-                Arrays.asList( getPopulation( indexPopulator ), getPopulation( indexPopulator ) );
-        scanViewStoreScan.configure( populations );
-
-        for ( MultipleIndexPopulator.IndexPopulation population : populations )
-        {
-            verify( population.populator ).configureSampling( false );
-        }
     }
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )

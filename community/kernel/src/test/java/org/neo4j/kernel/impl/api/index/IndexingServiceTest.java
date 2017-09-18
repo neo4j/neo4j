@@ -1236,12 +1236,6 @@ public class IndexingServiceTest
                 {
                     return new PopulationProgress( 42, 100 );
                 }
-
-                @Override
-                public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
-                {
-                    // no-op
-                }
             };
         }
 

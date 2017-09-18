@@ -200,13 +200,13 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("should handle all shortest paths") {
-    createDiamond()
+    val (a, b, c, d) = createDiamond()
 
     val result = executeWith(Configs.CommunityInterpreted,
       """
-    match (a), (d) where id(a) = 0 and id(d) = 3
+    match (a), (d) where id(a) = %d and id(d) = %d
     match p = allShortestPaths( (a)-[*]->(d) )
-    return p""")
+    return p""".format(a.getId, d.getId))
 
     result.toList.size should equal(2)
   }
@@ -457,7 +457,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
-    result.toList should equal(List(Map("n" -> nodes.head), Map("n" -> nodes(1))))
+    result.toSet should equal(Set(Map("n" -> nodes.head), Map("n" -> nodes(1))))
     result.executionPlanDescription().toString should include("NodeIndexScan")
   }
 

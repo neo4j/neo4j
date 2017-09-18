@@ -159,7 +159,6 @@ public class IndexPopulationJobTest
         IndexEntryUpdate<?> update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
 
         verify( populator ).create();
-        verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
         verify( populator, times( 2 ) ).add( any( Collection.class) );
         verify( populator ).sampleResult();
@@ -207,7 +206,6 @@ public class IndexPopulationJobTest
         IndexEntryUpdate<?> update2 = add( node4, descriptor, Values.of( value ) );
 
         verify( populator ).create();
-        verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
         verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
@@ -441,12 +439,6 @@ public class IndexPopulationJobTest
         public PopulationProgress getProgress()
         {
             return new PopulationProgress( 42, 100 );
-        }
-
-        @Override
-        public void configure( Collection<MultipleIndexPopulator.IndexPopulation> populations )
-        {
-            // no-op
         }
     }
 
