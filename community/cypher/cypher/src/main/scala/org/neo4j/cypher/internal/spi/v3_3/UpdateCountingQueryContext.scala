@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.QueryStatistics
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.storable.Value

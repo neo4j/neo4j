@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NullPipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherException => InternalCypherException}
 import org.neo4j.values.virtual.VirtualValues

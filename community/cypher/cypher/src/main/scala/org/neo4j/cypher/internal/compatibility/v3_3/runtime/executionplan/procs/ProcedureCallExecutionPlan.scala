@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
-import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_4.ProcedurePlannerName
+import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType

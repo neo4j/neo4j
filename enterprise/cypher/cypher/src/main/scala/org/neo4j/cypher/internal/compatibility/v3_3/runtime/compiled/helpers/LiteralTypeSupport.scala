@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.helpers
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CypherCodeGenType, ListReferenceType, LongType, ReferenceType, RepresentationType}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
+import org.neo4j.cypher.internal.compiler.v3_4.helpers.IsList
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 object LiteralTypeSupport {

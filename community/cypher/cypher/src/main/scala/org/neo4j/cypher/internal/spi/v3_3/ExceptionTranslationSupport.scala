@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_3
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
+import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.TokenNameLookup

@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{AnyIndex, EntityProducerFactory, SchemaIndex}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.spi._
+import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v3_4.spi._
 import org.neo4j.cypher.internal.frontend.v3_4.IndexHintException
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
 import org.neo4j.cypher.internal.v3_4.logical.plans.SingleQueryExpression

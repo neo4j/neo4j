@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler.Profiler
-import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_4.phases._
+import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{InternalNotificationLogger, Phase}

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.functions.functionConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.helpers.LiteralTypeSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._

@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
+import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}

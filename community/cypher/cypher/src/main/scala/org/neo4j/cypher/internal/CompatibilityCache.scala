@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBui
 import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
 import org.neo4j.cypher.internal.compiler.v3_2.{CommunityContextCreator => CommunityContextCreator3_2, CommunityRuntimeBuilder => CommunityRuntimeBuilder3_2}
-import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_4.InvalidArgumentException
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.helpers.Clock

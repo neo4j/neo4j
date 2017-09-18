@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.Toke
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_4.planner._
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.{RelTypeId, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4._

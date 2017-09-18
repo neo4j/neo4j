@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_3.codegen.profiling
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
+import org.neo4j.cypher.internal.compiler.v3_4.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer
 

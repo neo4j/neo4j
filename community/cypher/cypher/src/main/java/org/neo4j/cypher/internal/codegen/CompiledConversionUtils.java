@@ -35,8 +35,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
-import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_4.spi.RelationshipIdWrapper;
 import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException;
 import org.neo4j.cypher.internal.frontend.v3_4.IncomparableValuesException;
 import org.neo4j.kernel.impl.core.NodeManager;

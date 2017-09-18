@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledEx
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.spi._
+import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
+import org.neo4j.cypher.internal.compiler.v3_4.spi._
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure

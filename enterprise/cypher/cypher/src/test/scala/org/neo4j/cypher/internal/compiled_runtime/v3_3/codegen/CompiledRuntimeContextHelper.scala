@@ -24,9 +24,9 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.CodeStructure
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, PlanFingerprintReference}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_4.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
 import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition, InternalException}

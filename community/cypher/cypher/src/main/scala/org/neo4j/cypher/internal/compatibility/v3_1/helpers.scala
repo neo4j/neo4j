@@ -23,7 +23,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_1
 import org.neo4j.cypher.internal.compiler.v3_1.CompilationPhaseTracer.{CompilationPhaseEvent, CompilationPhase => v3_1Phase}
 import org.neo4j.cypher.internal.compiler.v3_1.{CypherCompilerConfiguration => CypherCompilerConfiguration3_1}
-import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer

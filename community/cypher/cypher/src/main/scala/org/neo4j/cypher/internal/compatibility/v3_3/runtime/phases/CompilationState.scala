@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 
 class CompilationState(ls: LogicalPlanState,
                            val maybeExecutionPlan: Option[ExecutionPlan] = None)

@@ -23,7 +23,7 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._

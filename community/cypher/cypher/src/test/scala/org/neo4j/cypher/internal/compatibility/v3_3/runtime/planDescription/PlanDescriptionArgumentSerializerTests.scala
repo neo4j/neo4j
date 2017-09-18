@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTBoolean, CTList, CTNode, CTString}

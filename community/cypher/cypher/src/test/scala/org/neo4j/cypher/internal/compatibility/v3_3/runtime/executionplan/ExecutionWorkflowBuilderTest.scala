@@ -23,7 +23,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator, _}
-import org.neo4j.cypher.internal.compiler.v3_3._
+import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, PlannerQuery}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}

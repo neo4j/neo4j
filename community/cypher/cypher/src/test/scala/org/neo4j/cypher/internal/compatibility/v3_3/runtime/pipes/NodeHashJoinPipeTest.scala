@@ -25,7 +25,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
+import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
