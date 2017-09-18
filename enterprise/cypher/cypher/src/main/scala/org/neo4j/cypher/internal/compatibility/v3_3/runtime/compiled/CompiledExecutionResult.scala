@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Inter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_4.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}

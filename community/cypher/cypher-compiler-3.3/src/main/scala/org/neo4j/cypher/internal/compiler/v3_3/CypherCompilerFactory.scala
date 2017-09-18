@@ -23,10 +23,9 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{ASTRewriter, IfNoParameter}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{ASTRewriter, IfNoParameter}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 
 class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPlanState, LogicalPlanState]] {
   val monitorTag = "cypher3.3"

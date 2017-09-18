@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 
 object Seek {

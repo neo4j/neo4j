@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElemen
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.{IndexHintException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_4.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.v3_3.logical.plans.ScanQueryExpression
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

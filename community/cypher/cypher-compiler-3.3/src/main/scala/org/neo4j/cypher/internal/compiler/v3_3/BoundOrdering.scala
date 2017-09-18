@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.Bound
+import org.neo4j.cypher.internal.frontend.v3_4.Bound
 
 // Tested by SeekRangeTest
 final case class MinBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[T]] {

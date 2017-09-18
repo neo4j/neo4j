@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, Rewriter}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.CNFNormalizer
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{AstRewritingMonitor, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.CNFNormalizer
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 

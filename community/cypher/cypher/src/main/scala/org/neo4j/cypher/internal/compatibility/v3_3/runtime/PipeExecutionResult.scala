@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Version
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor

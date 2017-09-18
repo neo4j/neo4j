@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationSt
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext, CommunityRuntimeContextCreator}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Transformer}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.{CypherExecutionMode, PreParsedQuery}
 import org.neo4j.graphdb.config.Setting

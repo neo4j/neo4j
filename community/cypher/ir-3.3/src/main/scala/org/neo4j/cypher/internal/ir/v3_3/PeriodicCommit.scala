@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.frontend.v3_4.ast.PeriodicCommitHint
 
 case class PeriodicCommit(batchSize: Option[Long])
 

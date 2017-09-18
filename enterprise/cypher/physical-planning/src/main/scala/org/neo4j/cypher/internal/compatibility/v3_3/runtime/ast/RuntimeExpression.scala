@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, ast => parserAst}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck, SemanticCheckResult, ast => parserAst}
 
 trait RuntimeExpression extends parserAst.Expression {
   override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success

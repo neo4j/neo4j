@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Length, Nodes}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.frontend.v3_4.notification.ExhaustiveShortestPathForbiddenNotification
+import org.neo4j.cypher.internal.frontend.v3_4.{ExhaustiveShortestPathForbiddenException, InternalException}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 

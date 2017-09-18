@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {

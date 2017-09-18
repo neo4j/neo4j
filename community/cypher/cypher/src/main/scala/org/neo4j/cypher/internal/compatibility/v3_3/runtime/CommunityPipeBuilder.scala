@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
-import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}

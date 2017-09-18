@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.InternalException
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
 
 class PrimitiveExecutionContextTest extends CypherFunSuite {

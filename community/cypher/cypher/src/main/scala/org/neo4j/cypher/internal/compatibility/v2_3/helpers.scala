@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.CompilationPhaseTracer.Compilatio
 import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration => CypherCompilerConfiguration2_3}
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, phases}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, phases}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {

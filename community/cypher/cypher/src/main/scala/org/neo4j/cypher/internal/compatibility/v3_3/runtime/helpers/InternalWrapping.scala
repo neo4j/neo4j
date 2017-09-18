@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 
@@ -78,7 +78,7 @@ object InternalWrapping {
       NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
   }
 
-  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_3.InputPosition) {
+  private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_4.InputPosition) {
     def asInputPosition = new graphdb.InputPosition(pos.offset, pos.line, pos.column)
   }
 }

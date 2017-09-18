@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CandidateGenerator, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, _}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, _}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
 

@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Int
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}

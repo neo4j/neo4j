@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow, RuntimeScalaValueConverter, RuntimeTextValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, PlannerImpl, Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.cypher.result.QueryResult

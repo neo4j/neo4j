@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{Bound, Bounds}
+import org.neo4j.cypher.internal.frontend.v3_4.{Bound, Bounds}
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the

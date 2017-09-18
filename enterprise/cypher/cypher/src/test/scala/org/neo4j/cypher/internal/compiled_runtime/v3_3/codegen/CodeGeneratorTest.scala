@@ -33,10 +33,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{By
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}

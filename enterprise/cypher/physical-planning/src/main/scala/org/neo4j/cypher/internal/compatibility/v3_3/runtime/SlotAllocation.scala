@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, ast => parserAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 

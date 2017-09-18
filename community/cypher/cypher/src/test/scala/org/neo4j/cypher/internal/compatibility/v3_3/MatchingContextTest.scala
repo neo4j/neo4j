@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builde
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue
 

@@ -25,9 +25,9 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.graphdb.Node

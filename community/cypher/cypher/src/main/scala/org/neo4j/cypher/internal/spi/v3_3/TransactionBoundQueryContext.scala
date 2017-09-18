@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
-import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.javacompat.ValueToObjectSerializer
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor

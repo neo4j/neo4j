@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
 

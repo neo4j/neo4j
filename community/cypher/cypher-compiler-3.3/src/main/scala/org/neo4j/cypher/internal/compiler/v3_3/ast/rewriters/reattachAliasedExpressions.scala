@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Return, _}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Return, _}
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
 
 case object reattachAliasedExpressions extends Rewriter {
   override def apply(in: AnyRef): AnyRef = findingRewriter.apply(in)

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Match, Query, SingleQuery, Where, _}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Match, Query, SingleQuery, Where, _}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 
 class ResolveTokensTest extends CypherFunSuite {
 

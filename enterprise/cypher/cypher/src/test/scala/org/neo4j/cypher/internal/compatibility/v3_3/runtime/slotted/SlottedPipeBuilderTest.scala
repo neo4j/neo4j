@@ -36,10 +36,10 @@ import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeCo
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTList, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_3.logical.plans
 import org.neo4j.cypher.internal.v3_3.logical.plans._

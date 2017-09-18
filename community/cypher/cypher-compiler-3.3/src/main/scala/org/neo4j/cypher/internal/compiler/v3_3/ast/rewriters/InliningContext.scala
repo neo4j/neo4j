@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters.InliningContext._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.copyVariables
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, TypedRewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.copyVariables
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, TypedRewriter, bottomUp}
 
 case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
                            seenVariables: Set[Variable] = Set.empty,

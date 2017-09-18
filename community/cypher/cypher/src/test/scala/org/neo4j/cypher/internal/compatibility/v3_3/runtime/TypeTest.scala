@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.{DoubleValue, LongValue}
 
 class TypeTest extends CypherFunSuite {

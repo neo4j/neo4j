@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {

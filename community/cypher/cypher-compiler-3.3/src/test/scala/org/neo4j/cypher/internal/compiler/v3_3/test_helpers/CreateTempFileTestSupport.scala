@@ -23,7 +23,7 @@ import java.io.{FileOutputStream, OutputStreamWriter, PrintWriter}
 import java.nio.file.{Files, Path}
 import java.util.zip.{GZIPOutputStream, ZipEntry, ZipOutputStream}
 
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.io.fs.FileUtils
 
 import scala.io.Codec

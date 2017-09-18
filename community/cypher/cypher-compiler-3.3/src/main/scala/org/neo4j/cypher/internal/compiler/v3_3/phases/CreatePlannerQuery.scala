@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.StatementConverters._
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.InternalException
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
 object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] {

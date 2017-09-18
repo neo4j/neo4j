@@ -19,6 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 
 case class GetDegreePrimitive(offset: Int, typ: Option[String], direction: SemanticDirection) extends RuntimeExpression

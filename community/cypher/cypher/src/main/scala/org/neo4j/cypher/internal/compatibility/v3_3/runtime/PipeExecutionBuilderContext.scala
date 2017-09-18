@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
-import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, SemanticTable}
 
 case class PipeExecutionBuilderContext(cardinality: Metrics.CardinalityModel, semanticTable: SemanticTable,
                                        plannerName: PlannerName)

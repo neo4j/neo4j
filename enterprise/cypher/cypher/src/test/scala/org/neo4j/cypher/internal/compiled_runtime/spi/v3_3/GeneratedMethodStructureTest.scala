@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable, symbols}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, SemanticTable, symbols}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_3.codegen.{GeneratedMethodStructure, Methods, _}

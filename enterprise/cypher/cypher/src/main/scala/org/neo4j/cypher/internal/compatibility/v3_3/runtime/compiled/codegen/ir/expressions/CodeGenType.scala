@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.frontend.v3_3.symbols
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_4.symbols
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
 
 trait CodeGenType {
   def isPrimitive: Boolean

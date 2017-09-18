@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.notification.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
 

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QuerySt
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes.TopSlottedPipeTestSupport._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipelineInformation, RefSlot}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.helpers.ValueUtils
 
 import scala.util.Random

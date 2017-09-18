@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, VisitorPhase}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, VisitorPhase}
 
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 

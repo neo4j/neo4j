@@ -24,8 +24,8 @@ import java.util
 import org.mockito.Mockito
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}

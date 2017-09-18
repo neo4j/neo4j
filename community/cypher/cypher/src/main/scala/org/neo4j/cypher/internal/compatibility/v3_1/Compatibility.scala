@@ -75,7 +75,7 @@ trait Compatibility {
                                          Some(helpers.as3_1(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapperV3_3,
-                        tracer: frontend.v3_3.phases.CompilationPhaseTracer):
+                        tracer: frontend.v3_4.phases.CompilationPhaseTracer):
       (ExecutionPlan, Map[String, Any]) =
         exceptionHandler.runSafely {
           val tc = TransactionalContextWrapperV3_1(transactionalContext.tc)

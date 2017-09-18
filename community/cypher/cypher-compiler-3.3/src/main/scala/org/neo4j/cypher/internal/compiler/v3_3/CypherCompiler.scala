@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.ASTRewriter
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, ListSupport}
-import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{ArrayValue, Value, Values}
 import org.neo4j.values.virtual.ListValue

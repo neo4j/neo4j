@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{desugarMapProjection, normalizeReturnClauses, normalizeWithClauses, recordScopes}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Rewriter, SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{desugarMapProjection, normalizeReturnClauses, normalizeWithClauses, recordScopes}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, Rewriter, SemanticState, inSequence}
 
 class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
 

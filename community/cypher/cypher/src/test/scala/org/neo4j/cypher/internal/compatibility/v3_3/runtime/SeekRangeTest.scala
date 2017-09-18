@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.{MinMaxOrdering, RangeBetween, RangeGreaterThan, RangeLessThan}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{ExclusiveBound, InclusiveBound}
 
 class SeekRangeTest extends CypherFunSuite {
 

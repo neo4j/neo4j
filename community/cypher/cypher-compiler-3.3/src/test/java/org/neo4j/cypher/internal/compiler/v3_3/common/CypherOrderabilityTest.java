@@ -28,7 +28,7 @@ import java.util.HashMap;
 
 import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper;
-import org.neo4j.cypher.internal.frontend.v3_3.IncomparableValuesException;
+import org.neo4j.cypher.internal.frontend.v3_4.IncomparableValuesException;
 
 import static java.lang.String.format;
 

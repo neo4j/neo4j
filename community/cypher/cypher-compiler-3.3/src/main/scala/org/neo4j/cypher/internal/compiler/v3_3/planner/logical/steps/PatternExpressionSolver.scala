@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Exists
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.Exists
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.{FreshIdNameGenerator, UnNamedNameGenerator}
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, ast, topDown}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 

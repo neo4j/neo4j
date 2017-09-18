@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Execut
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{Monitors, Transformer}
 import org.neo4j.cypher.{CypherPlanner, CypherRuntime, CypherUpdateStrategy}
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}

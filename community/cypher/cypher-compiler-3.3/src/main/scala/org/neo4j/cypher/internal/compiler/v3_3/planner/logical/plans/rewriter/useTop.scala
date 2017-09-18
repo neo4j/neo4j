@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{DoNotIncludeTies, Limit, Sort, Top}
 
 /**

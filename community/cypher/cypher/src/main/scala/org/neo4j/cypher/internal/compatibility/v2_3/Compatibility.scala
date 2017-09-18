@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.frontend.v3_4
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
@@ -78,7 +78,7 @@ trait Compatibility {
                                 Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
       def plan(transactionalContext: TransactionalContextWrapper,
-               tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler
+               tracer: v3_4.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler
         .runSafely {
           val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
           val (planImpl, extractedParameters) = compiler

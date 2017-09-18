@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken, _}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken, _}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils.fromNodeProxy

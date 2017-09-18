@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
+import org.neo4j.cypher.internal.frontend.v3_4.MergeConstraintConflictException
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_3.MergeConstraintConflictException
 import org.neo4j.values.virtual.NodeValue
 
 case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)

@@ -25,7 +25,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, ValueConversion}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.Result

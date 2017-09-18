@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, NameId, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.storable.Values.longValue
 

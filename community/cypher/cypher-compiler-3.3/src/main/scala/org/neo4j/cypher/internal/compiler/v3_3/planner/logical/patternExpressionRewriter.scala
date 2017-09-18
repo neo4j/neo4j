@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
-import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
-import org.neo4j.cypher.internal.frontend.v3_3.{IdentityMap, Rewriter, ast, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.frontend.v3_4.{IdentityMap, Rewriter, ast, topDown}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 /*

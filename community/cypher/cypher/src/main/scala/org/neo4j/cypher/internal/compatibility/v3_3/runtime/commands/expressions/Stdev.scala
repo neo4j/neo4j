@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.StdevFunction
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new StdevFunction(anInner, false)

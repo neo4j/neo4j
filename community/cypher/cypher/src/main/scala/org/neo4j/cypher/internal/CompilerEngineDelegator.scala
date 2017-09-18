@@ -24,9 +24,9 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.exceptionHandler
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v3_2
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.{InvalidArgumentException, SyntaxException, _}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode.{CREATE_UNIQUE_UNAVAILABLE_FALLBACK, RULE_PLANNER_UNAVAILABLE_FALLBACK, START_DEPRECATED, START_UNAVAILABLE_FALLBACK}
@@ -165,11 +165,11 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
 
         parserQuery.onError {
           // if there is a create unique in the cypher 3.3 query try to fallback to 3.1
-          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
+          case ex: frontend.v3_4.SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
             preParsingNotifications = preParsingNotifications +
               createUniqueNotification(ex, preParsedQuery)
             Left(CypherVersion.v3_1)
-          case ex: frontend.v3_3.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
+          case ex: frontend.v3_4.SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
             preParsingNotifications = preParsingNotifications +
               createStartUnavailableNotification(ex, preParsedQuery) +
               createStartDeprecatedNotification(ex, preParsedQuery)
@@ -212,18 +212,18 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     result.right.get
   }
 
-  private def createStartUnavailableNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartUnavailableNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
 
     START_UNAVAILABLE_FALLBACK.notification(pos)
   }
 
-  private def createStartDeprecatedNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createStartDeprecatedNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     START_DEPRECATED.notification(pos, startDeprecated(ex.getMessage))
   }
 
-  private def createUniqueNotification(ex: frontend.v3_3.SyntaxException, preParsedQuery: PreParsedQuery) = {
+  private def createUniqueNotification(ex: frontend.v3_4.SyntaxException, preParsedQuery: PreParsedQuery) = {
     val pos = convertInputPosition(ex.pos.getOrElse(preParsedQuery.offset))
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos)
   }

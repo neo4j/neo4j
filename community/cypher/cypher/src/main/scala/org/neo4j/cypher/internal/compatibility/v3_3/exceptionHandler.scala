@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
-import org.neo4j.cypher.internal.frontend.v3_3.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.frontend.v3_4.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherException => InternalCypherException}
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)

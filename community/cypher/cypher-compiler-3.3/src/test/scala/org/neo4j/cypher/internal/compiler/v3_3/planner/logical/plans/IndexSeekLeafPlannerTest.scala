@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v3_3.logical.plans.{CompositeQueryExpression, NodeIndexSeek, NodeUniqueIndexSeek, SingleQueryExpression}
 

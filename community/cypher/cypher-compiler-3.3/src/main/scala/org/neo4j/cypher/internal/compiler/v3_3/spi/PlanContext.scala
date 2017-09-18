@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.spi
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v3_3.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 /**

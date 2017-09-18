@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_4.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}

@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.scalatest.matchers.{MatchResult, Matcher}

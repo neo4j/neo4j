@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue

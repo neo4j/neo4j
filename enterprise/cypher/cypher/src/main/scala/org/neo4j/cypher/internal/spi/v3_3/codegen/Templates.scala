@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.frontend.v3_3.CypherExecutionException
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
+import org.neo4j.cypher.internal.frontend.v3_4.CypherExecutionException
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer

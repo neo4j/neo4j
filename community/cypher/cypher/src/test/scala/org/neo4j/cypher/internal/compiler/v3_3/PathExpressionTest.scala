@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.helpers.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{FALSE, TRUE}
 import org.neo4j.values.virtual.PathValue

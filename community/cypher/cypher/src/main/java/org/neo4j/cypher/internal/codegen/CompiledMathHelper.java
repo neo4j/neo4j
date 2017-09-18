@@ -23,8 +23,8 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException;
-import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException;
+import org.neo4j.cypher.internal.frontend.v3_4.ArithmeticException;
+import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException;
 
 /**
  * This is a helper class used by compiled plans for doing basic math operations

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.build
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, RelatedTo, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.{PatternGraph, PatternNode, PatternRelationship}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_4.SyntaxException
 
 import scala.collection.mutable
 

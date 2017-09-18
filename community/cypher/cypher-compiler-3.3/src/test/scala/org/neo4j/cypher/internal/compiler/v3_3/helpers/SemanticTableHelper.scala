@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 
 object SemanticTableHelper {
   implicit class RichSemanticTable(table: SemanticTable) {

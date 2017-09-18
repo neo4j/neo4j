@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{BuildCompiledExecutionPlan, EnterpriseRuntimeContext}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
-import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_4.InvalidArgumentException
+import org.neo4j.cypher.internal.frontend.v3_4.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{Do, If, Transformer}
 
 object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {

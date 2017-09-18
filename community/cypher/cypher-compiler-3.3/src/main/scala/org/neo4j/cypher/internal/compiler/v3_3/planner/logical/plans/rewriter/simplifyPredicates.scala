@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
 
 case object simplifyPredicates extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)

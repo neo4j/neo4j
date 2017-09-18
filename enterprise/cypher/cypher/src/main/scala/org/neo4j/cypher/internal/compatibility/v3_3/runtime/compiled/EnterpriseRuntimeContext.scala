@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ContextCreator, CypherCompilerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
 
 class EnterpriseRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,

@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanF
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration, NotImplementedPlanContext, UpdateStrategy}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.NO_TRACING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition, InternalException}
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQuery
 import org.scalatest.mock.MockitoSugar
 

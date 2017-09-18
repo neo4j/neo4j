@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_3.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_4.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.helpers.ValueUtils
 import org.neo4j.values.AnyValue

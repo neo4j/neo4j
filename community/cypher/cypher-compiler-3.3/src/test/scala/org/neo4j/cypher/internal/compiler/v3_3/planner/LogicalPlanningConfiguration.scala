@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Cost, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlan
 

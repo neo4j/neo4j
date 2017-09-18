@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{DummyExpression, Expression, FilteringExpression, Variable}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticCheckResult, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{DummyExpression, Expression, FilteringExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticCheckResult, SemanticError, SemanticState}
 
 class FilteringExpressionTest extends CypherFunSuite {
 

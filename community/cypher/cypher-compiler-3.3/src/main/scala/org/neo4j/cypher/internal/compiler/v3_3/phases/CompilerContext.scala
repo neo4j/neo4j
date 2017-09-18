@@ -24,8 +24,8 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, InputPosition, SemanticErrorDef}
+import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.frontend.v3_4.{CypherException, InputPosition, SemanticErrorDef}
 
 class CompilerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                       val tracer: CompilationPhaseTracer,

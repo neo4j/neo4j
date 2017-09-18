@@ -24,9 +24,9 @@ import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{QueryState, QueryStateHelper}
-import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values._

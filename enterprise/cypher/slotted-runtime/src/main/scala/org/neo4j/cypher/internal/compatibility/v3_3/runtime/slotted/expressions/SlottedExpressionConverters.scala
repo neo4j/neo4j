@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{Ex
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commands}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
-import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 
 object SlottedExpressionConverters extends ExpressionConverter {
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =

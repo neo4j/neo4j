@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.core.RelationshipProxy
 import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipActions

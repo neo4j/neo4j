@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.v3_3.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_4.InternalException
+import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, Strictness}
 
 /*
@@ -159,7 +159,7 @@ abstract class LogicalPlan
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage: Seq[IndexUsage] = {
-    import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
+    import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, propertyKeys, _, _) =>
         (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.nameId.id, label.name, propertyKeys.map(_.name))

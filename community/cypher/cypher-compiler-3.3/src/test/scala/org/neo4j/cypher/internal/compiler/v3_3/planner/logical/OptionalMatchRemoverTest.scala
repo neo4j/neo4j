@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.flattenBooleanOperators
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, Rewriter, SemanticChecker, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.Rewritable._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, Rewriter, SemanticChecker, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

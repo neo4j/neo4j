@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.Unre
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternMatchingBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = SymbolTable(Map("a" -> CTNode))

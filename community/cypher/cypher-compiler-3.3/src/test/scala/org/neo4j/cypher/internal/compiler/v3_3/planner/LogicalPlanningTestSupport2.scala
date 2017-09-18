@@ -30,15 +30,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, _}
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
-import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.fixedPoint
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_4.{Foldable, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.cypher.internal.v3_3.logical.plans.{LogicalPlan, ProduceResult}
 import org.neo4j.helpers.collection.Visitable

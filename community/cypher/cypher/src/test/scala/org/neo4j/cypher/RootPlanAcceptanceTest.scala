@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{InterpretedRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription
 

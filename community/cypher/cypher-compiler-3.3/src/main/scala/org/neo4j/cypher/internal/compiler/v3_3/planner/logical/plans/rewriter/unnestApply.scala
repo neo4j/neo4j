@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v3_3.logical.plans._
 
 case object unnestApply extends Rewriter {

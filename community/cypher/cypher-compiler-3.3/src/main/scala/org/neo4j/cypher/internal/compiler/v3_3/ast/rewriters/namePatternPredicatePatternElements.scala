@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
 
 case object namePatternPredicatePatternElements extends Rewriter {
 

@@ -34,10 +34,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, Logi
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFactory, QueryGraphSolver, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3._

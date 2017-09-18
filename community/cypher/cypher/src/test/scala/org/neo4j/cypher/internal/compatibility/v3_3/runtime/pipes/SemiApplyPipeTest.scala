@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTNumber
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 
 class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {

@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTNode, CTRelationship, ListType}
-import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
+import org.neo4j.cypher.internal.frontend.v3_4.helpers._
+import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates._
