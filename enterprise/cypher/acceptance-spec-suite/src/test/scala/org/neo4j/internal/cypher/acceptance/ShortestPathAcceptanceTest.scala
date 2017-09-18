@@ -558,10 +558,6 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val a2 = createLabeledNode("A")
     val a3 = createLabeledNode("A")
     val a4 = createLabeledNode("A")
-    println( a1 )
-    println( a2 )
-    println( a3 )
-    println( a4 )
 
     relate(a1, a2, "T")
     relate(a2, a3, "T")
