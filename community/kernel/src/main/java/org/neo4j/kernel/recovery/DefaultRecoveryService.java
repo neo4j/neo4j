@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -42,14 +43,16 @@ public class DefaultRecoveryService implements RecoveryService
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
+    private final LogVersionRepository logVersionRepository;
 
     public DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
-            PositionToRecoverFrom.Monitor monitor )
+            LogVersionRepository logVersionRepository, PositionToRecoverFrom.Monitor monitor )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
+        this.logVersionRepository = logVersionRepository;
         this.positionToRecoverFrom = new PositionToRecoverFrom( logTailScanner, monitor );
     }
 
@@ -104,6 +107,7 @@ public class DefaultRecoveryService implements RecoveryService
                     recoveredTransactionOffset,
                     recoveredTransactionLogVersion );
         }
+        logVersionRepository.setCurrentLogVersion( recoveredTransactionLogVersion );
     }
 
     static class RecoveryVisitor implements RecoveryApplier

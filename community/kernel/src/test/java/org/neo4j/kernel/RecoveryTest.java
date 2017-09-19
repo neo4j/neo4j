@@ -31,8 +31,6 @@ import java.util.function.Consumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.DeadSimpleTransactionIdStore;
@@ -96,7 +94,6 @@ public class RecoveryTest
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0,
             BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
-    private final LogService logService = new SimpleLogService( logProvider );
     private final int logVersion = 0;
 
     private LogEntry lastCommittedTxStartEntry;
@@ -105,6 +102,8 @@ public class RecoveryTest
     private LogEntry expectedCommitEntry;
     private LogEntry expectedCheckPointEntry;
     private Monitors monitors = new Monitors();
+    private final DeadSimpleLogVersionRepository versionRepository =
+            new DeadSimpleLogVersionRepository( LogVersionRepository.INITIAL_LOG_VERSION );
 
     @Test
     public void shouldRecoverExistingData() throws Exception
@@ -159,7 +158,8 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader,
                     monitors, false );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                    txStore, versionRepository,  NO_MONITOR )
             {
                 private int nr;
 
@@ -263,7 +263,8 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
                     false );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                    txStore, versionRepository, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()
@@ -404,7 +405,8 @@ public class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
                     false );
             TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, txStore, NO_MONITOR )
+            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                    txStore, versionRepository, NO_MONITOR )
             {
                 @Override
                 public void startRecovery()

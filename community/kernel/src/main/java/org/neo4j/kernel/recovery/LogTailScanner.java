@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -89,19 +88,13 @@ public class LogTailScanner
         boolean startRecordAfterCheckpoint = false;
         boolean corruptedTransactionLogs = false;
 
-        while ( version >= INITIAL_LOG_VERSION )
+        while ( version >= logFiles.getLowestLogVersion() && version >= INITIAL_LOG_VERSION )
         {
-            LogVersionedStoreChannel channel =
-                    PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem, version, false );
-            if ( channel == null )
-            {
-                break;
-            }
-
             oldestVersionFound = version;
             CheckPoint latestCheckPoint = null;
-            ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel );
-            try ( LogEntryCursor cursor = new LogEntryCursor( logEntryReader, recoveredDataChannel ) )
+            try ( LogVersionedStoreChannel channel =
+                    PhysicalLogFile.openForVersion( logFiles, fileSystem, version, false );
+                    LogEntryCursor cursor = new LogEntryCursor( logEntryReader, new ReadAheadLogChannel( channel ) ) )
             {
                 LogEntry entry;
                 while ( cursor.next() )

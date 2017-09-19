@@ -427,6 +427,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return versionField;
     }
 
+    @Override
     public void setCurrentLogVersion( long version )
     {
         synchronized ( logVersionLock )

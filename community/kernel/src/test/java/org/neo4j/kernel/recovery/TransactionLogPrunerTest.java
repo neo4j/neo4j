@@ -203,12 +203,18 @@ public class TransactionLogPrunerTest
 
     private static class LogFilesVersionRepository implements LogVersionRepository
     {
-        private int version;
+        private long version;
 
         @Override
         public long getCurrentLogVersion()
         {
             return version;
+        }
+
+        @Override
+        public void setCurrentLogVersion( long version )
+        {
+            this.version = version;
         }
 
         @Override

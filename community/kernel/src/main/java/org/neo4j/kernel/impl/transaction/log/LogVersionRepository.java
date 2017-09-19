@@ -31,6 +31,12 @@ public interface LogVersionRepository
     long getCurrentLogVersion();
 
     /**
+     * Set current log version
+     * @param version new current log version
+     */
+    void setCurrentLogVersion( long version );
+
+    /**
      * Increments (making sure it is persisted on disk) and returns the latest log version for this repository.
      * It does so atomically and can potentially block.
      */

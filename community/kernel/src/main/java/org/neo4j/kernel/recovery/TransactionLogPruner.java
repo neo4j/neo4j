@@ -46,7 +46,7 @@ import static java.lang.String.format;
  */
 public class TransactionLogPruner
 {
-    static final String CORRUPTED_TX_LOGS_FOLDER_NAME = "corrupted-tx-logs";
+    public static final String CORRUPTED_TX_LOGS_FOLDER_NAME = "corrupted-tx-logs";
     private static final String LOG_FILE_ARCHIVE_PATTERN = "corrupted-logs-%d-%d-%d.zip";
 
     private final File storeDir;
@@ -122,9 +122,10 @@ public class TransactionLogPruner
     }
 
     private File getArchiveFile( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
+            throws IOException
     {
         File corruptedLogsFolder = new File( storeDir, CORRUPTED_TX_LOGS_FOLDER_NAME );
-        assert fs.mkdir( corruptedLogsFolder );
+        fs.mkdirs( corruptedLogsFolder );
         return new File( corruptedLogsFolder,
                 format( LOG_FILE_ARCHIVE_PATTERN, recoveredTransactionLogVersion, recoveredTransactionOffset,
                         System.currentTimeMillis() ) );
@@ -134,6 +135,11 @@ public class TransactionLogPruner
             ByteBuffer byteBuffer ) throws IOException
     {
         File logFile = logFiles.getLogFileForVersion( logFileIndex );
+        if ( fs.getFileSize( logFile ) == logOffset )
+        {
+            // file was recovered fully, nothing to backup
+            return;
+        }
         ZipEntry zipEntry = new ZipEntry( logFile.getName() );
         destination.putNextEntry( zipEntry );
         try ( StoreChannel transactionLogChannel = fs.open( logFile, "r" ) )

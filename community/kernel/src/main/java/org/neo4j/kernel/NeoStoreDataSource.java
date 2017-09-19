@@ -475,7 +475,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     monitors.newMonitor( RecoveryMonitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     logFiles, startupStatistics,
-                    storageEngine, transactionLogModule.logicalTransactionStore()
+                    storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
             );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
@@ -698,10 +698,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
-            LogicalTransactionStore logicalTransactionStore )
+            LogicalTransactionStore logicalTransactionStore,
+            LogVersionRepository logVersionRepository )
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                logicalTransactionStore, positionMonitor );
+                logicalTransactionStore, logVersionRepository, positionMonitor );
         TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
         Recovery recovery = new Recovery( recoveryService, startupStatistics, logPruner, recoveryMonitor, failOnCorruptedLogFiles );
         life.add( recovery );

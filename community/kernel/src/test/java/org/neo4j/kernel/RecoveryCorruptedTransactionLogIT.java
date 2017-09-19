@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel;
 
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,15 +67,19 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
@@ -84,8 +89,10 @@ public class RecoveryCorruptedTransactionLogIT
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( fileSystemRule );
     private final ExpectedException expectedException = ExpectedException.none();
+    private final RandomRule random = new RandomRule();
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( directory ).around( expectedException );
+    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( directory )
+            .around( expectedException ).around( random );
 
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final RecoveryMonitor recoveryMonitor = new RecoveryMonitor();
@@ -355,6 +362,45 @@ public class RecoveryCorruptedTransactionLogIT
         assertEquals( originalFileLength, highestLogFile.length() );
     }
 
+    @Test
+    public void repetitiveRecoveryOfCorruptedLogs() throws IOException
+    {
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        generateTransactionsAndRotate( database, 4, false );
+        database.shutdown();
+        removeLastCheckpointRecordFromLastLogFile();
+
+        int expectedRecoveredTransactions = 7;
+        while ( expectedRecoveredTransactions > 0 )
+        {
+            truncateBytesFromLastLogFile( 1 + random.nextInt( 10 ) );
+            databaseFactory.newEmbeddedDatabase( storeDir ).shutdown();
+            int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
+            assertEquals( expectedRecoveredTransactions, numberOfRecoveredTransactions );
+            expectedRecoveredTransactions--;
+            removeLastCheckpointRecordFromLastLogFile();
+        }
+    }
+
+    @Test
+    public void repetitiveRecoveryIfCorruptedLogsWithCheckpoints() throws IOException
+    {
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabase( storeDir );
+        generateTransactionsAndRotate( database, 4, true );
+        database.shutdown();
+
+        while ( logFiles.getHighestLogVersion() > 0 )
+        {
+            truncateBytesFromLastLogFile( 1 + random.nextInt( 100 ) );
+            databaseFactory.newEmbeddedDatabase( storeDir ).shutdown();
+            int numberOfRecoveredTransactions = recoveryMonitor.getNumberOfRecoveredTransactions();
+            assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
+        }
+
+        File corruptedLogArchives = new File( storeDir, TransactionLogPruner.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
+    }
+
     private TransactionIdStore getTransactionIdStore( GraphDatabaseAPI database )
     {
         return database.getDependencyResolver().resolveDependency( TransactionIdStore.class );
@@ -374,8 +420,8 @@ public class RecoveryCorruptedTransactionLogIT
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader();
             ReadableLogChannel reader =
                     physicalLogFile.getReader( LogPosition.start( logFiles.getHighestLogVersion() ) );
-            LogEntry logEntry = entryReader.readLogEntry( reader );
-            while ( logEntry != null )
+            LogEntry logEntry;
+            do
             {
                 logEntry = entryReader.readLogEntry( reader );
                 if ( logEntry instanceof CheckPoint )
@@ -383,6 +429,7 @@ public class RecoveryCorruptedTransactionLogIT
                     checkpointPosition = ((CheckPoint) logEntry).getLogPosition();
                 }
             }
+            while ( logEntry != null );
         }
         if ( checkpointPosition != null )
         {
@@ -393,8 +440,21 @@ public class RecoveryCorruptedTransactionLogIT
         }
     }
 
-    private void addRandomLongsToLastLogFile()
-            throws IOException
+    private void truncateBytesFromLastLogFile( long bytesToTrim ) throws IOException
+    {
+        File highestLogFile = logFiles.getHighestLogFile();
+        long fileSize = fileSystemRule.getFileSize( highestLogFile );
+        if ( bytesToTrim > fileSize )
+        {
+            fileSystemRule.deleteFile( highestLogFile );
+        }
+        else
+        {
+            fileSystemRule.truncate( highestLogFile, fileSize - bytesToTrim );
+        }
+    }
+
+    private void addRandomLongsToLastLogFile() throws IOException
     {
         PositiveLogFilesBasedLogVersionRepository versionRepository =
                 new PositiveLogFilesBasedLogVersionRepository( logFiles );
@@ -562,6 +622,12 @@ public class RecoveryCorruptedTransactionLogIT
         public long getCurrentLogVersion()
         {
             return version;
+        }
+
+        @Override
+        public void setCurrentLogVersion( long version )
+        {
+            this.version = version;
         }
 
         @Override
