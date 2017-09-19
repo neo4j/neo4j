@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -28,11 +30,12 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * A {@link KernelExtensionFactory} for the bloom fulltext addon.
  *
- * @see BloomProcedure
+ * @see BloomProcedures
  * @see LoadableBloomFulltextConfig
  */
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
@@ -53,6 +56,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         LogService logService();
 
         AvailabilityGuard availabilityGuard();
+
+        JobScheduler scheduler();
     }
 
     BloomKernelExtensionFactory()
@@ -63,7 +68,15 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        return new BloomKernelExtension( dependencies.fileSystem(), context.storeDir(), dependencies.getConfig(), dependencies.db(),
-                dependencies.procedures(), dependencies.logService(), dependencies.availabilityGuard() );
+        FileSystemAbstraction fs = dependencies.fileSystem();
+        File storeDir = context.storeDir();
+        Config config = dependencies.getConfig();
+        GraphDatabaseService db = dependencies.db();
+        Procedures procedures = dependencies.procedures();
+        LogService logService = dependencies.logService();
+        AvailabilityGuard availabilityGuard = dependencies.availabilityGuard();
+        JobScheduler scheduler = dependencies.scheduler();
+        return new BloomKernelExtension(
+                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler );
     }
 }

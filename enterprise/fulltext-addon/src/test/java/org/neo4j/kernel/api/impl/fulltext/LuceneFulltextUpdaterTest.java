@@ -20,10 +20,10 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.time.Clock;
 import java.util.Arrays;
 
@@ -33,15 +33,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -54,10 +53,6 @@ public class LuceneFulltextUpdaterTest
     public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
     private static final Log LOG = NullLog.getInstance();
 
-    @ClassRule
-    public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
@@ -70,9 +65,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithString() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -107,9 +105,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithNumber() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -144,9 +145,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithBoolean() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -181,9 +185,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithArrays() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -226,9 +233,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldRepresentPropertyChanges() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -277,9 +287,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotFindRemovedNodes() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -322,9 +335,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotFindRemovedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
             provider.init();
@@ -387,9 +403,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -423,9 +442,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
             provider.init();
@@ -465,9 +487,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "first", "last" ), provider );
             provider.init();
@@ -514,9 +539,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -576,9 +604,12 @@ public class LuceneFulltextUpdaterTest
     public void fuzzyQueryShouldBeFuzzy() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -617,9 +648,12 @@ public class LuceneFulltextUpdaterTest
     public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -663,9 +697,12 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotReturnNonMatches() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -704,7 +741,10 @@ public class LuceneFulltextUpdaterTest
     public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
         long firstNodeID;
         long secondNodeID;
@@ -730,7 +770,7 @@ public class LuceneFulltextUpdaterTest
             tx.success();
         }
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );

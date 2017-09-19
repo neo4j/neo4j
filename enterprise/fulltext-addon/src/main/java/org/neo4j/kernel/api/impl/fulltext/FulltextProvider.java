@@ -29,6 +29,7 @@ import java.util.Set;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Provider class that manages and provides fulltext indices. This is the main entry point for the fulltext addon.
@@ -52,12 +53,14 @@ public class FulltextProvider implements AutoCloseable
      * @param db Database that this provider should work with.
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
+     * @param scheduler
      */
-    public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard )
+    public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
+                             JobScheduler scheduler )
     {
         this.db = db;
         this.log = log;
-        applier = new FulltextUpdateApplier( log, availabilityGuard );
+        applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
         nodeProperties = new HashSet<>();

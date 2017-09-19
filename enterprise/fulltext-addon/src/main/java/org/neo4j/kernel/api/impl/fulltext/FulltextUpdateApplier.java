@@ -28,6 +28,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -45,6 +46,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentForPopulation;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
@@ -54,16 +56,20 @@ class FulltextUpdateApplier
 {
     private static final FulltextIndexUpdate STOP_SIGNAL = () -> null;
     private static final int POPULATING_BATCH_SIZE = 10_000;
+    private static final JobScheduler.Group UPDATE_APPLIER = new JobScheduler.Group( "FulltextIndexUpdateApplier" );
+    private static final String APPLIER_THREAD_NAME = "Fulltext Index Add-On Applier Thread";
 
     private final LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
     private final Log log;
     private final AvailabilityGuard availabilityGuard;
-    private ApplierThread workerThread;
+    private final JobScheduler scheduler;
+    private JobScheduler.JobHandle workerThread;
 
-    FulltextUpdateApplier( Log log, AvailabilityGuard availabilityGuard )
+    FulltextUpdateApplier( Log log, AvailabilityGuard availabilityGuard, JobScheduler scheduler )
     {
         this.log = log;
         this.availabilityGuard = availabilityGuard;
+        this.scheduler = scheduler;
         workQueue = new LinkedBlockingQueue<>();
     }
 
@@ -203,10 +209,9 @@ class FulltextUpdateApplier
     {
         if ( workerThread != null )
         {
-            throw new IllegalStateException( workerThread.getName() + " already started." );
+            throw new IllegalStateException( APPLIER_THREAD_NAME + " already started." );
         }
-        workerThread = new ApplierThread( workQueue, log, availabilityGuard );
-        workerThread.start();
+        workerThread = scheduler.schedule( UPDATE_APPLIER, new ApplierWorker( workQueue, log, availabilityGuard ) );
     }
 
     void stop()
@@ -220,12 +225,16 @@ class FulltextUpdateApplier
 
         try
         {
-            workerThread.join();
+            workerThread.waitTermination();
             workerThread = null;
         }
         catch ( InterruptedException e )
         {
-            log.error( "Interrupted before " + workerThread.getName() + " could shut down.", e );
+            log.error( "Interrupted before " + APPLIER_THREAD_NAME + " could shut down.", e );
+        }
+        catch ( ExecutionException e )
+        {
+            log.error( "Exception while waiting for " + APPLIER_THREAD_NAME + " to shut down.", e );
         }
     }
 
@@ -234,25 +243,24 @@ class FulltextUpdateApplier
         Pair<WritableFulltext,BinaryLatch> applyUpdateAndReturnIndex() throws IOException;
     }
 
-    private static class ApplierThread extends Thread
+    private static class ApplierWorker implements Runnable
     {
         private LinkedBlockingQueue<FulltextIndexUpdate> workQueue;
         private final Log log;
         private final AvailabilityGuard availabilityGuard;
 
-        ApplierThread( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log,
+        ApplierWorker( LinkedBlockingQueue<FulltextIndexUpdate> workQueue, Log log,
                        AvailabilityGuard availabilityGuard )
         {
-            super( "Fulltext Index Add-On Applier Thread" );
             this.workQueue = workQueue;
             this.log = log;
             this.availabilityGuard = availabilityGuard;
-            setDaemon( true );
         }
 
         @Override
         public void run()
         {
+            Thread.currentThread().setName( APPLIER_THREAD_NAME );
             waitForDatabaseToBeAvailable();
             Set<WritableFulltext> refreshableSet = Collections.newSetFromMap( new IdentityHashMap<>() );
             List<BinaryLatch> latches = new ArrayList<>();
@@ -324,7 +332,7 @@ class FulltextUpdateApplier
                 }
                 catch ( InterruptedException e )
                 {
-                    log.debug( getName() + " decided to ignore an interrupt.", e );
+                    log.debug( APPLIER_THREAD_NAME + " decided to ignore an interrupt.", e );
                 }
             }
             while ( update == null );
@@ -358,7 +366,7 @@ class FulltextUpdateApplier
             }
             catch ( IOException e )
             {
-                log.error( "Failed to refresh fulltext after updates", e );
+                log.error( "Failed to refresh fulltext after updates.", e );
             }
         }
     }

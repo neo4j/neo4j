@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,14 +30,13 @@ import java.time.Clock;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
@@ -49,10 +47,7 @@ public class FulltextAnalyzerTest
 {
     private static final Label LABEL = Label.label( "label" );
     private static final NullLog LOG = NullLog.getInstance();
-    @ClassRule
-    public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @ClassRule
-    public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
+
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
@@ -62,10 +57,12 @@ public class FulltextAnalyzerTest
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        File storeDir = testDirectory.graphDbDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, storeDir, new EnglishAnalyzer() );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new EnglishAnalyzer() );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -101,10 +98,12 @@ public class FulltextAnalyzerTest
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        File storeDir = testDirectory.graphDbDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, storeDir, new SwedishAnalyzer() );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new SwedishAnalyzer() );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard ); )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();

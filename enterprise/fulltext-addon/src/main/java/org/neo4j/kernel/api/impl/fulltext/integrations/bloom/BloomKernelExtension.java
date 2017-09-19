@@ -35,6 +35,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 class BloomKernelExtension extends LifecycleAdapter
 {
@@ -47,11 +49,13 @@ class BloomKernelExtension extends LifecycleAdapter
     private final Procedures procedures;
     private LogService logService;
     private final AvailabilityGuard availabilityGuard;
+    private final JobScheduler scheduler;
     private FulltextProvider provider;
 
     BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config,
                           GraphDatabaseService db, Procedures procedures,
-                          LogService logService, AvailabilityGuard availabilityGuard )
+                          LogService logService, AvailabilityGuard availabilityGuard,
+                          JobScheduler scheduler )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -60,6 +64,7 @@ class BloomKernelExtension extends LifecycleAdapter
         this.procedures = procedures;
         this.logService = logService;
         this.availabilityGuard = availabilityGuard;
+        this.scheduler = scheduler;
     }
 
     @Override
@@ -68,7 +73,8 @@ class BloomKernelExtension extends LifecycleAdapter
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
         Analyzer analyzer = getAnalyzer();
 
-        provider = new FulltextProvider( db, logService.getInternalLog( FulltextProvider.class ), availabilityGuard );
+        Log log = logService.getInternalLog( FulltextProvider.class );
+        provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
         FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
         fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
         fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
