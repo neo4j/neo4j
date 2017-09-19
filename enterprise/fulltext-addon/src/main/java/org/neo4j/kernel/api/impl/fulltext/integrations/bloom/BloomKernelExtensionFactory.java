@@ -41,7 +41,7 @@ import org.neo4j.scheduler.JobScheduler;
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
 {
 
-    private static final String SERVICE_NAME = "bloom";
+    static final String SERVICE_NAME = "bloom";
 
     public interface Dependencies
     {
@@ -60,7 +60,7 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         JobScheduler scheduler();
     }
 
-    BloomKernelExtensionFactory()
+    public BloomKernelExtensionFactory()
     {
         super( SERVICE_NAME );
     }
