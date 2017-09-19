@@ -114,6 +114,10 @@ object RewindableExecutionResult {
   def apply(in: Result): InternalExecutionResult = {
     val internal = in.asInstanceOf[ExecutionResult].internalExecutionResult
       .asInstanceOf[ClosingExecutionResult].inner
+    apply(internal)
+  }
+
+  def apply(internal: InternalExecutionResult) : InternalExecutionResult = {
     internal match {
       case ExecutionResultWrapperFor3_1(inner, planner, runtime) =>
         exceptionHandlerFor3_1.runSafely(compatibility(inner, planner, runtime))

@@ -1,0 +1,148 @@
+/*
+ * Copyright (c) 2002-2017 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.queryReduction.ast
+
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions._
+
+object copyNodeWith {
+
+  trait NodeConverter {
+    def ofOption[B <: ASTNode](o: Option[B]): Option[B]
+    def ofSingle[B <: ASTNode](b: B): B
+    def ofSeq[B <: ASTNode](bs: Seq[B]): Seq[B]
+    def ofTupledSeq[B <: ASTNode, C <: ASTNode](bs: Seq[(B,C)]) : Seq[(B,C)]
+  }
+
+  def apply[A <: ASTNode, B <: ASTNode](node: A, nc: NodeConverter): A = {
+    val newNode = node match {
+      case Match(optional, pattern, hints, maybeWhere) =>
+        Match(optional, nc.ofSingle(pattern), nc.ofSeq(hints), nc.ofOption(maybeWhere))(node.position)
+
+      case Query(maybeHint, queryPart) =>
+        Query(nc.ofOption(maybeHint), nc.ofSingle(queryPart))(node.position)
+
+      case SingleQuery(clauses) =>
+        SingleQuery(nc.ofSeq(clauses))(node.position)
+
+      case Pattern(pParts) =>
+        Pattern(nc.ofSeq(pParts))(node.position)
+
+      case EveryPath(elem) =>
+        EveryPath(nc.ofSingle(elem))
+
+      case NodePattern(maybeVar, labels, maybeProps) =>
+        NodePattern(nc.ofOption(maybeVar), nc.ofSeq(labels), nc.ofOption(maybeProps))(node.position)
+
+      case Variable(_) => node
+
+      case Return(distinct, returnItems, maybeGraphReturnItems, maybeOrderBy, maybeSkip, maybeLimit, excludedNames) =>
+        Return(distinct,
+          nc.ofSingle(returnItems),
+          nc.ofOption(maybeGraphReturnItems),
+          nc.ofOption(maybeOrderBy),
+          nc.ofOption(maybeSkip),
+          nc.ofOption(maybeLimit),
+          excludedNames)(node.position)
+
+      case ReturnItems(includeExisting, items) =>
+        ReturnItems(includeExisting, nc.ofSeq(items))(node.position)
+
+      case UnaliasedReturnItem(exp, inputText) =>
+        UnaliasedReturnItem(nc.ofSingle(exp), inputText)(node.position)
+
+      case AliasedReturnItem(exp, variable) =>
+        AliasedReturnItem(nc.ofSingle(exp), nc.ofSingle(variable))(node.position)
+
+      case Where(exp) =>
+        Where(nc.ofSingle(exp))(node.position)
+
+      case True() => node
+
+      case Parameter(_, _) => node
+
+      case Property(map, propertyKey) =>
+        Property(nc.ofSingle(map), nc.ofSingle((propertyKey)))(node.position)
+
+      case PropertyKeyName(_) => node
+
+      case Create(pattern) =>
+        Create(nc.ofSingle(pattern))(node.position)
+
+      case And(lhs, rhs) =>
+        And(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
+
+      case Equals(lhs, rhs) =>
+        Equals(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
+
+      case HasLabels(expression, labels) =>
+        HasLabels(nc.ofSingle(expression), nc.ofSeq(labels))(node.position)
+
+      case LabelName(_) => node
+
+      case RelationshipChain(element, relationship, rightNode) =>
+        RelationshipChain(nc.ofSingle(element), nc.ofSingle(relationship), nc.ofSingle(rightNode))(node.position)
+
+      case RelationshipPattern(variable, types, length, properties, direction, legacyTypeSeparator) =>
+        RelationshipPattern(nc.ofOption(variable), nc.ofSeq(types), Option(nc.ofOption(length.flatten)), nc.ofOption(properties), direction, legacyTypeSeparator)(node.position)
+
+      case RelTypeName(_) => node
+
+      case FunctionInvocation(namespace, functionName, distinct, args) =>
+        FunctionInvocation(nc.ofSingle(namespace), nc.ofSingle(functionName), distinct, nc.ofSeq(args).toIndexedSeq)(node.position)
+
+      case Namespace(_) => node
+
+      case FunctionName(_) => node
+
+      case StringLiteral(_) => node
+
+      case Not(rhs) =>
+        Not(nc.ofSingle(rhs))(node.position)
+
+      case With(distinct, returnItems, mandatoryGraphReturnItems, orderBy, skip, limit, where) =>
+        With(distinct, nc.ofSingle(returnItems), nc.ofSingle(mandatoryGraphReturnItems), nc.ofOption(orderBy), nc.ofOption(skip), nc.ofOption(limit), nc.ofOption(where))(node.position)
+
+      case MapExpression(items) =>
+        MapExpression(nc.ofTupledSeq(items))(node.position)
+
+      case GraphReturnItems(includeExisting, items) =>
+        GraphReturnItems(includeExisting, nc.ofSeq(items))(node.position)
+
+      case FilterExpression(scope, expression) =>
+        FilterExpression(nc.ofSingle(scope), nc.ofSingle(expression))(node.position)
+
+      case FilterScope(variable, innerPredicate) =>
+        FilterScope(nc.ofSingle(variable), nc.ofOption(innerPredicate))(node.position)
+
+      case In(lhs, rhs) =>
+        In(nc.ofSingle(lhs), nc.ofSingle(rhs))(node.position)
+
+      case ListLiteral(expressions) =>
+        ListLiteral(nc.ofSeq(expressions))(node.position)
+
+      case SignedDecimalIntegerLiteral(_) => node
+
+    }
+
+    newNode.asInstanceOf[A]
+  }
+}
