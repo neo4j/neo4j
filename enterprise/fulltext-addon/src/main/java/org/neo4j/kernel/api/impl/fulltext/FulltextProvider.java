@@ -53,7 +53,7 @@ public class FulltextProvider implements AutoCloseable
      * @param db Database that this provider should work with.
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
-     * @param scheduler
+     * @param scheduler For background work.
      */
     public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
                              JobScheduler scheduler )
@@ -84,6 +84,13 @@ public class FulltextProvider implements AutoCloseable
         db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
     }
 
+    /**
+     * Wait for the asynchronous background population, if one is on-going, to complete.
+     *
+     * Such population, where the entire store is scanned for data to write to the index, will be started if the index
+     * needs to recover after an unclean shut-down, or a configuration change.
+     * @throws IOException If it was not possible to wait for the population to finish, for some reason.
+     */
     public void awaitPopulation() throws IOException
     {
         applier.writeBarrier().awaitCompletion();
