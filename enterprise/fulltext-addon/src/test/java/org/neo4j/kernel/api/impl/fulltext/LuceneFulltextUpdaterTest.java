@@ -28,7 +28,9 @@ import java.io.File;
 import java.time.Clock;
 import java.util.Arrays;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -43,10 +45,6 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
@@ -76,11 +74,6 @@ public class LuceneFulltextUpdaterTest
         fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
     }
 
-    private FulltextProvider createProvider()
-    {
-        return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
-    }
-
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
@@ -107,11 +100,10 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertEquals( firstID, reader.query( "hello" ).next() );
-                assertEquals( secondID, reader.query( "zebra" ).next() );
-                assertEquals( secondID, reader.query( "zedonk" ).next() );
-                assertEquals( secondID, reader.query( "cross" ).next() );
+                assertExactQueryFindsIds( reader, "hello", firstID );
+                assertExactQueryFindsIds( reader, "zebra", secondID );
+                assertExactQueryFindsIds( reader, "zedonk", secondID );
+                assertExactQueryFindsIds( reader, "cross", secondID );
             }
         }
     }
@@ -140,12 +132,8 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator node1prop = reader.query( "1" );
-                assertEquals( firstID, node1prop.next() );
-                assertFalse( node1prop.hasNext() );
-                PrimitiveLongIterator node2prop = reader.query( "234" );
-                assertEquals( secondID, node2prop.next() );
-                assertFalse( node2prop.hasNext() );
+                assertExactQueryFindsIds( reader, "1", firstID );
+                assertExactQueryFindsIds( reader, "234", secondID );
             }
         }
     }
@@ -174,12 +162,8 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator sant = reader.query( "true" );
-                assertEquals( firstID, sant.next() );
-                assertFalse( sant.hasNext() );
-                PrimitiveLongIterator falskt = reader.query( "false" );
-                assertEquals( secondID, falskt.next() );
-                assertFalse( falskt.hasNext() );
+                assertExactQueryFindsIds( reader, "true", firstID );
+                assertExactQueryFindsIds( reader, "false", secondID );
             }
         }
     }
@@ -212,16 +196,9 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator strings = reader.query( "live" );
-                assertEquals( firstID, strings.next() );
-                assertFalse( strings.hasNext() );
-                PrimitiveLongIterator ints = reader.query( "27" );
-                assertEquals( secondID, ints.next() );
-                assertFalse( ints.hasNext() );
-                PrimitiveLongIterator moreInts = reader.query( "1", "2" );
-                assertEquals( thirdID, moreInts.next() );
-                assertEquals( secondID, moreInts.next() );
-                assertFalse( moreInts.hasNext() );
+                assertExactQueryFindsIds( reader, "live", firstID );
+                assertExactQueryFindsIds( reader, "27", secondID );
+                assertExactQueryFindsIds( reader, new String[]{"1", "2"}, secondID, thirdID );
             }
         }
     }
@@ -261,16 +238,13 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertFalse( reader.query( "hello" ).hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
-                assertEquals( firstID, reader.query( "hahahaha" ).next() );
-                assertEquals( secondID, reader.query( "farmer" ).next() );
-                PrimitiveLongIterator iterator = reader.query( "potato" );
-                assertEquals( firstID, iterator.next() );
-                assertEquals( secondID, iterator.next() );
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
+                assertExactQueryFindsIds( reader, "hahahaha", firstID );
+                assertExactQueryFindsIds( reader, "farmer", secondID );
+                assertExactQueryFindsIds( reader, "potato", firstID, secondID );
             }
         }
     }
@@ -309,11 +283,10 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertFalse( reader.query( "hello" ).hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
             }
         }
     }
@@ -370,13 +343,10 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( secondID, hello.next() );
-                assertFalse( hello.hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
+                assertExactQueryFindsIds( reader, "hello", secondID );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
             }
         }
     }
@@ -405,11 +375,8 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstID, hello.next() );
-                assertFalse( hello.hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstID );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
         }
     }
@@ -441,15 +408,10 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            PrimitiveLongIterator iterator;
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                iterator = reader.query( "tomtar", "karl" );
+                assertExactQueryFindsIds( reader, new String[]{"tomtar", "karl"}, firstID, secondID, thirdID );
             }
-            assertEquals( secondID, iterator.next() );
-            assertEquals( thirdID, iterator.next() );
-            assertEquals( firstID, iterator.next() );
         }
     }
 
@@ -489,12 +451,7 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
-                assertEquals( fourthID, iterator.next() );
-                assertEquals( thirdID, iterator.next() );
-                assertEquals( firstID, iterator.next() );
-                assertEquals( secondID, iterator.next() );
+                assertExactQueryFindsIds( reader, new String[]{"Tom", "Hanks"}, firstID, secondID, thirdID, fourthID );
             }
         }
     }
@@ -534,27 +491,15 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstNodeID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertEquals( secondNodeID, zebra.next() );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstNodeID );
+                assertExactQueryFindsIds( reader, "zebra", secondNodeID );
+                assertExactQueryFindsNothing( reader, "different" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstRelID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertEquals( secondRelID, different.next() );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstRelID );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsIds( reader, "different", secondRelID );
             }
         }
     }
@@ -585,15 +530,14 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertEquals( firstID, reader.fuzzyQuery( "hella" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "zebre" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "zedink" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "cruss" ).next() );
-                assertFalse( reader.query( "hella" ).hasNext() );
-                assertFalse( reader.query( "zebre" ).hasNext() );
-                assertFalse( reader.query( "zedink" ).hasNext() );
-                assertFalse( reader.query( "cruss" ).hasNext() );
+                assertFuzzyQueryFindsIds( reader, "hella", firstID );
+                assertFuzzyQueryFindsIds( reader, "zebre", secondID );
+                assertFuzzyQueryFindsIds( reader, "zedink", secondID );
+                assertFuzzyQueryFindsIds( reader, "cruss", secondID );
+                assertExactQueryFindsNothing( reader, "hella" );
+                assertExactQueryFindsNothing( reader, "zebre" );
+                assertExactQueryFindsNothing( reader, "zedink" );
+                assertExactQueryFindsNothing( reader, "cruss" );
             }
         }
     }
@@ -630,13 +574,7 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator zebra = reader.fuzzyQuery( "zebra" );
-                assertEquals( thirdID, zebra.next() );
-                assertEquals( secondID, zebra.next() );
-                assertEquals( fourthID, zebra.next() );
-                assertEquals( firstID, zebra.next() );
-                assertFalse( zebra.hasNext() );
+                assertFuzzyQueryFindsIds( reader, "zebra", firstID, secondID, thirdID, fourthID );
             }
         }
     }
@@ -669,14 +607,11 @@ public class LuceneFulltextUpdaterTest
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
-
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
         }
     }
@@ -684,12 +619,6 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
         long firstNodeID;
         long secondNodeID;
         long firstRelID;
@@ -717,7 +646,7 @@ public class LuceneFulltextUpdaterTest
             tx.success();
         }
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -726,31 +655,17 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstNodeID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "string" );
-                assertEquals( secondNodeID, zebra.next() );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
-                assertFalse( goodbye.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstNodeID );
+                assertExactQueryFindsIds( reader, "string", secondNodeID );
+                assertExactQueryFindsNothing( reader, "goodbye" );
+                assertExactQueryFindsNothing( reader, "different" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "string" );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
-                assertEquals( firstRelID, goodbye.next() );
-                assertFalse( goodbye.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertEquals( secondRelID, different.next() );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "string" );
+                assertExactQueryFindsIds( reader, "goodbye", firstRelID );
+                assertExactQueryFindsIds( reader, "different", secondRelID );
             }
         }
     }
@@ -775,10 +690,51 @@ public class LuceneFulltextUpdaterTest
             for ( String elm : luceneSyntaxElements )
             {
                 setNodeProp( nodeId, "Hello" + elm + " How are you " + elm + "today?" );
-                queryForSingleNode( provider, nodeId, "Hello" + elm );
-                queryForSingleNode( provider, nodeId, elm + "today" );
+
+                try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+                {
+                    assertExactQueryFindsIds( reader, "Hello" + elm, nodeId );
+                    assertExactQueryFindsIds( reader, elm + "today", nodeId );
+                }
             }
         }
+    }
+
+    private FulltextProvider createProvider()
+    {
+        return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
+    }
+
+    private void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
+    {
+        assertExactQueryFindsIds( reader, query );
+    }
+
+    private void assertExactQueryFindsIds( ReadOnlyFulltext reader, String[] query, long... ids )
+    {
+        PrimitiveLongIterator result = reader.query( query );
+        assertQueryResultsMatch( result, ids );
+    }
+
+    private void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
+    {
+        assertExactQueryFindsIds( reader, new String[]{query}, ids );
+    }
+
+    private void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
+    {
+        PrimitiveLongIterator result = reader.fuzzyQuery( query );
+        assertQueryResultsMatch( result, ids );
+    }
+
+    private void assertQueryResultsMatch( PrimitiveLongIterator result, long[] ids )
+    {
+        PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
+        while ( result.hasNext() )
+        {
+            assertTrue( set.remove( result.next() ) );
+        }
+        assertTrue( set.isEmpty() );
     }
 
     private void setNodeProp( long nodeId, String value )
@@ -788,17 +744,6 @@ public class LuceneFulltextUpdaterTest
             Node node = db.getNodeById( nodeId );
             node.setProperty( "prop", value );
             tx.success();
-        }
-    }
-
-    private void queryForSingleNode( FulltextProvider provider, long nodeId, String query ) throws Exception
-    {
-        try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
-        {
-            PrimitiveLongIterator hello = reader.query( query );
-            assertTrue( hello.hasNext() );
-            assertThat( hello.next(), is( nodeId ) );
-            assertFalse( hello.hasNext() );
         }
     }
 }
