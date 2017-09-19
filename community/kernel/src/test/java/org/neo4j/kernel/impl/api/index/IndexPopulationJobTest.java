@@ -38,7 +38,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.KernelAPI;
@@ -173,7 +172,7 @@ public class IndexPopulationJobTest
         // GIVEN
         String value = "Taylor";
         createNode( map( name, value ), FIRST );
-        stateHolder.apply( MapUtil.stringMap( "key", "original_value" ) );
+        stateHolder.put( "key", "original_value" );
         IndexPopulator populator = spy( inMemoryPopulator( false ) );
         IndexPopulationJob job = newIndexPopulationJob( populator, new FlippableIndexProxy(), false );
 
