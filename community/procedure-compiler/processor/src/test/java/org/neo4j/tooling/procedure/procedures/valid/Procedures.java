@@ -27,7 +27,14 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+
+import static org.neo4j.procedure.Mode.DBMS;
+import static org.neo4j.procedure.Mode.DEFAULT;
+import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.SCHEMA;
+import static org.neo4j.procedure.Mode.WRITE;
 
 public class Procedures
 {
@@ -213,5 +220,36 @@ public class Procedures
             @Name( "foo" ) Map<String,List<List<Map<String,Map<String,List<Path>>>>>> input )
     {
         return Stream.of( new Records.GenericTypesWrapper() );
+    }
+
+    @Procedure
+    @PerformsWrites
+    public void performsWrites()
+    {
+    }
+
+    @Procedure( mode = DEFAULT )
+    public void defaultMode()
+    {
+    }
+
+    @Procedure( mode = READ )
+    public void readMode()
+    {
+    }
+
+    @Procedure( mode = WRITE )
+    public void writeMode()
+    {
+    }
+
+    @Procedure( mode = SCHEMA )
+    public void schemaMode()
+    {
+    }
+
+    @Procedure( mode = DBMS )
+    public void dbmsMode()
+    {
     }
 }

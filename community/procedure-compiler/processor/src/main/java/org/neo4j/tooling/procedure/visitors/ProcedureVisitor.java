@@ -22,7 +22,6 @@ package org.neo4j.tooling.procedure.visitors;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.VariableElement;
@@ -33,7 +32,7 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
-import org.neo4j.procedure.Name;
+import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.messages.ReturnTypeError;
@@ -102,7 +101,11 @@ public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMe
 
     private Stream<CompilationMessage> validatePerformsWriteUsage( ExecutableElement executableElement )
     {
-        return performsWriteVisitor.visit( executableElement );
+        if ( executableElement.getAnnotation( PerformsWrites.class ) != null )
+        {
+            return performsWriteVisitor.visit( executableElement );
+        }
+        return Stream.empty();
     }
 
 }
