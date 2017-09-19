@@ -45,7 +45,8 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
     {
         if ( protocol.isExpecting( CatchupClientProtocol.State.MESSAGE_TYPE ) )
         {
-            ResponseMessageType responseMessageType = from( ((ByteBuf) msg).readByte() );
+            byte byteValue = ((ByteBuf) msg).readByte();
+            ResponseMessageType responseMessageType = from( byteValue );
 
             switch ( responseMessageType )
             {
@@ -68,7 +69,7 @@ public class ClientMessageTypeHandler extends ChannelInboundHandlerAdapter
                     protocol.expect( CatchupClientProtocol.State.TX_STREAM_FINISHED );
                     break;
                 default:
-                    log.warn( "No handler found for message type %s", responseMessageType );
+                    log.warn( "No handler found for message type %s (%d)", responseMessageType.name(), byteValue );
             }
 
             ReferenceCountUtil.release( msg );
