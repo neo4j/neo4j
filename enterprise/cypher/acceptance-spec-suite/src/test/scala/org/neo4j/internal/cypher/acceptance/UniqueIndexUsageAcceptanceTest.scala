@@ -21,17 +21,22 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
-class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+  val expectPlansToFail = Configs.AllRulePlanners
+
   test("should be able to use indexes") {
     given()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString should include("NodeUniqueIndexSeek")
+      }, expectPlansToFail))
 
     // Then
-    result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     result should have size 1
     assertNoLockingHappened
   }
@@ -40,11 +45,13 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString should include("NodeUniqueIndexSeek")
+      }, expectPlansToFail))
 
     // Then
     result shouldBe empty
-    result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     assertNoLockingHappened
   }
 
@@ -52,10 +59,12 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString should include("NodeUniqueIndexSeek")
+      }, expectPlansToFail))
 
     // Then
-    result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     result should have size 1
     assertNoLockingHappened
   }
@@ -69,11 +78,13 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result = executeWith(Configs.All - Configs.Compiled, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString should include("NodeUniqueIndexSeek")
+      }, expectPlansToFail))
 
     // Then
     result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
-    result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
     assertNoLockingHappened
   }
 
@@ -89,7 +100,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     graph.createConstraint("Place", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(Configs.All - Configs.Compiled,
       """
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName
@@ -118,14 +129,13 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlanners(query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.toList should equal(List(
       Map("m" -> n2),
       Map("m" -> n3)
     ))
-    result.executionPlanDescription().toString shouldNot include("IndexSeek")
     assertNoLockingHappened
   }
 
