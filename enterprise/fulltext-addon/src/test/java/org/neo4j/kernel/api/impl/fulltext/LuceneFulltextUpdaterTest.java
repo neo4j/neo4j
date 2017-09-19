@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.time.Clock;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -33,47 +28,15 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
 
-public class LuceneFulltextUpdaterTest
+public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 {
-    public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
-    private static final Log LOG = NullLog.getInstance();
-
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
-
-    private static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
-
-    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-    private GraphDatabaseAPI db;
-    private FulltextFactory fulltextFactory;
-    private JobScheduler scheduler;
-
-    @Before
-    public void setUp() throws Exception
-    {
-        db = dbRule.getGraphDatabaseAPI();
-        scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-    }
-
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
@@ -697,53 +660,6 @@ public class LuceneFulltextUpdaterTest
                     assertExactQueryFindsIds( reader, elm + "today", nodeId );
                 }
             }
-        }
-    }
-
-    private FulltextProvider createProvider()
-    {
-        return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
-    }
-
-    private void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
-    {
-        assertExactQueryFindsIds( reader, query );
-    }
-
-    private void assertExactQueryFindsIds( ReadOnlyFulltext reader, String[] query, long... ids )
-    {
-        PrimitiveLongIterator result = reader.query( query );
-        assertQueryResultsMatch( result, ids );
-    }
-
-    private void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
-    {
-        assertExactQueryFindsIds( reader, new String[]{query}, ids );
-    }
-
-    private void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
-    {
-        PrimitiveLongIterator result = reader.fuzzyQuery( query );
-        assertQueryResultsMatch( result, ids );
-    }
-
-    private void assertQueryResultsMatch( PrimitiveLongIterator result, long[] ids )
-    {
-        PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
-        while ( result.hasNext() )
-        {
-            assertTrue( set.remove( result.next() ) );
-        }
-        assertTrue( set.isEmpty() );
-    }
-
-    private void setNodeProp( long nodeId, String value )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node node = db.getNodeById( nodeId );
-            node.setProperty( "prop", value );
-            tx.success();
         }
     }
 }

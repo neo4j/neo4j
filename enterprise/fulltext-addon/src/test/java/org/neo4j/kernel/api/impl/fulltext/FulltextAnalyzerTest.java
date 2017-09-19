@@ -21,48 +21,21 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.time.Clock;
-
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLog;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 
-public class FulltextAnalyzerTest
+public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
-    private static final Label LABEL = Label.label( "label" );
-    private static final NullLog LOG = NullLog.getInstance();
-
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
-
-    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
         FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new EnglishAnalyzer() );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -71,8 +44,8 @@ public class FulltextAnalyzerTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
+                Node node = db.createNode();
+                Node node2 = db.createNode();
                 firstID = node.getId();
                 secondID = node2.getId();
                 node.setProperty( "prop", "Hello and hello again, in the end." );
@@ -83,13 +56,12 @@ public class FulltextAnalyzerTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
             {
-
-                assertFalse( reader.query( "and" ).hasNext() );
-                assertFalse( reader.query( "in" ).hasNext() );
-                assertFalse( reader.query( "the" ).hasNext() );
-                assertEquals( secondID, reader.query( "en" ).next() );
-                assertEquals( secondID, reader.query( "och" ).next() );
-                assertEquals( secondID, reader.query( "ett" ).next() );
+                assertExactQueryFindsNothing( reader, "and" );
+                assertExactQueryFindsNothing( reader, "in" );
+                assertExactQueryFindsNothing( reader, "the" );
+                assertExactQueryFindsIds( reader, "en", secondID );
+                assertExactQueryFindsIds( reader, "och", secondID );
+                assertExactQueryFindsIds( reader, "ett", secondID );
             }
         }
     }
@@ -97,13 +69,8 @@ public class FulltextAnalyzerTest
     @Test
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
         FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new SwedishAnalyzer() );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ); )
+        try ( FulltextProvider provider = createProvider(); )
         {
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -112,8 +79,8 @@ public class FulltextAnalyzerTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
+                Node node = db.createNode();
+                Node node2 = db.createNode();
                 firstID = node.getId();
                 secondID = node2.getId();
                 node.setProperty( "prop", "Hello and hello again, in the end." );
@@ -124,12 +91,12 @@ public class FulltextAnalyzerTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
             {
-                assertEquals( firstID, reader.query( "and" ).next() );
-                assertEquals( firstID, reader.query( "in" ).next() );
-                assertEquals( firstID, reader.query( "the" ).next() );
-                assertFalse( reader.query( "en" ).hasNext() );
-                assertFalse( reader.query( "och" ).hasNext() );
-                assertFalse( reader.query( "ett" ).hasNext() );
+                assertExactQueryFindsIds( reader, "and", firstID );
+                assertExactQueryFindsIds( reader, "in", firstID );
+                assertExactQueryFindsIds( reader, "the", firstID );
+                assertExactQueryFindsNothing( reader, "en" );
+                assertExactQueryFindsNothing( reader, "och" );
+                assertExactQueryFindsNothing( reader, "ett" );
             }
         }
     }
