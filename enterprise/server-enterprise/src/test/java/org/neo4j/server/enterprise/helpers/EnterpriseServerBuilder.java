@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;

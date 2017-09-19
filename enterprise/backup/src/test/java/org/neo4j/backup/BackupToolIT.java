@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -40,12 +39,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.test.DbRepresentation;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 

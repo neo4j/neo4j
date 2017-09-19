@@ -52,7 +52,6 @@ import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.consistency.store.StoreAssertions;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -85,6 +84,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.String.format;

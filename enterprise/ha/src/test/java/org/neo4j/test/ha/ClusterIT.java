@@ -26,13 +26,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.DirectoryNotEmptyException;
 import java.util.logging.Level;
 
 import org.junit.rules.TestName;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -52,6 +50,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.LoggerRule;
 import org.neo4j.test.rule.TestDirectory;
 

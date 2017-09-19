@@ -57,13 +57,13 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
 import org.neo4j.cluster.protocol.election.ServerIdElectionCredentialsProvider;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.LoggerRule;
 
 @RunWith( value = Parameterized.class )

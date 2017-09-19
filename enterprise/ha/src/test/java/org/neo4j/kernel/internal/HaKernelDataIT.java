@@ -24,10 +24,10 @@ import org.junit.Test;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.rule.TestDirectory;
 

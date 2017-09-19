@@ -26,7 +26,6 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.HostnamePort;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.jboss.netty.buffer.ChannelBuffers.EMPTY_BUFFER;
 import static org.junit.Assert.assertEquals;

@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.impl.ha.ClusterManager.RepairKit;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DatabaseRule;

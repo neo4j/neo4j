@@ -26,10 +26,10 @@ import java.io.File;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
