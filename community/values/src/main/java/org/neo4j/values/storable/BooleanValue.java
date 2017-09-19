@@ -27,9 +27,11 @@ import static java.lang.String.format;
  */
 public final class BooleanValue extends ScalarValue
 {
+    static final BooleanValue TRUE = new BooleanValue( true );
+    static final BooleanValue FALSE = new BooleanValue( false );
     private final boolean value;
 
-    BooleanValue( boolean value )
+    private BooleanValue( boolean value )
     {
         this.value = value;
     }

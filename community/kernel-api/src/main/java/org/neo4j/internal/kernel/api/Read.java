@@ -73,7 +73,7 @@ public interface Read
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference from {@link NodeCursor#relationshipGroupReference()}.
+     *         a reference from {@link NodeCursor#relationshipReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */

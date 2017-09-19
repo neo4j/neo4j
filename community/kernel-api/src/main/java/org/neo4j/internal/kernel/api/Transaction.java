@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-public interface Transaction extends Read, Write
+public interface Transaction extends Read, Write, AutoCloseable
 {
-
+    void success();
+    void failure();
 }

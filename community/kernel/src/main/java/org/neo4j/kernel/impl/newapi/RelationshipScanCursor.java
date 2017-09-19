@@ -62,22 +62,28 @@ class RelationshipScanCursor extends RelationshipCursor implements org.neo4j.int
                 close();
                 return false;
             }
-            read.relationship( this, next++ );
-            if ( next > highMark )
+            do
             {
-                if ( highMark == NO_ID )
+                read.relationship( this, next++ );
+                if ( next > highMark )
                 {
-                    next = NO_ID;
-                }
-                else
-                {
-                    highMark = read.relationshipHighMark();
-                    if ( next > highMark )
+                    if ( highMark == NO_ID )
                     {
                         next = NO_ID;
+                        return (label == -1 || label() == label) && inUse();
+                    }
+                    else
+                    {
+                        highMark = read.relationshipHighMark();
+                        if ( next > highMark )
+                        {
+                            next = NO_ID;
+                            return (label == -1 || label() == label) && inUse();
+                        }
                     }
                 }
             }
+            while ( !inUse() );
         }
         while ( label != -1 && label() != label );
         return true;

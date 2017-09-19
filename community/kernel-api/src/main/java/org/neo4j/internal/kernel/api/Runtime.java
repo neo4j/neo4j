@@ -27,6 +27,7 @@ package org.neo4j.internal.kernel.api;
  * Write provides all write operations
  * Schema provides all schema operations, meaning index and constraint creation and deletion
  */
+@Deprecated
 public interface Runtime extends AutoCloseable
 {
     CursorFactory cursorFactory();

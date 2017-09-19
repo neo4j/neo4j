@@ -24,7 +24,7 @@ import org.neo4j.values.storable.Value;
 /**
  * Defines the write operations of the Kernel API.
  */
-interface Write
+public interface Write
 {
     long nodeCreate();
 

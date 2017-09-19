@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 
+import static org.neo4j.kernel.impl.newapi.Read.invertReference;
+
 class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.NodeCursor
 {
     private final Read read;
@@ -97,7 +99,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     {
         // use negatives to encode the fact that this is not a proper group reference,
         // although not -1, because it is special
-        return isDense() ? getNextRel() : -2 - getNextRel();
+        return isDense() ? getNextRel() : invertReference( getNextRel() );
     }
 
     @Override
@@ -114,22 +116,28 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             close();
             return false;
         }
-        read.node( this, next++ );
-        if ( next > highMark )
+        do
         {
-            if ( highMark == NO_ID )
+            read.node( this, next++ );
+            if ( next > highMark )
             {
-                next = NO_ID;
-            }
-            else
-            {
-                highMark = read.nodeHighMark();
-                if ( next > highMark )
+                if ( highMark == NO_ID )
                 {
                     next = NO_ID;
+                    return inUse();
+                }
+                else
+                {
+                    highMark = read.nodeHighMark();
+                    if ( next > highMark )
+                    {
+                        next = NO_ID;
+                        return inUse();
+                    }
                 }
             }
         }
+        while ( !inUse() );
         return true;
     }
 

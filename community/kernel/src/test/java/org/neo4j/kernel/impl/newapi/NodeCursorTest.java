@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * Entry point for the Kernel API
- *
- * Usage pattern is under development
- */
-public interface KernelAPI
+import org.neo4j.internal.kernel.api.NodeCursorTestBase;
+
+public class NodeCursorTest extends NodeCursorTestBase<ReadTestSupport>
 {
-    Transaction beginTransaction();
-
-    CursorFactory cursors();
-
-    Token token();
+    @Override
+    public ReadTestSupport newTestSupport()
+    {
+        return new ReadTestSupport();
+    }
 }

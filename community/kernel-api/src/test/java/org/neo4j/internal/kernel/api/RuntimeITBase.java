@@ -31,36 +31,11 @@ import static org.junit.Assert.assertFalse;
 
 public abstract class RuntimeITBase
 {
-    abstract Runtime runtime();
+    public abstract Runtime runtime();
 
     final int PROP = 1000;
     final int LABEL = 1000;
     final int IRRELEVANT_LABEL = -1000;
-
-    @Test
-    public void shouldDoNodeAllScan()
-    {
-        // given
-        Runtime r = runtime();
-        long n1 = createNode( r );
-        long n2 = createNode( r );
-        long n3 = createNode( r );
-
-        // when
-        NodeCursor cursor = r.cursorFactory().allocateNodeCursor();
-        r.read().allNodesScan( cursor );
-
-        List<Long> scannedSet = new ArrayList<>();
-        while ( cursor.next() )
-        {
-            scannedSet.add( cursor.nodeReference() );
-            assertFalse( cursor.hasProperties() );
-            assertThat( cursor.labels().numberOfLabels(), equalTo( 0 ) );
-        }
-
-        // then
-        assertThat( scannedSet, containsInAnyOrder( n1, n2, n3 ) );
-    }
 
     @Test
     public void shouldDoNodeLabelScan()
@@ -100,9 +75,9 @@ public abstract class RuntimeITBase
         long n2 = createNode( r );
         long n3 = createNode( r );
 
-        r.write().relationshipCreate( n1, LABEL, n2 );
-        r.write().relationshipCreate( n2, LABEL, n3 );
-        r.write().relationshipCreate( n3, LABEL, n1 );
+        relate( n1, LABEL, n2 );
+        relate( n2, LABEL, n3 );
+        relate( n3, LABEL, n1 );
 
         // when
         RelationshipScanCursor cursor = r.cursorFactory().allocateRelationshipScanCursor();
@@ -137,18 +112,18 @@ public abstract class RuntimeITBase
         int label2 = 22;
         int label3 = 33;
 
-        r.write().relationshipCreate( n1, label1, n2 );
-        r.write().relationshipCreate( n1, label1, n2 );
+        relate( n1, label1, n2 );
+        relate( n1, label1, n2 );
 
-        r.write().relationshipCreate( n2, label1, n3 );
-        r.write().relationshipCreate( n2, label2, n3 );
-        r.write().relationshipCreate( n2, label2, n3 );
+        relate( n2, label1, n3 );
+        relate( n2, label2, n3 );
+        relate( n2, label2, n3 );
 
-        r.write().relationshipCreate( n3, label3, n1 );
-        r.write().relationshipCreate( n3, label3, n1 );
-        r.write().relationshipCreate( n3, label2, n1 );
-        r.write().relationshipCreate( n3, label1, n1 );
-        r.write().relationshipCreate( n3, label1, n1 );
+        relate( n3, label3, n1 );
+        relate( n3, label3, n1 );
+        relate( n3, label2, n1 );
+        relate( n3, label1, n1 );
+        relate( n3, label1, n1 );
 
         // when
         NodeCursor nodeCursor = r.cursorFactory().allocateNodeCursor();
@@ -218,6 +193,11 @@ public abstract class RuntimeITBase
                         new Relationship( n1, label1, n3 ),
                         new Relationship( n1, label1, n3 )
                 ) );
+    }
+
+    private void relate( long n1, int label1, long n2 )
+    {
+        runtime().write().relationshipCreate( n1, label1, n2 );
     }
 
     private long createNode( Runtime r, int... labels )

@@ -1,0 +1,67 @@
+package org.neo4j.kernel.impl.api.store;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.Values;
+
+public class PropertyUtil
+{
+    public static ArrayValue readArrayFromBuffer( ByteBuffer buffer )
+    {
+        if ( buffer.limit() <= 0 )
+        {
+            throw new IllegalStateException( "Given buffer is empty" );
+        }
+
+        byte typeId = buffer.get();
+        buffer.order( ByteOrder.BIG_ENDIAN );
+        try
+        {
+            if ( typeId == PropertyType.STRING.intValue() )
+            {
+                int arrayLength = buffer.getInt();
+                String[] result = new String[arrayLength];
+
+                for ( int i = 0; i < arrayLength; i++ )
+                {
+                    int byteLength = buffer.getInt();
+                    result[i] = UTF8.decode( buffer.array(), buffer.position(), byteLength );
+                    buffer.position( buffer.position() + byteLength );
+                }
+                return Values.stringArray( result );
+            }
+            else
+            {
+                ShortArray type = ShortArray.typeOf( typeId );
+                int bitsUsedInLastByte = buffer.get();
+                int requiredBits = buffer.get();
+                if ( requiredBits == 0 )
+                {
+                    return type.createEmptyArray();
+                }
+                if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
+                {   // Optimization for byte arrays (probably large ones)
+                    byte[] byteArray = new byte[buffer.limit() - buffer.position()];
+                    buffer.get( byteArray );
+                    return Values.byteArray( byteArray );
+                }
+                else
+                {   // Fallback to the generic approach, which is a slower
+                    Bits bits = Bits.bitsFromBytes( buffer.array(), buffer.position() );
+                    int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
+                    return type.createArray( length, bits, requiredBits );
+                }
+            }
+        }
+        finally
+        {
+            buffer.order( ByteOrder.LITTLE_ENDIAN );
+        }
+    }
+}

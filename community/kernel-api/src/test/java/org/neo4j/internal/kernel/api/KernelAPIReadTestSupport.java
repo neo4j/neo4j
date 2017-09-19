@@ -19,16 +19,19 @@
  */
 package org.neo4j.internal.kernel.api;
 
-/**
- * Entry point for the Kernel API
- *
- * Usage pattern is under development
- */
-public interface KernelAPI
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Consumer;
+
+import org.neo4j.graphdb.GraphDatabaseService;
+
+public interface KernelAPIReadTestSupport
 {
-    Transaction beginTransaction();
+    void setup( File storeDir, Consumer<GraphDatabaseService> create ) throws IOException;
 
-    CursorFactory cursors();
+    void beforeEachTest();
 
-    Token token();
+    KernelAPI kernelToTest();
+
+    void tearDown();
 }

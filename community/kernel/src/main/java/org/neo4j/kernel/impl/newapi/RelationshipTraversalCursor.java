@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 class RelationshipTraversalCursor extends RelationshipCursor
         implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
@@ -32,11 +33,21 @@ class RelationshipTraversalCursor extends RelationshipCursor
         super( read );
     }
 
-    void init( long nodeReference, long reference )
+    void buffered( long nodeReference, Record record )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    void chain( long nodeReference, long reference )
     {
         setId( NO_ID );
         originNodeReference = nodeReference;
         next = reference;
+    }
+
+    void groups( long nodeReference, long reference )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
@@ -116,5 +127,15 @@ class RelationshipTraversalCursor extends RelationshipCursor
     public void close()
     {
         setId( next = NO_ID );
+    }
+
+    static class Record
+    {
+        final Record next;
+
+        Record( RelationshipRecord record, Record next )
+        {
+            this.next = next;
+        }
     }
 }

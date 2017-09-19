@@ -19,14 +19,19 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+
+import static org.neo4j.kernel.impl.newapi.Read.invertReference;
 
 class RelationshipGroupCursor extends RelationshipGroupRecord
         implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
 {
     private final Read read;
+    private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
+    private Group current;
 
     RelationshipGroupCursor( Read read )
     {
@@ -34,9 +39,57 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         this.read = read;
     }
 
-    void init( NeoStores stores, long nodeReference, long reference )
+    void buffer( long nodeReference, long relationshipReference )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        setOwningNode( nodeReference );
+        setId( NO_ID );
+        setNext( NO_ID );
+        // TODO: read first record to get the required capacity (from the count value in the prev field)
+        try ( PrimitiveIntObjectMap<Group> buffer = Primitive.intObjectMap() )
+        {
+            Group current = null;
+            while ( relationshipReference != NO_ID )
+            {
+                read.relationship( edge, relationshipReference );
+                // find the group
+                Group group = buffer.get( edge.getType() );
+                if ( group == null )
+                {
+                    buffer.put( edge.getType(), current = group = new Group( edge, current ) );
+                }
+                // buffer the relationship into the group
+                if ( edge.getFirstNode() == nodeReference ) // outgoing or loop
+                {
+                    if ( edge.getSecondNode() == nodeReference ) // loop
+                    {
+                        group.loop( edge );
+                    }
+                    else // outgoing
+                    {
+                        group.outgoing( edge );
+                    }
+                    relationshipReference = edge.getFirstNextRel();
+                }
+                else if ( edge.getSecondNode() == nodeReference ) // incoming
+                {
+                    group.incoming( edge );
+                    relationshipReference = edge.getSecondNextRel();
+                }
+                else
+                {
+                    throw new IllegalStateException( "not a part of the chain! TODO: better exception" );
+                }
+            }
+            this.current = new Group( edge, current ); // we need a dummy before the first to denote the initial pos
+        }
+    }
+
+    void direct( long nodeReference, long reference )
+    {
+        setOwningNode( nodeReference );
+        current = null;
+        clear();
+        setNext( reference );
     }
 
     @Override
@@ -54,7 +107,25 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null )
+        {
+            current = current.next;
+            if ( current == null )
+            {
+                return false; // we never have both types of traversal, so terminate early
+            }
+            setType( current.label );
+            setFirstOut( current.outgoing() );
+            setFirstIn( current.incoming() );
+            setFirstLoop( current.loops() );
+            return true;
+        }
+        if ( getNext() == NO_ID )
+        {
+            return false;
+        }
+        read.group( this, getNext() );
+        return true;
     }
 
     @Override
@@ -66,66 +137,191 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        current = null;
+        setId( NO_ID );
+        clear();
     }
 
     @Override
     public int relationshipLabel()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return getType();
     }
 
     @Override
     public int outgoingCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null )
+        {
+            return current.outgoingCount;
+        }
+        return count( outgoingReference() );
     }
 
     @Override
     public int incomingCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null )
+        {
+            return current.incomingCount;
+        }
+        return count( incomingReference() );
     }
 
     @Override
     public int loopCount()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null )
+        {
+            return current.loopsCount;
+        }
+        return count( loopsReference() );
+    }
+
+    private int count( long reference )
+    {
+        if ( reference == NO_ID )
+        {
+            return 0;
+        }
+        read.relationship( edge, reference );
+        if ( edge.getFirstNode() == getOwningNode() )
+        {
+            return (int) edge.getFirstPrevRel();
+        }
+        else
+        {
+            return (int) edge.getSecondPrevRel();
+        }
     }
 
     @Override
-    public void outgoing( RelationshipTraversalCursor cursor )
+    public void outgoing( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        {
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.outgoing );
+        }
+        else
+        {
+            read.relationships( getOwningNode(), outgoingReference(), cursor );
+        }
     }
 
     @Override
-    public void incoming( RelationshipTraversalCursor cursor )
+    public void incoming( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        {
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.incoming );
+        }
+        else
+        {
+            read.relationships( getOwningNode(), incomingReference(), cursor );
+        }
     }
 
     @Override
-    public void loops( RelationshipTraversalCursor cursor )
+    public void loops( org.neo4j.internal.kernel.api.RelationshipTraversalCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( current != null && cursor instanceof RelationshipTraversalCursor )
+        {
+            ((RelationshipTraversalCursor) cursor).buffered( getOwningNode(), current.loops );
+        }
+        else
+        {
+            read.relationships( getOwningNode(), loopsReference(), cursor );
+        }
     }
 
     @Override
     public long outgoingReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return getFirstOut();
     }
 
     @Override
     public long incomingReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return getFirstIn();
     }
 
     @Override
     public long loopsReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return getFirstLoop();
+    }
+
+    static class Group
+    {
+        final int label;
+        final Group next;
+        RelationshipTraversalCursor.Record outgoing;
+        RelationshipTraversalCursor.Record incoming;
+        RelationshipTraversalCursor.Record loops;
+        private long firstOut = NO_ID;
+        private long firstIn = NO_ID;
+        private long firstLoop = NO_ID;
+        int outgoingCount;
+        int incomingCount;
+        int loopsCount;
+
+        Group( RelationshipRecord edge, Group next )
+        {
+            this.label = edge.getType();
+            this.next = next;
+        }
+
+        void outgoing( RelationshipRecord edge )
+        {
+            if ( outgoing == null )
+            {
+                firstOut = edge.getId();
+            }
+            outgoing = new RelationshipTraversalCursor.Record( edge, outgoing );
+            outgoingCount++;
+        }
+
+        void incoming( RelationshipRecord edge )
+        {
+            if ( incoming == null )
+            {
+                firstIn = edge.getId();
+            }
+            incoming = new RelationshipTraversalCursor.Record( edge, incoming );
+            incomingCount++;
+        }
+
+        void loop( RelationshipRecord edge )
+        {
+            if ( loops == null )
+            {
+                firstLoop = edge.getId();
+            }
+            loops = new RelationshipTraversalCursor.Record( edge, loops );
+            loopsCount++;
+        }
+
+        long outgoing()
+        {
+            return flaggedAsRequiringFiltering( firstOut );
+        }
+
+        long incoming()
+        {
+            return flaggedAsRequiringFiltering( firstIn );
+        }
+
+        long loops()
+        {
+            return flaggedAsRequiringFiltering( firstLoop );
+        }
+
+        private long flaggedAsRequiringFiltering( long reference )
+        {
+            // set a high order bit as flag noting that "filtering is required"
+            // invert the reference to note that "this reference is special"
+            return invertReference( reference | 0x2000_0000_0000_0000L );
+        }
     }
 }

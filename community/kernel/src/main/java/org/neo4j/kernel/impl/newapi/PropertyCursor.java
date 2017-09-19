@@ -19,18 +19,36 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.LongerShortString;
+import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.ShortArray;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ByteValue;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.storable.FloatValue;
+import org.neo4j.values.storable.IntValue;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.ShortValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
+import org.neo4j.values.storable.Values;
 
 public class PropertyCursor extends PropertyRecord implements org.neo4j.internal.kernel.api.PropertyCursor
 {
+    private static final int MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY = 32;
     private final Read read;
+    private long next;
+    private int block;
+    ByteBuffer buffer;
 
     public PropertyCursor( Read read )
     {
@@ -38,15 +56,47 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         this.read = read;
     }
 
-    void init( NeoStores stores, long reference )
+    void init( long reference )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( getId() != NO_ID )
+        {
+            close();
+        }
+        next = reference;
+        block = Integer.MAX_VALUE;
     }
 
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( block < getNumberOfBlocks() )
+        {
+            if ( block == -1 )
+            {
+                block = 0;
+            }
+            else
+            {
+                block += type().calculateNumberOfBlocksUsed( currentBlock() );
+            }
+            if ( block < getNumberOfBlocks() && type() != null )
+            {
+                return true;
+            }
+        }
+        if ( next == NO_ID )
+        {
+            return false;
+        }
+        read.property( this, next );
+        next = getNextProp();
+        block = -1;
+        return next();
+    }
+
+    private long currentBlock()
+    {
+        return getBlocks()[block];
     }
 
     @Override
@@ -58,25 +108,161 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        clear();
     }
 
     @Override
     public int propertyKey()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return PropertyBlock.keyIndexId( currentBlock() );
     }
 
     @Override
     public ValueGroup propertyType()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        PropertyType type = type();
+        if ( type == null )
+        {
+            return ValueGroup.NO_VALUE;
+        }
+        switch ( type )
+        {
+        case BOOL:
+            return ValueGroup.BOOLEAN;
+        case BYTE:
+        case SHORT:
+        case INT:
+        case LONG:
+        case FLOAT:
+        case DOUBLE:
+            return ValueGroup.NUMBER;
+        case STRING:
+        case CHAR:
+        case SHORT_STRING:
+            return ValueGroup.TEXT;
+        case SHORT_ARRAY:
+        case ARRAY:
+        default:
+            throw new UnsupportedOperationException( "not implemented" );
+        }
+    }
+
+    private PropertyType type()
+    {
+        return PropertyType.getPropertyTypeOrNull( currentBlock() );
     }
 
     @Override
     public Value propertyValue()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        PropertyType type = type();
+        if ( type == null )
+        {
+            return Values.NO_VALUE;
+        }
+        switch ( type )
+        {
+        case BOOL:
+            return readBoolean();
+        case BYTE:
+            return readByte();
+        case SHORT:
+            return readShort();
+        case INT:
+            return readInt();
+        case LONG:
+            return readLong();
+        case FLOAT:
+            return readFloat();
+        case DOUBLE:
+            return readDouble();
+        case CHAR:
+            return readChar();
+        case SHORT_STRING:
+            return readShortString();
+        case SHORT_ARRAY:
+            return readShortArray();
+        case STRING:
+            return readLongString();
+        case ARRAY:
+            return readLongArray();
+        default:
+            throw new IllegalStateException( "Unsupported PropertyType: " + type.name() );
+        }
+    }
+
+    private ArrayValue readLongArray()
+    {
+        return read.array( this, PropertyBlock.fetchLong( currentBlock() ) );
+    }
+
+    private TextValue readLongString()
+    {
+        return read.string( this, PropertyBlock.fetchLong( currentBlock() ) );
+    }
+
+    private Value readShortArray()
+    {
+        Bits bits = Bits.bits( MAX_BYTES_IN_SHORT_STRING_OR_SHORT_ARRAY );
+        int blocksUsed = ShortArray.calculateNumberOfBlocksUsed( currentBlock() );
+        for ( int i = 0; i < blocksUsed; i++ )
+        {
+            bits.put( getBlocks()[block + i] );
+        }
+        return ShortArray.decode( bits );
+    }
+
+    private TextValue readShortString()
+    {
+        return LongerShortString
+                .decode( getBlocks(), block, LongerShortString.calculateNumberOfBlocksUsed( currentBlock() ) );
+    }
+
+    private TextValue readChar()
+    {
+        return Values.charValue( (char) PropertyBlock.fetchShort( currentBlock() ) );
+    }
+
+    private DoubleValue readDouble()
+    {
+        return Values.doubleValue( Double.longBitsToDouble( getBlocks()[block + 1] ) );
+    }
+
+    private FloatValue readFloat()
+    {
+        return Values.floatValue( Float.intBitsToFloat( PropertyBlock.fetchInt( currentBlock() ) ) );
+    }
+
+    private LongValue readLong()
+    {
+        if ( PropertyBlock.valueIsInlined( currentBlock() ) )
+        {
+            return Values.longValue( PropertyBlock.fetchLong( currentBlock() ) >>> 1 );
+        }
+        else
+        {
+            return Values.longValue( getBlocks()[block + 1] );
+        }
+    }
+
+    private IntValue readInt()
+    {
+        return Values.intValue( PropertyBlock.fetchInt( currentBlock() ) );
+    }
+
+    private ShortValue readShort()
+    {
+        return Values.shortValue( PropertyBlock.fetchShort( currentBlock() ) );
+    }
+
+    private ByteValue readByte()
+    {
+        return Values.byteValue( PropertyBlock.fetchByte( currentBlock() ) );
+    }
+
+    private BooleanValue readBoolean()
+    {
+        return Values.booleanValue( PropertyBlock.fetchByte( currentBlock() ) == 1 );
     }
 
     @Override
