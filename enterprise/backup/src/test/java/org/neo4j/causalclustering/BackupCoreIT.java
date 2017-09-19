@@ -45,15 +45,14 @@ import org.neo4j.test.causalclustering.ClusterRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupCoreIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
-            .withNumberOfReadReplicas( 0 )
-            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> ":" + (8000 + serverId) );
+            .withNumberOfReadReplicas( 0 );
 
     private Cluster cluster;
     private File backupsDir;
@@ -100,7 +99,7 @@ public class BackupCoreIT
         InetSocketAddress inetSocketAddress = db.getDependencyResolver()
                 .resolveDependency( Config.class ).get( CausalClusteringSettings.transaction_advertised_address )
                 .socketAddress();
-        return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() + 2000);
+        return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() );
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )

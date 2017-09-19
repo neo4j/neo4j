@@ -57,14 +57,13 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
 
         try
         {
-            backupDelegator.retrieveStore( desiredBackupLocation, storeId, fromAddress );
+            backupDelegator.copy( fromAddress,storeId, desiredBackupLocation );
+            return new PotentiallyErroneousState<>( BackupStageOutcome.SUCCESS, null );
         }
         catch ( StoreCopyFailedException e )
         {
             return new PotentiallyErroneousState<>( BackupStageOutcome.FAILURE, e );
         }
-
-        return catchup( fromAddress, storeId, desiredBackupLocation );
     }
 
     @Override
@@ -80,7 +79,7 @@ public class CausalClusteringBackupStrategy extends LifecycleAdapter implements 
         {
             return new PotentiallyErroneousState<>( BackupStageOutcome.WRONG_PROTOCOL, e );
         }
-        return catchup(fromAddress, storeId, desiredBackupLocation );
+        return catchup( fromAddress, storeId, desiredBackupLocation );
     }
 
     @Override

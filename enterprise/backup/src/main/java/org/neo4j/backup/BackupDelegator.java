@@ -28,8 +28,10 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -43,16 +45,25 @@ public class BackupDelegator extends LifecycleAdapter
     private final CatchUpClient catchUpClient;
     private final StoreCopyClient storeCopyClient;
     private final ClearIdService clearIdService;
-    private final StoreCopyServiceFactory storeCopyServiceFactory;
 
-    BackupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient, StoreCopyServiceFactory storeCopyServiceFactory,
-            ClearIdService clearIdService )
+    BackupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient, ClearIdService clearIdService )
     {
         this.remoteStore = remoteStore;
         this.catchUpClient = catchUpClient;
         this.storeCopyClient = storeCopyClient;
         this.clearIdService = clearIdService;
-        this.storeCopyServiceFactory = storeCopyServiceFactory;
+    }
+
+    void copy( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, File destDir ) throws StoreCopyFailedException
+    {
+        try
+        {
+            remoteStore.copy( fromAddress, expectedStoreId, destDir );
+        }
+        catch ( StreamingTransactionsFailedException | StoreCopyFailedException e )
+        {
+            throw Exceptions.launderedException( StoreCopyFailedException.class, e );
+        }
     }
 
     CatchupResult tryCatchingUp( AdvertisedSocketAddress fromAddress, StoreId expectedStoreId, File storeDir )
@@ -83,12 +94,6 @@ public class BackupDelegator extends LifecycleAdapter
     public StoreId fetchStoreId( AdvertisedSocketAddress fromAddress ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( fromAddress );
-    }
-
-    public long retrieveStore( File targetDirectory, StoreId expectedStoreId, AdvertisedSocketAddress fromAddress ) throws StoreCopyFailedException
-    {
-        StoreCopyService storeCopyService = storeCopyServiceFactory.createStoreCopyService( targetDirectory, fromAddress );
-        return storeCopyService.retrieveStore( storeCopyService.constructStoreFileStreams(), expectedStoreId );
     }
 
     public void clearIdFiles( FileSystemAbstraction fileSystem, File targetDirectory )

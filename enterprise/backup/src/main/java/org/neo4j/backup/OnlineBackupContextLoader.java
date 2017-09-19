@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.kernel.configuration.Config;
 
 /**
@@ -50,9 +50,9 @@ public class OnlineBackupContextLoader
         {
             OnlineBackupRequiredArguments requiredArguments = backupCommandArgumentHandler.establishRequiredArguments( commandlineArgs );
             Config config = onlineBackupCommandConfigLoader.loadConfig( requiredArguments.getAdditionalConfig() );
-            CheckConsistencyConfig checkConsistencyConfig = backupCommandArgumentHandler.establishConfigurationOverride( config );
+            ConsistencyFlags consistencyFlags = backupCommandArgumentHandler.readFlagsFromArgumentsOrDefaultToConfig( config );
 
-            return new OnlineBackupContext( requiredArguments, config, checkConsistencyConfig );
+            return new OnlineBackupContext( requiredArguments, config, consistencyFlags );
         }
         catch ( IncorrectUsage | CommandFailed e )
         {

@@ -54,15 +54,19 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.util.JvmRunner;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
 @RunWith( Parameterized.class )
-public class OnlineBackupCommandCcIT extends JvmRunner
+public class OnlineBackupCommandCcIT
 {
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
@@ -147,8 +151,7 @@ public class OnlineBackupCommandCcIT extends JvmRunner
     }
 
     @Test
-    @Ignore( "Need to resolved this - causal clustering should have the backup protocol disabled" )
-    public void backupCanNotBePerformedOverHa() throws Exception
+    public void backupCanNotBePerformedOverBackupProtocol() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
@@ -225,4 +228,10 @@ public class OnlineBackupCommandCcIT extends JvmRunner
     {
         return DbRepresentation.of( new File( backupDir, name ) );
     }
+
+    private int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
+    {
+        return TestHelpers.runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
+    }
+
 }

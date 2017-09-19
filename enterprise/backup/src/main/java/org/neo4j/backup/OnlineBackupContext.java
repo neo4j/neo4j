@@ -21,20 +21,20 @@ package org.neo4j.backup;
 
 import java.io.File;
 
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.kernel.configuration.Config;
 
 public class OnlineBackupContext
 {
     private final OnlineBackupRequiredArguments requiredArguments;
     private final Config config;
-    private final CheckConsistencyConfig checkConsistencyConfig;
+    private final ConsistencyFlags consistencyFlags;
 
-    public OnlineBackupContext( OnlineBackupRequiredArguments requiredArguments, Config config, CheckConsistencyConfig checkConsistencyConfig )
+    public OnlineBackupContext( OnlineBackupRequiredArguments requiredArguments, Config config, ConsistencyFlags consistencyFlags )
     {
         this.requiredArguments = requiredArguments;
         this.config = config;
-        this.checkConsistencyConfig = checkConsistencyConfig;
+        this.consistencyFlags = consistencyFlags;
     }
 
     public OnlineBackupRequiredArguments getRequiredArguments()
@@ -47,9 +47,9 @@ public class OnlineBackupContext
         return config;
     }
 
-    public CheckConsistencyConfig getCheckConsistencyConfig()
+    public ConsistencyFlags getConsistencyFlags()
     {
-        return checkConsistencyConfig;
+        return consistencyFlags;
     }
 
     public File getResolvedLocationFromName()

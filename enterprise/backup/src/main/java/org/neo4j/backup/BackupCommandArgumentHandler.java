@@ -30,7 +30,7 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.OptionalHostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -99,7 +99,7 @@ public class BackupCommandArgumentHandler
         return arguments;
     }
 
-    CheckConsistencyConfig establishConfigurationOverride( Config config ) throws IncorrectUsage
+    ConsistencyFlags readFlagsFromArgumentsOrDefaultToConfig( Config config ) throws IncorrectUsage
     {
         boolean checkGraph;
         boolean checkIndexes;
@@ -140,7 +140,7 @@ public class BackupCommandArgumentHandler
             {
                 checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
             }
-            return new CheckConsistencyConfig( checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners );
+            return new ConsistencyFlags( checkGraph, checkIndexes, checkLabelScanStore, checkPropertyOwners );
         }
         catch ( IllegalArgumentException e )
         {

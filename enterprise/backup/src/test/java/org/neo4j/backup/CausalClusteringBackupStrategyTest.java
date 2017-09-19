@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -120,7 +121,7 @@ public class CausalClusteringBackupStrategyTest
 
         // then
         verify( backupDelegator ).fetchStoreId( resolvedFromAddress );
-        verify( backupDelegator ).retrieveStore( desiredBackupLocation, storeId, resolvedFromAddress );
+        verify( backupDelegator ).copy( resolvedFromAddress, storeId, desiredBackupLocation );
     }
 
     @Test
@@ -174,7 +175,7 @@ public class CausalClusteringBackupStrategyTest
     public void failingToCopyStoresCausesFailWithStatus_fullBackup() throws StoreCopyFailedException
     {
         // given
-        when( backupDelegator.retrieveStore( any(), any(), any() ) ).thenThrow( StoreCopyFailedException.class );
+        doThrow( StoreCopyFailedException.class ).when( backupDelegator ).copy( any(), any(), any() );
 
         // when
         PotentiallyErroneousState state = subject.performFullBackup( desiredBackupLocation, config, userProvidedAddress );
@@ -215,17 +216,6 @@ public class CausalClusteringBackupStrategyTest
         // then
         verify( backupDelegator ).start(); // still total 1 calls
         verify( backupDelegator ).stop();
-    }
-
-    @Test
-    public void fullBackupIncludesCatchup() throws StoreCopyFailedException
-    {
-        // when
-        subject.performFullBackup( desiredBackupLocation, config, userProvidedAddress );
-
-        // then
-        verify( backupDelegator ).retrieveStore( any(), any(), any() );
-        verify( backupDelegator ).tryCatchingUp( any(), any(), any() );
     }
 
     private StoreId anyStoreId()

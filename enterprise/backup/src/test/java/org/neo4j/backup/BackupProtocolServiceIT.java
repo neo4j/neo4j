@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -1109,10 +1109,11 @@ public class BackupProtocolServiceIT
         @Override
         public boolean runFull( File storeDir, Config tuningConfiguration, ProgressMonitorFactory progressFactory,
                 LogProvider logProvider, FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose,
-                CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckFailedException
+                ConsistencyFlags consistencyFlags ) throws ConsistencyCheckFailedException
         {
             markAsChecked();
-            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose, checkConsistencyConfig );
+            return ConsistencyCheck.FULL.runFull( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem, pageCache, verbose,
+                    consistencyFlags );
         }
 
         private void markAsChecked()

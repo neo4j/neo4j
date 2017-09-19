@@ -47,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
-import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class ClusterSeedingIT
 {

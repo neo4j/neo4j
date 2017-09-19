@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyClient;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
+import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -62,9 +63,7 @@ public class BackupDelegatorTest
         storeCopyClient = mock( StoreCopyClient.class );
         clearIdService = mock( ClearIdService.class );
         storeCopyService = mock( StoreCopyService.class );
-        StoreCopyServiceFactory storeCopyServiceFactory = mock( StoreCopyServiceFactory.class );
-        when( storeCopyServiceFactory.createStoreCopyService( any(), any() ) ).thenReturn( storeCopyService );
-        subject = new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, storeCopyServiceFactory, clearIdService );
+        subject = new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, clearIdService );
     }
 
     @Test
@@ -120,17 +119,17 @@ public class BackupDelegatorTest
     }
 
     @Test
-    public void retrieveStoreDelegatesToStoreCopyService() throws StoreCopyFailedException
+    public void retrieveStoreDelegatesToStoreCopyService() throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         // given
         StoreId storeId = new StoreId( 92, 5, 7, 32 );
-        stub( storeCopyService.retrieveStore( any(), eq( storeId ) ) ).toReturn( 9142L );
+        File anyFile = mock( File.class );
 
         // when
-        long actualTransactionId = subject.retrieveStore( mock( File.class ), storeId, anyAddress );
+        subject.copy( anyAddress, storeId, anyFile );
 
         // then
-        assertEquals( 9142, actualTransactionId );
+        verify( remoteStore ).copy( anyAddress, storeId, anyFile );
     }
 
     @Test

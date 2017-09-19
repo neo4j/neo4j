@@ -43,7 +43,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -235,7 +235,7 @@ class BackupProtocolService
         {
             consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
                             logProvider, fileSystem, pageCache, false,
-                            new CheckConsistencyConfig( tuningConfiguration ) );
+                            new ConsistencyFlags( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckFailedException e )
         {

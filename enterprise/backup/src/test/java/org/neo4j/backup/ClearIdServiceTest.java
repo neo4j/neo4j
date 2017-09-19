@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.backup.util.TestHelpers;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.util.TestHelpers;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;

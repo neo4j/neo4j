@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -350,7 +350,7 @@ public class AllNodesInStoreExistInLabelIndexTest
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
             return service.runFullConsistencyCheck( dir.absolutePath(), config, NONE, log, fsa, true,
-                    new CheckConsistencyConfig( config ) );
+                    new ConsistencyFlags( config ) );
         }
     }
 }

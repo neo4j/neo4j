@@ -88,14 +88,12 @@ class BackupSupportingClassesFactory
         RemoteStore remoteStore =
                 new RemoteStore( logProvider, fileSystemAbstraction, pageCache, storeCopyClient, txPullClient, transactionLogCatchUpFactory, monitors );
 
-        return backupDelegator( remoteStore, catchUpClient, storeCopyClient, pageCache, fileSystemAbstraction );
+        return backupDelegator( remoteStore, catchUpClient, storeCopyClient );
     }
 
-    private static BackupDelegator backupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction )
+    private static BackupDelegator backupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient  )
     {
-        StoreCopyServiceFactory storeCopyServiceFactory = new StoreCopyServiceFactory( fileSystemAbstraction, pageCache, storeCopyClient );
-        return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, storeCopyServiceFactory, new ClearIdService( new IdGeneratorWrapper() ) );
+        return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, new ClearIdService( new IdGeneratorWrapper() ) );
     }
 
     private static SslPolicy establishSslPolicyFromConfiguration( Config config, LogProvider logProvider )

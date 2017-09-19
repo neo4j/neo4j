@@ -19,8 +19,6 @@
  */
 package org.neo4j.util;
 
-import org.junit.Rule;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,16 +27,31 @@ import java.util.List;
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.rule.TestDirectory;
 
-public class JvmRunner
+import static java.lang.String.format;
+
+public class TestHelpers
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    protected int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
+    public static Exception executionIsExpectedToFail( Runnable runnable )
     {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
+        return executionIsExpectedToFail( runnable, RuntimeException.class );
+    }
+
+    public static <E extends Exception> E executionIsExpectedToFail( Runnable runnable, Class<E> exceptionClass )
+    {
+        try
+        {
+            runnable.run();
+        }
+        catch ( Exception e )
+        {
+            if ( !exceptionClass.isInstance( e ) )
+            {
+                throw new AssertionError( format( "Exception %s is not of type %s", e.getClass().getName(), exceptionClass.getName() ), e );
+            }
+            return (E) e;
+        }
+        throw new AssertionError( "The code expected to fail hasn't failed" );
     }
 
     public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args ) throws Exception
@@ -55,3 +68,4 @@ public class JvmRunner
         return new ProcessStreamHandler( process, false ).waitForResult();
     }
 }
+

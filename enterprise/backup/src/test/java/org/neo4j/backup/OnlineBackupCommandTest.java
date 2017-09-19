@@ -34,7 +34,7 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
@@ -60,8 +60,8 @@ public class OnlineBackupCommandTest
     // Parameters and helpers
     private final Config config = mock( Config.class );
     private final OnlineBackupRequiredArguments requiredArguments = mock( OnlineBackupRequiredArguments.class );
-    private final CheckConsistencyConfig checkConsistencyConfig = mock( CheckConsistencyConfig.class );
-    private final OnlineBackupContext onlineBackupContext = new OnlineBackupContext( requiredArguments, config, checkConsistencyConfig );
+    private final ConsistencyFlags consistencyFlags = mock( ConsistencyFlags.class );
+    private final OnlineBackupContext onlineBackupContext = new OnlineBackupContext( requiredArguments, config, consistencyFlags );
 
     private Path backupDirectory = Paths.get( "backupDirectory/" );
     private Path reportDirectory = Paths.get( "reportDirectory/" );

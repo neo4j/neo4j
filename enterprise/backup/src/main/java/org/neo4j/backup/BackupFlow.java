@@ -22,14 +22,12 @@ package org.neo4j.backup;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -75,7 +73,7 @@ class BackupFlow
         // Convenience
         OnlineBackupRequiredArguments requiredArgs = onlineBackupContext.getRequiredArguments();
         File destination = onlineBackupContext.getResolvedLocationFromName();
-        CheckConsistencyConfig checkConsistencyConfig = onlineBackupContext.getCheckConsistencyConfig();
+        ConsistencyFlags consistencyFlags = onlineBackupContext.getConsistencyFlags();
 
         PotentiallyErroneousState<BackupStrategyOutcome> throwableWithState = null;
         List<Throwable> causesOfFailure = new ArrayList<>();
@@ -100,7 +98,7 @@ class BackupFlow
         }
         if ( requiredArgs.isDoConsistencyCheck() )
         {
-            performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, checkConsistencyConfig, destination );
+            performConsistencyCheck( onlineBackupContext.getConfig(), requiredArgs, consistencyFlags, destination );
         }
     }
 
@@ -113,13 +111,13 @@ class BackupFlow
         return () -> new CommandFailed( "Execution of backup failed" );
     }
 
-    private void performConsistencyCheck( Config config, OnlineBackupRequiredArguments requiredArgs, CheckConsistencyConfig checkConsistencyConfig, File destination ) throws CommandFailed
+    private void performConsistencyCheck( Config config, OnlineBackupRequiredArguments requiredArgs, ConsistencyFlags consistencyFlags, File destination ) throws CommandFailed
     {
         try
         {
             ConsistencyCheckService.Result ccResult =
                     consistencyCheckService.runFullConsistencyCheck( destination, config, progressMonitorFactory, logProvider, outsideWorld.fileSystem(), false,
-                            requiredArgs.getReportDir().toFile(), checkConsistencyConfig );
+                            requiredArgs.getReportDir().toFile(), consistencyFlags );
 
             if ( !ccResult.isSuccessful() )
             {

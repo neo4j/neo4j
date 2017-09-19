@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.core.server;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.ReplicationModule;
@@ -61,6 +63,8 @@ import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -97,6 +101,8 @@ public class CoreServerModule
         final Monitors monitors = platformModule.monitors;
         final JobScheduler jobScheduler = platformModule.jobScheduler;
         final TopologyService topologyService = clusteringModule.topologyService();
+        Map<String, String> overrideBackupSettings = backupDisabledSettings();
+        config.augment( overrideBackupSettings );
 
         LogProvider logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
@@ -201,5 +207,12 @@ public class CoreServerModule
         life.add( raftServer ); // must start before core state so that it can trigger snapshot downloads when necessary
         life.add( coreLife );
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+    }
+
+    private static Map<String,String> backupDisabledSettings()
+    {
+        Map<String,String> overrideBackupSettings = new HashMap<>(  );
+        overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        return overrideBackupSettings;
     }
 }
