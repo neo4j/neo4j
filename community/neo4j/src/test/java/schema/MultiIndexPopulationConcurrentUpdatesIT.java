@@ -23,9 +23,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +50,9 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -62,6 +67,7 @@ import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -80,6 +86,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
@@ -89,6 +96,7 @@ import static org.junit.Assert.assertEquals;
 //[NodePropertyUpdate[4, prop:0 add:Volvo, labelsBefore:[], labelsAfter:[2]]]
 //[NodePropertyUpdate[5, prop:0 add:Ford, labelsBefore:[], labelsAfter:[2]]]
 //TODO: check count store counts
+@RunWith( Parameterized.class )
 public class MultiIndexPopulationConcurrentUpdatesIT
 {
     private static final String NAME_PROPERTY = "name";
@@ -98,6 +106,18 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static Collection<Object[]> parameters()
+    {
+        return asList(
+                new Object[]{LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR},
+                new Object[]{InMemoryIndexProviderFactory.PROVIDER_DESCRIPTOR} );
+    }
+
+    @Parameterized.Parameter( 0 )
+    public SchemaIndexProvider.Descriptor indexDescriptor;
 
     private IndexingService indexService;
     private int propertyId;
@@ -309,8 +329,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private IndexRule[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
         return labelNameIdMap.values().stream()
-                .map( index -> IndexRule.indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ),
-                        LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ) )
+                .map( index -> IndexRule.indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ) )
                 .toArray( IndexRule[]::new );
     }
 
