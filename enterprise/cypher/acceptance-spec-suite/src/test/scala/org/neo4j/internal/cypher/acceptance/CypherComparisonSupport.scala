@@ -102,8 +102,11 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
       tryResult match {
-        case Success(result) =>
-          fail("Unexpectedly Succeeded in " + thisScenario.name)
+        case (Success(_))=>
+          if(expectedToFailWithSpecificMessage) {
+            fail("Unexpectedly Succeeded in " + thisScenario.name)
+          }
+          // It was not expected to fail with the specified error message, do nothing
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
             if (e.getMessage == null || !e.getMessage.contains(message)) {
