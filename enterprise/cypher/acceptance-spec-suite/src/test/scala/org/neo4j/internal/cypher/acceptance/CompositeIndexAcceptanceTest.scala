@@ -72,11 +72,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("should not use composite index when not all predicates are present") {
     // Given
     graph.createIndex("User", "firstname","lastname")
-    val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-    for (i <- 1 to 100) {
-      11111
+    for (_ <- 1 to 100) {
       createLabeledNode(Map("firstname" -> "Joe"), "User")
       createLabeledNode(Map("lastname" -> "Soap"), "User")
     }
