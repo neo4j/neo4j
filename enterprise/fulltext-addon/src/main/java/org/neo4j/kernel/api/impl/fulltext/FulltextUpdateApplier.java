@@ -67,11 +67,10 @@ class FulltextUpdateApplier
         workQueue = new LinkedBlockingQueue<>();
     }
 
-    <E extends Entity> BinaryLatch updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index )
-            throws
-            IOException
+    <E extends Entity> AsyncFulltextIndexOperation updatePropertyData(
+            Map<Long,Map<String,Object>> state, WritableFulltext index ) throws IOException
     {
-        BinaryLatch completedLatch = new BinaryLatch();
+        Latch completedLatch = new Latch();
         FulltextIndexUpdate update = () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
@@ -100,18 +99,18 @@ class FulltextUpdateApplier
         return completedLatch;
     }
 
-    private static void updateDocument( PartitionedIndexWriter indexWriter, long entityId,
-                                        Map<String,Object> properties ) throws IOException
+    private static void updateDocument(
+            PartitionedIndexWriter indexWriter, long entityId, Map<String,Object> properties ) throws IOException
     {
         Document document = documentRepresentingProperties( entityId, properties );
         indexWriter.updateDocument( newTermForChangeOrRemove( entityId ), document );
     }
 
-    <E extends Entity> BinaryLatch removePropertyData( Iterable<PropertyEntry<E>> propertyEntries,
-                                                       Map<Long,Map<String,Object>> state,
-                                                       WritableFulltext index ) throws IOException
+    <E extends Entity> AsyncFulltextIndexOperation removePropertyData(
+            Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state, WritableFulltext index )
+            throws IOException
     {
-        BinaryLatch completedLatch = new BinaryLatch();
+        Latch completedLatch = new Latch();
         FulltextIndexUpdate update = () ->
         {
             for ( PropertyEntry<E> propertyEntry : propertyEntries )
@@ -133,28 +132,29 @@ class FulltextUpdateApplier
         return completedLatch;
     }
 
-    BinaryLatch writeBarrier() throws IOException
+    AsyncFulltextIndexOperation writeBarrier() throws IOException
     {
-        BinaryLatch barrierLatch = new BinaryLatch();
+        Latch barrierLatch = new Latch();
         enqueueUpdate( () -> Pair.of( null, barrierLatch ) );
         return barrierLatch;
     }
 
-    BinaryLatch populateNodes( WritableFulltext index, GraphDatabaseService db ) throws IOException
+    AsyncFulltextIndexOperation populateNodes( WritableFulltext index, GraphDatabaseService db ) throws IOException
     {
         return enqueuePopulateIndex( index, db, db::getAllNodes );
     }
 
-    BinaryLatch populateRelationships( WritableFulltext index, GraphDatabaseService db ) throws IOException
+    AsyncFulltextIndexOperation populateRelationships( WritableFulltext index, GraphDatabaseService db )
+            throws IOException
     {
         return enqueuePopulateIndex( index, db, db::getAllRelationships );
     }
 
-    private BinaryLatch enqueuePopulateIndex( WritableFulltext index, GraphDatabaseService db,
-                                              Supplier<ResourceIterable<? extends Entity>> entitySupplier )
-            throws IOException
+    private AsyncFulltextIndexOperation enqueuePopulateIndex(
+            WritableFulltext index, GraphDatabaseService db,
+            Supplier<ResourceIterable<? extends Entity>> entitySupplier ) throws IOException
     {
-        BinaryLatch completedLatch = new BinaryLatch();
+        Latch completedLatch = new Latch();
         FulltextIndexUpdate population = () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
@@ -360,6 +360,15 @@ class FulltextUpdateApplier
             {
                 log.error( "Failed to refresh fulltext after updates", e );
             }
+        }
+    }
+
+    private static class Latch extends BinaryLatch implements AsyncFulltextIndexOperation
+    {
+        @Override
+        public void awaitCompletion()
+        {
+            await();
         }
     }
 }

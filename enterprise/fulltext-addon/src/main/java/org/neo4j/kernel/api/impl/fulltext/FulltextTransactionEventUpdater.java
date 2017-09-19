@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.concurrent.BinaryLatch;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -33,7 +32,6 @@ import org.neo4j.logging.Log;
 
 class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
-
     private final FulltextProvider fulltextProvider;
     private final Log log;
     private final FulltextUpdateApplier applier;
@@ -88,25 +86,27 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
     {
         try
         {
-            List<BinaryLatch> completions = new ArrayList<>();
+            List<AsyncFulltextIndexOperation> completions = new ArrayList<>();
+            Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
+            Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
+
             //update node indices
             for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
             {
-                Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
                 completions.add( applier.removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex ) );
                 completions.add( applier.updatePropertyData( nodeMap, nodeIndex ) );
             }
+
             //update relationship indices
             for ( WritableFulltext relationshipIndex : fulltextProvider.writableRelationshipIndices() )
             {
-                Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
                 completions.add( applier.removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex ) );
                 completions.add( applier.updatePropertyData( relationshipMap, relationshipIndex ) );
             }
 
-            for ( BinaryLatch completion : completions )
+            for ( AsyncFulltextIndexOperation completion : completions )
             {
-                completion.await();
+                completion.awaitCompletion();
             }
         }
         catch ( IOException e )

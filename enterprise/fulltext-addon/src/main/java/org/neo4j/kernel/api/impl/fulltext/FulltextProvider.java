@@ -83,7 +83,7 @@ public class FulltextProvider implements AutoCloseable
 
     public void awaitPopulation() throws IOException
     {
-        applier.writeBarrier().await();
+        applier.writeBarrier().awaitCompletion();
     }
 
     /**
