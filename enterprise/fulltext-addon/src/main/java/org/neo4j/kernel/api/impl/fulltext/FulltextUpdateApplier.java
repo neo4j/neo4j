@@ -286,7 +286,7 @@ class FulltextUpdateApplier
             {
                 isAvailable = availabilityGuard.isAvailable( 100 );
             }
-            while ( !isAvailable && !availabilityGuard.isShutdown() );
+            while ( !isAvailable );
         }
 
         private FulltextIndexUpdate drainQueueAndApplyUpdates(
