@@ -41,6 +41,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 public class Race
 {
+    private static final int UNLIMITED = 0;
+
     public interface ThrowingRunnable
     {
         void run() throws Throwable;
@@ -123,15 +125,25 @@ public class Race
 
     public void addContestants( int count, Runnable contestant )
     {
+        addContestants( count, contestant, UNLIMITED );
+    }
+
+    public void addContestants( int count, Runnable contestant, int maxNumberOfRuns )
+    {
         for ( int i = 0; i < count; i++ )
         {
-            addContestant( contestant );
+            addContestant( contestant, maxNumberOfRuns );
         }
     }
 
     public void addContestant( Runnable contestant )
     {
-        contestants.add( new Contestant( contestant, contestants.size() ) );
+        addContestant( contestant, UNLIMITED );
+    }
+
+    public void addContestant( Runnable contestant, int maxNumberOfRuns )
+    {
+        contestants.add( new Contestant( contestant, contestants.size(), maxNumberOfRuns ) );
     }
 
     /**
@@ -234,10 +246,13 @@ public class Race
     private class Contestant extends Thread
     {
         private volatile Throwable error;
+        private final int maxNumberOfRuns;
+        private int runs;
 
-        Contestant( Runnable code, int nr )
+        Contestant( Runnable code, int nr, int maxNumberOfRuns )
         {
             super( code, "Contestant#" + nr );
+            this.maxNumberOfRuns = maxNumberOfRuns;
             this.setUncaughtExceptionHandler( ( thread, error ) ->
             {
             } );
@@ -268,7 +283,7 @@ public class Race
                 while ( !failure )
                 {
                     super.run();
-                    if ( endCondition.getAsBoolean() )
+                    if ( (maxNumberOfRuns != UNLIMITED && ++runs == maxNumberOfRuns) || endCondition.getAsBoolean() )
                     {
                         break;
                     }
