@@ -226,7 +226,7 @@ the relevant Commercial Agreement.
           </execution>
           <execution>
             <id>create-javadocs</id>
-            <phase>package</phase>
+            <phase>none</phase> <!-- TODO: fix -->
             <goals><goal>jar</goal></goals>
             <configuration>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>

@@ -267,7 +267,7 @@
           </execution>
           <execution>
             <id>create-javadocs</id>
-            <phase>package</phase>
+            <phase>none</phase> <!-- TODO: fix -->
             <goals><goal>jar</goal></goals>
             <configuration>
               <additionalDependencies>

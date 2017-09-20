@@ -424,19 +424,6 @@
           </systemPropertyVariables>
         </configuration>
       </plugin>
-      <plugin>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-java-sources</id>
-            <phase>none</phase>
-          </execution>
-          <execution>
-            <id>attach-test-sources</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
