@@ -48,6 +48,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class ElectionPerformanceIT
 {
+    @Ignore( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_NormalConditions() throws Throwable
     {
