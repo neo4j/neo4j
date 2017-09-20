@@ -437,6 +437,16 @@ public class BloomIT
         }
     }
 
+    @Test
+    public void shouldBeAbleToQueryForIndexedProperties() throws Exception
+    {
+        builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
+
+        db = builder.newGraphDatabase();
+
+        db.execute( "CALL db.fulltext.bloomFulltextProperties" ).close();
+    }
+
     @After
     public void after() throws Exception
     {

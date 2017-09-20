@@ -220,6 +220,18 @@ public class FulltextProvider implements AutoCloseable
         }
     }
 
+    public Set<String> getProperties( String identifier, FulltextIndexType type )
+    {
+        if ( type == FulltextIndexType.NODES )
+        {
+            return nodeIndices.get( identifier ).getProperties();
+        }
+        else
+        {
+            return relationshipIndices.get( identifier ).getProperties();
+        }
+    }
+
     /**
      * Fulltext index type.
      */
