@@ -40,8 +40,10 @@ public class PropertyContainerLocker
         {
             if ( container instanceof Node )
             {
-                statement.readOperations().acquireExclusive( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock( stmtSupplier, ResourceTypes.NODE, ((Node) container).getId() )
+                long id = ((Node) container).getId();
+                ResourceTypes resourceType = ResourceTypes.NODE;
+                statement.readOperations().acquireExclusive( resourceType, id );
+                return new CoreAPILock( stmtSupplier, resourceType, id )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
@@ -52,8 +54,10 @@ public class PropertyContainerLocker
             }
             else if ( container instanceof Relationship )
             {
-                statement.readOperations().acquireExclusive( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock( stmtSupplier, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
+                long id = ((Relationship) container).getId();
+                ResourceTypes resourceType = ResourceTypes.RELATIONSHIP;
+                statement.readOperations().acquireExclusive( resourceType, id );
+                return new CoreAPILock( stmtSupplier, resourceType, id )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
@@ -105,8 +109,10 @@ public class PropertyContainerLocker
         {
             if ( container instanceof Node )
             {
-                statement.readOperations().acquireShared( ResourceTypes.NODE, ((Node) container).getId() );
-                return new CoreAPILock( stmtProvider, ResourceTypes.NODE, ((Node) container).getId() )
+                long id = ((Node) container).getId();
+                ResourceTypes resourceType = ResourceTypes.NODE;
+                statement.readOperations().acquireShared( resourceType, id );
+                return new CoreAPILock( stmtProvider, resourceType, id )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
@@ -117,8 +123,10 @@ public class PropertyContainerLocker
             }
             else if ( container instanceof Relationship )
             {
-                statement.readOperations().acquireShared( ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() );
-                return new CoreAPILock( stmtProvider, ResourceTypes.RELATIONSHIP, ((Relationship) container).getId() )
+                long id = ((Relationship) container).getId();
+                ResourceTypes resourceType = ResourceTypes.RELATIONSHIP;
+                statement.readOperations().acquireShared( resourceType, id );
+                return new CoreAPILock( stmtProvider, resourceType, id )
                 {
                     @Override
                     void release( Statement statement, ResourceType type, long resourceId )
