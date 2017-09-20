@@ -36,7 +36,6 @@ import static org.apache.lucene.document.Field.Store.NO;
 
 class LuceneFulltextDocumentStructure
 {
-
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
     private LuceneFulltextDocumentStructure()
@@ -60,14 +59,6 @@ class LuceneFulltextDocumentStructure
     static Field encodeValueField( String propertyKey, Value value )
     {
         return LuceneFulltextFieldEncoding.encodeField( propertyKey, value );
-    }
-
-    public static Document documentForPopulation( long entityId, Map<String,Object> properties )
-    {
-        DocWithId docWithId = new DocWithId();
-        docWithId.setId( entityId );
-        docWithId.setValues( properties );
-        return docWithId.document;
     }
 
     private static class DocWithId

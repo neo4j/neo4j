@@ -48,7 +48,6 @@ import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentForPopulation;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
@@ -165,7 +164,7 @@ class FulltextUpdateApplier
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
-            ArrayList<Document> documents = new ArrayList<>();
+            ArrayList<Supplier<Document>> documents = new ArrayList<>();
             try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
             {
                 ResourceIterable<? extends Entity> entities = entitySupplier.get();
@@ -175,22 +174,32 @@ class FulltextUpdateApplier
                     Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
                     if ( !properties.isEmpty() )
                     {
-                        documents.add( documentForPopulation( entityId, properties ) );
+                        documents.add( documentBuilder( entityId, properties ) );
                     }
 
                     if ( documents.size() > POPULATING_BATCH_SIZE )
                     {
-                        indexWriter.addDocuments( documents.size(), documents );
+                        indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
                         documents.clear();
                     }
                 }
             }
-            indexWriter.addDocuments( documents.size(), documents );
+            indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
             return Pair.of( index, completedLatch );
         };
 
         enqueueUpdate( population );
         return completedLatch;
+    }
+
+    private Supplier<Document> documentBuilder( long entityId, Map<String,Object> properties )
+    {
+        return () -> documentRepresentingProperties( entityId, properties );
+    }
+
+    private Iterable<Document> reifyDocuments( ArrayList<Supplier<Document>> documents )
+    {
+        return () -> documents.stream().map( Supplier::get ).iterator();
     }
 
     private void enqueueUpdate( FulltextIndexUpdate update ) throws IOException
