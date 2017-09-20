@@ -75,6 +75,12 @@ the relevant Commercial Agreement.
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <forkCount>1</forkCount>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 

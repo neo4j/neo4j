@@ -37,7 +37,6 @@ import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.TestDirectory;
 

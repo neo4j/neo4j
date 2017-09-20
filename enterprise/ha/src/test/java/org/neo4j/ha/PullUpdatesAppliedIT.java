@@ -46,13 +46,13 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.rule.TestDirectory;
 

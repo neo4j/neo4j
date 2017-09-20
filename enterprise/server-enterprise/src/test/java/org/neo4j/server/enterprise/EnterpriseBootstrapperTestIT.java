@@ -30,10 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.BaseBootstrapperTestIT;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBootstrapper;

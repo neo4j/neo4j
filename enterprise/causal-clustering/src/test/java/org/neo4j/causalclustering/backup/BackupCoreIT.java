@@ -34,7 +34,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
@@ -42,6 +41,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 

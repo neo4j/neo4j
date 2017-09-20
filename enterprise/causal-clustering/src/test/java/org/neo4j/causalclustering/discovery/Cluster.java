@@ -47,7 +47,6 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.IdGenerationException;
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;
@@ -57,6 +56,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.DbRepresentation;
 

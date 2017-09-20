@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -88,6 +87,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DbRepresentation;

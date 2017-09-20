@@ -26,9 +26,9 @@ import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.harness.CausalClusterInProcessRunner.CausalCluster;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 public class CausalClusterInProcessRunnerIT
