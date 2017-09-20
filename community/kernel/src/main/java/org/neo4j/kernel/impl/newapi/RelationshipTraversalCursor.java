@@ -27,17 +27,26 @@ class RelationshipTraversalCursor extends RelationshipCursor
 {
     private long originNodeReference;
     private long next;
+    private Record buffer;
 
     RelationshipTraversalCursor( Read read )
     {
         super( read );
     }
 
+    /*
+     * Cursor being called as a group, use the buffered records in Record
+     * instead.
+     */
     void buffered( long nodeReference, Record record )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        this.originNodeReference = nodeReference;
+        this.buffer = Record.initialize( record );
     }
 
+    /*
+     * Normal traversal.
+     */
     void chain( long nodeReference, long reference )
     {
         setId( NO_ID );
@@ -45,6 +54,9 @@ class RelationshipTraversalCursor extends RelationshipCursor
         next = reference;
     }
 
+    /*
+     * Reference to a group record
+     */
     void groups( long nodeReference, long reference )
     {
         throw new UnsupportedOperationException( "not implemented" );
@@ -95,6 +107,27 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean next()
     {
+        if ( hasBufferedData() )
+        {   //We have buffered data, iterate the chain of buffered records
+            buffer = buffer.next;
+            if ( !hasBufferedData() )
+            {
+                close();
+                return false;
+            }
+            else
+            {
+                // Copy buffer data to self
+                this.setId( buffer.id );
+                this.setType( buffer.type );
+                this.setNextProp( buffer.nextProp );
+                this.setFirstNode( buffer.firstNode );
+                this.setSecondNode( buffer.secondNode );
+                return true;
+            }
+        }
+
+
         if ( next == NO_ID )
         {
             close();
@@ -127,14 +160,57 @@ class RelationshipTraversalCursor extends RelationshipCursor
     public void close()
     {
         setId( next = NO_ID );
+        buffer = null;
     }
 
+    private boolean hasBufferedData()
+    {
+        return buffer != null;
+    }
+
+    /*
+     * Record is both a data holder for buffering data from a RelationshipRecord
+     * as well as a linked list over the records in the group.
+     */
     static class Record
     {
+        private static final RelationshipRecord DUMMY = null;
+        final long id;
+        final int type;
+        final long nextProp;
+        final long firstNode;
+        final long secondNode;
         final Record next;
 
+        /*
+         * Initialize the chain of records
+         */
+        static Record initialize(Record first)
+        {
+            return new Record( DUMMY, first );
+        }
+
+        /*
+         * Initialize the record chain or push a new record as the new head of the record chain
+         */
         Record( RelationshipRecord record, Record next )
         {
+            if ( record != null )
+            {
+                id = record.getId();
+                type = record.getType();
+                nextProp = record.getNextProp();
+                firstNode = record.getFirstNode();
+                secondNode = record.getSecondNode();
+            }
+            else
+            {
+                id = NO_ID;
+                type = NO_ID;
+                nextProp = NO_ID;
+                firstNode = NO_ID;
+                secondNode = NO_ID;
+            }
             this.next = next;
         }
     }
