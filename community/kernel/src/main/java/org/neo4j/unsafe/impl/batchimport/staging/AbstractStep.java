@@ -151,7 +151,7 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         if ( isPanic() )
         {
-            throw new RuntimeException( "Panic called, so exiting", panic );
+            throw Exceptions.launderedException( panic );
         }
     }
 
