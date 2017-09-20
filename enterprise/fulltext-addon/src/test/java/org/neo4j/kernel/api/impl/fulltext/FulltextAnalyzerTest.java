@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.Test;
 
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
 import static java.util.Collections.singletonList;
@@ -40,16 +39,11 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();
 
-            long firstID;
-            long secondID;
+            long id;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello and hello again, in the end." );
-                node2.setProperty( "prop", "En apa och en tomte bodde i ett hus." );
+                createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+                id = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
 
                 tx.success();
             }
@@ -59,9 +53,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 assertExactQueryFindsNothing( reader, "and" );
                 assertExactQueryFindsNothing( reader, "in" );
                 assertExactQueryFindsNothing( reader, "the" );
-                assertExactQueryFindsIds( reader, "en", secondID );
-                assertExactQueryFindsIds( reader, "och", secondID );
-                assertExactQueryFindsIds( reader, "ett", secondID );
+                assertExactQueryFindsIds( reader, "en", id );
+                assertExactQueryFindsIds( reader, "och", id );
+                assertExactQueryFindsIds( reader, "ett", id );
             }
         }
     }
@@ -75,25 +69,20 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
             provider.init();
 
-            long firstID;
-            long secondID;
+            long id;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello and hello again, in the end." );
-                node2.setProperty( "prop", "En apa och en tomte bodde i ett hus." );
+                id = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+                createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
             {
-                assertExactQueryFindsIds( reader, "and", firstID );
-                assertExactQueryFindsIds( reader, "in", firstID );
-                assertExactQueryFindsIds( reader, "the", firstID );
+                assertExactQueryFindsIds( reader, "and", id );
+                assertExactQueryFindsIds( reader, "in", id );
+                assertExactQueryFindsIds( reader, "the", id );
                 assertExactQueryFindsNothing( reader, "en" );
                 assertExactQueryFindsNothing( reader, "och" );
                 assertExactQueryFindsNothing( reader, "ett" );

@@ -23,15 +23,10 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
 
@@ -49,12 +44,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop",
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -83,12 +74,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", 1 );
-                node2.setProperty( "prop", 234 );
+                firstID = createNodeIndexableByPropertyValue( 1 );
+                secondID = createNodeIndexableByPropertyValue( 234 );
 
                 tx.success();
             }
@@ -113,12 +100,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", true );
-                node2.setProperty( "prop", false );
+                firstID = createNodeIndexableByPropertyValue( true );
+                secondID = createNodeIndexableByPropertyValue( false );
 
                 tx.success();
             }
@@ -144,15 +127,9 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Node node3 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
-                node2.setProperty( "prop", new int[]{1, 27, 48} );
-                node3.setProperty( "prop", new int[]{1, 2, 48} );
+                firstID = createNodeIndexableByPropertyValue( new String[]{"hello", "I", "live", "here"} );
+                secondID = createNodeIndexableByPropertyValue( new int[]{1, 27, 48} );
+                thirdID = createNodeIndexableByPropertyValue( new int[]{1, 2, 48} );
 
                 tx.success();
             }
@@ -178,12 +155,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop",
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -191,10 +164,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             }
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( firstID );
-                node.setProperty( "prop", "Hahahaha! potato!" );
-                Node node2 = db.getNodeById( secondID );
-                node2.setProperty( "prop", "This one is a potato farmer." );
+                setNodeProp( firstID, "Hahahaha! potato!" );
+                setNodeProp( secondID, "This one is a potato farmer." );
 
                 tx.success();
             }
@@ -224,12 +195,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop",
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -267,22 +234,14 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Node node3 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-
-                node.setProperty( "prop", "Hello. Hello again." );
-                node.setProperty( "prop", "zebra" );
-
-                node2.setProperty( "prop",
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
-                node2.setProperty( "prop", "Hello. Hello again." );
+                thirdID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
 
-                node3.setProperty( "prop", "Hello. Hello again." );
+                setNodeProp( firstID, "zebra" );
+                setNodeProp( secondID, "Hello. Hello again." );
 
                 tx.success();
             }
@@ -325,11 +284,10 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long firstID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                setNodeProp( firstID, "prop2", "zebra" );
+
                 Node node2 = db.createNode();
-                firstID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node.setProperty( "prop2", "zebra" );
                 node2.setProperty( "prop2", "zebra" );
                 node2.setProperty( "prop3", "hello" );
 
@@ -357,15 +315,12 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
+                firstID = createNodeIndexableByPropertyValue( "Tomtar tomtar oftsat i tomteutstyrsel." );
+                secondID = createNodeIndexableByPropertyValue( "Olof och Hans" );
+                setNodeProp( secondID, "prop2", "och karl" );
+
                 Node node3 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
                 thirdID = node3.getId();
-                node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
-                node2.setProperty( "prop", "Olof och Hans" );
-                node2.setProperty( "prop2", "och karl" );
                 node3.setProperty( "prop2", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
                 tx.success();
@@ -392,22 +347,18 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long fourthID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Node node3 = db.createNode();
-                Node node4 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                fourthID = node4.getId();
-                node.setProperty( "first", "Full" );
-                node.setProperty( "last", "Hanks" );
-                node2.setProperty( "first", "Tom" );
-                node2.setProperty( "last", "Hunk" );
-                node3.setProperty( "first", "Tom" );
-                node3.setProperty( "last", "Hanks" );
-                node4.setProperty( "first", "Tom Hanks" );
-                node4.setProperty( "last", "Tom Hanks" );
+                firstID = db.createNode().getId();
+                secondID = db.createNode().getId();
+                thirdID = db.createNode().getId();
+                fourthID = db.createNode().getId();
+                setNodeProp( firstID, "first", "Full" );
+                setNodeProp( firstID, "last", "Hanks" );
+                setNodeProp( secondID, "first", "Tom" );
+                setNodeProp( secondID, "last", "Hunk" );
+                setNodeProp( thirdID, "first", "Tom" );
+                setNodeProp( thirdID, "last", "Hanks" );
+                setNodeProp( fourthID, "first", "Tom Hanks" );
+                setNodeProp( fourthID, "last", "Tom Hanks" );
 
                 tx.success();
             }
@@ -434,20 +385,14 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondRelID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-                firstNodeID = node.getId();
-                secondNodeID = node2.getId();
-                firstRelID = rel1.getId();
-                secondRelID = rel2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop",
+                firstNodeID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondNodeID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
-                rel1.setProperty( "prop", "Hello. Hello again." );
-                rel2.setProperty( "prop", "And now, something completely different" );
+                firstRelID = createRelationshipIndexableByPropertyValue(
+                        firstNodeID, secondNodeID, "Hello. Hello again." );
+                secondRelID = createRelationshipIndexableByPropertyValue(
+                        secondNodeID, firstNodeID, "And now, something completely different" );
 
                 tx.success();
             }
@@ -479,12 +424,8 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop",
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -519,18 +460,10 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             long fourthID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Node node3 = db.createNode();
-                Node node4 = db.createNode();
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                fourthID = node4.getId();
-                node.setProperty( "prop", "zibre" );
-                node2.setProperty( "prop", "zebrae" );
-                node3.setProperty( "prop", "zebra" );
-                node4.setProperty( "prop", "zibra" );
+                firstID = createNodeIndexableByPropertyValue( "zibre" );
+                secondID = createNodeIndexableByPropertyValue( "zebrae" );
+                thirdID = createNodeIndexableByPropertyValue( "zebra" );
+                fourthID = createNodeIndexableByPropertyValue( "zibra" );
 
                 tx.success();
             }
@@ -553,16 +486,12 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode();
-                Node node2 = db.createNode();
-                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop2",
+                long firstNode = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                long secondNode = createNodeWithProperty( "prop2",
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
-                rel1.setProperty( "prop", "Hello. Hello again." );
-                rel2.setProperty( "prop2",
+                createRelationshipIndexableByPropertyValue( firstNode, secondNode, "Hello. Hello again." );
+                createRelationshipWithProperty( secondNode, firstNode, "prop2",
                         "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
                         "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
@@ -588,23 +517,17 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
         long secondRelID;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            Node node2 = db.createNode();
-
             // skip a few rel ids, so the ones we work with are different from the node ids, just in case.
-            node.createRelationshipTo( node2, RELTYPE );
-            node.createRelationshipTo( node2, RELTYPE );
+            Node node = db.createNode();
+            node.createRelationshipTo( node, RELTYPE );
+            node.createRelationshipTo( node, RELTYPE );
+            node.createRelationshipTo( node, RELTYPE );
 
-            Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-            Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-            firstNodeID = node.getId();
-            secondNodeID = node2.getId();
-            firstRelID = rel1.getId();
-            secondRelID = rel2.getId();
-            node.setProperty( "prop", "Hello. Hello again." );
-            node2.setProperty( "prop", "This string is slightly shorter than the zebra one" );
-            rel1.setProperty( "prop", "Goodbye" );
-            rel2.setProperty( "prop", "And now, something completely different" );
+            firstNodeID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+            secondNodeID = createNodeIndexableByPropertyValue( "This string is slightly shorter than the zebra one" );
+            firstRelID = createRelationshipIndexableByPropertyValue( firstNodeID, secondNodeID, "Goodbye" );
+            secondRelID = createRelationshipIndexableByPropertyValue( secondNodeID, firstNodeID,
+                    "And now, something completely different" );
 
             tx.success();
         }

@@ -30,6 +30,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -75,6 +76,33 @@ public class LuceneFulltextTestSupport
         return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
     }
 
+    protected long createNodeIndexableByPropertyValue( Object propertyValue )
+    {
+        return createNodeWithProperty( "prop", propertyValue );
+    }
+
+    protected long createNodeWithProperty( String propertyKey, Object propertyValue )
+    {
+        Node node = db.createNode();
+        node.setProperty( propertyKey, propertyValue );
+        return node.getId();
+    }
+
+    protected long createRelationshipIndexableByPropertyValue( long firstNodeId, long secondNodeId, Object propertyValue )
+    {
+        return createRelationshipWithProperty( firstNodeId, secondNodeId, "prop", propertyValue );
+    }
+
+    protected long createRelationshipWithProperty( long firstNodeId, long secondNodeId, String propertyKey,
+                                                 Object propertyValue )
+    {
+        Node first = db.getNodeById( firstNodeId );
+        Node second = db.getNodeById( secondNodeId );
+        Relationship relationship = first.createRelationshipTo( second, RELTYPE );
+        relationship.setProperty( propertyKey, propertyValue );
+        return relationship.getId();
+    }
+
     protected void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
     {
         assertExactQueryFindsIds( reader, query );
@@ -109,10 +137,15 @@ public class LuceneFulltextTestSupport
 
     protected void setNodeProp( long nodeId, String value )
     {
+        setNodeProp( nodeId, "prop", value );
+    }
+
+    protected void setNodeProp( long nodeId, String propertyKey, String value )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.getNodeById( nodeId );
-            node.setProperty( "prop", value );
+            node.setProperty( propertyKey, value );
             tx.success();
         }
     }
