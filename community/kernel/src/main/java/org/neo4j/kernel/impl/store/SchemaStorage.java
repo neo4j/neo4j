@@ -140,9 +140,27 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
     {
-        return loadSingleSchemaRuleViaBuffer( ruleId, newRecordBuffer() );
+        Collection<DynamicRecord> records;
+        try
+        {
+            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL );
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( e.getMessage(), e );
+        }
+        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer() );
     }
 
+    /**
+     * Scans the schema store and loads all {@link SchemaRule rules} in it. This method is written with the assumption
+     * that there's no id reuse on schema records.
+     *
+     * @param predicate filter when loading.
+     * @param returnType type of {@link SchemaRule} to load.
+     * @param ignoreMalformed whether or not to ignore inconsistent records (used in concsistency checking).
+     * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
+     */
     <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules(
             final Predicate<ReturnType> predicate,
             final Class<ReturnType> returnType,
@@ -164,9 +182,22 @@ public class SchemaStorage implements SchemaRuleAccess
                     schemaStore.getRecord( id, record, RecordLoad.FORCE );
                     if ( record.inUse() && record.isStartRecord() )
                     {
+                        // It may be that concurrently to our reading there's a transaction dropping the schema rule
+                        // that we're reading and that rule may have spanned multiple dynamic records.
                         try
                         {
-                            SchemaRule schemaRule = loadSingleSchemaRuleViaBuffer( id, scratchData );
+                            Collection<DynamicRecord> records;
+                            try
+                            {
+                                records = schemaStore.getRecords( id, RecordLoad.NORMAL );
+                            }
+                            catch ( InvalidRecordException e )
+                            {
+                                // This may have been due to a concurrent drop of this rule.
+                                continue;
+                            }
+
+                            SchemaRule schemaRule = SchemaStore.readSchemaRule( id, records, scratchData );
                             if ( returnType.isInstance( schemaRule ) )
                             {
                                 ReturnType returnRule = returnType.cast( schemaRule );
@@ -188,20 +219,6 @@ public class SchemaStorage implements SchemaRuleAccess
                 return null;
             }
         };
-    }
-
-    private SchemaRule loadSingleSchemaRuleViaBuffer( long id, byte[] buffer ) throws MalformedSchemaRuleException
-    {
-        Collection<DynamicRecord> records;
-        try
-        {
-            records = schemaStore.getRecords( id, RecordLoad.NORMAL );
-        }
-        catch ( Exception e )
-        {
-            throw new MalformedSchemaRuleException( e.getMessage(), e );
-        }
-        return SchemaStore.readSchemaRule( id, records, buffer );
     }
 
     public long newRuleId()
