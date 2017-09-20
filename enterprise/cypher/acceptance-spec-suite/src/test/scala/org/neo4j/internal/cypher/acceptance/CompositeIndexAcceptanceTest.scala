@@ -55,8 +55,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     // Given
     graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n",
@@ -97,9 +97,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph.createIndex("User", "lastname")
     graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-    for (i <- 1 to 100) {
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+    for (_ <- 1 to 100) {
       createLabeledNode("User")
       createLabeledNode("User")
     }
@@ -123,9 +123,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph.createIndex("User", "lastname")
     graph.createIndex("User", "firstname","lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
-    val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-    for (i <- 1 to 100) {
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
+    for (_ <- 1 to 100) {
       createLabeledNode("User")
       createLabeledNode("User")
     }
@@ -153,10 +153,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph.createIndex("User", "firstname")
     graph.createIndex("User", "lastname")
     graph.createIndex("User", "firstname", "lastname")
-    val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
-    val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
-    for (i <- 1 to 100) {
+    for (_ <- 1 to 100) {
       createLabeledNode("User")
       createLabeledNode("User")
     }
@@ -191,7 +191,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     executeWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
+    executeWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperatorWithText("NodeIndexSeek", ":Person(firstname,lastname)")
