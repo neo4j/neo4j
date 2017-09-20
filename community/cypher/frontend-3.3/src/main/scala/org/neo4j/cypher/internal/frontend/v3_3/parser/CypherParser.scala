@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ExpressionStringifier, ast}
 import org.parboiled.scala._
 
 class CypherParser extends Parser
@@ -24,9 +25,17 @@ class CypherParser extends Parser
   with Expressions {
 
 
+  val stringifier = ExpressionStringifier()
+
   @throws(classOf[SyntaxException])
-  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =
-    parseOrThrow(queryText, offset, CypherParser.Statements)
+  def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement = {
+    val statement = parseOrThrow(queryText, offset, CypherParser.Statements)
+    val expressions = statement.findByAllClass[Expression]
+    expressions foreach { e =>
+      stringifier(e)
+    }
+    statement
+  }
 }
 
 object CypherParser extends Parser with Statement with Expressions {
