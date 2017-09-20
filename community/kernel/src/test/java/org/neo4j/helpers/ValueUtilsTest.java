@@ -92,4 +92,23 @@ public class ValueUtilsTest
         assertThat( mapValue.get( "a" ), equalTo( VirtualValues.list( stringValue( "foo" ), intValue( 42 ) ) ) );
         assertThat( mapValue.size(), equalTo( 1 ) );
     }
+
+    @Test
+    public void shouldHandleIterable()
+    {
+        // Given
+        Iterable<Integer> collection = Arrays.asList( 1, 2, 3 );
+
+        // When
+
+        AnyValue of = ValueUtils.of( collection );
+
+        // Then
+        assertThat( of, instanceOf( ListValue.class ) );
+        ListValue listValue = (ListValue) of;
+        assertThat( listValue.value( 0 ), equalTo( intValue( 1 ) ) );
+        assertThat( listValue.value( 1 ), equalTo( intValue( 2 ) ) );
+        assertThat( listValue.value( 2 ), equalTo( intValue( 3 ) ) );
+        assertThat( listValue.size(), equalTo( 3 ) );
+    }
 }
