@@ -437,7 +437,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * it is *vital* that it is stable, and handles errors very well. Failing here means that the entire db
      * will shut down.
      */
-    public void createIndexes( IndexRule... rules ) throws IOException
+    public synchronized void createIndexes( IndexRule... rules ) throws IOException
     {
         IndexMap indexMap = indexMapRef.indexMapSnapshot();
         IndexPopulationJob populationJob = null;
@@ -500,7 +500,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    public void dropIndex( IndexRule rule )
+    public synchronized void dropIndex( IndexRule rule )
     {
         long indexId = rule.getId();
         IndexProxy index = indexMapRef.removeIndexProxy( indexId );
