@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 /**
  * Default empty implementation of StoreMigrationParticipant.
@@ -41,7 +41,7 @@ public class AbstractStoreMigrationParticipant implements StoreMigrationParticip
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
     }

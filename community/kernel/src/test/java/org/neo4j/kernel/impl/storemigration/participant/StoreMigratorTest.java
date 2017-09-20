@@ -37,9 +37,9 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -199,13 +199,13 @@ public class StoreMigratorTest
         neoStore.createNewFile();
 
         // Monitor what happens
-        MySection progressMonitor = new MySection();
+        MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
-        migrator.migrate( graphDbDir, directory.directory( "migrationDir" ), progressMonitor,
+        migrator.migrate( graphDbDir, directory.directory( "migrationDir" ), progressReporter,
                 StandardV3_0.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         // Should not have started any migration
-        assertFalse( progressMonitor.started );
+        assertFalse( progressReporter.started );
     }
 
     private StoreMigrator newStoreMigrator()
@@ -214,7 +214,7 @@ public class StoreMigratorTest
                 Config.defaults(), NullLogService.getInstance() );
     }
 
-    private static class MySection implements MigrationProgressMonitor.Section
+    private static class MyProgressReporter implements ProgressReporter
     {
         public boolean started;
 

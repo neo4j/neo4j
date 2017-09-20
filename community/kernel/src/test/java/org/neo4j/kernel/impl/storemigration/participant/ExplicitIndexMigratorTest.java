@@ -31,7 +31,7 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -51,7 +51,7 @@ public class ExplicitIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final LogProvider logProvider = mock( LogProvider.class );
-    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+    private final ProgressReporter progressMonitor = mock( ProgressReporter.class );
     private final File storeDir = mock( File.class );
     private final File migrationDir = mock( File.class );
     private final File originalIndexStore = mock( File.class );
@@ -172,7 +172,7 @@ public class ExplicitIndexMigratorTest
 
         @Override
         LuceneExplicitIndexUpgrader createLuceneExplicitIndexUpgrader( Path indexRootPath,
-                MigrationProgressMonitor.Section progressMonitor )
+                ProgressReporter progressReporter )
         {
             return new HumbleExplicitIndexUpgrader( indexRootPath, successfullMigration );
         }

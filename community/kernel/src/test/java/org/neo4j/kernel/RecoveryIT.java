@@ -51,6 +51,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -81,6 +82,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -115,6 +117,7 @@ public class RecoveryIT
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final RandomRule random = new RandomRule();
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
     @Rule
     public final RuleChain rules = RuleChain.outerRule( random ).around( fileSystemRule ).around( directory );
@@ -145,6 +148,29 @@ public class RecoveryIT
 
         database.shutdown();
         recoveredDatabase.shutdown();
+    }
+
+    @Test
+    public void reportProgressOnRecovery() throws IOException
+    {
+        GraphDatabaseService database = startDatabase( directory.graphDbDir() );
+        for ( int i = 0; i < 10; i++ )
+        {
+            try ( Transaction transaction = database.beginTx() )
+            {
+                database.createNode();
+                transaction.success();
+            }
+        }
+
+        File restoreDbStoreDir = copyTransactionLogs();
+        GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
+        try ( Transaction transaction = recoveredDatabase.beginTx() )
+        {
+            assertEquals( 10, Iterables.count( recoveredDatabase.getAllNodes() ) );
+        }
+        logProvider.assertContainsMessageContaining( "10% completed" );
+        logProvider.assertContainsMessageContaining( "100% completed" );
     }
 
     @Test
@@ -757,7 +783,7 @@ public class RecoveryIT
 
     private GraphDatabaseService startDatabase( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        return new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( storeDir );
     }
 
     private File copyTransactionLogs() throws IOException

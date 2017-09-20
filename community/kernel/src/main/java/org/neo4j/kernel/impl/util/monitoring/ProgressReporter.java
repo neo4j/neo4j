@@ -17,29 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.monitoring;
+package org.neo4j.kernel.impl.util.monitoring;
 
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
-
-public interface MigrationProgressMonitor
+/**
+ * Progress indicator to track progress of long running processes.
+ * Reporter should be configured with maximum number of progress steps, by starting it.
+ * Each small step of long running task then responsible to call {@link #progress(long)} to inform about ongoing
+ * progress.
+ * In the end {@link #completed()} should be invoked to signal about execution completion.
+ */
+public interface ProgressReporter
 {
     /**
-     * Signals that the migration process has started.
-     * @param numStages The number of migration stages is the migration process that we are monitoring.
+     * @param max max progress, which {@link #progress(long)} moves towards.
      */
-    void started( int numStages );
+    void start( long max );
 
     /**
-     * Signals that migration goes into section with given {@code name}.
+     * Percentage completeness for the current section.
      *
-     * @param name descriptive name of the section to migration.
-     * @return {@link ProgressReporter} which should be notified about progress in the given section.
+     * @param add progress to add towards a maximum.
      */
-    ProgressReporter startSection( String name );
+    void progress( long add );
 
     /**
-     * The migration process has completed successfully.
+     * Called if this section was completed successfully.
      */
     void completed();
-
 }

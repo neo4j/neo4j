@@ -77,12 +77,12 @@ import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.CustomIOConfigValidator;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
@@ -146,7 +146,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         if ( versionToMigrateFrom.equals( StandardV2_3.STORE_VERSION ) )
@@ -195,7 +195,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // Some form of migration is required (a fallback/catch-all option)
             migrateWithBatchImporter( storeDir, migrationDir,
                     lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
-                    lastTxLogPosition.getByteOffset(), progressMonitor, oldFormat, newFormat );
+                    lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
         }
         // update necessary neostore records
         LogPosition logPosition = readLastTxLogPosition( migrationDir );
@@ -337,7 +337,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void migrateWithBatchImporter( File storeDir, File migrationDir, long lastTxId, long lastTxChecksum,
-            long lastTxLogVersion, long lastTxLogByteOffset, MigrationProgressMonitor.Section progressMonitor,
+            long lastTxLogVersion, long lastTxLogByteOffset, ProgressReporter progressReporter,
             RecordFormats oldFormat, RecordFormats newFormat )
             throws IOException
     {
@@ -366,7 +366,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             // We have to make sure to keep the token ids if we're migrating properties/labels
             BatchImporter importer = new ParallelBatchImporter( migrationDir.getAbsoluteFile(), fileSystem, pageCache,
                     importConfig, logService,
-                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressMonitor,
+                    withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
                             importConfig ), importConfig ), additionalInitialIds, config, newFormat );
             InputIterable<InputNode> nodes =
                     legacyNodesAsInput( legacyStore, requiresPropertyMigration, nodeInputCursors );
@@ -483,9 +483,9 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     StoreType.SCHEMA};
 
             // Migrate these stores silently because they are usually very small
-            MigrationProgressMonitor.Section section = SilentMigrationProgressMonitor.NO_OP_SECTION;
+            ProgressReporter progressReporter = SilentProgressReporter.INSTANCE;
 
-            migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, section, storesToMigrate, StoreType.NODE );
+            migrator.migrate( storeDir, oldFormat, migrationDir, newFormat, progressReporter, storesToMigrate, StoreType.NODE );
         }
     }
 
@@ -537,11 +537,11 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     }
 
     private ExecutionMonitor migrationBatchImporterMonitor( NeoStores legacyStore,
-            final MigrationProgressMonitor.Section progressMonitor, Configuration config )
+            final ProgressReporter progressReporter, Configuration config )
     {
         return new BatchImporterProgressMonitor(
                 legacyStore.getNodeStore().getHighId(), legacyStore.getRelationshipStore().getHighId(),
-                config, progressMonitor );
+                config, progressReporter );
     }
 
     private InputIterable<InputRelationship> legacyRelationshipsAsInput( NeoStores legacyStore,
@@ -730,21 +730,21 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
 
     private class BatchImporterProgressMonitor extends CoarseBoundedProgressExecutionMonitor
     {
-        private final MigrationProgressMonitor.Section progressMonitor;
+        private final ProgressReporter progressReporter;
 
         BatchImporterProgressMonitor( long highNodeId, long highRelationshipId,
                 org.neo4j.unsafe.impl.batchimport.Configuration configuration,
-                MigrationProgressMonitor.Section progressMonitor )
+                ProgressReporter progressReporter )
         {
             super( highNodeId, highRelationshipId, configuration );
-            this.progressMonitor = progressMonitor;
-            this.progressMonitor.start( total() );
+            this.progressReporter = progressReporter;
+            this.progressReporter.start( total() );
         }
 
         @Override
         protected void progress( long progress )
         {
-            progressMonitor.progress( progress );
+            progressReporter.progress( progress );
         }
     }
 }

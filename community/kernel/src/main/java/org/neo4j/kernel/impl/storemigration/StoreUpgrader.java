@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -203,10 +203,10 @@ public class StoreUpgrader
         {
             for ( StoreMigrationParticipant participant : participants )
             {
-                Section section = progressMonitor.startSection( participant.getName() );
-                participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
+                ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
+                participant.migrate( storeDir, migrationDirectory, progressReporter, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
-                section.completed();
+                progressReporter.completed();
             }
         }
         catch ( IOException | UncheckedIOException e )

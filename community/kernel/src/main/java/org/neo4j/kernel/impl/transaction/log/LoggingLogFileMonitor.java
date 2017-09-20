@@ -23,8 +23,8 @@ import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -32,7 +32,7 @@ import static java.lang.String.format;
 public class LoggingLogFileMonitor implements
         PhysicalLogFile.Monitor,
         LogRotation.Monitor, RecoveryMonitor,
-        PositionToRecoverFrom.Monitor
+        RecoveryStartInformationProvider.Monitor
 {
     private long firstTransactionRecovered = -1;
     private long lastTransactionRecovered;

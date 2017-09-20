@@ -39,7 +39,7 @@ import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
 
 public class DefaultRecoveryService implements RecoveryService
 {
-    private final PositionToRecoverFrom positionToRecoverFrom;
+    private final RecoveryStartInformationProvider recoveryStartInformationProvider;
     private final StorageEngine storageEngine;
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
@@ -47,19 +47,19 @@ public class DefaultRecoveryService implements RecoveryService
 
     public DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
-            LogVersionRepository logVersionRepository, PositionToRecoverFrom.Monitor monitor )
+            LogVersionRepository logVersionRepository, RecoveryStartInformationProvider.Monitor monitor )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
-        this.positionToRecoverFrom = new PositionToRecoverFrom( logTailScanner, monitor );
+        this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, monitor );
     }
 
     @Override
-    public LogPosition getPositionToRecoverFrom() throws IOException
+    public RecoveryStartInformation getRecoveryStartInformation() throws IOException
     {
-        return positionToRecoverFrom.get();
+        return recoveryStartInformationProvider.get();
     }
 
     @Override

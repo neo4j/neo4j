@@ -25,16 +25,15 @@ import java.io.IOException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 
-import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
 /**
  * An external tool that can determine if a given store will need recovery.
@@ -64,6 +63,6 @@ public class RecoveryRequiredChecker
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
         LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, reader, monitors );
-        return new PositionToRecoverFrom( tailScanner, NO_MONITOR ).get() != LogPosition.UNSPECIFIED;
+        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 }

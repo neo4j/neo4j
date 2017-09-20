@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -60,7 +60,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         IndexImplementation indexImplementation = indexProviders.get( LUCENE_EXPLICIT_INDEX_PROVIDER_NAME );
@@ -111,7 +111,7 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
         return migrationExplicitIndexesRoot != null && fileSystem.fileExists( migrationExplicitIndexesRoot );
     }
 
-    private void migrateExplicitIndexes( MigrationProgressMonitor.Section progressMonitor ) throws IOException
+    private void migrateExplicitIndexes( ProgressReporter progressMonitor ) throws IOException
     {
         try
         {
@@ -139,12 +139,12 @@ public class ExplicitIndexMigrator extends AbstractStoreMigrationParticipant
     }
 
     LuceneExplicitIndexUpgrader createLuceneExplicitIndexUpgrader( Path indexRootPath,
-            MigrationProgressMonitor.Section progressMonitor )
+            ProgressReporter progressMonitor )
     {
         return new LuceneExplicitIndexUpgrader( indexRootPath, progressMonitor( progressMonitor ) );
     }
 
-    private Monitor progressMonitor( MigrationProgressMonitor.Section progressMonitor )
+    private Monitor progressMonitor( ProgressReporter progressMonitor )
     {
         return new Monitor()
         {

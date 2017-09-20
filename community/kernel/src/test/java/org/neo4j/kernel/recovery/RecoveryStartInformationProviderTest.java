@@ -26,16 +26,18 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom.Monitor;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider.Monitor;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
-public class PositionToRecoverFromTest
+public class RecoveryStartInformationProviderTest
 {
     private final long currentLogVersion = 2L;
     private final long logVersion = 2L;
@@ -50,11 +52,13 @@ public class PositionToRecoverFromTest
                 NO_TRANSACTION_ID, logVersion, currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
+        RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).noCommitsAfterLastCheckPoint( null );
-        assertEquals( LogPosition.UNSPECIFIED, logPosition );
+        assertEquals( LogPosition.UNSPECIFIED, recoveryStartInformation.getRecoveryPosition() );
+        assertEquals( NO_TRANSACTION_ID, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
+        assertFalse( recoveryStartInformation.isRecoveryRequired() );
     }
 
     @Test
@@ -67,11 +71,13 @@ public class PositionToRecoverFromTest
                         currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
+        RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).commitsAfterLastCheckPoint( checkPointLogPosition, 10L );
-        assertEquals( checkPointLogPosition, logPosition );
+        assertEquals( checkPointLogPosition, recoveryStartInformation.getRecoveryPosition() );
+        assertEquals( 10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
+        assertTrue( recoveryStartInformation.isRecoveryRequired() );
     }
 
     @Test
@@ -82,11 +88,13 @@ public class PositionToRecoverFromTest
                 currentLogVersion, LogEntryVersion.CURRENT ) );
 
         // when
-        LogPosition logPosition = new PositionToRecoverFrom( tailScanner, monitor ).get();
+        RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
 
         // then
         verify( monitor ).noCheckPointFound();
-        assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), logPosition );
+        assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), recoveryStartInformation.getRecoveryPosition() );
+        assertEquals( 10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
+        assertTrue( recoveryStartInformation.isRecoveryRequired() );
     }
 
     @Test
@@ -100,7 +108,7 @@ public class PositionToRecoverFromTest
         // when
         try
         {
-            new PositionToRecoverFrom( tailScanner, monitor ).get();
+            new RecoveryStartInformationProvider( tailScanner, monitor ).get();
         }
         catch ( UnderlyingStorageException ex )
         {

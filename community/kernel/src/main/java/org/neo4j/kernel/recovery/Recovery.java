@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
@@ -42,38 +43,43 @@ public class Recovery extends LifecycleAdapter
     private final RecoveryMonitor monitor;
     private final StartupStatisticsProvider startupStatistics;
     private final CorruptedLogsTruncator logsTruncator;
+    private final ProgressReporter progressReporter;
     private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
     public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
-            CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, boolean failOnCorruptedLogFiles )
+            CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, ProgressReporter progressReporter,
+            boolean failOnCorruptedLogFiles )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
         this.logsTruncator = logsTruncator;
+        this.progressReporter = progressReporter;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
     public void init() throws Throwable
     {
-        LogPosition recoveryFromPosition = recoveryService.getPositionToRecoverFrom();
-        if ( LogPosition.UNSPECIFIED.equals( recoveryFromPosition ) )
+        RecoveryStartInformation recoveryStartInformation = recoveryService.getRecoveryStartInformation();
+        if ( !recoveryStartInformation.isRecoveryRequired() )
         {
             return;
         }
 
-        monitor.recoveryRequired( recoveryFromPosition );
+        LogPosition recoveryPosition = recoveryStartInformation.getRecoveryPosition();
+
+        monitor.recoveryRequired( recoveryPosition );
         recoveryService.startRecovery();
 
-        LogPosition recoveryToPosition = recoveryFromPosition;
+        LogPosition recoveryToPosition = recoveryPosition;
         CommittedTransactionRepresentation lastTransaction = null;
         CommittedTransactionRepresentation lastReversedTransaction = null;
         try
         {
             long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryFromPosition );
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryPosition );
                     RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
             {
                 while ( transactionsToRecover.next() )
@@ -82,15 +88,17 @@ public class Recovery extends LifecycleAdapter
                     if ( lastReversedTransaction == null )
                     {
                         lastReversedTransaction = transaction;
+                        initProgressReporter( recoveryStartInformation, lastReversedTransaction );
                     }
                     recoveryVisitor.visit( transaction );
                     lowestRecoveredTxId = transaction.getCommitEntry().getTxId();
+                    reportProgress();
                 }
             }
 
             monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
 
-            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryFromPosition );
+            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
                     RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
             {
                 while ( transactionsToRecover.next() )
@@ -101,6 +109,7 @@ public class Recovery extends LifecycleAdapter
                     monitor.transactionRecovered( txId );
                     numberOfRecoveredTransactions++;
                     recoveryToPosition = transactionsToRecover.position();
+                    reportProgress();
                 }
             }
         }
@@ -117,14 +126,35 @@ public class Recovery extends LifecycleAdapter
             }
             else
             {
-                monitor.failToRecoverTransactionsAfterPosition( t, recoveryFromPosition );
-                recoveryToPosition = recoveryFromPosition;
+                monitor.failToRecoverTransactionsAfterPosition( t, recoveryPosition );
+                recoveryToPosition = recoveryPosition;
             }
         }
+        progressReporter.completed();
         logsTruncator.truncate( recoveryToPosition );
 
         recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
         startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
         monitor.recoveryCompleted( numberOfRecoveredTransactions );
+    }
+
+    private void initProgressReporter( RecoveryStartInformation recoveryStartInformation,
+            CommittedTransactionRepresentation lastReversedTransaction )
+    {
+        long numberOfTransactionToRecover =
+                getNumberOfTransactionToRecover( recoveryStartInformation, lastReversedTransaction );
+        progressReporter.start( numberOfTransactionToRecover << 1 );
+    }
+
+    private void reportProgress()
+    {
+        progressReporter.progress( 1 );
+    }
+
+    private long getNumberOfTransactionToRecover( RecoveryStartInformation recoveryStartInformation,
+            CommittedTransactionRepresentation lastReversedTransaction )
+    {
+        return lastReversedTransaction.getCommitEntry().getTxId() -
+                recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
     }
 }

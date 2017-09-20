@@ -17,28 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.monitoring;
+package org.neo4j.kernel.impl.util.monitoring;
 
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
-
-public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
+/**
+ * Progress reporter version that does not report any progress
+ */
+public class SilentProgressReporter implements ProgressReporter
 {
+    public static final SilentProgressReporter INSTANCE = new SilentProgressReporter();
 
-    @Override
-    public void started( int numStages )
+    private SilentProgressReporter()
     {
     }
 
     @Override
-    public ProgressReporter startSection( String name )
+    public void progress( long add )
     {
-        return SilentProgressReporter.INSTANCE;
+    }
+
+    @Override
+    public void start( long max )
+    {
     }
 
     @Override
     public void completed()
     {
     }
-
 }

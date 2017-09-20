@@ -34,7 +34,7 @@ public interface RecoveryService
 
     TransactionCursor getTransactionsInReverseOrder( LogPosition recoveryFromPosition ) throws IOException;
 
-    LogPosition getPositionToRecoverFrom() throws IOException;
+    RecoveryStartInformation getRecoveryStartInformation() throws IOException;
 
     RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception;
 

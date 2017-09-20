@@ -35,8 +35,8 @@ import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -58,7 +58,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         if ( isNativeLabelScanStoreMigrationRequired( storeDir ) )
@@ -70,8 +70,8 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
                 // Remove any existing file to ensure we always do migration
                 deleteNativeIndexFile( migrationDir );
 
-                progressMonitor.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
-                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationDir, progressMonitor, neoStores );
+                progressReporter.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
+                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationDir, progressReporter, neoStores );
                 lifespan.add( nativeLabelScanStore );
             }
             nativeLabelScanStoreMigrated = true;
@@ -119,11 +119,11 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     private NativeLabelScanStore getNativeLabelScanStore( File migrationDir,
-            MigrationProgressMonitor.Section progressMonitor, NeoStores neoStores )
+            ProgressReporter progressReporter, NeoStores neoStores )
     {
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
         return new NativeLabelScanStore( pageCache, migrationDir,
-                new MonitoredFullLabelStream( neoStoreIndexStoreView, progressMonitor ), false, new Monitors(),
+                new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
                 RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
@@ -153,19 +153,19 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     private class MonitoredFullLabelStream extends FullLabelStream
     {
 
-        private final MigrationProgressMonitor.Section progressMonitor;
+        private final ProgressReporter progressReporter;
 
-        MonitoredFullLabelStream( IndexStoreView indexStoreView, MigrationProgressMonitor.Section progressMonitor )
+        MonitoredFullLabelStream( IndexStoreView indexStoreView, ProgressReporter progressReporter )
         {
             super( indexStoreView );
-            this.progressMonitor = progressMonitor;
+            this.progressReporter = progressReporter;
         }
 
         @Override
         public boolean visit( NodeLabelUpdate update ) throws IOException
         {
             boolean visit = super.visit( update );
-            progressMonitor.progress( 1 );
+            progressReporter.progress( 1 );
             return visit;
         }
     }
