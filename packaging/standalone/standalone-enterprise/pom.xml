@@ -8,7 +8,6 @@
     <relativePath>..</relativePath>
   </parent>
 
-  <groupId>org.neo4j.assembly</groupId>
   <artifactId>neo4j-enterprise-standalone</artifactId>
   <packaging>pom</packaging>
 

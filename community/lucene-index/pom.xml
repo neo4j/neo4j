@@ -16,7 +16,6 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.index</bundle.namespace>
     <short-name>lucene-index</short-name>
     <version-package>index.impl.lucene</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -142,7 +141,7 @@ the relevant Commercial Agreement.
       </plugin>
 
       <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>

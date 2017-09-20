@@ -18,12 +18,9 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.cypher</bundle.namespace>
     <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.skip>true</docs-plugin.skip>
-    <componentversion.skip>true</componentversion.skip>
   </properties>
 
   <scm>
@@ -52,43 +49,13 @@
 
   <build>
     <plugins>
-
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.2.0</version>
-        <executions>
-          <execution>
-            <id>scala-compile</id>
-            <goals>
-              <goal>add-source</goal>
-              <goal>compile</goal>
-            </goals>
-            <phase>process-resources</phase>
-          </execution>
-          <execution>
-            <id>scala-test-compile</id>
-            <phase>${scala-test-compile-phase}</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <args>
-              <arg>-Xmax-classfile-name</arg>
-              <arg>100</arg>
-              <!-- arg>-deprecation</arg -->
-          </args>
-          <jvmArgs>
-            <jvmArg>-Xms64m</jvmArg>
-            <jvmArg>-Xmx1024m</jvmArg>
-          </jvmArgs>
-        </configuration>
       </plugin>
 
       <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>
@@ -135,7 +102,7 @@
         <plugin>
           <groupId>org.scalastyle</groupId>
           <artifactId>scalastyle-maven-plugin</artifactId>
-          <version>0.4.0</version>
+          <version>1.0.0</version>
           <configuration>
             <verbose>false</verbose>
             <failOnViolation>true</failOnViolation>
@@ -199,7 +166,6 @@
     <dependencies>
 
       <!-- scala test dependencies -->
-
       <dependency>
         <groupId>org.scalatest</groupId>
         <artifactId>scalatest_2.11</artifactId>
@@ -240,7 +206,6 @@
       </dependency>
 
       <!-- neo4j -->
-
       <dependency>
         <groupId>org.neo4j</groupId>
         <artifactId>neo4j-kernel</artifactId>
@@ -285,7 +250,6 @@
       </dependency>
 
       <!-- other -->
-
       <dependency>
         <groupId>org.parboiled</groupId>
         <artifactId>parboiled-scala_2.11</artifactId>
@@ -297,7 +261,6 @@
           </exclusion>
         </exclusions>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
 </project>

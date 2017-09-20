@@ -8,7 +8,6 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -20,7 +19,6 @@
   <properties>
     <short-name>neo4j</short-name>
     <version-package>impl.neo4j</version-package>
-    <bundle.namespace>org.neo4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <javadoc.skip>false</javadoc.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
@@ -183,7 +181,7 @@ the relevant Commercial Agreement.
           </execution>
           <execution>
             <id>copy-dependency-sources</id>
-            <phase>${attach-javadoc-phase}</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -228,7 +226,7 @@ the relevant Commercial Agreement.
           </execution>
           <execution>
             <id>create-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
+            <phase>package</phase>
             <goals><goal>jar</goal></goals>
             <configuration>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>

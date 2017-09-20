@@ -40,7 +40,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j</bundle.namespace>
     <short-name>kernel</short-name>
     <version-package>kernel.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -134,7 +133,7 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>
@@ -143,10 +142,16 @@ the relevant Commercial Agreement.
             <include>org/neo4j/procedure/*</include>
             <include>org/neo4j/helpers/collection/*</include>
           </includes>
-          <excludes>
-            <exclude>org/neo4j/unsafe/batchinsert/DirectRecordAccess</exclude>
-            <exclude>org/neo4j/unsafe/batchinsert/DirectRecordAccessSet</exclude>
-          </excludes>
+          <ignored combine.children="append">
+            <difference>
+              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccess</className>
+              <differenceType>8001</differenceType>
+            </difference>
+            <difference>
+              <className>org/neo4j/unsafe/batchinsert/DirectRecordAccessSet</className>
+              <differenceType>8001</differenceType>
+            </difference>
+          </ignored>
         </configuration>
       </plugin>
     </plugins>

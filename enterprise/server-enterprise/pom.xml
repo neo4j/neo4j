@@ -17,7 +17,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
     <short-name>server-enterprise</short-name>
     <version-package>server.enterprise</version-package>
     <neo4j-server.mainClass>org.neo4j.server.enterprise.EnterpriseEntryPoint</neo4j-server.mainClass>

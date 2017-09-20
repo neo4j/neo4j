@@ -33,7 +33,6 @@ import javax.ws.rs.core.Response;
 
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.rest.management.repr.ServerRootRepresentation;
 

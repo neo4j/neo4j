@@ -35,7 +35,6 @@
 
   <properties>
     <short-name>neo4j-standalone</short-name>
-    <docs-plugin.skip>true</docs-plugin.skip>
 
     <!-- Document substitution properties are in document.properties file -->
 
@@ -129,17 +128,6 @@
       <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>wagon-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>upload-to-dist-server</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>

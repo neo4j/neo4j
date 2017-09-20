@@ -19,7 +19,6 @@
   <packaging>jar</packaging>
 
   <properties>
-    <bundle.namespace>org.neo4j.kernel.ha</bundle.namespace>
     <short-name>ha</short-name>
     <version-package>kernel.ha.impl</version-package>
   </properties>

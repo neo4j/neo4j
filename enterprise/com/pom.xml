@@ -6,7 +6,6 @@
     <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-com</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -16,8 +15,6 @@
   <properties>
     <short-name>com</short-name>
     <version-package>com.impl</version-package>
-    <bundle.namespace>org.neo4j.com</bundle.namespace>
-    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>
@@ -49,7 +46,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <executions>
           <execution>

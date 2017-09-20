@@ -10,7 +10,6 @@
   <properties>
     <short-name>graphdb-api</short-name>
     <version-package>graphdb</version-package>
-    <bundle.namespace>org.neo4j.graphdb</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>

@@ -22,8 +22,6 @@
     <properties>
         <short-name>harness-enterprise</short-name>
         <version-package>server.impl.api</version-package>
-        <bundle.namespace>org.neo4j.server.enterprise</bundle.namespace>
-        <docs-plugin.skip>true</docs-plugin.skip>
         <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     </properties>
 

@@ -9,7 +9,6 @@
 
   <properties>
     <short-name>logging</short-name>
-    <bundle.namespace>org.neo4j.logging</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>

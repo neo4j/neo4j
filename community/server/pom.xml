@@ -38,7 +38,6 @@
   <packaging>jar</packaging>
 
   <properties>
-    <bundle.namespace>org.neo4j.server</bundle.namespace>
     <short-name>server</short-name>
     <version-package>server.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
@@ -346,30 +345,28 @@
           <execution>
             <id>sources</id>
             <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
             <configuration>
-              <attach>true</attach>
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
                 <descriptor>src/main/assemblies/sources-assembly.xml</descriptor>
               </descriptors>
             </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
           </execution>
           <execution>
             <id>test-sources</id>
             <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
             <configuration>
-              <attach>true</attach>
               <appendAssemblyId>true</appendAssemblyId>
               <descriptors>
                 <descriptor>src/main/assemblies/test-sources-assembly.xml</descriptor>
               </descriptors>
             </configuration>
-            <goals>
-              <goal>single</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>
@@ -458,36 +455,6 @@
       </plugin>
 
     </plugins>
-
-    <pluginManagement>
-      <plugins>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>com.github.searls</groupId>
-                    <artifactId>jasmine-maven-plugin</artifactId>
-                    <versionRange>[1.2.0,)</versionRange>
-                    <goals>
-                      <goal>test</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
 
   </build>
 

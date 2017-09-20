@@ -45,24 +45,11 @@
 
   <properties>
     <version-package>cypher.internal</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
     <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-    <doclint-groups>none</doclint-groups>
   </properties>
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
@@ -71,25 +58,17 @@
   </build>
 
   <dependencies>
-
-    <!-- shared versions are defined in the parent pom -->
-
     <!-- scala -->
-
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
     </dependency>
-
     <dependency>
-      <artifactId>scala-reflect</artifactId>
       <groupId>org.scala-lang</groupId>
-      <version>${scala.version}</version>
+      <artifactId>scala-reflect</artifactId>
     </dependency>
 
     <!-- scala test dependencies -->
-
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_2.11</artifactId>
@@ -119,7 +98,6 @@
     </dependency>
 
     <!-- neo4j -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
@@ -143,7 +121,6 @@
     </dependency>
 
     <!-- neo4j testing -->
-
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-common</artifactId>

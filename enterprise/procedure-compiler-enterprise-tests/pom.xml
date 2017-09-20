@@ -35,7 +35,6 @@
         </license>
     </licenses>
 
-
     <scm>
         <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
         <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

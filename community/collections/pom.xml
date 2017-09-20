@@ -10,14 +10,12 @@
   <properties>
     <short-name>collections</short-name>
     <version-package>collections.impl</version-package>
-    <bundle.namespace>org.neo4j.helpers.collection</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-collections</artifactId>
-  <groupId>org.neo4j</groupId>
   <version>3.4.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>

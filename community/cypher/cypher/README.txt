@@ -33,5 +33,5 @@ To get the Cypher project working in Eclipse (with the above plugins installed):
 * Use File -> Import... -> Existing Maven Projects to import the project.
 * After the import has finished, right-click on the project and
   -> Maven -> Update Project Configuration...
-* Make sure to set the Scala version to 2.10.* for the projects.
+* Make sure to set the Scala version to 2.11.* for the projects.
 

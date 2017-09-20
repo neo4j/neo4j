@@ -16,10 +16,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.kernel.impl.query</bundle.namespace>
     <short-name>query-logging</short-name>
     <version-package>kernel.impl.query</version-package>
-    <docs-plugin.skip>false</docs-plugin.skip>
   </properties>
 
   <scm>

@@ -6,7 +6,6 @@
     <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-backup</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -16,7 +15,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
     <version-package>backup.impl</version-package>
   </properties>
@@ -50,7 +48,7 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>

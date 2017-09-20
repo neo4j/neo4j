@@ -12,9 +12,7 @@
   <version>3.4.0-SNAPSHOT</version>
 
   <name>Neo4j - Generic shell</name>
-  <description>
-		A generic command shell with a client and server part.
-  </description>
+  <description>A generic command shell with a client and server part.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -28,7 +26,6 @@
     <jline.artifactId>jline</jline.artifactId>
     <jline.version>2.12</jline.version>
     <jline.main.version>2.12</jline.main.version>
-    <bundle.namespace>org.neo4j.shell</bundle.namespace>
     <short-name>shell</short-name>
     <version-package>shell.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>

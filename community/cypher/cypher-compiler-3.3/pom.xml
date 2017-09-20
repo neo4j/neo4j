@@ -23,8 +23,6 @@
 
   <properties>
     <version-package>cypher.internal.compiler.v3_1</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <licenses>
@@ -49,21 +47,6 @@
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-          <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-            <arg>-Xlint</arg>
-          </args>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
@@ -80,13 +63,11 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
     </dependency>
 
     <dependency>
       <artifactId>scala-reflect</artifactId>
       <groupId>org.scala-lang</groupId>
-      <version>${scala.version}</version>
     </dependency>
 
     <!-- scala test dependencies -->
