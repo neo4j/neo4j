@@ -28,10 +28,10 @@ import javax.management.ObjectName;
 
 import org.neo4j.jmx.impl.ConfigurationBean;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.server.ExclusiveServerTestBase;
@@ -89,7 +89,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
     {
         // Given
-        final int customPort = findFreeShellPortToUse( 8881 );
+        final int customPort = PortAuthority.allocatePort();
 
         server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( ShellSettings.remote_shell_enabled.name(), Settings.TRUE )
@@ -125,22 +125,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         {
             assertThat( "Should have been got connection refused", e.getMessage(),
                     containsString( "Connection refused" ) );
-        }
-    }
-
-    private int findFreeShellPortToUse( int startingPort )
-    {
-        // Make sure there's no other random stuff on that port
-        while ( true )
-        {
-            try
-            {
-                ShellLobby.newClient( startingPort++ ).shutdown();
-            }
-            catch ( ShellException e )
-            {   // Good
-                return startingPort;
-            }
         }
     }
 

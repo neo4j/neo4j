@@ -109,6 +109,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         relativeProperties.put( bolt.type.name(), "BOLT" );
         relativeProperties.put( bolt.enabled.name(), "true" );
         relativeProperties.put( bolt.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( bolt.listen_address.name(), "localhost:0" );
 
         relativeProperties.put( DatabaseManagementSystemSettings.database_path.name(),
                 homeDir.absolutePath().getAbsolutePath() );
