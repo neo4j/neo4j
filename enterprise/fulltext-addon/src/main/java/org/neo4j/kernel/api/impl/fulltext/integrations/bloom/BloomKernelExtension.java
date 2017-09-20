@@ -75,11 +75,11 @@ class BloomKernelExtension extends LifecycleAdapter
             List<String> properties = getProperties();
             Analyzer analyzer = getAnalyzer();
 
-        Log log = logService.getInternalLog( FulltextProvider.class );
-        provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-        fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
-        fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
+            Log log = logService.getInternalLog( FulltextProvider.class );
+            provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
+            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
 
             provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
