@@ -24,7 +24,7 @@ import org.apache.lucene.document.Document;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -271,7 +271,7 @@ class FulltextUpdateApplier
         {
             Thread.currentThread().setName( APPLIER_THREAD_NAME );
             waitForDatabaseToBeAvailable();
-            Set<WritableFulltext> refreshableSet = Collections.newSetFromMap( new IdentityHashMap<>() );
+            Set<WritableFulltext> refreshableSet = new HashSet<>();
             List<BinaryLatch> latches = new ArrayList<>();
 
             FulltextIndexUpdate update;
