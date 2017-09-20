@@ -37,15 +37,19 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class BloomIT
 {
@@ -65,8 +69,18 @@ public class BloomIT
     @Before
     public void before() throws Exception
     {
+        createTestGraphDatabaseFactory();
+        configureBloomExtension();
+    }
+
+    private void createTestGraphDatabaseFactory()
+    {
         factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
+    }
+
+    private void configureBloomExtension()
+    {
         factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
     }
 
@@ -121,6 +135,183 @@ public class BloomIT
         assertFalse( result.hasNext() );
         result = db.execute( String.format( NODES, "en" ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
+    {
+        createTestGraphDatabaseFactory();
+        db = factory.newEmbeddedDatabase( testDirectory.graphDbDir() );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            node.setProperty( "prop", "Roskildevej 32" ); // Copenhagen Zoo is important to find.
+            nodeId = node.getId();
+            tx.success();
+        }
+        db.shutdown();
+
+        configureBloomExtension();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
+        db = builder.newGraphDatabase();
+
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+
+        Result result = db.execute( String.format( NODES, "Roskildevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void startupPopulationShouldNotCauseDuplicates() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Jyllingevej" );
+            tx.success();
+        }
+
+        // Verify it's indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Jyllingevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+
+        db.shutdown();
+        db = builder.newGraphDatabase();
+
+        // Verify it's STILL indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        result = db.execute( String.format( NODES, "Jyllingevej" ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Esplanaden" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This should no longer be indexed
+            db.getNodeById( nodeId ).delete();
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        // Verify that the node is no longer indexed
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Esplanaden" ) );
+        assertFalse( result.hasNext() );
+        result.close();
+    }
+
+    @Test
+    public void staleDataFromPropertyRemovalShouldNotBeAccessibleAfterConfigurationChange() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        db = builder.newGraphDatabase();
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Esplanaden" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This should no longer be indexed
+            db.getNodeById( nodeId ).removeProperty( "prop" );
+            tx.success();
+        }
+
+        db.shutdown();
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        // Verify that the node is no longer indexed
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Esplanaden" ) );
+        assertFalse( result.hasNext() );
+        result.close();
+    }
+
+    @Test
+    public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
+    {
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Langelinie Pavillinen" );
+            tx.success();
+        }
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "Langelinie" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+
+            Thread th = new Thread( () ->
+            {
+                try ( Transaction tx1 = db.beginTx() )
+                {
+                    db.createNode().setProperty( "prop", "Den Lille Havfrue, Langelinie" );
+                    tx1.success();
+                }
+            } );
+            th.start();
+            th.join();
+
+            try ( Result result = db.execute( String.format( NODES, "Langelinie" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 2L ) );
+            }
+        }
     }
 
     @Test

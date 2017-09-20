@@ -19,32 +19,29 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.document.Document;
-
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.logging.Log;
 
 class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
 {
-
     private final FulltextProvider fulltextProvider;
     private final Log log;
+    private final FulltextUpdateApplier applier;
 
-    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, Log log )
+    FulltextTransactionEventUpdater( FulltextProvider fulltextProvider, Log log,
+                                     FulltextUpdateApplier applier )
     {
         this.fulltextProvider = fulltextProvider;
         this.log = log;
+        this.applier = applier;
     }
 
     @Override
@@ -87,77 +84,34 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
-        //update node indices
         try
         {
+            List<AsyncFulltextIndexOperation> completions = new ArrayList<>();
+            Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
+            Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
+
+            //update node indices
             for ( WritableFulltext nodeIndex : fulltextProvider.writableNodeIndices() )
             {
-                Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
-                removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
-                updatePropertyData( nodeMap, nodeIndex );
-                refreshIndex( nodeIndex );
+                completions.add( applier.removePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex ) );
+                completions.add( applier.updatePropertyData( nodeMap, nodeIndex ) );
             }
+
             //update relationship indices
             for ( WritableFulltext relationshipIndex : fulltextProvider.writableRelationshipIndices() )
             {
-                Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
-                removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex );
-                updatePropertyData( relationshipMap, relationshipIndex );
-                refreshIndex( relationshipIndex );
+                completions.add( applier.removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex ) );
+                completions.add( applier.updatePropertyData( relationshipMap, relationshipIndex ) );
+            }
+
+            for ( AsyncFulltextIndexOperation completion : completions )
+            {
+                completion.awaitCompletion();
             }
         }
         catch ( IOException e )
         {
             log.error( "Unable to update fulltext index", e );
-        }
-    }
-
-    private <E extends Entity> void updatePropertyData( Map<Long,Map<String,Object>> state, WritableFulltext index ) throws IOException
-    {
-        for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
-        {
-            Set<String> indexedProperties = index.properties();
-            if ( !Collections.disjoint( indexedProperties, stateEntry.getValue().keySet() ) )
-            {
-                long entityId = stateEntry.getKey();
-                Map<String,Object> allProperties =
-                        stateEntry.getValue().entrySet().stream().filter( entry -> indexedProperties.contains( entry.getKey() ) ).collect(
-                                Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
-                if ( !allProperties.isEmpty() )
-                {
-                    Document document = LuceneFulltextDocumentStructure.documentRepresentingProperties( entityId, allProperties );
-                    index.getIndexWriter().updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( entityId ), document );
-                }
-            }
-        }
-    }
-
-    private <E extends Entity> void removePropertyData( Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state,
-            WritableFulltext index ) throws IOException
-    {
-        for ( PropertyEntry<E> propertyEntry : propertyEntries )
-        {
-            if ( index.properties().contains( propertyEntry.key() ) )
-            {
-                long entityId = propertyEntry.entity().getId();
-                Map<String,Object> allProperties = state.get( entityId );
-                if ( allProperties == null || allProperties.isEmpty() )
-                {
-                    index.getIndexWriter().deleteDocuments( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( entityId ) );
-                }
-            }
-        }
-    }
-
-    private void refreshIndex( WritableFulltext index )
-    {
-        try
-        {
-            index.maybeRefreshBlocking();
-        }
-        catch ( IOException e )
-        {
-            log.error( "Failed to refresh fulltext after updates", e );
         }
     }
 

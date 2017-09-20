@@ -70,8 +70,13 @@ public class FulltextFactory
     public void createFulltextIndex( String identifier, FulltextProvider.FulltextIndexType type, List<String> properties, FulltextProvider provider )
             throws IOException
     {
+        // First delete any existing index, since we don't know if whatever it might contain actually matches our
+        // current configuration:
+        File indexRootFolder = new File( indexDir, identifier );
+        fileSystem.deleteRecursively( indexRootFolder );
+
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
-        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( new File( indexDir, identifier ) );
+        storageBuilder.withFileSystem( fileSystem ).withIndexFolder( indexRootFolder );
         provider.register( new LuceneFulltext( storageBuilder.build(), partitionFactory, properties, analyzer, identifier, type ) );
     }
 }
