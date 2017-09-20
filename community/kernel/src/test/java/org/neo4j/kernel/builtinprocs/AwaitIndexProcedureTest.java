@@ -55,8 +55,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class AwaitIndexProcedureTest
 {
-    private static final int TIMEOUT = 40;
-    private static final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
+    private static final int TIMEOUT = 10;
+    private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
     private final ReadOperations operations = mock( ReadOperations.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction( operations ), null );
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
@@ -167,7 +167,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
             }
             catch ( ProcedureException e )
             {
@@ -197,7 +197,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+                procedure.awaitIndex( ":Person(name)", TIMEOUT, TimeUnit.MILLISECONDS );
             }
             catch ( ProcedureException e )
             {
@@ -205,7 +205,7 @@ public class AwaitIndexProcedureTest
             }
         } ).start();
 
-        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), TIMEOUT, TimeUnit.SECONDS );
+        assertEventually( "Procedure did not time out", exception::get, not( nullValue() ), TIMEOUT, TIME_UNIT );
         //noinspection ThrowableResultOfMethodCallIgnored
         assertThat( exception.get().status(), is( Status.Procedure.ProcedureTimedOut ) );
     }
