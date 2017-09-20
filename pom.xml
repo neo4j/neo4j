@@ -69,7 +69,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <neo4j.java.version>1.8</neo4j.java.version>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>5.5.0</lucene.version>
@@ -154,10 +155,6 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.3</version>
-          <configuration>
-            <source>${neo4j.java.version}</source>
-            <target>${neo4j.java.version}</target>
-          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
