@@ -1209,7 +1209,7 @@ public class GBPTreeTest
     }
 
     @Test
-    public void shouldNotCheckpointOnCloseIfNoChangesHappened() throws Exception
+    public void shouldNotCheckpointOnClose() throws Exception
     {
         // GIVEN
         CheckpointCounter checkpointCounter = new CheckpointCounter();
@@ -1228,6 +1228,27 @@ public class GBPTreeTest
 
         // THEN
         assertEquals( 1, checkpointCounter.count() );
+    }
+
+    @Test
+    public void shouldCheckpointEvenIfNoChanges() throws Exception
+    {
+        // GIVEN
+        CheckpointCounter checkpointCounter = new CheckpointCounter();
+
+        // WHEN
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
+        {
+            checkpointCounter.reset();
+            for ( int i = 0; i < 2; i++ )
+            {
+
+            }
+            index.checkpoint( unlimited() );
+
+            // THEN
+            assertEquals( 1, checkpointCounter.count() );
+        }
     }
 
     @Test
