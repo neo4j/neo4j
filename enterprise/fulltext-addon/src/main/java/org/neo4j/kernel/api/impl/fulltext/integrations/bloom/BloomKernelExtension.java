@@ -70,18 +70,31 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void init() throws IOException, KernelException
     {
+        if ( config.get( LoadableBloomFulltextConfig.bloom_enabled ) )
+        {
+            List<String> properties = getProperties();
+            Analyzer analyzer = getAnalyzer();
+
+            Log log = logService.getInternalLog( FulltextProvider.class );
+            provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
+            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
+
+            provider.init();
+            procedures.registerComponent( FulltextProvider.class, context -> provider, true );
+            procedures.registerProcedure( BloomProcedures.class );
+        }
+    }
+
+    private List<String> getProperties()
+    {
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
-        Analyzer analyzer = getAnalyzer();
-
-        Log log = logService.getInternalLog( FulltextProvider.class );
-        provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-        fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
-        fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
-
-        provider.init();
-        procedures.registerComponent( FulltextProvider.class, context -> provider, true );
-        procedures.registerProcedure( BloomProcedures.class );
+        if ( properties.isEmpty() )
+        {
+            throw new RuntimeException( "Properties to index must be configured for bloom fulltext" );
+        }
+        return properties;
     }
 
     private Analyzer getAnalyzer()
@@ -102,6 +115,9 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void shutdown() throws Exception
     {
-        provider.close();
+        if ( provider != null )
+        {
+            provider.close();
+        }
     }
 }

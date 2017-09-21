@@ -25,10 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Date;
 
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -36,10 +36,12 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,6 +52,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.LoadableBloomFulltextConfig.bloom_enabled;
 
 public class BloomIT
 {
@@ -63,32 +66,23 @@ public class BloomIT
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    private TestGraphDatabaseFactory factory;
     private GraphDatabaseService db;
+    private GraphDatabaseBuilder builder;
 
     @Before
     public void before() throws Exception
     {
-        createTestGraphDatabaseFactory();
-        configureBloomExtension();
-    }
-
-    private void createTestGraphDatabaseFactory()
-    {
-        factory = new TestGraphDatabaseFactory();
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-    }
-
-    private void configureBloomExtension()
-    {
-        factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
+        builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( bloom_enabled, "true" );
     }
 
     @Test
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
-        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(),
-                Collections.singletonMap( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" ) );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" );
+        db = builder.newGraphDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -112,10 +106,9 @@ public class BloomIT
     @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
-        Map<Setting<?>,String> config = new HashMap<>();
-        config.put( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
-        config.put( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
-        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
+        db = builder.newGraphDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -140,8 +133,9 @@ public class BloomIT
     @Test
     public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
     {
-        createTestGraphDatabaseFactory();
-        db = factory.newEmbeddedDatabase( testDirectory.graphDbDir() );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "something" );
+        db = builder.newGraphDatabase();
+
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -150,17 +144,17 @@ public class BloomIT
             nodeId = node.getId();
             tx.success();
         }
+        Result result = db.execute( String.format( NODES, "Roskildevej" ) );
+        assertFalse( result.hasNext() );
         db.shutdown();
 
-        configureBloomExtension();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = builder.newGraphDatabase();
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
-        Result result = db.execute( String.format( NODES, "Roskildevej" ) );
+        result = db.execute( String.format( NODES, "Roskildevej" ) );
         assertTrue( result.hasNext() );
         assertEquals( nodeId, result.next().get( ENTITYID ) );
         assertFalse( result.hasNext() );
@@ -169,7 +163,6 @@ public class BloomIT
     @Test
     public void startupPopulationShouldNotCauseDuplicates() throws Exception
     {
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
@@ -203,7 +196,6 @@ public class BloomIT
     @Test
     public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
@@ -241,7 +233,6 @@ public class BloomIT
     @Test
     public void staleDataFromPropertyRemovalShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
@@ -279,7 +270,6 @@ public class BloomIT
     @Test
     public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
     {
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
@@ -317,18 +307,38 @@ public class BloomIT
     @Test
     public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
     {
-        Map<Setting<?>,String> config = new HashMap<>();
-        expectedException.expect( new RootCauseMatcher<>( InvalidSettingException.class, "Bad value" ) );
-        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+        expectedException.expect( new RootCauseMatcher<>( RuntimeException.class, "Properties to index must be configured for bloom fulltext" ) );
+        db = builder.newGraphDatabase();
     }
 
     @Test
     public void shouldNotBeAbleToStartWithIllegalPropertyKey() throws Exception
     {
-        Map<Setting<?>,String> config = new HashMap<>();
-        config.put( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID + ", hello" );
         expectedException.expect( InvalidSettingException.class );
-        db = factory.newImpermanentDatabase( testDirectory.graphDbDir(), config );
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID + ", hello" );
+        db = builder.newGraphDatabase();
+    }
+
+    @Test
+    public void shouldBeAbleToRunConsistencyCheck() throws Exception
+    {
+        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Langelinie Pavillinen" );
+            tx.success();
+        }
+        db.shutdown();
+
+        Config config = Config.defaults( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
+        CheckConsistencyConfig checkConsistencyConfig = new CheckConsistencyConfig( true, true, true, true );
+        ConsistencyCheckService.Result result =
+                consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(),
+                        true, checkConsistencyConfig );
+        assertTrue( result.isSuccessful() );
     }
 
     @After
