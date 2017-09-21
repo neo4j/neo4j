@@ -191,8 +191,8 @@ public class PruningSchedulerTest
 
         Thread.sleep( 150 );
 
+        stopper.join();
         assertTrue( stoppedCompleted.get() );
-        stopper.join(); // just in case
 
         assertNull( ex.get() );
     }
