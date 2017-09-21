@@ -136,7 +136,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
+      executeWith(Configs.Interpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
           plan shouldNot useOperators("NodeIndexSeek")

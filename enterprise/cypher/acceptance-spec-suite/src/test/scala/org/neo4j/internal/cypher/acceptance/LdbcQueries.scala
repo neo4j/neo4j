@@ -295,7 +295,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 13, "personLastName" -> "last2-ᚠさ丵פش",
         "messageContent" -> "[f2Comment1] content", "messageDate" -> 2, "personFirstName" -> "f2"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 
@@ -914,7 +914,7 @@ object LdbcQueries {
       Map("personId" -> 3, "commentContent" -> "C01", "commentId" -> 10, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"),
       Map("personId" -> 3, "commentContent" -> "C11", "commentId" -> 11, "personLastName" -> "three-ᚠさ丵פش", "commentCreationDate" -> 1, "personFirstName" -> "friend"))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.AllExceptSlotted
+    override def expectedToSucceedIn: TestConfiguration = Configs.All
 
   }
 
@@ -1013,7 +1013,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 311,
         "personLastName" -> "two-ᚠさ丵פش", "messageContent" -> "C311", "personFirstName" -> "friend", "messageCreationDate" -> 4))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
 
   }
 
