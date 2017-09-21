@@ -22,6 +22,7 @@ package org.neo4j.helpers;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
@@ -110,11 +111,11 @@ public class Format
         {
             if ( size < KB )
             {
-                return String.format( "%.2f %s", Double.valueOf( size ), suffix );
+                return String.format( Locale.ROOT, "%.2f %s", Double.valueOf( size ), suffix );
             }
             size /= KB;
         }
-        return String.format( "%.2f TB", Double.valueOf( size ) );
+        return String.format( Locale.ROOT, "%.2f TB", Double.valueOf( size ) );
     }
 
     public static String duration( long durationMillis )

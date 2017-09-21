@@ -22,7 +22,6 @@ package org.neo4j.shell;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.omg.CORBA.SystemException;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -122,12 +121,12 @@ public class TestTransactionApps
         executeCommandExpectingException( "rollback", "Not in a transaction" );
     }
 
-    private void assertWeAreNotInATransaction() throws SystemException
+    private void assertWeAreNotInATransaction()
     {
         assertTrue( "Expected to not be in a transaction", shellServer.getActiveTransactionCount() == 0 );
     }
 
-    private void assertWeAreInATransaction() throws SystemException
+    private void assertWeAreInATransaction()
     {
 
         assertTrue( "Expected to be in a transaction", shellServer.getActiveTransactionCount() > 0 );

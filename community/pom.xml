@@ -85,6 +85,7 @@ the relevant Commercial Agreement.
     <profile>
       <id>include-cypher</id>
       <activation>
+        <jdk>!9</jdk>
         <property>
           <name>!skipCypher</name>
         </property>

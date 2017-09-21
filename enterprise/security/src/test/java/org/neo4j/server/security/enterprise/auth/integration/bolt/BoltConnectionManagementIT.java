@@ -20,6 +20,7 @@
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.hamcrest.BaseMatcher;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Before;
@@ -365,7 +366,7 @@ public class BoltConnectionManagementIT
 
         // Then
         assertThat( client, eventuallyReceives(
-                msgSuccess( allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
+                msgSuccess( CoreMatchers.<Map<? extends String,?>>allOf( hasEntry(is("fields"), equalTo(asList( "username", "connectionCount" ) )),
                         hasKey( "result_available_after" ) ) )
         ) );
 

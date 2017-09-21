@@ -29,6 +29,7 @@ import java.util.HashMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
@@ -55,7 +56,7 @@ public class DiscoveryServiceTest
     private AdvertisedSocketAddress boltAddress;
     private URI dataUri;
     private URI managementUri;
-    private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS.get() );
+    private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS );
 
     @Before
     public void setUp() throws URISyntaxException
@@ -68,7 +69,9 @@ public class DiscoveryServiceTest
         // Setup NeoServer
         ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
         when( portRegister.getLocalAddress( "bolt" ) ).thenReturn( new HostnamePort( "localhost", 7687 ) );
-        when( neoServer.getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegister );
+        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        when( neoServer.getDatabase().getGraph().getDependencyResolver() ).thenReturn( dependencyResolver );
+        when( dependencyResolver.resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegister );
     }
 
     private Config mockConfig() throws URISyntaxException
