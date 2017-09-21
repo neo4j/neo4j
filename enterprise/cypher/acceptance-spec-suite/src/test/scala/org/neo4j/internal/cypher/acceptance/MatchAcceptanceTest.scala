@@ -51,6 +51,24 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.size should equal(0)// does not throw
   }
 
+  test("other query that breaks IDP") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """
+        |MATCH (ts)
+        |MATCH (k)-[:M]->(sta)
+        |OPTIONAL MATCH (sta)<-[:N]-(p)
+        |WITH k, ts, coalesce(p, sta) AS ab
+        |MATCH (d:A)
+        |WHERE d.Id = ab.OtherId
+        |WITH k, ts, d
+        |MATCH (ts)-[:R]->(f)
+        |RETURN k, ts, f, d
+      """.stripMargin
+    )
+
+    result.size should equal(0)// does not throw
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
 
     val n1 = createLabeledNode("Neo")
