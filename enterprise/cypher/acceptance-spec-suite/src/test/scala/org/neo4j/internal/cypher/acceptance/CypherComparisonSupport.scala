@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
+import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher._
-import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -404,16 +402,20 @@ object CypherComparisonSupport {
           val reportedPlanner = arguments.collectFirst {
             case IPDPlanner(reportedPlanner) => reportedPlanner
           }
-          if(!reportedRuntime.isDefined && !reportedPlanner.isDefined) {
-            // This means we used the ProceureOrSchemaRuntime
-            // In this case we will also succeed with other configurations, because ProcedureOrSchema does not specify any
-            // Preparser options and will thus be executed for other Configs too.
-            // So, we do not want to fail if we unexpectedly succeeded here
-            // fail(s"Unexpectedly succeeded using $name for query $query")
-          } else {
-            if (runtime.acceptedRuntimeNames.contains(reportedRuntime.get) && planner.acceptedPlannerNames.contains(reportedPlanner.get)) {
-              fail(s"Unexpectedly succeeded using $name for query $query, with ${reportedRuntime.get} & ${reportedPlanner.get}")
-            }
+
+          // This means we used the ProcedureOrSchemaRuntime
+          // In this case we will also succeed with other configurations, because ProcedureOrSchema does not specify any
+          // Preparser options and will thus be executed for other Configs too.
+          // So, we do not want to fail if we unexpectedly succeeded here
+          // fail(s"Unexpectedly succeeded using $name for query $query")
+          val (reportedRuntimeName, reportedPlannerName) =
+          if ((Versions.V2_3 -> Versions.V3_2).versions.contains(version))
+            (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
+          else
+            (reportedRuntime.get, reportedPlanner.get)
+
+          if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName) && planner.acceptedPlannerNames.contains(reportedPlannerName)) {
+            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedRuntimeName & " + s"$reportedPlannerName")
           }
       }
     }
