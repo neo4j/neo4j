@@ -411,6 +411,10 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should expand from projected endpoints") {
+    /*
+    START r1 = rel(0)
+    MATCH (a)-[r1]->(b)-[r2]->(c)
+     */
     val monitor = mock[IDPQueryGraphSolverMonitor]
 
     new given {

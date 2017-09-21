@@ -29,6 +29,17 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("really weird query that breaks IDP") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """MATCH (a)
+        |WITH a WHERE true
+        |MATCH (c), (a)-[r]->(x)
+        |WHERE (a)-->(c)
+        |RETURN *""".stripMargin)
+
+    result.size should equal(0)// does not throw
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
 
     val n1 = createLabeledNode("Neo")
