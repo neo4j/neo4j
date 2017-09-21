@@ -80,6 +80,21 @@ public class ProcedureTest
     }
 
     @Test
+    public void calls_procedures_with_different_modes_returning_void()
+    {
+        try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
+                Session session = driver.session() )
+        {
+            session.run( "CALL " + procedureNamespace + ".performsWrites()" );
+            session.run( "CALL " + procedureNamespace + ".defaultMode()" );
+            session.run( "CALL " + procedureNamespace + ".readMode()" );
+            session.run( "CALL " + procedureNamespace + ".writeMode()" );
+            session.run( "CALL " + procedureNamespace + ".schemaMode()" );
+            session.run( "CALL " + procedureNamespace + ".dbmsMode()" );
+        }
+    }
+
+    @Test
     public void calls_procedures_with_simple_input_type_returning_record_with_primitive_fields()
     {
         try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
