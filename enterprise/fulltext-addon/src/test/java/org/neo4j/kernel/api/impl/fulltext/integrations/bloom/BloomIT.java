@@ -39,12 +39,15 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -76,17 +79,23 @@ public class BloomIT
     @Before
     public void before() throws Exception
     {
-        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
         builder.setConfig( bloom_enabled, "true" );
+    }
+
+    private GraphDatabaseService getDb() throws KernelException
+    {
+        GraphDatabaseService db = builder.newGraphDatabase();
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Procedures.class ).registerProcedure( BloomProcedures.class );
+        return db;
     }
 
     @Test
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "prop, relprop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -112,7 +121,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -138,7 +147,7 @@ public class BloomIT
     public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "something" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         long nodeId;
         try ( Transaction tx = db.beginTx() )
@@ -154,7 +163,7 @@ public class BloomIT
 
         builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
@@ -169,7 +178,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -187,7 +196,7 @@ public class BloomIT
         assertFalse( result.hasNext() );
 
         db.shutdown();
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         // Verify it's STILL indexed exactly once
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -202,7 +211,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -214,7 +223,7 @@ public class BloomIT
 
         db.shutdown();
         builder.setConfig( bloom_indexed_properties, "not-prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -225,7 +234,7 @@ public class BloomIT
 
         db.shutdown();
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         // Verify that the node is no longer indexed
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -239,7 +248,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
         long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
@@ -251,7 +260,7 @@ public class BloomIT
 
         db.shutdown();
         builder.setConfig( bloom_indexed_properties, "not-prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -262,7 +271,7 @@ public class BloomIT
 
         db.shutdown();
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         // Verify that the node is no longer indexed
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -275,7 +284,7 @@ public class BloomIT
     public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -312,7 +321,7 @@ public class BloomIT
     public void shouldNotBeAbleToStartWithoutConfiguringProperties() throws Exception
     {
         expectedException.expect( new RootCauseMatcher<>( RuntimeException.class, "Properties to index must be configured for bloom fulltext" ) );
-        db = builder.newGraphDatabase();
+        db = getDb();
     }
 
     @Test
@@ -320,14 +329,14 @@ public class BloomIT
     {
         expectedException.expect( InvalidSettingException.class );
         builder.setConfig( bloom_indexed_properties, "prop, " + FulltextProvider.FIELD_ENTITY_ID + ", hello" );
-        db = builder.newGraphDatabase();
+        db = getDb();
     }
 
     @Test
     public void shouldBeAbleToRunConsistencyCheck() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         try ( Transaction tx = db.beginTx() )
         {
@@ -354,7 +363,7 @@ public class BloomIT
         builder.setConfig( bloom_indexed_properties, "prop" );
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, ENGLISH );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -376,7 +385,7 @@ public class BloomIT
 
         db.shutdown();
         builder.setConfig( BloomFulltextConfig.bloom_analyzer, SWEDISH );
-        db = builder.newGraphDatabase();
+        db = getDb();
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
         try ( Transaction ignore = db.beginTx() )
@@ -398,7 +407,7 @@ public class BloomIT
         builder.setConfig( bloom_indexed_properties, "prop" );
 
         // Create a node while the index is enabled.
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().setProperty( "prop", "Hello and hello again." );
@@ -420,7 +429,7 @@ public class BloomIT
         // Re-enable the index and restart. Wait for the index to rebuild.
         db.shutdown();
         builder.setConfig( bloom_enabled, "true" );
-        db = builder.newGraphDatabase();
+        db = getDb();
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
 
         // Now we should be able to find the node that was added while the index was disabled.

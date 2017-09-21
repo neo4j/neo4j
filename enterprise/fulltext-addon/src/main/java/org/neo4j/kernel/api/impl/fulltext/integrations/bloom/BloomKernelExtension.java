@@ -89,7 +89,6 @@ class BloomKernelExtension extends LifecycleAdapter
 
             provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
-            procedures.registerProcedure( BloomProcedures.class );
         }
     }
 
