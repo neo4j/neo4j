@@ -19,10 +19,14 @@
  */
 package org.neo4j.graphdb.schema;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -31,7 +35,7 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.asList;
 
 public class ConcurrentCreateDropIndexIT
@@ -41,57 +45,65 @@ public class ConcurrentCreateDropIndexIT
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
 
-    @Test
-    public void shouldTest() throws Throwable
+    private final int threads = Runtime.getRuntime().availableProcessors();
+
+    @Before
+    public void createTokens()
     {
-        // GIVEN all the required labels created, to not disturb timings in racing threads later
-        int threads = Runtime.getRuntime().availableProcessors();
         try ( Transaction tx = db.beginTx() )
         {
             for ( int i = 0; i < threads; i++ )
             {
-                db.createNode( label( i ) );
+                db.createNode( label( i ) ).setProperty( KEY, i );
             }
             tx.success();
         }
+    }
 
+    @Test
+    public void concurrentCreatingOfIndexesShouldNotInterfere() throws Throwable
+    {
         // WHEN concurrently creating indexes for different labels
         Race race = new Race();
         for ( int i = 0; i < threads; i++ )
         {
-            int yo = i;
-            race.addContestant( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.schema().indexFor( label( yo ) ).on( KEY ).create();
-                    tx.success();
-                }
-            }, 1 );
+            race.addContestant( indexCreate( i ), 1 );
         }
         race.go();
 
         // THEN they should all be observed as existing in the end
-        List<IndexDefinition> indexes;
         try ( Transaction tx = db.beginTx() )
         {
-            indexes = asList( db.schema().getIndexes() );
+            List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
+            assertEquals( threads, indexes.size() );
+            Set<String> labels = new HashSet<>();
+            for ( IndexDefinition index : indexes )
+            {
+                assertTrue( labels.add( index.getLabel().name() ) );
+            }
             tx.success();
         }
-        assertEquals( threads, indexes.size() );
+    }
 
-        // and WHEN dropping them
-        race = new Race();
+    @Test
+    public void concurrentDroppingOfIndexesShouldNotInterfere() throws Throwable
+    {
+        // GIVEN created indexes
+        List<IndexDefinition> indexes = new ArrayList<>();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < threads; i++ )
+            {
+                indexes.add( db.schema().indexFor( label( i ) ).on( KEY ).create() );
+            }
+            tx.success();
+        }
+
+        // WHEN dropping them
+        Race race = new Race();
         for ( IndexDefinition index : indexes )
         {
-            race.addContestant( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    index.drop();
-                    tx.success();
-                }
-            }, 1 );
+            race.addContestant( indexDrop( index ), 1 );
         }
         race.go();
 
@@ -101,6 +113,74 @@ public class ConcurrentCreateDropIndexIT
             assertEquals( 0, asList( db.schema().getIndexes() ).size() );
             tx.success();
         }
+    }
+
+    @Test
+    public void concurrentMixedCreatingAndDroppingOfIndexesShouldNotInterfere() throws Throwable
+    {
+        // GIVEN created indexes
+        List<IndexDefinition> indexesToDrop = new ArrayList<>();
+        int creates = threads / 2;
+        int drops = threads - creates;
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < drops; i++ )
+            {
+                indexesToDrop.add( db.schema().indexFor( label( i ) ).on( KEY ).create() );
+            }
+            tx.success();
+        }
+
+        // WHEN dropping them
+        Race race = new Race();
+        Set<String> expectedIndexedLabels = new HashSet<>();
+        for ( int i = 0; i < creates; i++ )
+        {
+            expectedIndexedLabels.add( label( drops + i ).name() );
+            race.addContestant( indexCreate( drops + i ), 1 );
+        }
+        for ( IndexDefinition index : indexesToDrop )
+        {
+            race.addContestant( indexDrop( index ), 1 );
+        }
+        race.go();
+
+        // THEN they should all be observed as dropped in the end
+        try ( Transaction tx = db.beginTx() )
+        {
+            List<IndexDefinition> indexes = asList( db.schema().getIndexes() );
+            assertEquals( creates, indexes.size() );
+            tx.success();
+
+            for ( IndexDefinition index : indexes )
+            {
+                assertTrue( expectedIndexedLabels.remove( index.getLabel().name() ) );
+            }
+        }
+    }
+
+    private Runnable indexCreate( int labelIndex )
+    {
+        return () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().indexFor( label( labelIndex ) ).on( KEY ).create();
+                tx.success();
+            }
+        };
+    }
+
+    private Runnable indexDrop( IndexDefinition index )
+    {
+        return () ->
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                index.drop();
+                tx.success();
+            }
+        };
     }
 
     private static Label label( int i )
