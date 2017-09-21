@@ -82,23 +82,45 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       }
   }
 
+  test("graph return items in RETURN are protected") {
+    val original =
+      """FROM GRAPH AT '/test/graph2' AS myGraph
+        |MATCH (n:Person)
+        |RETURN n.name AS name GRAPHS myGraph
+      """.stripMargin
+
+    assertRewritten(original, original, SemanticFeature.MultipleGraphs)
+  }
+
+  test("graph return items in WITH are protected") {
+    val original =
+      """FROM GRAPH AT '/test/graph2' AS myGraph
+        |WITH 1 AS a GRAPHS myGraph
+        |MATCH (n:Person)
+        |WITH n GRAPHS GRAPH AT 'foo' AS fooG >> myGraph AS barG
+        |RETURN n.name AS name GRAPHS fooG, barG
+      """.stripMargin
+
+    assertRewritten(original, original, SemanticFeature.MultipleGraphs)
+  }
+
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never)
 
-  private def assertRewritten(from: String, to: String) = {
-    val fromAst = parseAndRewrite(from)
-    val fromState = LogicalPlanState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState))
+  private def assertRewritten(from: String, to: String, features: SemanticFeature*): Unit = {
+    val fromAst = parseAndRewrite(from, features: _*)
+    val fromState = LogicalPlanState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState(features: _*)))
     val toState = Namespacer.transform(fromState, ContextHelper.create())
 
-    val expectedAst = parseAndRewrite(to)
+    val expectedAst = parseAndRewrite(to, features: _*)
 
     toState.statement should equal(expectedAst)
   }
 
-  private def parseAndRewrite(queryText: String): Statement = {
+  private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val parsedAst = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState)
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeGraphReturnItems, normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*))
     rewrittenAst
   }
 }
