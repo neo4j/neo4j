@@ -31,21 +31,43 @@ import java.util.Properties;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DatabaseActionsTest
+public class DatabaseActionsIT
 {
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private File storeDir;
     private File configFile;
+
+    @Before
+    public void createFiles() throws IOException
+    {
+        storeDir = new File( testDirectory.directory(), "store_dir" );
+        storeDir.mkdirs();
+
+        configFile = new File( testDirectory.directory(), Config.DEFAULT_CONFIG_FILE_NAME );
+        Properties props = new Properties();
+        props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
+        props.setProperty( new HttpConnector( "http" ).encryption.name(), "NONE" );
+        props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
+
+        props.setProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+
+        try ( FileWriter writer = new FileWriter( configFile ) )
+        {
+            props.store( writer, "" );
+        }
+    }
 
     @Test
     public void shouldCreateMessagesLogBelowStoreDir() throws Exception
@@ -71,23 +93,6 @@ public class DatabaseActionsTest
         {
             // After
             databaseActions.stop(); // do not need to wait for the server to finish all its start procedure
-        }
-    }
-
-    @Before
-    public void createFiles() throws IOException
-    {
-        storeDir = new File( testDirectory.directory(), "store_dir" );
-        storeDir.mkdirs();
-
-        configFile = new File( testDirectory.directory(), Config.DEFAULT_CONFIG_FILE_NAME );
-        Properties props = new Properties();
-        props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
-        props.setProperty( new HttpConnector( "http" ).encryption.name(), "NONE" );
-        props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
-        try ( FileWriter writer = new FileWriter( configFile ) )
-        {
-            props.store( writer, "" );
         }
     }
 }
