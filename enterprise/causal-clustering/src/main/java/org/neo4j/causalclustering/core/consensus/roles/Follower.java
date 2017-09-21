@@ -119,6 +119,13 @@ class Follower implements RaftMessageHandler
                 break;
             }
 
+            case VOTE_RESPONSE:
+            {
+                RaftMessages.Vote.Response voteResponse = (RaftMessages.Vote.Response) message;
+                log.info( "Late vote response: %s", voteResponse );
+                break;
+            }
+
             case PRUNE_REQUEST:
             {
                 Pruning.handlePruneRequest( outcome, (RaftMessages.PruneRequest) message );

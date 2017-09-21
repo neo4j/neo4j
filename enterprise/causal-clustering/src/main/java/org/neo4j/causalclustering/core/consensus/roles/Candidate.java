@@ -137,7 +137,7 @@ class Candidate implements RaftMessageHandler
 
             case ELECTION_TIMEOUT:
             {
-                log.info( "Election timeout triggered" );
+                log.info( "Failed to get elected. Got votes from: %s", ctx.votesForMe() );
                 if ( !Election.start( ctx, outcome, log ) )
                 {
                     log.info( "Moving to FOLLOWER state after failing to start election" );
