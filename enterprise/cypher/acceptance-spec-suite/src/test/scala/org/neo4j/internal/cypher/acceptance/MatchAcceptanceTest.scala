@@ -29,6 +29,17 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("reported query that should work") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """MATCH (account23907) WHERE (ID(account23907) = 23907)
+        |MATCH (account23907)<-[rel1:`ACCOUNT`]-(result_owners)
+        |WHERE `result_owners`:`Persona::Superhero`:`Persona`
+        |   OR `result_owners`:`Persona::Supervillian`:`Persona`
+        |RETURN result_owners""".stripMargin)
+
+    result.size should equal(0)// does not throw
+  }
+
   test("really weird query that breaks IDP") {
     val result = executeWithAllPlannersAndCompatibilityMode(
       """MATCH (a)
