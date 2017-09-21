@@ -32,14 +32,12 @@ trait QueryPlanTestSupport {
   protected def replaceAnonVariables(planText: String) =
     anonPattern.replaceAllIn(planText, "$1anon[*]")
 
-  protected def havePlanLike(expectedPlan: String): Matcher[InternalExecutionResult] = new
-      Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
+  protected def matchPlan(expectedPlan: String): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
+    override def apply(plan: InternalPlanDescription): MatchResult = {
       val planText = replaceAnonVariables(plan.toString.trim.fixNewLines)
       val expectedText = replaceAnonVariables(expectedPlan.trim.fixNewLines)
       MatchResult(
-        matches = planText.startsWith(expectedText),
+        matches = planText.contains(expectedText),
         rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
         rawNegatedFailureMessage = s"Plan unexpected matches expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText")
     }

@@ -20,10 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 
-class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("should not find shortest path due to relationship uniquess") {
     val p0 = createLabeledNode(Map("id" -> "2228"), "Model")

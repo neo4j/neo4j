@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
@@ -120,18 +119,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
     }
   }
-
-  private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-    val events = trace.collectFirst {
-      case event: UnableToHandleQuery => event
-    }
-    events.orElse {
-      fail(s"Unexpectedly used the new planner on: $query")
-    }
-  }
-
-  def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndMaybeCompatibilityMode(false, queryText, params: _*)
 
   def executeScalarWithAllPlannersAndCompatibilityMode[T](queryText: String, params: (String, Any)*): T =
     executeScalarWithAllPlannersAndMaybeCompatibilityMode(true, queryText, params: _*)
@@ -306,45 +293,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     compiledSourceCodeResult.close()
     compiledResult
   }
-
-  protected def updateWithCompatibilityAndAssertSimilarPlans(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = otherWriteVersion
-    val ruleResult = graph.rollback(innerExecute(s"CYPHER $compatibility planner=RULE $queryText", params: _*))
-    val compatibilityResult = graph.rollback(innerExecute(s"CYPHER $compatibility $queryText", params: _*))
-    val costResult = executeWithCostPlannerAndInterpretedRuntimeOnly(queryText, params: _*)
-
-    assertPlansAreSimilar(compatibility, compatibilityResult, costResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
-
-    compatibilityResult.close()
-    costResult
-  }
-
-  protected def executeWithCompatibilityAndAssertSimilarPlans(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = otherReadVersion
-    val compatibilityResult = innerExecute(s"CYPHER $compatibility $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and $currentVersion")
-    assertPlansAreSimilar(compatibility, compatibilityResult, interpretedResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
-
-    compatibilityResult.close()
-    interpretedResult.close()
-    interpretedResult
-  }
-
-  protected def assertPlansAreSimilar(otherVersion: String, other: InternalExecutionResult, current: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
-    withClue(errorMsg) {
-      val currentText = current.executionPlanDescription().toString
-      val otherText = other.executionPlanDescription().toString
-      val currentOps = current.executionPlanDescription().flatten.map(simpleName)
-      val otherOps = other.executionPlanDescription().flatten.map(simpleName)
-      withClue(s"$errorMsg:\n\t$currentOps\n\t\t!=\n$otherOps\n\nOTHER $otherVersion:\n$otherText\n\nCURRENT $currentVersion:\n$currentText") {
-        currentOps should be(otherOps)
-      }
-    }
-  }
-
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty","SetProperty").toLowerCase
 
   protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {

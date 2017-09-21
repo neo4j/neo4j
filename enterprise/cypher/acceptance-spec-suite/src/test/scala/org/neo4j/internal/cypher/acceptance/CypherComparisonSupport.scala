@@ -224,8 +224,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
-
   @deprecated("Rewrite to use executeWith instead")
   protected def assertResultsSameDeprecated(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
     assertResultsSame(result1, result2, queryText, errorMsg, replaceNaNs)
@@ -380,6 +378,7 @@ object CypherComparisonSupport {
                                        predicateFailureMessage : String = "") extends PlanComparisonStrategy
   case class ComparePlansWithAssertion(assertion: (InternalPlanDescription) => Unit,
     expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy
+  case class ComparePlanOperators() extends PlanComparisonStrategy
 
 
   /**

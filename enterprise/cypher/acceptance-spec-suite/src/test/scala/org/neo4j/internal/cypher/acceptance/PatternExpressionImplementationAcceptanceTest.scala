@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.scalatest.Matchers
 
 class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSuite with Matchers with CypherComparisonSupport {
-  val expectedToSucceed = Configs.All - Configs.Compiled - Configs.SlottedInterpreted
+  val expectedToSucceed = Configs.CommunityInterpreted
 
   // TESTS WITH CASE EXPRESSION
 
@@ -64,20 +64,18 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val rel3 = relate(start2, d)
     val rel4 = relate(start2, d)
 
-    graph.inTx {
-      val result = executeWith(expectedToSucceed, "match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
-        .map(_.mapValues {
-          case l: Seq[Any] => l.toSet
-          case x => x
-        }).toSet
+    val result = executeWith(expectedToSucceed, "match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p")
+      .map(_.mapValues {
+        case l: Seq[Any] => l.toSet
+        case x => x
+      }).toList
 
-      result should equal(Set(
-        Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-        Map("p" -> 42),
-        Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-        Map("p" -> 42)
-      ))
-    }
+    result should equal(List(
+      Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+      Map("p" -> 42),
+      Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+      Map("p" -> 42)
+    ))
   }
 
   test("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c") {
@@ -118,19 +116,17 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val rel3 = relate(start2, d)
     val rel4 = relate(start2, d)
 
-    graph.inTx {
-      val result = executeWith(expectedToSucceed, "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
-        .map(_.mapValues {
-          case l: Seq[Any] => l.toSet
-          case x => x
-        }).toSet
+    val result = executeWith(expectedToSucceed, "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c")
+      .map(_.mapValues {
+        case l: Seq[Any] => l.toSet
+        case x => x
+      }).toSet
 
-      result should equal(Set(
-        Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-        Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-        Map("c" -> 2, "p" -> 42)
-      ))
-    }
+    result should equal(Set(
+      Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
+      Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
+      Map("c" -> 2, "p" -> 42)
+    ))
   }
 
   test("match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n") {
@@ -186,15 +182,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     val start3 = createNode()
     relate(start3, createNode())
 
-    graph.inTx {
-      val result = executeWith(expectedToSucceed, "match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n",
-        planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
+    val result = executeWith(expectedToSucceed, "match (n) where (n)-->() AND (case when n:A then length((n)-->(:C)) when n:B then length((n)-->(:D)) else 42 end) > 1 return n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("RollUpApply")))
 
-      result.toList should equal(List(
-        Map("n" -> start),
-        Map("n" -> start3)
-      ))
-    }
+    result.toList should equal(List(
+      Map("n" -> start),
+      Map("n" -> start3)
+    ))
   }
 
   test("MATCH (n:FOO) WITH n, COLLECT(DISTINCT { res:CASE WHEN EXISTS ((n)-[:BAR*]->()) THEN 42 END }) as x RETURN n, x") {
@@ -344,12 +338,14 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     executeWith(expectedToSucceed, "MATCH (n:A) RETURN (n)-[:HAS]->() as p",
       planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.find("Argument") shouldNot be(empty)
         planDescription.cd("Argument").arguments should equal(List(EstimatedRows(1)))
+        planDescription.find("Expand(All)") shouldNot be(empty)
         planDescription.cd("Expand(All)").arguments.toSet should equal(Set(
           ExpandExpression("n", "  UNNAMED23", Seq("HAS"), "  UNNAMED32", SemanticDirection.OUTGOING, 1, Some(1)),
           EstimatedRows(0.25)
         ))
-      }))
+      }, Configs.AllRulePlanners + Configs.Version2_3))
   }
 
   test("should be able to execute aggregating-functions on pattern expressions") {

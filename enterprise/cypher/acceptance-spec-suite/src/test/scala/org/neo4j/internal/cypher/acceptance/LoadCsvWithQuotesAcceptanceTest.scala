@@ -23,14 +23,12 @@ import java.io.PrintWriter
 
 import org.neo4j.csv.reader.MissingEndQuoteException
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
-import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, NewPlannerTestSupport, RunWithConfigTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, ExecutionEngineHelper, RunWithConfigTestSupport}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
-class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport with CreateTempFileTestSupport {
+class LoadCsvWithQuotesAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTestSupport with CreateTempFileTestSupport {
   def csvUrls(f: PrintWriter => Unit) = Seq(
     createCSVTempFileURL(f),
     createGzipCSVTempFileURL(f),

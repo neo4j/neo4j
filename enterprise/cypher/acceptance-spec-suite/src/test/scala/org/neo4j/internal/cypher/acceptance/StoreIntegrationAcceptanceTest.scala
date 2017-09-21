@@ -19,16 +19,17 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine
 
-class StoreIntegrationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class StoreIntegrationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   // Not TCK material
   test("should not create labels id when trying to delete non-existing labels") {
     createNode()
 
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) REMOVE n:BAR RETURN id(n) AS id")
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n) REMOVE n:BAR RETURN id(n) AS id")
 
     assertStats(result, labelsRemoved = 0)
     result.toList should equal(List(Map("id" -> 0)))
