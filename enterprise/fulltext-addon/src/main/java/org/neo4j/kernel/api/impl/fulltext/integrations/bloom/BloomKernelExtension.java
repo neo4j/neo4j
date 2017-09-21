@@ -27,6 +27,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
@@ -34,6 +35,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 class BloomKernelExtension extends LifecycleAdapter
 {
@@ -45,10 +48,14 @@ class BloomKernelExtension extends LifecycleAdapter
     private final GraphDatabaseService db;
     private final Procedures procedures;
     private LogService logService;
+    private final AvailabilityGuard availabilityGuard;
+    private final JobScheduler scheduler;
     private FulltextProvider provider;
 
-    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config, GraphDatabaseService db, Procedures procedures,
-            LogService logService )
+    BloomKernelExtension( FileSystemAbstraction fileSystemAbstraction, File storeDir, Config config,
+                          GraphDatabaseService db, Procedures procedures,
+                          LogService logService, AvailabilityGuard availabilityGuard,
+                          JobScheduler scheduler )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -56,21 +63,38 @@ class BloomKernelExtension extends LifecycleAdapter
         this.db = db;
         this.procedures = procedures;
         this.logService = logService;
+        this.availabilityGuard = availabilityGuard;
+        this.scheduler = scheduler;
     }
 
     @Override
     public void init() throws IOException, KernelException
     {
+        if ( config.get( LoadableBloomFulltextConfig.bloom_enabled ) )
+        {
+            List<String> properties = getProperties();
+            Analyzer analyzer = getAnalyzer();
+
+            Log log = logService.getInternalLog( FulltextProvider.class );
+            provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
+            FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
+
+            provider.init();
+            procedures.registerComponent( FulltextProvider.class, context -> provider, true );
+            procedures.registerProcedure( BloomProcedures.class );
+        }
+    }
+
+    private List<String> getProperties()
+    {
         List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
-        Analyzer analyzer = getAnalyzer();
-
-        provider = new FulltextProvider( db, logService.getInternalLog( FulltextProvider.class ) );
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemAbstraction, storeDir, analyzer );
-        fulltextFactory.createFulltextIndex( BLOOM_NODES, FulltextProvider.FulltextIndexType.NODES, properties, provider );
-        fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, FulltextProvider.FulltextIndexType.RELATIONSHIPS, properties, provider );
-
-        procedures.registerComponent( FulltextProvider.class, context -> provider, true );
-        procedures.registerProcedure( BloomProcedures.class );
+        if ( properties.isEmpty() )
+        {
+            throw new RuntimeException( "Properties to index must be configured for bloom fulltext" );
+        }
+        return properties;
     }
 
     private Analyzer getAnalyzer()
@@ -91,6 +115,9 @@ class BloomKernelExtension extends LifecycleAdapter
     @Override
     public void shutdown() throws Exception
     {
-        provider.close();
+        if ( provider != null )
+        {
+            provider.close();
+        }
     }
 }

@@ -91,9 +91,9 @@ public final class ValueUtils
             {
                 return asMapValue( (Map<String,Object>) object );
             }
-            else if ( object instanceof Collection<?> )
+            else if ( object instanceof Iterable<?> )
             {
-                return asListValue( (Collection<?>) object );
+                return asListValue( (Iterable<?>) object );
             }
             else if ( object instanceof Iterator<?> )
             {

@@ -36,7 +36,6 @@ import static org.apache.lucene.document.Field.Store.NO;
 
 class LuceneFulltextDocumentStructure
 {
-
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
     private LuceneFulltextDocumentStructure()

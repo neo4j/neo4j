@@ -27,7 +27,9 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Provider class that manages and provides fulltext indices. This is the main entry point for the fulltext addon.
@@ -35,7 +37,6 @@ import org.neo4j.logging.Log;
 public class FulltextProvider implements AutoCloseable
 {
     public static final String LUCENE_FULLTEXT_ADDON_INTERNAL_ID = "__lucene__fulltext__addon__internal__id__";
-    private static FulltextProvider instance;
     private final GraphDatabaseService db;
     private final Log log;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
@@ -45,24 +46,54 @@ public class FulltextProvider implements AutoCloseable
     private final Set<WritableFulltext> writableRelationshipIndices;
     private final Map<String,LuceneFulltext> nodeIndices;
     private final Map<String,LuceneFulltext> relationshipIndices;
+    private final FulltextUpdateApplier applier;
 
     /**
      * Creates a provider of fulltext indices for the given database. This is the entry point for all fulltext index operations.
      * @param db Database that this provider should work with.
      * @param log For logging errors.
+     * @param availabilityGuard Used for waiting with populating the index until the database is available.
+     * @param scheduler For background work.
      */
-    public FulltextProvider( GraphDatabaseService db, Log log )
+    public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
+                             JobScheduler scheduler )
     {
         this.db = db;
         this.log = log;
-        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log );
-        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
+        applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
+        applier.start();
+        fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
         nodeProperties = new HashSet<>();
         relationshipProperties = new HashSet<>();
         writableNodeIndices = new HashSet<>();
         writableRelationshipIndices = new HashSet<>();
         nodeIndices = new HashMap<>();
         relationshipIndices = new HashMap<>();
+    }
+
+    public void init() throws IOException
+    {
+        for ( WritableFulltext index : writableNodeIndices )
+        {
+            applier.populateNodes( index, db );
+        }
+        for ( WritableFulltext index : writableRelationshipIndices )
+        {
+            applier.populateRelationships( index, db );
+        }
+        db.registerTransactionEventHandler( fulltextTransactionEventUpdater );
+    }
+
+    /**
+     * Wait for the asynchronous background population, if one is on-going, to complete.
+     *
+     * Such population, where the entire store is scanned for data to write to the index, will be started if the index
+     * needs to recover after an unclean shut-down, or a configuration change.
+     * @throws IOException If it was not possible to wait for the population to finish, for some reason.
+     */
+    public void awaitPopulation() throws IOException
+    {
+        applier.writeBarrier().awaitCompletion();
     }
 
     /**
@@ -72,6 +103,7 @@ public class FulltextProvider implements AutoCloseable
     public void close()
     {
         db.unregisterTransactionEventHandler( fulltextTransactionEventUpdater );
+        applier.stop();
         nodeIndices.values().forEach( luceneFulltextIndex ->
         {
             try

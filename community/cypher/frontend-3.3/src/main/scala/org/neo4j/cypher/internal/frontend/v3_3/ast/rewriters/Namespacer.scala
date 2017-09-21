@@ -56,11 +56,27 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   private def returnAliases(statement: Statement): Set[Ref[Variable]] =
     statement.treeFold(Set.empty[Ref[Variable]]) {
 
+      case With(_, _, GraphReturnItems(_, items), _, _, _, _) =>
+        val gVars = extractGraphVars(items)
+        acc => (acc ++ gVars, Some(identity))
+
       // ignore variable in StartItem that represents index names and key names
-      case Return(_, ReturnItems(_, items), _, _, _, _, _) =>
+      case Return(_, ReturnItems(_, items), graphItems, _, _, _, _) =>
         val variables = items.map(_.alias.map(Ref[Variable]).get)
-        acc => (acc ++ variables, Some(identity))
+        val gVars = graphItems.map(_.items).map(extractGraphVars).getOrElse(Seq.empty)
+        acc => (acc ++ variables ++ gVars, Some(identity))
     }
+
+  private def extractGraphVars(items: Seq[GraphReturnItem]): Seq[Ref[Variable]] = {
+    items.flatMap { item =>
+      item.graphs.flatMap {
+        case g: GraphAs =>
+          Seq(g.ref, g.as.get).map(Ref[Variable])
+        case x =>
+          x.as.map(Ref[Variable])
+      }
+    }
+  }
 
   private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
                                 ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =

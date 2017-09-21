@@ -21,48 +21,51 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Arrays;
+import java.io.File;
+import java.time.Clock;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 
 public class FulltextAnalyzerTest
 {
     private static final Label LABEL = Label.label( "label" );
-    private static final LogService LOG_SERVICE = NullLogService.getInstance();
-    @ClassRule
-    public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @ClassRule
-    public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
+    private static final NullLog LOG = NullLog.getInstance();
+
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+
+    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
 
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new EnglishAnalyzer() );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new EnglishAnalyzer() );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -78,7 +81,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
             {
 
                 assertFalse( reader.query( "and" ).hasNext() );
@@ -95,11 +98,15 @@ public class FulltextAnalyzerTest
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), new SwedishAnalyzer() );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new SwedishAnalyzer() );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ); )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ); )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -115,7 +122,7 @@ public class FulltextAnalyzerTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
             {
                 assertEquals( firstID, reader.query( "and" ).next() );
                 assertEquals( firstID, reader.query( "in" ).next() );

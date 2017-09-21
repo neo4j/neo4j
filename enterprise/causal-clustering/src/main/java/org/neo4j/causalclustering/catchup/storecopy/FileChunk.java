@@ -23,9 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-
 import org.neo4j.causalclustering.core.state.storage.SafeChannelMarshal;
 import org.neo4j.causalclustering.messaging.EndOfStreamException;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
@@ -41,6 +38,10 @@ public class FileChunk
 
     static FileChunk create( byte[] bytes, boolean last )
     {
+        if ( !last && bytes.length != MAX_SIZE )
+        {
+            throw new IllegalArgumentException( "All chunks except for the last must be of max size." );
+        }
         return new FileChunk( last ? bytes.length : USE_MAX_SIZE_AND_EXPECT_MORE_CHUNKS, bytes );
     }
 

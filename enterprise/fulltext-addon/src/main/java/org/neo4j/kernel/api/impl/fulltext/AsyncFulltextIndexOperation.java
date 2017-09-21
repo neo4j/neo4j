@@ -19,30 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
-import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
-
-class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
+/**
+ * A fulltext index operation that is possibly in-flight, and whose completion can be waited for.
+ */
+public interface AsyncFulltextIndexOperation
 {
-
-    private PartitionedIndexWriter indexWriter;
-
-    WritableFulltext( LuceneFulltext luceneFulltext ) throws IOException
-    {
-        super( luceneFulltext );
-        indexWriter = luceneIndex.getIndexWriter( this );
-    }
-
-    PartitionedIndexWriter getIndexWriter()
-    {
-        return indexWriter;
-    }
-
-    Set<String> properties()
-    {
-        return luceneIndex.getProperties();
-    }
+    /**
+     * Wait for the index operation to complete. Returns immediately if the operation has already completed.
+     */
+    void awaitCompletion();
 }

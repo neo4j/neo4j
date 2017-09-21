@@ -93,7 +93,9 @@ package object v3_3 {
 
     // Only run a check if a given feature is *not* enabled
     def unlessFeatureEnabled(feature: SemanticFeature): SemanticCheck =
-      (s: SemanticState) => if(!s.features(feature)) check(s) else SemanticCheckResult.success(s)
+      (s: SemanticState) =>
+        if (!s.features(feature)) check(s)
+        else SemanticCheckResult.success(s)
   }
 }
 

@@ -20,10 +20,11 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+import java.time.Clock;
 import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -32,43 +33,47 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
 
 public class LuceneFulltextUpdaterTest
 {
     public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
-    private static final LogService LOG_SERVICE = NullLogService.getInstance();
+    private static final Log LOG = NullLog.getInstance();
 
-    @ClassRule
-    public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
     private static final Label LABEL = Label.label( "label" );
     private static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
+    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
+
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -85,7 +90,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 assertEquals( firstID, reader.query( "hello" ).next() );
@@ -100,11 +105,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithNumber() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -120,7 +129,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 PrimitiveLongIterator node1prop = reader.query( "1" );
                 assertEquals( firstID, node1prop.next() );
@@ -136,11 +145,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithBoolean() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -156,7 +169,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 PrimitiveLongIterator sant = reader.query( "true" );
                 assertEquals( firstID, sant.next() );
@@ -172,11 +185,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldFindNodeWithArrays() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -196,7 +213,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 PrimitiveLongIterator strings = reader.query( "live" );
                 assertEquals( firstID, strings.next() );
@@ -216,11 +233,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldRepresentPropertyChanges() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -246,7 +267,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -266,11 +287,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotFindRemovedNodes() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -295,7 +320,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -310,11 +335,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotFindRemovedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -357,7 +386,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -374,11 +403,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             try ( Transaction tx = db.beginTx() )
@@ -394,7 +427,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -409,11 +442,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop", "prop2" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -435,7 +472,7 @@ public class LuceneFulltextUpdaterTest
             }
 
             PrimitiveLongIterator iterator;
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 iterator = reader.query( "tomtar", "karl" );
@@ -450,11 +487,15 @@ public class LuceneFulltextUpdaterTest
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "first", "last" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "first", "last" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -482,7 +523,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
@@ -498,12 +539,16 @@ public class LuceneFulltextUpdaterTest
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
-            fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstNodeID;
             long secondNodeID;
@@ -528,7 +573,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -540,7 +585,7 @@ public class LuceneFulltextUpdaterTest
                 PrimitiveLongIterator different = reader.query( "different" );
                 assertFalse( different.hasNext() );
             }
-            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", FulltextIndexType.RELATIONSHIPS ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
 
                 PrimitiveLongIterator hello = reader.query( "hello" );
@@ -559,11 +604,15 @@ public class LuceneFulltextUpdaterTest
     public void fuzzyQueryShouldBeFuzzy() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -580,7 +629,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 assertEquals( firstID, reader.fuzzyQuery( "hella" ).next() );
@@ -599,11 +648,15 @@ public class LuceneFulltextUpdaterTest
     public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
 
             long firstID;
             long secondID;
@@ -627,7 +680,7 @@ public class LuceneFulltextUpdaterTest
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
 
                 PrimitiveLongIterator zebra = reader.fuzzyQuery( "zebra" );
@@ -644,12 +697,16 @@ public class LuceneFulltextUpdaterTest
     public void shouldNotReturnNonMatches() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        FulltextFactory fulltextFactory = new FulltextFactory( fileSystemRule, testDirectory.graphDbDir(), ANALYZER );
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG_SERVICE.getInternalLog( FulltextProvider.class ) ) )
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
         {
-            fulltextFactory.createFulltextIndex( "nodes", FulltextIndexType.NODES, Arrays.asList( "prop" ), provider );
-            fulltextFactory.createFulltextIndex( "relationships", FulltextIndexType.RELATIONSHIPS, Arrays.asList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
+            provider.init();
 
             try ( Transaction tx = db.beginTx() )
             {
@@ -666,16 +723,87 @@ public class LuceneFulltextUpdaterTest
 
                 tx.success();
             }
-            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", FulltextIndexType.NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
                 PrimitiveLongIterator zebra = reader.query( "zebra" );
                 assertFalse( zebra.hasNext() );
             }
-            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", FulltextIndexType.RELATIONSHIPS ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
 
                 PrimitiveLongIterator zebra = reader.query( "zebra" );
                 assertFalse( zebra.hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
+        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
+        File storeDir = dbRule.getStoreDir();
+        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
+
+        long firstNodeID;
+        long secondNodeID;
+        long firstRelID;
+        long secondRelID;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            Node node2 = db.createNode( LABEL );
+            Relationship ignore1 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship ignore2 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
+            Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
+            firstNodeID = node.getId();
+            secondNodeID = node2.getId();
+            firstRelID = rel1.getId();
+            secondRelID = rel2.getId();
+            node.setProperty( "prop", "Hello. Hello again." );
+            node2.setProperty( "prop", "This string is slightly shorter than the zebra one" );
+            rel1.setProperty( "prop", "Goodbye" );
+            rel2.setProperty( "prop", "And now, something completely different" );
+
+            tx.success();
+        }
+
+        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
+            provider.init();
+            provider.awaitPopulation();
+
+            try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( firstNodeID, hello.next() );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "string" );
+                assertEquals( secondNodeID, zebra.next() );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
+                assertFalse( goodbye.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertFalse( different.hasNext() );
+            }
+            try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "string" );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
+                assertEquals( firstRelID, goodbye.next() );
+                assertFalse( goodbye.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertEquals( secondRelID, different.next() );
+                assertFalse( different.hasNext() );
             }
         }
     }
