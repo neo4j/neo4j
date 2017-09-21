@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
 import java.util.Date;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -57,6 +58,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_indexed_properties;
 
@@ -472,6 +474,41 @@ public class BloomIT
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void failureToStartUpMustNotPreventShutDown() throws Exception
+    {
+        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        // Create the store directory and all its files, and add a bit of data to it
+        GraphDatabaseService db = builder.newGraphDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "bla bla bla" );
+            tx.success();
+        }
+        db.shutdown();
+
+        File dir = testDirectory.graphDbDir();
+        assertTrue( dir.setReadable( false ) );
+        try
+        {
+            // Making the directory not readable ought to cause problems for the database as it tries to start up
+            builder.newGraphDatabase().shutdown();
+            fail( "Should not have started up and shut down cleanly on an unreadable store directory" );
+        }
+        catch ( Exception e )
+        {
+            // Good
+        }
+        finally
+        {
+            if ( !dir.setReadable( true ) )
+            {
+                System.err.println( "!!! Failed to make " + dir + " writable again !!!" );
+            }
+        }
     }
 
     @After
