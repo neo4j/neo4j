@@ -204,7 +204,7 @@ public class RecoveryCorruptedTransactionLogIT
     @Test
     public void failToRecoverFirstCorruptedTransactionSingleFileNoCheckpointIfFailOnCorruption() throws IOException
     {
-        PositiveLogFilesBasedLogVersionRepository versionRepository = addCorruptedCommandsToLastLogFile();
+        addCorruptedCommandsToLastLogFile();
 
         FeatureToggles.set( NeoStoreDataSource.class, "failOnCorruptedLogFiles", true );
         expectedException.expectCause( new RootCauseMatcher<>( NegativeArraySizeException.class ) );
