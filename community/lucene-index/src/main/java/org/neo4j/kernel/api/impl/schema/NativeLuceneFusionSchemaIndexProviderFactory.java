@@ -47,7 +47,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NativeSchemaNumberIndexProvider.KEY;
     private static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "1.0" );
+    public static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "1.0" );
 
     public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
     {

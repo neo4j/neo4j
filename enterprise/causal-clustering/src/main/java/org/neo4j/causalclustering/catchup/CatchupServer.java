@@ -23,6 +23,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -139,6 +140,7 @@ public class CatchupServer extends LifecycleAdapter
         workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap().group( workerGroup ).channel( NioServerSocketChannel.class )
+                .option( ChannelOption.SO_REUSEADDR, true )
                 .localAddress( listenAddress.socketAddress() ).childHandler( new ChannelInitializer<SocketChannel>()
                 {
                     @Override
