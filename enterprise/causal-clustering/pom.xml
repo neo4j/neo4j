@@ -239,16 +239,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>causal-clustering-tests-only</id>
-            <properties>
-                <test-phase>test</test-phase>
-                <integration-test-phase>integration-test</integration-test-phase>
-                <integration-verify-phase>verify</integration-verify-phase>
-            </properties>
-        </profile>
-    </profiles>
     
 </project>

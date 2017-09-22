@@ -62,7 +62,7 @@ public class Numbers
         return value & 0xFFFF;
     }
 
-    private static String getOverflowMessage( long value, Class clazz )
+    private static String getOverflowMessage( long value, Class<?> clazz )
     {
         return getOverflowMessage( value, clazz.getName() );
     }

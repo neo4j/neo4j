@@ -8,7 +8,6 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-management</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -17,7 +16,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.management</bundle.namespace>
     <short-name>management</short-name>
     <version-package>management.impl</version-package>
   </properties>
@@ -53,18 +51,7 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>${bundle.namespace}.Main</mainClass>
-              <packageName>${bundle.namespace}</packageName>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
+        <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
           <includes>

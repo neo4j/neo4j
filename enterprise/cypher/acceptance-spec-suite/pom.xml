@@ -46,28 +46,15 @@
 
   <properties>
     <version-package>cypher.internal</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <build>
     <plugins>
-
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <configuration>
-          <scalaVersion>${scala.version}</scalaVersion>
-          <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
-        </configuration>
-      </plugin>
-
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
       </plugin>
     </plugins>
-
   </build>
 
   <dependencies>
@@ -79,19 +66,16 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>${scala.version}</version>
     </dependency>
 
     <dependency>
-      <artifactId>scala-reflect</artifactId>
       <groupId>org.scala-lang</groupId>
-      <version>${scala.version}</version>
+      <artifactId>scala-reflect</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scalap</artifactId>
-      <version>${scala.version}</version>
     </dependency>
 
     <!-- scala test dependencies -->

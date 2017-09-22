@@ -117,6 +117,10 @@ public class MathUtil
     /**
      * Return an integer one less than the given integer, or throw {@link ArithmeticException} if the given integer is
      * zero.
+     *
+     * @param value integer to decrement
+     * @return the provided integer minus one
+     * @throws ArithmeticException if the resulting integer would be less than zero
      */
     public static int decrementExactNotPastZero( int value )
     {

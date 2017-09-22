@@ -102,6 +102,7 @@
                 </executions>
                 <configuration>
                     <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
                 </configuration>
             </plugin>
         </plugins>

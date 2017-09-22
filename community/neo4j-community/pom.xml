@@ -8,7 +8,6 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-community</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -20,7 +19,6 @@
   <properties>
     <short-name>neo4j-community</short-name>
     <version-package>community.impl</version-package>
-    <bundle.namespace>org.neo4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>

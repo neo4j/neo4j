@@ -6,7 +6,6 @@
     <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-enterprise-kernel</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -19,11 +18,6 @@
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
-
-  <properties>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-  </properties>
 
   <licenses>
     <license>
@@ -44,44 +38,6 @@
       </comments>
     </license>
   </licenses>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-        <version>3.2.0</version>
-        <executions>
-          <execution>
-            <id>scala-compile</id>
-            <goals>
-              <goal>add-source</goal>
-              <goal>compile</goal>
-            </goals>
-            <phase>process-resources</phase>
-          </execution>
-          <execution>
-            <id>scala-test-compile</id>
-            <phase>${scala-test-compile-phase}</phase>
-            <goals>
-              <goal>testCompile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-            <!-- arg>-deprecation</arg -->
-          </args>
-          <jvmArgs>
-            <jvmArg>-Xms64m</jvmArg>
-            <jvmArg>-Xmx1024m</jvmArg>
-          </jvmArgs>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <!-- Neo4j dependencies -->

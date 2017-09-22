@@ -8,7 +8,6 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>server-plugin-test</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -18,7 +17,6 @@
   <properties>
     <version-package>server.plugins.test</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.skip>true</docs-plugin.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 

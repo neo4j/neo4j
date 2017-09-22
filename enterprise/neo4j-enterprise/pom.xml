@@ -21,8 +21,6 @@
   <properties>
     <short-name>neo4j-enterprise</short-name>
     <version-package>enterprise.impl</version-package>
-    <bundle.namespace>org.neo4j</bundle.namespace>
-    <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>
@@ -212,7 +210,7 @@
           </execution>
           <execution>
             <id>copy-dependency-sources</id>
-            <phase>${attach-javadoc-phase}</phase>
+            <phase>package</phase>
             <goals>
               <goal>copy-resources</goal>
             </goals>
@@ -269,7 +267,7 @@
           </execution>
           <execution>
             <id>create-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
+            <phase>none</phase> <!-- TODO: fix -->
             <goals><goal>jar</goal></goals>
             <configuration>
               <additionalDependencies>

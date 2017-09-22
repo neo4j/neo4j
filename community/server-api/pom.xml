@@ -8,7 +8,6 @@
     <relativePath>../..</relativePath>
   </parent>
 
-  <groupId>org.neo4j</groupId>
   <artifactId>server-api</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -20,9 +19,7 @@
   <properties>
     <short-name>server-api</short-name>
     <version-package>server.impl.api</version-package>
-    <bundle.namespace>org.neo4j.server</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.skip>true</docs-plugin.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 

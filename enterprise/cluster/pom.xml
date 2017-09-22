@@ -6,7 +6,6 @@
     <version>3.4.0-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
-  <groupId>org.neo4j</groupId>
   <artifactId>neo4j-cluster</artifactId>
   <version>3.4.0-SNAPSHOT</version>
 
@@ -16,10 +15,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <bundle.namespace>org.neo4j.cluster</bundle.namespace>
-    <short-name>backup</short-name>
+    <short-name>cluster</short-name>
     <version-package>cluster.impl</version-package>
-    <docs-plugin.skip>false</docs-plugin.skip>
   </properties>
 
   <scm>

@@ -8,7 +8,6 @@
 
     <properties>
         <short-name>procedure-compiler</short-name>
-        <bundle.namespace>org.neo4j.tooling.procedure</bundle.namespace>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
         <version-package>tooling.procedure</version-package>

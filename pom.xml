@@ -2,26 +2,75 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.neo4j.build</groupId>
-    <artifactId>parent-central</artifactId>
-    <version>46</version>
-    <relativePath/>
-  </parent>
 
   <groupId>org.neo4j</groupId>
   <artifactId>parent</artifactId>
   <version>3.4.0-SNAPSHOT</version>
-
   <packaging>pom</packaging>
   <name>Neo4j</name>
   <description>Neo4j Graph Database</description>
+  <inceptionYear>2002</inceptionYear>
+
+  <organization>
+    <name>The Neo4j Graph Database Project</name>
+    <url>https://neo4j.com/</url>
+  </organization>
+
+  <licenses>
+    <license>
+      <name>GNU Affero General Public License, Version 3</name>
+      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>neo4j</id>
+      <name>The Neo4j Team</name>
+      <url>https://neo4j.com/</url>
+      <organization>Neo4j Inc.</organization>
+      <organizationUrl>https://neo4j.com/</organizationUrl>
+    </developer>
+  </developers>
+
+  <mailingLists>
+    <mailingList>
+      <name>Neo4j Community Discussions</name>
+      <subscribe>https://groups.google.com/forum/#!forum/neo4j</subscribe>
+    </mailingList>
+  </mailingLists>
+
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/neo4j/neo4j/issues</url>
+  </issueManagement>
+
+  <repositories>
+    <repository>
+      <id>neo4j-snapshot-repository</id>
+      <name>Neo4j Maven 2 snapshot repository</name>
+      <url>http://m2.neo4j.org/content/repositories/snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+    </repository>
+  </repositories>
+
+  <distributionManagement>
+    <repository>
+      <id>sonatype-nexus-staging</id>
+      <name>Nexus Release Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <neo4j.java.version>${maven.compiler.source}</neo4j.java.version>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
     <licensing.phase>compile</licensing.phase>
     <lucene.version>5.5.0</lucene.version>
@@ -35,13 +84,18 @@
       -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
-    <doclint-groups>reference</doclint-groups>
     <jetty.version>9.2.22.v20170606</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
+
+    <licensesVersion>7</licensesVersion>
+    <license-text.header>AGPL-3-header.txt</license-text.header>
+
+    <scala.version>2.11.11</scala.version>
+    <scala.binary.version>2.11</scala.binary.version>
   </properties>
 
   <modules>
@@ -54,91 +108,64 @@
   </modules>
 
   <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <forkCount>${forkCounts}</forkCount>
-          <reuseForks>true</reuseForks>
-          <argLine>${test.runner.jvm.settings}</argLine>
-          <runOrder>random</runOrder>
-          <systemPropertyVariables>
-            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <argLine>${test.runner.jvm.settings}</argLine>
-          <forkCount>${forkCounts}</forkCount>
-          <reuseForks>true</reuseForks>
-          <runOrder>random</runOrder>
-          <systemPropertyVariables>
-            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
-            <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>generate-sources</phase>
-            <goals><goal>add-source</goal></goals>
-            <configuration>
-              <sources>
-                <source>target/generated-sources/version</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>2.17</version>
-        <configuration>
-          <configLocation>build/checkstyle.xml</configLocation>
-          <consoleOutput>true</consoleOutput>
-          <logViolationsToConsole>true</logViolationsToConsole>
-          <failsOnError>true</failsOnError>
-          <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>com.puppycrawl.tools</groupId>
-            <artifactId>checkstyle</artifactId>
-            <version>8.2</version>
-          </dependency>
-        </dependencies>
-        <executions>
-          <execution>
-            <id>validate</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
+    <!-- Define project structure -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources/META-INF/</directory>
+        <targetPath>META-INF</targetPath>
+      </resource>
+      <resource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>COPYRIGHT.txt</include>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>LICENSES.txt</include>
+          <include>README*</include>
+          <include>CHANGES.txt</include>
+        </includes>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>COPYRIGHT.txt</include>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>LICENSES.txt</include>
+          <include>README*</include>
+          <include>CHANGES.txt</include>
+        </includes>
+      </testResource>
+    </testResources>
+
+    <!-- Plugin definitions -->
     <pluginManagement>
       <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.8</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.10.4</version>
+        </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -160,13 +187,85 @@
           <version>3.0.1</version>
         </plugin>
         <plugin>
-          <groupId>org.neo4j.build.plugins</groupId>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.5.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.5.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>2.4.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>2.5.5</version>
+          <configuration>
+            <tarLongFileMode>gnu</tarLongFileMode>
+          </configuration>
+        </plugin>
+        <!-- Can be bound to a phase to generate an empty javadoc jar, some scala only modules needs this -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>3.0.2</version>
+          <executions>
+            <execution>
+              <id>generate-dummy-javadocs-jar</id>
+              <phase>none</phase>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <excludes>
+                  <exclude>**</exclude>
+                </excludes>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+
+        <!-- codehaus -->
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>1.9.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>1.4.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>properties-maven-plugin</artifactId>
+          <version>1.0-alpha-2</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
           <artifactId>clirr-maven-plugin</artifactId>
-          <version>1.0.1</version>
+          <version>2.8</version>
           <executions>
             <execution>
               <id>default</id>
-              <phase>${clirr-check-phase}</phase>
+              <phase>verify</phase>
               <goals>
                 <goal>check</goal>
               </goals>
@@ -177,42 +276,25 @@
             <logResults>true</logResults>
             <!-- OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4-->
             <comparisonVersion>${clirr.comparisonVersion}</comparisonVersion>
-            <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
-            <excludeMessageCodes>
-              <param>6006</param><!-- Field was made final. -->
-              <param>7012</param><!-- Method added to interface -->
-            </excludeMessageCodes>
+            <ignored>
+              <difference>
+                <className>**</className>
+                <method>**</method>
+                <differenceType>7012</differenceType> <!-- Field was made final. -->
+              </difference>
+              <difference>
+                <className>**</className>
+                <field>**</field>
+                <differenceType>6006</differenceType> <!-- Method added to interface -->
+              </difference>
+            </ignored>
           </configuration>
         </plugin>
+
         <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>exec-maven-plugin</artifactId>
-          <version>1.4.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-shade-plugin</artifactId>
-          <version>2.4.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.5.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.10.3</version>
-        </plugin>
-        <plugin>
-          <groupId>com.voltvoodoo</groupId>
-          <artifactId>brew</artifactId>
-          <version>0.2.10</version>
-        </plugin>
-        <plugin>
-          <groupId>com.github.searls</groupId>
-          <artifactId>jasmine-maven-plugin</artifactId>
-          <version>1.2.0.0</version>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <version>3</version>
         </plugin>
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>
@@ -286,36 +368,227 @@
             </dependency>
           </dependencies>
         </plugin>
+
         <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
+          <groupId>net.alchim31.maven</groupId>
+          <artifactId>scala-maven-plugin</artifactId>
+          <version>3.3.1</version>
+
           <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>net.alchim31.maven</groupId>
-                    <artifactId>scala-maven-plugin</artifactId>
-                    <versionRange>[3.1.0,)</versionRange>
-                    <goals>
-                      <goal>add-source</goal>
-                      <goal>compile</goal>
-                      <goal>testCompile</goal>
-                      <goal>doc</goal>
-                      <goal>doc-jar</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
+            <scalaVersion>${scala.version}</scalaVersion>
+            <scalaCompatVersion>${scala.binary.version}</scalaCompatVersion>
+            <args>
+              <arg>-Xmax-classfile-name</arg>
+              <arg>100</arg>
+              <arg>-Xlint</arg>
+            </args>
+            <jvmArgs>
+              <jvmArg>-Xms64m</jvmArg>
+              <jvmArg>-Xmx1024m</jvmArg>
+            </jvmArgs>
           </configuration>
+
+          <!-- This is needed to mix scala and java code in the same module -->
+          <executions>
+            <execution>
+              <id>scala-compile</id>
+              <phase>process-resources</phase>
+              <goals>
+                <goal>add-source</goal>
+                <goal>compile</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>scala-test-compile</id>
+              <phase>process-test-resources</phase>
+              <goals>
+                <goal>testCompile</goal>
+              </goals>
+            </execution>
+          </executions>
         </plugin>
       </plugins>
     </pluginManagement>
+
+    <!-- Default plugins -->
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
+          <argLine>${test.runner.jvm.settings}</argLine>
+          <runOrder>random</runOrder>
+          <systemPropertyVariables>
+            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>${test.runner.jvm.settings}</argLine>
+          <forkCount>${forkCounts}</forkCount>
+          <reuseForks>true</reuseForks>
+          <runOrder>random</runOrder>
+          <systemPropertyVariables>
+            <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+            <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals><goal>add-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>target/generated-sources/version</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>2.17</version>
+        <configuration>
+          <configLocation>build/checkstyle.xml</configLocation>
+          <consoleOutput>true</consoleOutput>
+          <logViolationsToConsole>true</logViolationsToConsole>
+          <failsOnError>true</failsOnError>
+          <failOnViolation>true</failOnViolation>
+          <includeTestSourceDirectory>true</includeTestSourceDirectory>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>com.puppycrawl.tools</groupId>
+            <artifactId>checkstyle</artifactId>
+            <version>8.2</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <detectJavaApiLink>true</detectJavaApiLink>
+          <detectLinks>true</detectLinks>
+          <detectOfflineLinks>false</detectOfflineLinks>
+          <quiet>true</quiet>
+          <excludePackageNames>*.impl.*</excludePackageNames>
+          <show>public</show>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <configuration>
+              <archive>
+                <manifest>
+                  <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                </manifest>
+                <manifestEntries>
+                  <Url>${project.organization.url}</Url>
+                </manifestEntries>
+              </archive>
+            </configuration>
+          </execution>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <groupId>org.neo4j.maven</groupId>
+            <artifactId>licenses</artifactId>
+            <version>${licensesVersion}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>check-licenses</id>
+            <!-- fail as early as possible -->
+            <phase>initialize</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+            <include>src/**/*.feature</include>
+            <include>src/**/*.g4</include>
+          </includes>
+          <excludes>
+            <exclude>**/lib/*.js</exclude>
+            <exclude>**/lib/**/*.js</exclude>
+            <exclude>**/javascript/vend/**</exclude>
+          </excludes>
+          <mapping>
+            <java>SLASHSTAR_STYLE</java>
+            <scala>SLASHSTAR_STYLE</scala>
+            <feature>SCRIPT_STYLE</feature>
+            <g4>SLASHSTAR_STYLE</g4>
+          </mapping>
+          <timestampPropertyName>currentYear</timestampPropertyName>
+          <properties>
+            <inceptionYear>${project.inceptionYear}</inceptionYear>
+          </properties>
+        </configuration>
+      </plugin>
+
+    </plugins>
+
   </build>
 
   <profiles>
@@ -348,94 +621,6 @@
       <properties>
         <git.commit>${env.GIT_COMMIT}</git.commit>
       </properties>
-    </profile>
-
-    <!-- Build configuration profiles -->
-    <profile>
-      <id>neodev</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <properties>
-        <attach-test-jar-phase>package</attach-test-jar-phase>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.neo4j.build.plugins</groupId>
-            <artifactId>license-maven-plugin</artifactId>
-            <!-- inserting licenses is better than checking for them -->
-            <executions>
-              <execution>
-                <id>check-licenses</id>
-                <phase>none</phase>
-              </execution>
-              <execution>
-                <id>insert-licenses</id>
-                <phase>initialize</phase>
-                <goals>
-                  <goal>format</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>neo-minimal-build</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>minimalBuild</name>
-        </property>
-      </activation>
-      <properties>
-        <test-resources-phase>none</test-resources-phase>
-        <test-compile-phase>none</test-compile-phase>
-        <test-phase>none</test-phase>
-        <attach-test-jar-phase>none</attach-test-jar-phase>
-        <scala-test-compile-phase>none</scala-test-compile-phase>
-      </properties>
-    </profile>
-    <profile>
-      <id>has-sources</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <file>
-          <exists>src/main</exists>
-        </file>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.neo4j.build.plugins</groupId>
-            <artifactId>licensing-maven-plugin</artifactId>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>causal-clustering-tests-only</id>
-      <properties>
-        <test-phase>none</test-phase>
-      </properties>
-    </profile>
-    <profile>
-      <id>java8-set-javadoc-doclint</id>
-      <activation>
-        <jdk>[1.8,)</jdk>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <configuration>
-              <additionalparam>-Xdoclint:${doclint-groups}</additionalparam>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
   </profiles>
 
@@ -486,6 +671,11 @@
         <artifactId>slf4j-nop</artifactId>
         <version>1.7.22</version>
       </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>1.7.7</version>
+      </dependency>
 
       <!-- testing -->
       <dependency>
@@ -523,6 +713,12 @@
         <artifactId>httpcore</artifactId>
         <version>4.4.5</version>
       </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-log4j12</artifactId>
+        <version>1.7.7</version>
+        <scope>test</scope>
+      </dependency>
 
       <!-- The JUnit-Hamcrest-Mockito combo -->
       <dependency>
@@ -531,6 +727,7 @@
         <version>4.12</version>
         <scope>test</scope>
       </dependency>
+
       <dependency>
           <groupId>org.hamcrest</groupId>
           <artifactId>hamcrest-core</artifactId>
@@ -543,7 +740,19 @@
           <version>1.3</version>
           <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest-all</artifactId>
+        <version>1.3</version>
+        <scope>test</scope>
+      </dependency>
 
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>1.10.19</version>
+        <scope>test</scope>
+      </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
@@ -552,17 +761,27 @@
       </dependency>
 
       <dependency>
-          <groupId>org.objenesis</groupId>
-          <artifactId>objenesis</artifactId>
-          <version>2.2</version>
-          <scope>test</scope>
-      </dependency>
-
-      <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>1.9</version>
         <scope>test</scope>
+      </dependency>
+
+      <!-- scala -->
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-reflect</artifactId>
+        <version>${scala.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scalap</artifactId>
+        <version>${scala.version}</version>
       </dependency>
 
       <!-- other -->

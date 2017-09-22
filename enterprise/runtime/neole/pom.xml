@@ -9,7 +9,6 @@
 
   <properties>
     <short-name>protostore-neole</short-name>
-    <bundle.namespace>org.neo4j.impl.store.prototype.neole</bundle.namespace>
     <license-text.header>AGPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
   </properties>
