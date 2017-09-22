@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
@@ -44,6 +45,8 @@ public class ClusterIdReuseIT
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
+            // increased to decrease likelihood of unnecessary leadership changes
+            .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
             .withNumberOfReadReplicas( 0 );
     private Cluster cluster;
 
@@ -103,6 +106,7 @@ public class ClusterIdReuseIT
         CoreClusterMember creationLeader = createThreeNodes( cluster, first, second );
         CoreClusterMember deletionLeader = removeTwoNodes( cluster, first, second );
 
+        // the following assumption is not sufficient for the subsequent assertions, since leadership is a volatile state
         assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
 
         idMaintenanceOnLeader( creationLeader );
