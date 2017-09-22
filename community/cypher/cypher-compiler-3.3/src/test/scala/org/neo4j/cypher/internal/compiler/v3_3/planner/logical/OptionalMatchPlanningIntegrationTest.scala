@@ -134,11 +134,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve optional matches with arguments and predicates") {
-    val plan =  new given {
-      cost = {
-        case (_: Expand, _) => 1000.0
-      }
-    }.getLogicalPlanFor (
+    val plan = planFor(
       """MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
