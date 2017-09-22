@@ -729,7 +729,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-client</artifactId>
-        <version>9.2.10.v20150310</version>
+        <version>${jetty.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mozilla</groupId>
