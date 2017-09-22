@@ -19,14 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.hamcrest.CoreMatchers.containsString
-import org.junit.Assert.assertThat
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{Default, v3_4}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
@@ -40,7 +37,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should be able to create and remove single property uniqueness constraint") {
 
-    val testconfiguration = TestConfiguration(Versions(v3_4, Default), Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.ProcedureOrSchema))
+    val testconfiguration = TestConfiguration(Versions(v3_4, Default), Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
     // When
     executeWith(testconfiguration, "CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
 

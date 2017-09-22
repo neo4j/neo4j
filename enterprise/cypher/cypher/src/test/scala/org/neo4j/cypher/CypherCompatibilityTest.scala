@@ -83,7 +83,7 @@ class CypherCompatibilityTest extends ExecutionEngineFunSuite with RunWithConfig
       db =>
         val result = db.execute(QUERY)
         result.asScala.toList shouldBe empty
-        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.3")
+        result.getExecutionPlanDescription.getArguments.get("version") should equal("CYPHER 3.4")
     }
   }
 

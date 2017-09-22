@@ -30,7 +30,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |
@@ -58,7 +58,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |
