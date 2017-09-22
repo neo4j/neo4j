@@ -19,13 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.SyntaxException
 import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 import scala.collection.JavaConversions._
 
 class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with CypherComparisonSupport {
+
+  private val combinedCallconfiguration = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Version2_3
 
   test("should be able to filter as part of call") {
     // Given
@@ -34,7 +35,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL db.labels() YIELD label WHERE label <> 'A' RETURN *")
+    val result = executeWith(combinedCallconfiguration, "CALL db.labels() YIELD label WHERE label <> 'A' RETURN *")
 
     // Then
     result.toList should equal(
@@ -81,9 +82,10 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("should not be able to filter as part of standalone call") {
-    a [SyntaxException] should be thrownBy {
-      execute("CALL db.labels() YIELD label WHERE label <> 'A'")
-    }
+    failWithError(
+      Configs.AbsolutelyAll - Configs.Version2_3,
+      "CALL db.labels() YIELD label WHERE label <> 'A'",
+      "Cannot use standalone call with WHERE")
   }
 
   test("should be able to find labels from built-in-procedure") {
@@ -93,7 +95,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     createLabeledNode("C")
 
     //When
-    val result = execute("CALL db.labels() YIELD label RETURN *")
+    val result = executeWith(combinedCallconfiguration, "CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList should equal(
@@ -110,7 +112,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     createLabeledNode(Map("name" -> "Toc"), "C")
 
     //When
-    val result = execute("MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels() YIELD label RETURN *")
+    val result = executeWith(combinedCallconfiguration, "MATCH (n {name: 'Toc'}) WITH n.name AS name CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList should equal(
@@ -123,7 +125,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   test("db.labels works on an empty database") {
     // Given an empty database
     //When
-    val result = execute("CALL db.labels() YIELD label RETURN *")
+    val result = executeWith(combinedCallconfiguration, "CALL db.labels() YIELD label RETURN *")
 
     // Then
     result.toList shouldBe empty
@@ -189,7 +191,6 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("db.relationshipTypes should be empty when all relationships are removed") {
-    // Given
     // Given
     relate(createNode(), createNode(), "A")
     relate(createNode(), createNode(), "B")

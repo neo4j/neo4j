@@ -409,10 +409,7 @@ object CypherComparisonSupport {
           // So, we do not want to fail if we unexpectedly succeeded here
           // fail(s"Unexpectedly succeeded using $name for query $query")
           val (reportedRuntimeName, reportedPlannerName) =
-          if ((Versions.V2_3 -> Versions.V3_2).versions.contains(version))
             (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
-          else
-            (reportedRuntime.get, reportedPlanner.get)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName) && planner.acceptedPlannerNames.contains(reportedPlannerName)) {
             fail(s"Unexpectedly succeeded using $name for query $query, with $reportedRuntimeName & " + s"$reportedPlannerName")
