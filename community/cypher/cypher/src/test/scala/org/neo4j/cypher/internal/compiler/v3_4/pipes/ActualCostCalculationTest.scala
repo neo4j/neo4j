@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.devNullLogger
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_4.{TransactionBoundPlanContext, TransactionBoundQueryContext, TransactionalContextWrapper}

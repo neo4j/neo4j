@@ -92,11 +92,20 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_4](config.queryCacheSize)
 
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+
+  def parseQuery(preParsedQuery: PreParsedQuery, notificationLogger: InternalNotificationLogger, tracer: CompilationPhaseTracer) = {
+    compiler.parseQuery(preParsedQuery.statement,
+                        preParsedQuery.rawStatement,
+                        notificationLogger, preParsedQuery.planner.name,
+                        preParsedQuery.debugOptions,
+                        Some(preParsedQuery.offset), tracer)
+  }
+
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
-    val preparedSyntacticQueryForV_3_2 =
+    val preparedSyntacticQueryForV_3_4 =
       Try(compiler.parseQuery(preParsedQuery.statement,
                               preParsedQuery.rawStatement,
                               notificationLogger, preParsedQuery.planner.name,
@@ -105,7 +114,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     new ParsedQuery {
       override def plan(transactionalContext: TransactionalContextWrapper, tracer: CompilationPhaseTracer):
         (ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
-        val syntacticQuery = preparedSyntacticQueryForV_3_2.get
+        val syntacticQuery = preparedSyntacticQueryForV_3_4.get
 
         //Context used for db communication during planning
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(transactionalContext, notificationLogger))
@@ -138,7 +147,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
         (new ExecutionPlanWrapper(executionPlan, preParsingNotifications, preParsedQuery.offset), preparedQuery.extractedParams())
       }
 
-      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
+      override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_4
     }
   }
 
