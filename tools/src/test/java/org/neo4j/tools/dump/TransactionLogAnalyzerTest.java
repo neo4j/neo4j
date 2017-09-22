@@ -187,6 +187,7 @@ public class TransactionLogAnalyzerTest
                 expectedLogFiles++;
             }
         }
+        writer.prepareForFlush().flush();
 
         // when
         TransactionLogAnalyzer.analyze( fs, directory.absolutePath(), STRICT, monitor );
