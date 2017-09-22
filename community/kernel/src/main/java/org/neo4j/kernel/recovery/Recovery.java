@@ -41,17 +41,17 @@ public class Recovery extends LifecycleAdapter
     private final RecoveryService recoveryService;
     private final RecoveryMonitor monitor;
     private final StartupStatisticsProvider startupStatistics;
-    private final TransactionLogPruner logPruner;
+    private final CorruptedLogsTruncator logsTruncator;
     private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
     public Recovery( RecoveryService recoveryService, StartupStatisticsProvider startupStatistics,
-            TransactionLogPruner logPruner, RecoveryMonitor monitor, boolean failOnCorruptedLogFiles )
+            CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor, boolean failOnCorruptedLogFiles )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.startupStatistics = startupStatistics;
-        this.logPruner = logPruner;
+        this.logsTruncator = logsTruncator;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
@@ -121,7 +121,7 @@ public class Recovery extends LifecycleAdapter
                 recoveryToPosition = recoveryFromPosition;
             }
         }
-        logPruner.prune( recoveryToPosition );
+        logsTruncator.truncate( recoveryToPosition );
 
         recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
         startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );

@@ -150,6 +150,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
@@ -157,7 +158,6 @@ import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
-import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.Log;
@@ -703,8 +703,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     {
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                 logicalTransactionStore, logVersionRepository, positionMonitor );
-        TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemAbstraction );
-        Recovery recovery = new Recovery( recoveryService, startupStatistics, logPruner, recoveryMonitor, failOnCorruptedLogFiles );
+        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemAbstraction );
+        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 

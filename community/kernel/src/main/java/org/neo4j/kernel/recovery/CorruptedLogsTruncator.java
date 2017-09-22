@@ -37,14 +37,14 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import static java.lang.String.format;
 
 /**
- * Transaction log pruner used during recovery to truncate all the logs after some specified position, that
+ * Transaction log truncator used during recovery to truncate all the logs after some specified position, that
  * recovery threats as corrupted or non-readable.
  * Transaction log file specified by provided log position will be truncated to provided length, any
  * subsequent files will be removed.
  * Any removed or modified log content will be stored in separate corruption logs archive for further analysis and as
  * an additional safety option to have the possibility to fully restore original logs in a faulty case.
  */
-public class TransactionLogPruner
+public class CorruptedLogsTruncator
 {
     public static final String CORRUPTED_TX_LOGS_FOLDER_NAME = "corrupted-tx-logs";
     private static final String LOG_FILE_ARCHIVE_PATTERN = "corrupted-logs-%d-%d-%d.zip";
@@ -53,7 +53,7 @@ public class TransactionLogPruner
     private final PhysicalLogFiles logFiles;
     private final FileSystemAbstraction fs;
 
-    public TransactionLogPruner( File storeDir, PhysicalLogFiles logFiles, FileSystemAbstraction fs )
+    public CorruptedLogsTruncator( File storeDir, PhysicalLogFiles logFiles, FileSystemAbstraction fs )
     {
         this.storeDir = storeDir;
         this.logFiles = logFiles;
@@ -61,13 +61,13 @@ public class TransactionLogPruner
     }
 
     /**
-     * Prune all transaction logs after provided position. Log version specified in a position will be
+     * Truncate all transaction logs after provided position. Log version specified in a position will be
      * truncated to provided byte offset, any subsequent log files will be deleted. Backup copy of removed data will
      * be stored in separate archive.
      * @param positionAfterLastRecoveredTransaction position after last recovered transaction
      * @throws IOException
      */
-    public void prune( LogPosition positionAfterLastRecoveredTransaction ) throws IOException
+    public void truncate( LogPosition positionAfterLastRecoveredTransaction ) throws IOException
     {
         long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
         long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();

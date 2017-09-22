@@ -67,7 +67,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.TransactionLogPruner;
+import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -397,7 +397,7 @@ public class RecoveryCorruptedTransactionLogIT
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
         }
 
-        File corruptedLogArchives = new File( storeDir, TransactionLogPruner.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogArchives = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
         assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
     }
 

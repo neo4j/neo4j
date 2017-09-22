@@ -43,11 +43,11 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
-import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
@@ -197,7 +197,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         life.add( new BatchingTransactionAppender( logFile, NO_ROTATION, positionCache,
                 transactionIdStore, BYPASS, DATABASE_HEALTH ) );
-        TransactionLogPruner logPruner = new TransactionLogPruner( testDir, logFiles, fileSystemRule.get() );
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( testDir, logFiles, fileSystemRule.get() );
         life.add( new Recovery( new RecoveryService()
         {
             @Override

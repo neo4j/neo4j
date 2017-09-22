@@ -48,7 +48,7 @@ import org.neo4j.test.rule.fs.FileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TransactionLogPrunerTest
+public class CorruptedLogsTruncatorTest
 {
     private static final int SINGLE_LOG_FILE_SIZE = 25;
     private static final int TOTAL_NUMBER_OF_LOG_FILES = 11;
@@ -57,20 +57,20 @@ public class TransactionLogPrunerTest
     public FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private File storeDir;
     private PhysicalLogFiles logFiles;
-    private TransactionLogPruner logPruner;
+    private CorruptedLogsTruncator logPruner;
 
     @Before
     public void setUp() throws Exception
     {
         storeDir = testDirectory.graphDbDir();
         logFiles = new PhysicalLogFiles( storeDir, fileSystemRule );
-        logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule );
+        logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule );
     }
 
     @Test
     public void doNotPruneEmptyLogs() throws IOException
     {
-        logPruner.prune( LogPosition.start( 0 ) );
+        logPruner.truncate( LogPosition.start( 0 ) );
         assertTrue( FileUtils.isEmptyDirectory( storeDir ) );
     }
 
@@ -84,7 +84,7 @@ public class TransactionLogPrunerTest
         LogPosition endOfLogsPosition = new LogPosition( highestLogVersion, fileSizeBeforePrune );
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES - 1, highestLogVersion );
 
-        logPruner.prune( endOfLogsPosition );
+        logPruner.truncate( endOfLogsPosition );
 
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
         assertEquals( fileSizeBeforePrune, logFiles.getHighestLogFile().length() );
@@ -103,12 +103,12 @@ public class TransactionLogPrunerTest
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestLogVersion, byteOffset );
 
-        logPruner.prune( prunePosition );
+        logPruner.truncate( prunePosition );
 
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
         assertEquals( byteOffset, highestLogFile.length() );
 
-        File corruptedLogsDirectory = new File( storeDir, TransactionLogPruner.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
         assertTrue( corruptedLogsDirectory.exists() );
         File[] files = corruptedLogsDirectory.listFiles();
         assertEquals( 1, files.length );
@@ -134,12 +134,12 @@ public class TransactionLogPrunerTest
         long byteOffset = fileSizeBeforePrune - bytesToPrune;
         LogPosition prunePosition = new LogPosition( highestCorrectLogFileIndex, byteOffset );
 
-        logPruner.prune( prunePosition );
+        logPruner.truncate( prunePosition );
 
         assertEquals( 6, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
         assertEquals( byteOffset, highestCorrectLogFile.length() );
 
-        File corruptedLogsDirectory = new File( storeDir, TransactionLogPruner.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
         assertTrue( corruptedLogsDirectory.exists() );
         File[] files = corruptedLogsDirectory.listFiles();
         assertEquals( 1, files.length );

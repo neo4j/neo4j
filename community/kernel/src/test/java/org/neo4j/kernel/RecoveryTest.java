@@ -58,12 +58,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
-import org.neo4j.kernel.recovery.TransactionLogPruner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -157,7 +157,7 @@ public class RecoveryTest
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader,
                     monitors, false );
-            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository,  NO_MONITOR )
             {
@@ -262,7 +262,7 @@ public class RecoveryTest
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
                     false );
-            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
             {
@@ -404,7 +404,7 @@ public class RecoveryTest
                     mock( PhysicalLogFile.Monitor.class ), logHeaderCache ) );
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFile, metadataCache, reader, monitors,
                     false );
-            TransactionLogPruner logPruner = new TransactionLogPruner( storeDir, logFiles, fileSystemRule.get() );
+            CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemRule.get() );
             life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
             {
