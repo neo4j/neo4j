@@ -15,7 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>backup</short-name>
+    <short-name>cluster</short-name>
     <version-package>cluster.impl</version-package>
   </properties>
 
