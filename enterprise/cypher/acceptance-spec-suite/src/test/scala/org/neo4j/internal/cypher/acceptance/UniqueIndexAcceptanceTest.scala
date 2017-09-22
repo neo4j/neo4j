@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -147,8 +147,6 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should use locking unique index for merge relationship queries") {
       //GIVEN
       createLabeledNode(Map("name" -> "Andres"), "Person")
-      for(i <- 1 to 10) createLabeledNode(Map("name" -> s"Name$i"), "Person")
-
       constraintCreator.createConstraint(graph, "Person", "name")
       graph should not(haveConstraints(s"${constraintCreator.other.typeName}:Person(name)"))
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
@@ -161,7 +159,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
           plan shouldNot useOperators("NodeIndexSeek")
           plan shouldNot useOperators("NodeByLabelScan")
           plan should useOperators("NodeUniqueIndexSeek(Locking)")
-        }, Configs.AllRulePlanners))
+        }, Configs.AllRulePlanners + Configs.Cost3_1))
     }
 
     test(s"$constraintCreator: should use locking unique index for mixed read write queries") {
