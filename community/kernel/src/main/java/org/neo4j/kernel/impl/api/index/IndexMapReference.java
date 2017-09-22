@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 
@@ -31,6 +32,23 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public IndexMap indexMapSnapshot()
     {
         return indexMap.clone();
+    }
+
+    /**
+     * Modifies the index map under synchronization. Accepts a {@link ThrowingFunction} which gets as input
+     * a snapshot of the current {@link IndexMap}. That {@link IndexMap} is meant to be modified by the function
+     * and in the end returned. The function can also return another {@link IndexMap} instance if it wants to, e.g.
+     * for clearing the map. The returned map will be set as the current index map before exiting the method.
+     *
+     * This is the only way contents of the {@link IndexMap} considered the current one can be modified.
+     *
+     * @param modifier the function modifying the snapshot.
+     * @throws E exception thrown by the function.
+     */
+    public synchronized <E extends Exception> void modify( ThrowingFunction<IndexMap,IndexMap,E> modifier ) throws E
+    {
+        IndexMap snapshot = indexMapSnapshot();
+        indexMap = modifier.apply( snapshot );
     }
 
     public IndexProxy getIndexProxy( long indexId ) throws IndexNotFoundKernelException
@@ -85,29 +103,6 @@ public class IndexMapReference implements IndexMapSnapshotProvider
             long[] changedLabels, long[] unchangedLabels, PrimitiveIntCollection properties )
     {
         return indexMap.getRelatedIndexes( changedLabels, unchangedLabels, properties );
-    }
-
-    public void setIndexMap( IndexMap newIndexMap )
-    {
-        // ASSUMPTION: Only called at shutdown or during commit (single-threaded in each case)
-        indexMap = newIndexMap;
-    }
-
-    public IndexProxy removeIndexProxy( long indexId )
-    {
-        // ASSUMPTION: Only called at shutdown or during commit (single-threaded in each case)
-        IndexMap newIndexMap = indexMapSnapshot();
-        IndexProxy indexProxy = newIndexMap.removeIndexProxy( indexId );
-        setIndexMap( newIndexMap );
-        return indexProxy;
-    }
-
-    public Iterable<IndexProxy> clear()
-    {
-        // ASSUMPTION: Only called at shutdown when there are no other calls to setIndexMap
-        IndexMap oldIndexMap = indexMap;
-        setIndexMap( new IndexMap() );
-        return oldIndexMap.getAllIndexProxies();
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )
