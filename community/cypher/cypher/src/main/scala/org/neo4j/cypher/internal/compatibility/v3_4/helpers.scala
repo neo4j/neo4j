@@ -19,19 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, InternalException}
-import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
-
 import org.neo4j.cypher.internal.compiler.v3_3.{CypherCompilerConfiguration => CypherCompilerConfiguration3_3}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase, CompilationPhaseEvent => CompilationPhaseEvent3_3}
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase, CompilationPhaseEvent => CompilationPhaseEvent3_3}
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition => InputPosition3_3}
-
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.{CompilationPhase => v3_4Phase}
+import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, InternalException}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 
 object helpers {

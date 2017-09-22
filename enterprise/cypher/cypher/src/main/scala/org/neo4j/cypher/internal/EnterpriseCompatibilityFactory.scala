@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.CypherPlanner
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.compatibility.v3_4.{Compatibility, CostCompatibility}
-import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
+import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -37,9 +37,6 @@ class EnterpriseCompatibilityFactory(inner: CompatibilityFactory, graph: GraphDa
     inner.create(spec, config)
 
   override def create(spec: PlannerSpec_v3_1, config: CypherCompilerConfiguration): v3_1.Compatibility =
-    inner.create(spec, config)
-
-  override def create(spec: PlannerSpec_v3_2, config: CypherCompilerConfiguration): v3_2.Compatibility[_] =
     inner.create(spec, config)
 
   override def create(spec: PlannerSpec_v3_4, config: CypherCompilerConfiguration): Compatibility[_,_] =

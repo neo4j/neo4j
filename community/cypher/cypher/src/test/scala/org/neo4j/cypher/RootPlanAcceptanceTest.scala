@@ -27,33 +27,33 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("cost should be default planner in 3.3") {
+  test("cost should be default planner in 3.4") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("interpreted should be default runtime in 3.3") {
+  test("interpreted should be default runtime in 3.4") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHaveRuntime(InterpretedRuntimeName)
   }
 
-  test("should use cost for varlength in 3.3") {
+  test("should use cost for varlength in 3.4") {
     given("match (a)-[r:T1*]->(b) return a,r,b")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHaveCypherVersion(CypherVersion.v3_4)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should use cost for cycles in 3.3") {
+  test("should use cost for cycles in 3.4") {
     given("match (a)-[r]->(a) return a")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHaveCypherVersion(CypherVersion.v3_4)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
-  test("should handle updates in 3.3") {
+  test("should handle updates in 3.4") {
     given("create() return 1")
       .withCypherVersion(CypherVersion.v3_4)
       .shouldHaveCypherVersion(CypherVersion.v3_4)

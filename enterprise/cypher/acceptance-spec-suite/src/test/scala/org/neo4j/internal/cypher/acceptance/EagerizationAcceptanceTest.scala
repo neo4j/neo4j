@@ -2538,7 +2538,7 @@ class EagerizationAcceptanceTest
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
     val config =
       TestConfiguration(Versions.Default, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.Rule, Runtimes.Default)
+      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.Rule, Runtimes.Default)
 
     executeWith(config, "EXPLAIN " + query, planComparisonStrategy = testEagerPlanComparisonStrategy(0))
   }

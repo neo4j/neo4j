@@ -29,7 +29,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface GeneratedQuery
 {
-    GeneratedQueryExecution execute(
+    org.neo4j.cypher.internal.v3_4.executionplan.GeneratedQueryExecution execute(
             TaskCloser closer,
             QueryContext queryContext,
             ExecutionMode executionMode,

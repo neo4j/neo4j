@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
