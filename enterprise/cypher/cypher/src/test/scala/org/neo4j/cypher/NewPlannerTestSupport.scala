@@ -86,8 +86,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     Map(GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   private val otherReadVersion = "2.3"
-  private val otherWriteVersion = "3.1" // because 2.3 cannot use cost planner for writes
-  private val currentVersion = "3.3"
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
@@ -140,8 +138,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     idpResult
   }
 
-  def executeScalarWithAllPlannersAndRuntimes[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndRuntimeAndMaybeCompatibilityMode(false, queryText, params:_*)
 
   def executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[T](queryText: String, params: (String, Any)*): T =
     executeScalarWithAllPlannersAndRuntimeAndMaybeCompatibilityMode(true, queryText, params:_*)
@@ -242,21 +238,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
 
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult =
     updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = true, queryText, params: _*)
-
-  def updateWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = false, queryText, params: _*)
-
-  def executeWithAllPlannersAndCompatibilityModeReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibilityResult = innerExecute(s"CYPHER $otherReadVersion $queryText", params: _*)
-    val ruleResult = innerExecute(s"CYPHER 3.1 planner=rule $queryText", params: _*)
-    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
-
-    assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current", replaceNaNs = true)
-    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
-    compatibilityResult.close()
-    ruleResult.close()
-    idpResult
-  }
 
   def executeWithCostPlannerAndInterpretedRuntimeOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
@@ -364,15 +345,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
       })
-    }
-  }
-
-  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(actual: InternalExecutionResult): MatchResult = {
-      MatchResult(
-        matches = actual.toComparableResult == expected.toCompararableSeq(replaceNaNs = false),
-        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
-        rawNegatedFailureMessage = s"Results are equal")
     }
   }
 }

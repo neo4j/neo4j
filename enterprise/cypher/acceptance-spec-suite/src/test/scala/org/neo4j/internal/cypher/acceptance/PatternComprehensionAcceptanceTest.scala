@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val expectedToSucceed = Configs.CommunityInterpreted - Configs.Version2_3
-  val expectedToSucceedRestricted = TestConfiguration(Versions(V3_1, V3_2), Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default))
+  val expectedToSucceedRestricted = TestConfiguration(Versions(V3_1, V3_2, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes(Runtimes.Interpreted, Runtimes.Default))
 
   test("pattern comprehension nested in pattern comprehension") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])

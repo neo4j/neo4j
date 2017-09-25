@@ -30,7 +30,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  */
 class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
-  val expectedToSucceed = Configs.All - Configs.Compiled
+  val expectedToSucceed = Configs.Interpreted
 
   test("should use index on IS NOT NULL") {
     // Given

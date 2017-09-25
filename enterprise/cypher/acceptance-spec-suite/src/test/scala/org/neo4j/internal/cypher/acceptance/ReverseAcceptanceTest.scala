@@ -27,7 +27,7 @@ class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
 
   test("reverse function should work on strings") {
     // When
-    val result = executeWith(Configs.CommunityInterpreted, "RETURN reverse('raksO')").columnAs("reverse('raksO')").next().toString
+    val result = executeWith(Configs.Interpreted, "RETURN reverse('raksO')").columnAs("reverse('raksO')").next().toString
 
     // Then
     result should equal("Oskar")

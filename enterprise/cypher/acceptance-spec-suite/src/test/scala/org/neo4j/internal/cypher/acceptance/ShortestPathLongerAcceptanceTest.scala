@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -84,7 +85,7 @@ import scala.collection.mutable
  *    ..      ..    ..
  *
  */
-class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   val VERBOSE = false // Lots of debug prints
 
@@ -166,7 +167,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node via top right") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlannersAndCompatibilityMode(
+    val results = executeWith(Configs.All,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -185,7 +186,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node via bottom left") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlannersAndCompatibilityMode(
+    val results = executeWith(Configs.Interpreted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -203,7 +204,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Fallback expander should take on rel-type predicates") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlannersAndCompatibilityMode(
+    val results = executeWith(Configs.Interpreted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[rels*]-(dst:$bottomRight))
          |WHERE ALL(r in rels WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
@@ -221,7 +222,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   // expanderSolverStep does not currently take on predicates using rels(p), but it should!
   ignore("Fallback expander should take on rel-type predicates (using rels(p))") {
     val start = System.currentTimeMillis
-    val results = executeWithAllPlannersAndCompatibilityMode(
+    val results = executeWith(Configs.All,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ALL(r in rels(p) WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
@@ -605,7 +606,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
-    val results = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val results = executeWith(Configs.CommunityInterpreted, query)
     results.toList should equal(List(Map("nodes" -> List(1,2,3,4,14,13,26))))
   }
 

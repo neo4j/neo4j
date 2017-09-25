@@ -94,7 +94,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
-  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: String, params: (String, Any)*):
+  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: Seq[String], params: (String, Any)*):
   Unit = {
     for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
       thisScenario.prepare()
@@ -109,19 +109,18 @@ trait CypherComparisonSupport extends CypherTestSupport {
           // It was not expected to fail with the specified error message, do nothing
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || !e.getMessage.contains(message)) {
-              fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
-                "' the error message was '" + e.getMessage + "'")
+            if (e.getMessage == null || message.filter(e.getMessage.contains(_)).isEmpty) {
+              fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'")
             }
           } else {
-            if (e.getMessage.contains(message)) {
+            if (message.filter(e.getMessage.contains(_)).nonEmpty) {
               fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
             }
             // It failed like expected, and we did not specify any message for this config
           }
         case Failure(e: Throwable) => {
           if (expectedToFailWithSpecificMessage) {
-            fail(s"Unexpected exception in ${thisScenario.name}", e)
+            fail(s"Unexpected exception in ${thisScenario.name} with error message " + e.getMessage, e)
           }
         }
       }

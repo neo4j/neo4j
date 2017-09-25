@@ -31,21 +31,21 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("from graph") {
     val query = "FROM GRAPH AT 'graph://url' AS test MATCH (a)-->() RETURN a"
-    failWithError(configs, query, expectedException)
+    failWithError(configs, query, List(expectedException))
   }
 
   test("into graph") {
     val query = "MATCH (a)--() INTO GRAPH AT 'graph://url' AS test CREATE (a)-->(b:B) RETURN b"
-    failWithError(configs, query, expectedException)
+    failWithError(configs, query, List(expectedException))
   }
 
   test("return named graph") {
     val query = "WITH $param AS foo MATCH ()--() RETURN 1 GRAPHS foo"
-    failWithError(configs, query, expectedException)
+    failWithError(configs, query, List(expectedException))
   }
 
   test("project a graph") {
     val query = "WITH 1 AS a GRAPH foo RETURN 1"
-    failWithError(configs, query, expectedException)
+    failWithError(configs, query, List(expectedException))
   }
 }

@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_2}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.All - Configs.Compiled
+  val expectedToSucceed = Configs.Interpreted
 
   test("Plan should have right relationship direction") {
     setUp("From")

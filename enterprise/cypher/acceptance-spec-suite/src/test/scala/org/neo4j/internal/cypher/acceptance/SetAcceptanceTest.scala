@@ -20,8 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
-class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+
+  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
+  val expectedToFail = Configs.CommunityInterpreted - Configs.Cost2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
+  val expectedToFail2 = Configs.CommunityInterpreted - Configs.Version2_3 + TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema))
 
   test("optional match and set") {
     val n1 = createLabeledNode("L1")
@@ -29,7 +34,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     relate(n1, n2, "R1")
 
     // only fails when returning distinct...
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(expectedToSucceed,
       """
         |MATCH (n1:L1)-[:R1]->(n2:L2)
         |OPTIONAL MATCH (n3)<-[r:R2]-(n2)
@@ -45,14 +50,14 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val node = createNode()
 
     // when
-    val result = updateWithBothPlanners("MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
+    val result = executeWith(expectedToSucceed, "MATCH (n) SET n.property = ['foo','bar'] RETURN n.property")
 
     // then
     assertStats(result, propertiesWritten = 1)
     node should haveProperty("property")
 
     // and
-    val result2 = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
+    val result2 = executeWith(Configs.Interpreted, "MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
     result2.columnAs("count(*)").toList should be(List(1))
   }
 
@@ -61,12 +66,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode()
 
     // when
-    val result = intercept[CypherTypeException](
-      updateWithBothPlanners("MATCH (n) SET n.property = [['foo'],['bar']] RETURN n.property")
-    )
-
-    //then
-    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing collections can not be stored in properties.")
+    failWithError(expectedToFail, "MATCH (n) SET n.property = [['foo'],['bar']] RETURN n.property",
+      List("Collections containing collections can not be stored in properties."))
   }
 
   test("should not be able to set property to collection with null value") {
@@ -74,12 +75,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode()
 
     // when
-    val result = intercept[CypherTypeException](
-      updateWithBothPlanners("MATCH (n) SET n.property = [null,null] RETURN n.property")
-    )
+    failWithError(expectedToFail, "MATCH (n) SET n.property = [null,null] RETURN n.property",
+      List("Collections containing null values can not be stored in properties."))
 
-    //then
-    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing null values can not be stored in properties.")
   }
 
   //Not suitable for the TCK
@@ -88,7 +86,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode()
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(expectedToSucceed, "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -101,7 +99,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r = relate(createNode(), createNode())
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
+    val result = executeWith(expectedToSucceed, "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -114,7 +112,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n2 = createNode()
     val n3 = createNode()
 
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+    val query = "MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])"
+    val result = executeWith(expectedToSucceed, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     n1 should haveProperty("num").withValue("1")
@@ -128,7 +127,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r2 = relate(createNode(), createNode())
     val r3 = relate(createNode(), createNode())
 
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+    val query = "MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])"
+    val result = executeWith(expectedToSucceed, query, params = Map("param" ->  Array("1", "2", "3")))
 
     assertStats(result, propertiesWritten = 3)
     r1 should haveProperty("num").withValue("1")
@@ -138,8 +138,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
   //Not suitable for the TCK
   test("should fail at runtime when the expression is not a node or a relationship") {
-    an [InvalidArgumentException] should be thrownBy
-      updateWithBothPlanners("SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)", "node" -> 42)
+    failWithError(expectedToFail2, "SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)",
+      List("The expression GenericCase(Vector((true,{node})),None) should have been a node or a relationship"), params= "node" -> 42)
   }
 
   //Not suitable for the TCK
@@ -154,7 +154,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     // when
     val q = "MATCH p=(a)-->(b)-->(c) WHERE id(a) = 0 AND id(c) = 2 WITH p FOREACH(n IN nodes(p) | SET n.marked = true)"
 
-    updateWithBothPlanners(q)
+    executeWith(expectedToSucceed, q)
 
     // then
     a should haveProperty("marked").withValue(true)
@@ -170,7 +170,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    val result = updateWithBothPlanners("MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
+    val result = executeWith(expectedToSucceed, "MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
 
     // then
     a should haveProperty("a").withValue("A")
@@ -189,7 +189,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val c = createNode("c"->"C")
 
     // when
-    updateWithBothPlanners("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
+   executeWith(expectedToSucceed, "MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
 
     // then
     a should haveProperty("a").withValue("D")

@@ -112,7 +112,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      failWithError(expectedSucceed + Configs.Procs, "merge (a:Person:User {id: 23}) return a", "can not create a new node due to conflicts with existing unique nodes")
+      failWithError(expectedSucceed + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
+        List("can not create a new node due to conflicts with existing unique nodes"))
       countNodes() should equal(2)
     }
 

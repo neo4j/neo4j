@@ -56,10 +56,6 @@ trait QueryPlanTestSupport {
     override def apply(result: InternalExecutionResult): MatchResult = useOperators(operators:_*)(result.executionPlanDescription())
   }
 
-  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult]  = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = useOperatorWithText("Projection", otherText: _*)(result.executionPlanDescription())
-  }
-
   def useOperatorWithText(operator: String, otherText: String*): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
     override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(

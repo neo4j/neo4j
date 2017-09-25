@@ -21,11 +21,14 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class MatchAggregationsBackedByCountStoreAcceptanceTest
-  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+
+  val defaultPlansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("do not plan counts store lookup for loop matches") {
     val n = createNode()
@@ -35,14 +38,14 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     // one non-loop
     relate(n, createNode())
 
-    val resultStar = executeWithAllPlannersAndCompatibilityMode("MATCH (a)-->(a) RETURN count(*)")
-    val resultVar = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r]->(a) RETURN count(r)")
+    val resultStar = executeWith(Configs.Interpreted, "MATCH (a)-->(a) RETURN count(*)",
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeOperation("RelationshipCountFromCountStore")))
+
+    val resultVar = executeWith(Configs.All, "MATCH (a)-[r]->(a) RETURN count(r)",
+      planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeOperation("RelationshipCountFromCountStore")))
 
     resultStar.toList should equal(List(Map("count(*)" -> 2)))
     resultVar.toList should equal(List(Map("count(r)" -> 2)))
-
-    resultStar.executionPlanDescription() shouldNot includeOperation("RelationshipCountFromCountStore")
-    resultVar.executionPlanDescription() shouldNot includeOperation("RelationshipCountFromCountStore")
   }
 
   test("counts nodes using count store") {
@@ -55,7 +58,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(3))
 
-    }, allRuntimes = true)
+    }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("capitalized COUNTS nodes using count store") {
@@ -68,7 +71,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("COUNT(n)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts nodes using count store with count(*)") {
@@ -81,7 +84,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(3))
 
-    }, allRuntimes = true)
+    }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts labeled nodes using count store") {
@@ -94,7 +97,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts nodes using count store and projection expression") {
@@ -107,7 +110,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n) > 0").toSet[Boolean] should equal(Set(true))
 
-      }, expectedResultOnEmptyDatabase = Set(false))
+      }, expectedResultOnEmptyDatabase = Set(false), expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts nodes using count store and projection expression with variable") {
@@ -120,7 +123,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("someNum").toSet[Int] should equal(Set(7.5))
 
-      })
+      }, expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type using count store") {
@@ -133,7 +136,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type using count store with count(*)") {
@@ -146,7 +149,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type using count store") {
@@ -159,7 +162,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type using count store with count(*)") {
@@ -172,7 +175,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type and labeled source node using count store") {
@@ -185,7 +188,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled source node using count store") {
@@ -198,7 +201,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type and labeled destination node using count store") {
@@ -211,7 +214,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled destination node using count store") {
@@ -224,7 +227,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled source and destination without using count store") {
@@ -237,7 +240,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store") {
@@ -250,7 +253,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("counts relationships with type, reverse direction and labeled source node using count store") {
@@ -263,7 +266,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type, reverse direction and labeled destination node using count store") {
@@ -276,7 +279,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type, any direction and labeled source node without using count store") {
@@ -289,7 +292,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type, any direction and labeled destination node without using count store") {
@@ -302,7 +305,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("counts relationships with type, any direction and no labeled nodes without using count store") {
@@ -315,7 +318,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("counts nodes using count store considering transaction state") {
@@ -328,7 +331,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts labeled nodes using count store considering transaction state (test1)") {
@@ -341,7 +344,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts labeled nodes using count store considering transaction state (test2)") {
@@ -354,7 +357,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts labeled nodes using count store considering transaction state containing newly created label (test1)") {
@@ -367,7 +370,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(1))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
 
@@ -381,7 +384,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts nodes using count store and projection expression considering transaction state") {
@@ -395,7 +398,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         result.columnAs("count(n) > 1").toSet[Boolean] should equal(Set(true))
 
       },
-      expectedResultOnEmptyDatabase = Set(false))
+      expectedResultOnEmptyDatabase = Set(false), expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts nodes using count store and projection expression with variable considering transaction state") {
@@ -408,7 +411,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("someNum").toSet[Int] should equal(Set(5))
 
-      })
+      }, expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships using count store considering transaction state") {
@@ -421,7 +424,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type using count store considering transaction state") {
@@ -434,7 +437,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with multiple types using count store considering transaction state") {
@@ -447,7 +450,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships using count store and projection with expression considering transaction state") {
@@ -461,7 +464,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         result.columnAs("count(r) > 2").toSet[Boolean] should equal(Set(true))
 
       },
-      expectedResultOnEmptyDatabase = Set(false))
+      expectedResultOnEmptyDatabase = Set(false), expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships using count store and projection with expression and variable considering transaction state") {
@@ -474,7 +477,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("someNum").toSet[Int] should equal(Set(5))
 
-      })
+      }, expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships using count store and horizon with further query") {
@@ -493,7 +496,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         result.toList should equal(List(Map("userKnows" -> 2, "otherKnows" -> 1)))
 
       },
-      expectedResultOnEmptyDatabase = Set.empty)
+      expectedResultOnEmptyDatabase = Set.empty, expectedToSucceed = Configs.CommunityInterpreted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
 //  MATCH (n:X)-[r:Y]->() WITH count(r) as rcount MATCH (n)-[r:Y]->() WHERE count(r) = rcount RETURN rcount, labels(n)
@@ -507,7 +510,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(2))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled source using count store considering transaction state") {
@@ -520,7 +523,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type, reverse direction and labeled source using count store considering transaction state") {
@@ -533,7 +536,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type and labeled source using count store considering transaction state") {
@@ -546,7 +549,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled destination using count store considering transaction state") {
@@ -559,7 +562,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type, reverse direction and labeled destination using count store considering transaction state") {
@@ -572,7 +575,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with unspecified type and labeled destination using count store considering transaction state") {
@@ -585,7 +588,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = defaultPlansExpectedToFail)
   }
 
   test("counts relationships with type and labeled source and destination without using count store considering transaction state") {
@@ -598,7 +601,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store considering transaction state") {
@@ -611,49 +614,49 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(r)").toSet[Int] should equal(Set(3))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.All, plansExpectedToFail = Configs.AllRulePlanners)
   }
 
   test("should work even when the tokens are already known") {
-    innerExecute(
+    innerExecuteDeprecated(
       s"""
          |CREATE (p:User {name: 'Petra'})
          |CREATE (s:User {name: 'Steve'})
          |CREATE (p)-[:KNOWS]->(s)
-      """.stripMargin)
+      """.stripMargin, Map.empty)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:User)-[r:KNOWS]->() RETURN count(r)")
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH (:User)-[r:KNOWS]->() RETURN count(r)")
 
     result.columnAs("count(r)").toSet[Int] should equal(Set(1))
   }
 
   test("runtime checking of tokens - nodes - not existing when planning nor when running") {
     createLabeledNode("NotRelated")
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Nonexistent) RETURN count(n)")
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH (n:Nonexistent) RETURN count(n)")
     result.toList should equal(List(Map("count(n)" -> 0)))
   }
 
   test("runtime checking of tokens - nodes - not existing when planning but exists when running") {
     createLabeledNode("NotRelated")
-    val result1 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:justCreated) RETURN count(n)")
+    val result1 = executeWith(Configs.AllExceptSlotted, "MATCH (n:justCreated) RETURN count(n)")
     result1.toList should equal(List(Map("count(n)" -> 0)))
     createLabeledNode("justCreated")
-    val result2 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:justCreated) RETURN count(n)")
+    val result2 = executeWith(Configs.AllExceptSlotted, "MATCH (n:justCreated) RETURN count(n)")
     result2.toList should equal(List(Map("count(n)" -> 1)))
   }
 
   test("runtime checking of tokens - relationships - not existing when planning nor when running") {
     relate(createNode(), createNode(), "UNRELATED")
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:Nonexistent]->() RETURN count(r)")
+    val result = executeWith(Configs.AllExceptSlotted, "MATCH ()-[r:Nonexistent]->() RETURN count(r)")
     result.toList should equal(List(Map("count(r)" -> 0)))
   }
 
   test("runtime checking of tokens - relationships - not existing when planning but exists when running") {
     relate(createNode(), createNode(), "UNRELATED")
-    val result1 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:justCreated]->() RETURN count(r)")
+    val result1 = executeWith(Configs.AllExceptSlotted, "MATCH ()-[r:justCreated]->() RETURN count(r)")
     result1.toList should equal(List(Map("count(r)" -> 0)))
     relate(createNode(), createNode(), "justCreated")
-    val result2 = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r:justCreated]->() RETURN count(r)")
+    val result2 = executeWith(Configs.AllExceptSlotted, "MATCH ()-[r:justCreated]->() RETURN count(r)")
     result2.toList should equal(List(Map("count(r)" -> 1)))
   }
 
@@ -667,7 +670,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(9))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted,  plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store on two unlabeled nodes and count(*)") {
@@ -680,7 +683,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(9))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted,  plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store on one labeled node and one unlabeled") {
@@ -693,7 +696,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(6))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store on one labeled node and one unlabeled and count(*)") {
@@ -706,7 +709,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(6))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store on two labeled nodes") {
@@ -719,7 +722,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(n)").toSet[Int] should equal(Set(4))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store with many nodes") {
@@ -732,7 +735,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(36))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   test("count store with many but odd number of nodes") {
@@ -745,7 +748,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
         // Then
         result.columnAs("count(*)").toSet[Int] should equal(Set(108))
 
-      }, allRuntimes = true)
+      }, expectedToSucceed = Configs.AllExceptSlotted, plansExpectedToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1 + Configs.Cost3_2)
   }
 
   def withModel(label1: String = "User",
@@ -754,33 +757,33 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit,
                 expectedResultOnEmptyDatabase: Set[Any] = Set(0),
-                allRuntimes: Boolean = false): Unit = {
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
+                expectedToSucceed: TestConfiguration,
+                plansExpectedToFail: TestConfiguration): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, expectedToSucceed, plansExpectedToFail)
 
-    innerExecute(
+    innerExecuteDeprecated(
       s"""
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
          |CREATE (p)-[:$type1]->(s)
          |CREATE (a)-[:LOOP]->(a)
-      """.stripMargin)
+      """.stripMargin, Map.empty)
 
-    val result: InternalExecutionResult =
-      if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
-      else executeWithAllPlannersAndCompatibilityMode(query)
-    result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
+    val result: InternalExecutionResult = executeWith(expectedToSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeOperation(expectedLogicalPlan),
+        expectPlansToFail = plansExpectedToFail))
     f(result)
 
     deleteAllEntities()
 
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, expectedToSucceed, plansExpectedToFail)
   }
 
   private def verifyOnEmptyDatabase(expectedLogicalPlan: String, query: String,
-                                   expectedResult: Set[Any], allRuntimes: Boolean): Unit = {
+                                    expectedResult: Set[Any], expectedToSucceed: TestConfiguration,
+                                    plansExpectedToFail:TestConfiguration): Unit = {
     val resultOnEmptyDb: InternalExecutionResult =
-      if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
-      else  executeWithAllPlannersAndCompatibilityMode(query)
+      executeWith(expectedToSucceed, query)
     resultOnEmptyDb.executionPlanDescription() should includeOperation(expectedLogicalPlan)
     withClue("should return a count of 0 on an empty database") {
       resultOnEmptyDb.columnAs(resultOnEmptyDb.columns.head).toSet[Int] should equal(expectedResult)
@@ -792,8 +795,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                              type1: String = "KNOWS",
                              expectedLogicalPlan: String = "RelationshipCountFromCountStore",
                              query: String, f: InternalExecutionResult => Unit,
-                             allRuntimes: Boolean = false): Unit = {
-    withModel(label1, label2, type1, expectedLogicalPlan, query, f, allRuntimes = allRuntimes)
+                             expectedToSucceed: TestConfiguration,
+                             plansExpectedToFail: TestConfiguration): Unit = {
+    withModel(label1, label2, type1, expectedLogicalPlan, query, f, expectedToSucceed = expectedToSucceed, plansExpectedToFail = plansExpectedToFail)
   }
 
   def withModelAndTransaction(label1: String = "User",
@@ -805,21 +809,22 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                 expectedLogicalPlan: String = "NodeCountFromCountStore",
                 query: String, f: InternalExecutionResult => Unit,
                 expectedResultOnEmptyDatabase: Set[Any] = Set(0),
-                allRuntimes: Boolean = false): Unit = {
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes)
+                expectedToSucceed: TestConfiguration,
+                plansExpectedToFail: TestConfiguration): Unit = {
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, expectedToSucceed,plansExpectedToFail)
 
-    innerExecute(
+    innerExecuteDeprecated(
       s"""
          |CREATE (m:X {name: 'Mats'})
          |CREATE (p:$label1 {name: 'Petra'})
          |CREATE (s:$label2 {name: 'Steve'})
          |CREATE (p)-[:$type1]->(s)
          |CREATE (m)-[:$type1]->(s)
-      """.stripMargin)
+      """.stripMargin, Map.empty)
 
     graph.inTx {
-      executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (m:X)-[r]->() DELETE m, r")
-      executeWithCostPlannerAndInterpretedRuntimeOnly(
+      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (m:X)-[r]->() DELETE m, r")
+      executeWith(Configs.Interpreted - Configs.Cost2_3,
         s"""
            |MATCH (p:$label1 {name: 'Petra'})
            |MATCH (s:$label2 {name: 'Steve'})
@@ -827,15 +832,13 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
            |CREATE (p)-[:$type2]->(c)
            |CREATE (c)-[:$type3]->(s)
         """.stripMargin)
-      val result: InternalExecutionResult =
-        if (allRuntimes) executeWithAllPlannersAndRuntimesAndCompatibilityMode(query)
-        else executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-      result.executionPlanDescription() should includeOperation(expectedLogicalPlan)
+      val result = executeWith(expectedToSucceed, query,
+        planComparisonStrategy = ComparePlansWithAssertion(_ should includeOperation(expectedLogicalPlan), expectPlansToFail = plansExpectedToFail))
       f(result)
     }
 
     deleteAllEntities()
-    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, allRuntimes = allRuntimes)
+    verifyOnEmptyDatabase(expectedLogicalPlan, query, expectedResultOnEmptyDatabase, expectedToSucceed = expectedToSucceed, plansExpectedToFail = plansExpectedToFail)
   }
 
   def withRelationshipsModelAndTransaction(label1: String = "User",
@@ -847,9 +850,10 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
                         expectedLogicalPlan: String = "RelationshipCountFromCountStore",
                         query: String, f: InternalExecutionResult => Unit,
                         expectedResultOnEmptyDatabase: Set[Any] = Set(0),
-                        allRuntimes: Boolean = false): Unit = {
+                        expectedToSucceed: TestConfiguration,
+                        plansExpectedToFail: TestConfiguration): Unit = {
     withModelAndTransaction(label1, label2, label3, type1, type2, type3,
-                            expectedLogicalPlan, query, f, expectedResultOnEmptyDatabase, allRuntimes)
+                            expectedLogicalPlan, query, f, expectedResultOnEmptyDatabase, expectedToSucceed, plansExpectedToFail)
   }
 
   case class includeOperation(operationName: String) extends Matcher[InternalPlanDescription] {
