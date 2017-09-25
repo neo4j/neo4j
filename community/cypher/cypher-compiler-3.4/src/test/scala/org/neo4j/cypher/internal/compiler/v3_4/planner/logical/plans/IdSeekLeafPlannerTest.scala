@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.apa.v3_4.symbols
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
@@ -27,11 +28,10 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.idSeekLeafP
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.expressions._
-
-import scala.collection.mutable
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -256,13 +256,17 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
+    val relTypeX = RelTypeName("X")(pos)
 
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1)))
+    val semanticTable =
+      new SemanticTable(ASTAnnotationMap(
+        rIdent -> ExpressionTypeInfo(symbols.CTRelationship)
+      ))
+    semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
 
     val patternRel = PatternRelationship(
       IdName("r"), (from, end), SemanticDirection.BOTH,
-      Seq(RelTypeName("X")_),
+      Seq(relTypeX),
       SimplePatternLength
     )
     val qg = QueryGraph(
@@ -277,9 +281,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, evaluator)
+      metrics = factory.newMetrics(statistics, evaluator),
+      semanticTable = semanticTable
     )
-    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)
@@ -302,14 +306,19 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )_
     val from = IdName("from")
     val end = IdName("to")
+    val relTypeX = RelTypeName("X") _
+    val relTypeY = RelTypeName("Y") _
 
-
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1), "Y" -> RelTypeId(2)))
+    val semanticTable =
+      new SemanticTable(ASTAnnotationMap(
+        rIdent -> ExpressionTypeInfo(symbols.CTRelationship)
+      ))
+    semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
+    semanticTable.resolvedRelTypeNames += "Y" -> RelTypeId(2)
 
     val patternRel = PatternRelationship(
       IdName("r"), (from, end), SemanticDirection.BOTH,
-      Seq[RelTypeName](RelTypeName("X")_, RelTypeName("Y")_),
+      Seq[RelTypeName](relTypeX, relTypeY),
       SimplePatternLength
     )
     val qg = QueryGraph(
@@ -324,9 +333,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     })
     implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      metrics = factory.newMetrics(statistics, evaluator)
+      metrics = factory.newMetrics(statistics, evaluator),
+      semanticTable = semanticTable
     )
-    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg)

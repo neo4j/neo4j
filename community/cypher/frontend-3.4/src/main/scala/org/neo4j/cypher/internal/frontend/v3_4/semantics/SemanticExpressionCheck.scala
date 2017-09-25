@@ -244,8 +244,8 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           withScopedState {
             SemanticPatternCheck.check(Pattern.SemanticContext.Match, x.pattern) chain
               x.namedPath.map(declareVariable(_, CTPath): SemanticCheck).getOrElse(SemanticCheckResult.success) chain
-              check(SemanticContext.Simple, x.predicate) chain
-              check(SemanticContext.Simple, x.projection)
+              simple(x.predicate) chain
+              simple(x.projection)
           } chain {
             val outerTypes: TypeGenerator = types(x.projection)(_).wrapInList
             specifyType(outerTypes, x)

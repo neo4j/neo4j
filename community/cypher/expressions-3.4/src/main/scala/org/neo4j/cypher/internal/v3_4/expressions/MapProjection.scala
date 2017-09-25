@@ -16,11 +16,18 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.apa.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.apa.v3_4.InputPosition
 
-case class MapProjection(name: Variable, items: Seq[MapProjectionElement])
+case class MapProjection(
+                          name: Variable,
+                          items: Seq[MapProjectionElement],
+                          definitionPos: Option[InputPosition] = None)
                         (val position: InputPosition)
-  extends Expression
+  extends Expression {
+
+  def withDefinitionPos(pos:InputPosition): MapProjection =
+    copy(definitionPos = Some(pos))(position)
+}
 
 sealed trait MapProjectionElement extends Expression
 

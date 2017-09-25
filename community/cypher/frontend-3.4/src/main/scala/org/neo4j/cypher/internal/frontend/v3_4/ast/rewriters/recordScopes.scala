@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
-import org.neo4j.cypher.internal.v3_4.expressions.PatternComprehension
+import org.neo4j.cypher.internal.v3_4.expressions.{MapProjection, PatternComprehension}
 
 case class recordScopes(semanticState: SemanticState) extends Rewriter {
 
@@ -27,5 +27,7 @@ case class recordScopes(semanticState: SemanticState) extends Rewriter {
   private val instance: Rewriter = topDown(Rewriter.lift {
     case x: PatternComprehension =>
       x.withOuterScope(semanticState.recordedScopes(x).symbolDefinitions.map(_.asVariable))
+    case x: MapProjection =>
+      x.withDefinitionPos(semanticState.recordedScopes(x).symbolTable(x.name.name).definition.position)
   })
 }

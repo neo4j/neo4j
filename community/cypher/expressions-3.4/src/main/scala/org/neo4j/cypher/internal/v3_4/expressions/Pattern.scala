@@ -143,6 +143,8 @@ case class NodePattern(variable: Option[Variable],
   extends PatternElement {
 
   override def allVariables: Set[Variable] = variable.toSet
+
+  override def isSingleNode = true
 }
 
 

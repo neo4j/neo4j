@@ -38,7 +38,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     // GIVEN
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map(PROPERTY_KEY_NAME.name -> PROPERTY_KEY_ID))
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(Some(PROPERTY_KEY_ID))
 
     //WHEN
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
@@ -53,7 +53,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
     // WHEN
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
@@ -69,7 +69,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
     // WHEN
     val lazyPropertyKey = LazyPropertyKey(PROPERTY_KEY_NAME)

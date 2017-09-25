@@ -912,11 +912,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count no grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -931,11 +932,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count distinct no grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map.empty, Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -969,11 +971,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count node grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -998,11 +1001,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count distinct node grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map("a" -> Variable("a")(pos)), Map("count(a.prop)" -> invocation))(solved)
     val plan = ProduceResult(List("count(a.prop)"), aggregation)
@@ -1057,11 +1061,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count property grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property: Expression = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = false, Vector(property))(pos)
 
     val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
@@ -1079,11 +1084,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count distinct property grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property: Expression = Property(Variable("a")(pos), propKeyName)(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(property))(pos)
     val aggregation = Aggregation(scan, Map("a.prop" -> property), Map("count(a.prop)" -> invocation))(solved)
 
@@ -1100,11 +1106,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("count nodes distinct property grouping key") {
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    val propKeyName = PropertyKeyName("prop")(pos)
+    when(semanticTable.id(propKeyName)).thenReturn(None)
     val scan = AllNodesScan(IdName("a"), Set.empty)(solved)
     val ns: Namespace = Namespace(List())(pos)
     val count: FunctionName = FunctionName("count")(pos)
-    val property: Expression = Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)
+    val property: Expression = Property(Variable("a")(pos), propKeyName)(pos)
     val node = Variable("a")(pos)
     val invocation: FunctionInvocation = FunctionInvocation(ns, count, distinct = true, Vector(node))(pos)
 

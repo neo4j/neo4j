@@ -90,6 +90,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     when(m.resolvedLabelNames).thenReturn(mutable.Map.empty[String, LabelId])
     when(m.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
     when(m.resolvedRelTypeNames).thenReturn(mutable.Map.empty[String, RelTypeId])
+    when(m.id(any[PropertyKeyName]())).thenReturn(None)
+    when(m.id(any[LabelName])).thenReturn(None)
+    when(m.id(any[RelTypeName])).thenReturn(None)
     m
   }
 

@@ -44,9 +44,10 @@ public class CompatibilitySpecSuiteTest
     // If you want to run only a single feature, put the name of the feature file in `FEATURE_TO_RUN` (including .feature)
     // If you want to run only a single scenario, put (part of) its name in the `SCENARIO_NAME_REQUIRED` constant
     // Do not forget to clear these strings to empty strings before you commit!!
-    public static final String FEATURE_TO_RUN = "SemanticErrorAcceptance.feature";
-    public static final String SCENARIO_NAME_REQUIRED = "Failing when checking existence of a non-property and " +
-            "non-pattern";
+    @SuppressWarnings( "WeakerAccess" )
+    public static final String FEATURE_TO_RUN = "";
+    @SuppressWarnings( "WeakerAccess" )
+    public static final String SCENARIO_NAME_REQUIRED = "";
 
     private CompatibilitySpecSuiteTest()
     {
@@ -190,6 +191,7 @@ public class CompatibilitySpecSuiteTest
 
     // constants for TCK configuration
 
+    @SuppressWarnings( "WeakerAccess" )
     public static final String SUITE_NAME = "compatibility-spec-suite";
 
     @SuppressWarnings( "unused" )

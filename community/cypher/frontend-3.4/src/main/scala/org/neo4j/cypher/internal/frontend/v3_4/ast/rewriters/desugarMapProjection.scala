@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, InternalException, Rewriter, topDown}
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.v3_4.expressions._
 
@@ -33,13 +33,11 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case e@MapProjection(id, items) =>
-
-      val scope = state.recordedScopes(e)
+    case e@MapProjection(id, items, definitionPos) =>
 
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
-        val idPos = scope.symbolTable(id.name).definition.position
+        val idPos = definitionPos.getOrElse(throw new InternalException("MapProjection definition pos is not known"))
         val newIdentifier = Variable(id.name)(idPos)
         val value = Property(newIdentifier, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)
