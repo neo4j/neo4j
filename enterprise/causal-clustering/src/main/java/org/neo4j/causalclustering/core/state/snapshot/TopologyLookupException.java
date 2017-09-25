@@ -23,7 +23,7 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
 
-public class TopologyLookupException extends RuntimeException
+public class TopologyLookupException extends Exception
 {
     public TopologyLookupException( Throwable cause )
     {
