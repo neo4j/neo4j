@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
@@ -92,6 +93,28 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
 {
+    public interface Monitor
+    {
+        Monitor EMPTY = new Monitor.Adaptor();
+
+        class Adaptor implements Monitor
+        {
+            @Override
+            public void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause )
+            {   // no-op
+            }
+
+            @Override
+            public void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data )
+            {   // no-op
+            }
+        }
+
+        void failedToOpenIndex( long indexId, IndexDescriptor indexDescriptor, String action, Exception cause );
+
+        void recoveryCompleted( long indexId, IndexDescriptor indexDescriptor, Map<String,Object> data );
+    }
+
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =
             new SchemaIndexProvider( new Descriptor( "no-index-provider", "1.0" ), -1, IndexDirectoryStructure.NONE )
             {

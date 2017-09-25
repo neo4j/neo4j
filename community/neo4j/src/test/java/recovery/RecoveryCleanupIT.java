@@ -153,8 +153,8 @@ public class RecoveryCleanupIT
         // then
         logProvider.assertContainsMessageMatching( Matchers.stringContainsInOrder( Iterables.asIterable(
                 "Schema index recovery completed",
-                "pages visited",
                 "cleaned crashed pointers",
+                "pages visited",
                 "Time spent" ) ) );
     }
 

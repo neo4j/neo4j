@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -165,7 +164,7 @@ public class NonUniqueIndexTest
     {
         FileSystemAbstraction fs = resources.fileSystem();
         File storeDir = resources.directory().graphDbDir();
-        NullLogProvider logProvider = NullLogProvider.getInstance();
+        SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
         OperationalMode operationalMode = OperationalMode.single;
         PageCache pageCache = resources.pageCache();
         Boolean useFusionIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
@@ -173,11 +172,11 @@ public class NonUniqueIndexTest
         if ( useFusionIndex )
         {
             indexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
         }
         else
         {
-            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config, operationalMode );
+            indexProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, monitor, config, operationalMode );
         }
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,

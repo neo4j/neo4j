@@ -27,6 +27,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -35,7 +36,8 @@ import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
@@ -67,22 +69,25 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         PageCache pageCache = dependencies.pageCache();
         File storeDir = context.storeDir();
         FileSystemAbstraction fs = dependencies.fileSystem();
-        LogProvider logProvider = dependencies.getLogging().getInternalLogProvider();
+        Log log = dependencies.getLogService().getInternalLogProvider().getLog( FusionSchemaIndexProvider.class );
+        Monitors monitors = dependencies.monitors();
+        monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
+        SchemaIndexProvider.Monitor monitor = monitors.newMonitor( SchemaIndexProvider.Monitor.class, KEY );
         Config config = dependencies.getConfig();
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
-        return newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, recoveryCleanupWorkCollector );
+        return newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
     }
 
     public static FusionSchemaIndexProvider newInstance( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
-            LogProvider logProvider, Config config, OperationalMode operationalMode,
+            SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( storeDir );
         boolean readOnly = isReadOnly( config, operationalMode );
         NativeSchemaNumberIndexProvider nativeProvider =
-                new NativeSchemaNumberIndexProvider( pageCache, fs, childDirectoryStructure, logProvider, recoveryCleanupWorkCollector, readOnly );
-        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, logProvider, config,
+                new NativeSchemaNumberIndexProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
+        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, childDirectoryStructure, monitor, config,
                 operationalMode );
         boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
         int priority = useNativeIndex ? PRIORITY : 0;

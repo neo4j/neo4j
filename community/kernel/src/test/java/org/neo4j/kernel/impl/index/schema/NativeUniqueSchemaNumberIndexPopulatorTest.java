@@ -47,7 +47,7 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
             PageCache pageCache, FileSystemAbstraction fs, File indexFile,
             Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, log, indexDescriptor, indexId );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, monitor, indexDescriptor, indexId );
     }
 
     @Override

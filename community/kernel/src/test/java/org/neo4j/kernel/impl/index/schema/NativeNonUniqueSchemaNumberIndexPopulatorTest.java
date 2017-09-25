@@ -45,7 +45,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator( PageCache pageCache, FileSystemAbstraction fs,
             File indexFile, Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, log, indexDescriptor,
+        return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, indexFile, layout, samplingConfig, monitor, indexDescriptor,
                 indexId );
     }
 

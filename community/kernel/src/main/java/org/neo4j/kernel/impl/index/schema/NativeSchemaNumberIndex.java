@@ -30,11 +30,12 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
-import org.neo4j.logging.Log;
 
 import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
 class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
@@ -43,22 +44,22 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final GBPTreeFileUtil gbpTreeFileUtil;
-    private final Log log;
     private final IndexDescriptor descriptor;
     private final long indexId;
+    private final SchemaIndexProvider.Monitor monitor;
 
     GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout, Log log,
-            IndexDescriptor descriptor, long indexId )
+    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
         this.gbpTreeFileUtil = new GBPTreeFileSystemFileUtil( fs );
-        this.log = log;
         this.descriptor = descriptor;
         this.indexId = indexId;
+        this.monitor = monitor;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
@@ -76,17 +77,12 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
             @Override
             public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {
-                log.info( String.format(
-                        "%s Schema index recovery completed. Number of pages visited: %d. Number of cleaned crashed pointers: %d. Time " +
-                                "spent: %s.",
-                        indexDescription(), numberOfPagesVisited, numberOfCleanedCrashPointers, duration( durationMillis ) ) );
+                monitor.recoveryCompleted( indexId, descriptor, map(
+                        "Number of pages visited", numberOfPagesVisited,
+                        "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
+                        "Time spent", duration( durationMillis ) ) );
             }
         };
-    }
-
-    private String indexDescription()
-    {
-        return String.format( "[indexId:%d, descriptor:'%s']", indexId, descriptor );
     }
 
     private void ensureDirectoryExist() throws IOException
