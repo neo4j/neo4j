@@ -47,14 +47,15 @@ public class ClusterIdReuseIT
             .withNumberOfCoreMembers( 3 )
             // increased to decrease likelihood of unnecessary leadership changes
             .withSharedCoreParam( CausalClusteringSettings.leader_election_timeout, "2s" )
+            // need to be 1 in order for the reuse count to be deterministic
+            .withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( 1 ) )
             .withNumberOfReadReplicas( 0 );
     private Cluster cluster;
 
     @Test
     public void shouldReuseIdsInCluster() throws Exception
     {
-        final int RECORD_ID_BATCH_SIZE = 1;
-        cluster = clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( RECORD_ID_BATCH_SIZE ) ).startCluster();
+        cluster = clusterRule.startCluster();
 
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
@@ -97,8 +98,7 @@ public class ClusterIdReuseIT
     @Test
     public void newLeaderShouldNotReuseIds() throws Exception
     {
-        final int RECORD_ID_BATCH_SIZE = 20;
-        cluster = clusterRule.withSharedCoreParam( GraphDatabaseSettings.record_id_batch_size, Integer.toString( RECORD_ID_BATCH_SIZE ) ).startCluster();
+        cluster = clusterRule.startCluster();
 
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
@@ -129,7 +129,7 @@ public class ClusterIdReuseIT
         CoreClusterMember newCreationLeader = cluster.coreTx( ( db, tx ) ->
         {
             Node node = db.createNode();
-            assertEquals( idGenerator.getHighId(), node.getId() + RECORD_ID_BATCH_SIZE );
+            assertEquals( idGenerator.getHighestPossibleIdInUse(), node.getId() );
 
             tx.success();
         } );
