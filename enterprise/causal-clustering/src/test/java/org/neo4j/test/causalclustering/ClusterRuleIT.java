@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
@@ -35,6 +34,7 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 public class ClusterRuleIT
 {

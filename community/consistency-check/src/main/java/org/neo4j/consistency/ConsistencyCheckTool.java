@@ -25,7 +25,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
@@ -116,7 +116,7 @@ public class ConsistencyCheckTool
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
                     ProgressMonitorFactory.textual( systemError ), logProvider, fs, verbose,
-                    new CheckConsistencyConfig( tuningConfiguration ) );
+                    new ConsistencyFlags( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckIncompleteException e )
         {

@@ -66,20 +66,20 @@ public class FullCheck
     public FullCheck( Config tuningConfiguration, ProgressMonitorFactory progressFactory,
             Statistics statistics, int threads )
     {
-        this( progressFactory, statistics, threads, new CheckConsistencyConfig( tuningConfiguration ) );
+        this( progressFactory, statistics, threads, new ConsistencyFlags( tuningConfiguration ) );
     }
 
     public FullCheck( ProgressMonitorFactory progressFactory, Statistics statistics, int threads,
-            CheckConsistencyConfig checkConsistencyConfig )
+            ConsistencyFlags consistencyFlags )
     {
         this.statistics = statistics;
         this.threads = threads;
         this.progressFactory = progressFactory;
         this.samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        this.checkGraph = checkConsistencyConfig.isCheckGraph();
-        this.checkIndexes = checkConsistencyConfig.isCheckIndexes();
-        this.checkLabelScanStore = checkConsistencyConfig.isCheckLabelScanStore();
-        this.checkPropertyOwners = checkConsistencyConfig.isCheckPropertyOwners();
+        this.checkGraph = consistencyFlags.isCheckGraph();
+        this.checkIndexes = consistencyFlags.isCheckIndexes();
+        this.checkLabelScanStore = consistencyFlags.isCheckLabelScanStore();
+        this.checkPropertyOwners = consistencyFlags.isCheckPropertyOwners();
     }
 
     public ConsistencySummaryStatistics execute( DirectStoreAccess stores, Log log )

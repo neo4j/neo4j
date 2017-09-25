@@ -90,7 +90,7 @@ public class BackupToolUrisTest
             newBackupTool().run( args );
 
             // Then
-            verify( backupService ).doIncrementalBackupOrFallbackToFull(
+            verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
@@ -147,7 +147,7 @@ public class BackupToolUrisTest
                 assertThat( e.getMessage(), equalTo( BackupTool.WRONG_FROM_ADDRESS_SYNTAX ) );
             }
 
-            verifyZeroInteractions( backupService, systemOut );
+            verifyZeroInteractions( backupProtocolService, systemOut );
         }
     }
 
@@ -194,7 +194,7 @@ public class BackupToolUrisTest
             newBackupTool().run( args );
 
             // Then
-            verify( backupService ).doIncrementalBackupOrFallbackToFull(
+            verify( backupProtocolService ).doIncrementalBackupOrFallbackToFull(
                     eq( host ),
                     eq( port ),
                     eq( new File( "/var/backup/graph" ) ),
@@ -212,7 +212,7 @@ public class BackupToolUrisTest
         final Integer port;
         final String uri;
 
-        final BackupService backupService;
+        final BackupProtocolService backupProtocolService;
         final PrintStream systemOut;
 
         UriTests( String host, Integer port )
@@ -221,7 +221,7 @@ public class BackupToolUrisTest
             this.host = host.replace( "ha://", "" ).replace( "single://", "" );
             this.port = (port == null) ? BackupServer.DEFAULT_PORT : port;
 
-            this.backupService = mock( BackupService.class );
+            this.backupProtocolService = mock( BackupProtocolService.class );
             this.systemOut = mock( PrintStream.class );
         }
 
@@ -237,7 +237,7 @@ public class BackupToolUrisTest
 
         BackupTool newBackupTool() throws Exception
         {
-            return spy( new BackupTool( backupService, systemOut ) );
+            return spy( new BackupTool( backupProtocolService, systemOut ) );
         }
     }
 }

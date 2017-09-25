@@ -35,7 +35,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.monitoring.Monitors;
 
-class StreamToDisk implements StoreFileStreams
+public class StreamToDisk implements StoreFileStreams
 {
     private final File storeDir;
     private final FileSystemAbstraction fs;
@@ -44,7 +44,7 @@ class StreamToDisk implements StoreFileStreams
     private final Map<String,WritableByteChannel> channels;
     private final Map<String,PagedFile> pagedFiles;
 
-    StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
+    public StreamToDisk( File storeDir, FileSystemAbstraction fs, PageCache pageCache, Monitors monitors ) throws IOException
     {
         this.storeDir = storeDir;
         this.fs = fs;
