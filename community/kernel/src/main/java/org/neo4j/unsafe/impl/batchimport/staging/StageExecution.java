@@ -22,7 +22,6 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -162,7 +161,10 @@ public class StageExecution implements StageControl
         }
         else
         {
-            panic.addSuppressed( cause );
+            if ( !panic.equals( cause ) )
+            {
+                panic.addSuppressed( cause );
+            }
         }
     }
 

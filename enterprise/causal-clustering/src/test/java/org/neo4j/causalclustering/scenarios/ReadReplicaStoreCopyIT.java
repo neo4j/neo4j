@@ -57,7 +57,7 @@ public class ReadReplicaStoreCopyIT
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 1 );
 
-    @Test( timeout = 120_000 )
+    @Test( timeout = 240_000 )
     public void shouldNotBePossibleToStartTransactionsWhenReadReplicaCopiesStore() throws Throwable
     {
         Cluster cluster = clusterRule.startCluster();
