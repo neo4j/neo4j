@@ -35,6 +35,8 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID;
 
 /**
@@ -58,15 +60,15 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     @Override
     public PrimitiveLongIterator query( String... terms )
     {
-        String concatenatedQuery = String.join( " ", terms );
-        return innerQuery( concatenatedQuery );
+        String query = stream( terms ).map( QueryParser::escape ).collect( joining( " " ) );
+        return innerQuery( query );
     }
 
     @Override
     public PrimitiveLongIterator fuzzyQuery( String... terms )
     {
-        String concatenatedQuery = String.join( "~ ", terms ) + "~";
-        return innerQuery( concatenatedQuery );
+        String query = stream( terms ).map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
+        return innerQuery( query );
     }
 
     @Override
@@ -82,14 +84,14 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         }
     }
 
-    private PrimitiveLongIterator innerQuery( String concatenatedQuery )
+    private PrimitiveLongIterator innerQuery( String queryString )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
         Query query;
         try
         {
-            query = multiFieldQueryParser.parse( concatenatedQuery );
+            query = multiFieldQueryParser.parse( queryString );
         }
         catch ( ParseException e )
         {
