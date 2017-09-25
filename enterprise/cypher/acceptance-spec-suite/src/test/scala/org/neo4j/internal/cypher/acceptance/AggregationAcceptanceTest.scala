@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_2}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V2_3
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 

@@ -21,8 +21,8 @@ package org.neo4j.cypher
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.scalacheck.Gen._
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks

@@ -24,9 +24,9 @@ sealed abstract class CypherVersion(versionName: String) extends CypherOption(ve
 case object CypherVersion extends CypherOptionCompanion[CypherVersion] {
   case object v2_3 extends CypherVersion("2.3")
   case object v3_1 extends CypherVersion("3.1")
-  case object v3_2 extends CypherVersion("3.2")
   case object v3_3 extends CypherVersion("3.3")
+  case object v3_4 extends CypherVersion("3.4")
 
-  val default = v3_3
-  val all: Set[CypherVersion] = Set(v2_3, v3_1, v3_2, v3_3)
+  val default = v3_4
+  val all: Set[CypherVersion] = Set(v2_3, v3_1, v3_3, v3_4)
 }

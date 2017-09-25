@@ -21,9 +21,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.Counter
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
@@ -2538,7 +2538,7 @@ class EagerizationAcceptanceTest
     val query = "LOAD CSV FROM 'file:///something' AS line MERGE (b:B {p:line[0]}) RETURN b"
     val config =
       TestConfiguration(Versions.Default, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.Rule, Runtimes.Default)
+      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.Rule, Runtimes.Default)
 
     executeWith(config, "EXPLAIN " + query, planComparisonStrategy = testEagerPlanComparisonStrategy(0))
   }

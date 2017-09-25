@@ -26,8 +26,8 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, _}
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription.Arguments._
@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalR
 import org.neo4j.cypher.internal.compiler.v3_1.{PlannerName, ExplainMode => ExplainModev3_1, NormalMode => NormalModev3_1, ProfileMode => ProfileModev3_1, _}
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_1.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
-import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.frontend.v3_4
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
 import org.neo4j.graphdb
@@ -101,9 +101,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, min, max) =>
       val dir3_3 = direction match {
-        case INCOMING => v3_3.SemanticDirection.INCOMING
-        case OUTGOING => v3_3.SemanticDirection.OUTGOING
-        case BOTH => v3_3.SemanticDirection.BOTH
+        case INCOMING => v3_4.SemanticDirection.INCOMING
+        case OUTGOING => v3_4.SemanticDirection.OUTGOING
+        case BOTH => v3_4.SemanticDirection.BOTH
       }
       InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, min, max)
 
@@ -123,12 +123,12 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def next(): Map[String, Any] = inner.next()
   override def close(): Unit = inner.close()
 
-  override def queryType: compatibility.v3_3.runtime.executionplan.InternalQueryType = inner.executionType match {
-      case READ_ONLY => compatibility.v3_3.runtime.executionplan.READ_ONLY
-      case READ_WRITE => compatibility.v3_3.runtime.executionplan.READ_WRITE
-      case WRITE => compatibility.v3_3.runtime.executionplan.WRITE
-      case SCHEMA_WRITE => compatibility.v3_3.runtime.executionplan.SCHEMA_WRITE
-      case DBMS => compatibility.v3_3.runtime.executionplan.DBMS
+  override def queryType: compatibility.v3_4.runtime.executionplan.InternalQueryType = inner.executionType match {
+      case READ_ONLY => compatibility.v3_4.runtime.executionplan.READ_ONLY
+      case READ_WRITE => compatibility.v3_4.runtime.executionplan.READ_WRITE
+      case WRITE => compatibility.v3_4.runtime.executionplan.WRITE
+      case SCHEMA_WRITE => compatibility.v3_4.runtime.executionplan.SCHEMA_WRITE
+      case DBMS => compatibility.v3_4.runtime.executionplan.DBMS
   }
 
   override def notifications: Iterable[Notification] = inner.notifications.map(asKernelNotification(offset)) ++ preParsingNotification

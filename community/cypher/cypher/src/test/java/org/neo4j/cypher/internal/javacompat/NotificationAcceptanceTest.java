@@ -23,6 +23,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -68,10 +69,10 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
+    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_4() throws Exception
     {
         // when
-        Result result = db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
+        Result result = db().execute( "CYPHER 3.4 planner=rule RETURN 1" );
         InputPosition position = new InputPosition( 24, 1, 25 );
 
         // then
@@ -82,11 +83,12 @@ public class NotificationAcceptanceTest
         result.close();
     }
 
-    @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_2() throws Exception
+    //TODO unignore when support for 3.3 is added
+    @Ignore
+    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIs3_3() throws Exception
     {
         // when
-        Result result = db().execute( "CYPHER 3.2 planner=rule RETURN 1" );
+        Result result = db().execute( "CYPHER 3.3 planner=rule RETURN 1" );
         InputPosition position = new InputPosition( 24, 1, 25 );
 
         // then
@@ -130,10 +132,10 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3() throws Exception
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_4() throws Exception
     {
         // when
-        Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        Result result = db().execute( "CYPHER 3.4 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
         InputPosition position = new InputPosition( 36, 1, 37 );
 
         // then
@@ -144,11 +146,12 @@ public class NotificationAcceptanceTest
         result.close();
     }
 
-    @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_2() throws Exception
+    //TODO unignore when supporting 3.3
+    @Ignore
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_3() throws Exception
     {
         // when
-        Result result = db().execute( "CYPHER 3.2 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        Result result = db().execute( "CYPHER 3.3 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
         InputPosition position = new InputPosition( 36, 1, 37 );
 
         // then
@@ -180,7 +183,7 @@ public class NotificationAcceptanceTest
     {
         for ( String pattern : Arrays.asList( "[:A|:B|:C {foo:'bar'}]", "[:A|:B|:C*]", "[x:A|:B|:C]" ) )
         {
-            assertNotifications( "CYPHER 3.3 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
+            assertNotifications( "CYPHER 3.4 explain MATCH (a)-" + pattern + "-(b) RETURN a,b",
                     containsItem( notification(
                             "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                             containsString(
@@ -196,7 +199,7 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnBindingVariableLengthRelationship() throws Exception
     {
-        assertNotifications( "CYPHER 3.3 explain MATCH ()-[rs*]-() RETURN rs", containsItem( notification(
+        assertNotifications( "CYPHER 3.4 explain MATCH ()-[rs*]-() RETURN rs", containsItem( notification(
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 containsString( "Binding relationships to a list in a variable length pattern is deprecated." ),
                 any( InputPosition.class ),

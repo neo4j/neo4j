@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.PrintWriter
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.ResultVisitor

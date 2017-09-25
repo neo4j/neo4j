@@ -23,9 +23,9 @@ import java.util
 
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor

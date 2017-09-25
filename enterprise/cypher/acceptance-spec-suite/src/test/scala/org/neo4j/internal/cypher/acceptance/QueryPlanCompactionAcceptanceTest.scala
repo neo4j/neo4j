@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.WindowsStringSafe
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
@@ -541,7 +541,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |
@@ -739,7 +739,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |
@@ -763,7 +763,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |
@@ -829,7 +829,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     result should havePlanLike(
       """
-        |Compiler CYPHER 3.3
+        |Compiler CYPHER 3.4
         |
         |Planner COST
         |

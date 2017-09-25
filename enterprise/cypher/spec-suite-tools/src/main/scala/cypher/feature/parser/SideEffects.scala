@@ -108,7 +108,7 @@ object SideEffects {
     }
   }
 
-  private val prefix = "CYPHER 3.3 runtime=interpreted"
+  private val prefix = "CYPHER 3.4 runtime=interpreted"
 
   private val nodesQuery =
     s"""$prefix MATCH (n) RETURN id(n) AS node"""

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, True}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{predicates, expressions => legacy}
-import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Equals, True}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{predicates, expressions => legacy}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {

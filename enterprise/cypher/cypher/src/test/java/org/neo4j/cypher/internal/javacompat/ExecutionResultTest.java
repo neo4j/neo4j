@@ -174,7 +174,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), notNullValue() );
@@ -191,7 +191,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "COMPILED" ) );
@@ -208,7 +208,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "COST" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "IDP" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "INTERPRETED" ) );
@@ -225,7 +225,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
@@ -242,7 +242,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );
@@ -259,7 +259,7 @@ public class ExecutionResultTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
 
         // Then
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.3" ) );
+        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.4" ) );
         assertThat( arguments.get( "planner" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "planner-impl" ), equalTo( "PROCEDURE" ) );
         assertThat( arguments.get( "runtime" ), equalTo( "PROCEDURE" ) );

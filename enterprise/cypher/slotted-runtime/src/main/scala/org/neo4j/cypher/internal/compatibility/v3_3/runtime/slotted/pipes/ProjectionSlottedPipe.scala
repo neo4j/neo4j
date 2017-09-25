@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, LongSlot, RefSlot, Slot}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, LongSlot, RefSlot, Slot}
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 /*
 Projection evaluates expressions and stores their values into new slots in the execution context.

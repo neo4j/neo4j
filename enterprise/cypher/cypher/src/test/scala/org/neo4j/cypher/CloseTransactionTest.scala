@@ -24,12 +24,12 @@ import java.util
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.api.exceptions.ProcedureException

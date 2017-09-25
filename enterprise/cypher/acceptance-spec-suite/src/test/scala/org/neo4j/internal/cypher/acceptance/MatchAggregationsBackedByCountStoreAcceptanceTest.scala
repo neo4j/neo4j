@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 

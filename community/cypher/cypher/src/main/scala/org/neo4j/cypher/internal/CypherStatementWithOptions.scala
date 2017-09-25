@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
 
 import scala.annotation.tailrec
 

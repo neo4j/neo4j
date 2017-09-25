@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class ProduceResultSlottedPipe(source: Pipe, columns: Seq[(String, Expression)])
                                    (val id: LogicalPlanId = LogicalPlanId.DEFAULT) extends PipeWithSource(source) with Pipe {

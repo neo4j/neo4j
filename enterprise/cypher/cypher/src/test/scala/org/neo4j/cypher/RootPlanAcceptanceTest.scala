@@ -19,33 +19,33 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, SlottedRuntimeName, InterpretedRuntimeName, RuntimeName}
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CompiledRuntimeName, SlottedRuntimeName, InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("query that does not go through the compiled runtime") {
     given("MATCH (n) RETURN n, count(*)")
-      .withCypherVersion(CypherVersion.v3_3)
-      .shouldHaveCypherVersion(CypherVersion.v3_3)
+      .withCypherVersion(CypherVersion.v3_4)
+      .shouldHaveCypherVersion(CypherVersion.v3_4)
       .shouldHaveRuntime(SlottedRuntimeName)
   }
 
   test("query that lacks support from the compiled runtime") {
     given("CREATE ()")
-      .withCypherVersion(CypherVersion.v3_3)
+      .withCypherVersion(CypherVersion.v3_4)
       .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_3)
+      .shouldHaveCypherVersion(CypherVersion.v3_4)
       .shouldHaveRuntime(SlottedRuntimeName)
   }
 
   test("query that should go through the compiled runtime") {
     given("MATCH (a)-->(b) RETURN a")
-      .withCypherVersion(CypherVersion.v3_3)
+      .withCypherVersion(CypherVersion.v3_4)
       .withRuntime(CompiledRuntimeName)
-      .shouldHaveCypherVersion(CypherVersion.v3_3)
+      .shouldHaveCypherVersion(CypherVersion.v3_4)
       .shouldHaveRuntime(CompiledRuntimeName)
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
@@ -73,7 +73,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       given("match (n) return n")
         .withPlanner(planner)
         .withRuntime(runtime)
-        .shouldHaveCypherVersion(CypherVersion.v3_3)
+        .shouldHaveCypherVersion(CypherVersion.v3_4)
         .shouldHavePlanner(planner)
         .shouldHaveRuntime(runtime)
     }

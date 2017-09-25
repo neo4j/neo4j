@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper;
+import org.neo4j.cypher.internal.compiler.v3_4.spi.NodeIdWrapper;
 
 public final class NodeIdWrapperImpl implements NodeIdWrapper
 {

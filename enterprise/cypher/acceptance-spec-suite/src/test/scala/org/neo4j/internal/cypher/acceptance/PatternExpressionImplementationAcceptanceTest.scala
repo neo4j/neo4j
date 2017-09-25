@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.PathImpl
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 import org.scalatest.Matchers

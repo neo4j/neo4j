@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.helpers.NullChecker.nodeIsNull
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.v3_3.logical.plans.LogicalPlanId
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.helpers.NullChecker.nodeIsNull
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 
 case class OptionalExpandIntoSlottedPipe(source: Pipe,
                                          fromOffset: Int,

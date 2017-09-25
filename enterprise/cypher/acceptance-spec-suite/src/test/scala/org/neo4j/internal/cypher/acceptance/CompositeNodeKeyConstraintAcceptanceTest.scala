@@ -20,7 +20,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
+import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper._
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.ConstraintViolationException
 import org.neo4j.graphdb.config.Setting
@@ -142,8 +142,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY".fixNewLines)
 
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1 -> V3_2, Cost, Runtimes.Default) +
-        TestConfiguration(Versions(V2_3, V3_1, V3_2, Versions.Default), Rule, Runtimes.Default)
+        TestConfiguration(V3_1 -> V3_1, Cost, Runtimes.Default) +
+        TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A'",
@@ -156,8 +156,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1 -> V3_2, Cost, Runtimes.Default) +
-        TestConfiguration(Versions(V2_3, V3_1, V3_2, Versions.Default), Rule, Runtimes.Default)
+        TestConfiguration(V3_1, Cost, Runtimes.Default) +
+        TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
@@ -169,9 +169,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val a = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
     val b = createLabeledNode(Map("name" -> "A", "surname" -> "B"), "Person").getId
 
-    val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-        TestConfiguration(V3_2, Cost, Runtimes.Default)
+    val config = TestConfiguration(v3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema))
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
@@ -184,9 +183,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     val a = createLabeledNode(Map("name" -> "A"), "Person").getId
     val b = createLabeledNode(Map("name" -> "A"), "Person").getId
 
-    val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-        TestConfiguration(V3_2, Cost, Runtimes.Default)
+    val config = TestConfiguration(v3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema))
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
@@ -196,9 +194,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
   }
 
   test("drop a non existent node key constraint") {
-    val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-      TestConfiguration(V3_2, Cost, Runtimes.Default)
+    val config = TestConfiguration(v3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema))
     failWithError(
       config,
       "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
@@ -211,8 +208,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1 -> V3_2, Cost, Runtimes.Default) +
-        TestConfiguration(Versions(V2_3, V3_1, V3_2, Versions.Default), Rule, Runtimes.Default)
+        TestConfiguration(V3_1, Cost, Runtimes.Default) +
+        TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
@@ -225,8 +222,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY".fixNewLines)
 
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1 -> V3_2, Cost, Runtimes.Default) +
-        TestConfiguration(Versions(V2_3, V3_1, V3_2, Versions.Default), Rule, Runtimes.Default)
+        TestConfiguration(V3_1, Cost, Runtimes.Default) +
+        TestConfiguration(Versions(V2_3, V3_1, Versions.Default), Rule, Runtimes.Default)
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
@@ -239,9 +236,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE INDEX ON :Person(firstname, lastname)".fixNewLines)
 
     // then
-    val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-      TestConfiguration(V3_2, Cost, Runtimes.Default)
+    val config = TestConfiguration(v3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema))
     failWithError(config,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
       "There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
@@ -253,9 +249,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY".fixNewLines)
 
     // then
-    val config = TestConfiguration(V3_3, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema)) +
-        TestConfiguration(V3_2, Cost, Runtimes.Default)
+    val config = TestConfiguration(v3_4, Cost, Runtimes(CompiledSource, CompiledBytecode)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, Slotted, ProcedureOrSchema))
     failWithError(
       config,
       "CREATE INDEX ON :Person(firstname, lastname)",
@@ -270,7 +265,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // Expect
     val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Interpreted, ProcedureOrSchema)) +
-        TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
+        TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
         TestConfiguration(Versions(V2_3, Versions.Default), Rule, Runtimes.Default)
     failWithError(config,
       "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.surname",
@@ -285,7 +280,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     val config = TestScenario(Versions.Default, Planners.Default, Interpreted) +
-      TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
+      TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(config, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.foo".fixNewLines)
 
@@ -302,13 +297,13 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
-      TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
+      TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) DELETE p".fixNewLines)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
     executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines)  shouldBe empty
   }
@@ -320,13 +315,13 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
     // When
     val configWhen = TestScenario(Versions.Default, Planners.Default, Interpreted) +
-      TestConfiguration(V3_1 -> V3_2, Planners.all, Runtimes.Default) +
+      TestConfiguration(V3_1, Planners.all, Runtimes.Default) +
       TestConfiguration(Versions(Versions.Default, V2_3), Rule, Runtimes.Default)
     executeWith(configWhen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p:Person".fixNewLines)
 
     // Then
     val configThen = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
-      TestConfiguration(Versions.V2_3 -> Versions.V3_2, Planners.all, Runtimes.Default) +
+      TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
       TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
     executeWith(configThen, "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) RETURN p".fixNewLines)  shouldBe empty
   }
