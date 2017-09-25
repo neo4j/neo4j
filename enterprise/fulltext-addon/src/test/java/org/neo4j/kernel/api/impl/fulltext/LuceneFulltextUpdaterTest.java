@@ -19,58 +19,23 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
-import java.time.Clock;
 import java.util.Arrays;
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.rule.DatabaseRule;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.RELATIONSHIPS;
 
-public class LuceneFulltextUpdaterTest
+public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 {
-    public static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
-    private static final Log LOG = NullLog.getInstance();
-
-    @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
-
-    private static final Label LABEL = Label.label( "label" );
-    private static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
-
-    private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clock.systemDefaultZone(), LOG );
-
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -79,24 +44,20 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertEquals( firstID, reader.query( "hello" ).next() );
-                assertEquals( secondID, reader.query( "zebra" ).next() );
-                assertEquals( secondID, reader.query( "zedonk" ).next() );
-                assertEquals( secondID, reader.query( "cross" ).next() );
+                assertExactQueryFindsIds( reader, "hello", firstID );
+                assertExactQueryFindsIds( reader, "zebra", secondID );
+                assertExactQueryFindsIds( reader, "zedonk", secondID );
+                assertExactQueryFindsIds( reader, "cross", secondID );
             }
         }
     }
@@ -104,13 +65,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithNumber() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -119,24 +74,16 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", 1 );
-                node2.setProperty( "prop", 234 );
+                firstID = createNodeIndexableByPropertyValue( 1 );
+                secondID = createNodeIndexableByPropertyValue( 234 );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator node1prop = reader.query( "1" );
-                assertEquals( firstID, node1prop.next() );
-                assertFalse( node1prop.hasNext() );
-                PrimitiveLongIterator node2prop = reader.query( "234" );
-                assertEquals( secondID, node2prop.next() );
-                assertFalse( node2prop.hasNext() );
+                assertExactQueryFindsIds( reader, "1", firstID );
+                assertExactQueryFindsIds( reader, "234", secondID );
             }
         }
     }
@@ -144,13 +91,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithBoolean() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -159,24 +100,16 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", true );
-                node2.setProperty( "prop", false );
+                firstID = createNodeIndexableByPropertyValue( true );
+                secondID = createNodeIndexableByPropertyValue( false );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator sant = reader.query( "true" );
-                assertEquals( firstID, sant.next() );
-                assertFalse( sant.hasNext() );
-                PrimitiveLongIterator falskt = reader.query( "false" );
-                assertEquals( secondID, falskt.next() );
-                assertFalse( falskt.hasNext() );
+                assertExactQueryFindsIds( reader, "true", firstID );
+                assertExactQueryFindsIds( reader, "false", secondID );
             }
         }
     }
@@ -184,13 +117,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldFindNodeWithArrays() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -200,31 +127,18 @@ public class LuceneFulltextUpdaterTest
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Node node3 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                node.setProperty( "prop", new String[]{"hello", "I", "live", "here"} );
-                node2.setProperty( "prop", new int[]{1, 27, 48} );
-                node3.setProperty( "prop", new int[]{1, 2, 48} );
+                firstID = createNodeIndexableByPropertyValue( new String[]{"hello", "I", "live", "here"} );
+                secondID = createNodeIndexableByPropertyValue( new int[]{1, 27, 48} );
+                thirdID = createNodeIndexableByPropertyValue( new int[]{1, 2, 48} );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator strings = reader.query( "live" );
-                assertEquals( firstID, strings.next() );
-                assertFalse( strings.hasNext() );
-                PrimitiveLongIterator ints = reader.query( "27" );
-                assertEquals( secondID, ints.next() );
-                assertFalse( ints.hasNext() );
-                PrimitiveLongIterator moreInts = reader.query( "1", "2" );
-                assertEquals( thirdID, moreInts.next() );
-                assertEquals( secondID, moreInts.next() );
-                assertFalse( moreInts.hasNext() );
+                assertExactQueryFindsIds( reader, "live", firstID );
+                assertExactQueryFindsIds( reader, "27", secondID );
+                assertExactQueryFindsIds( reader, new String[]{"1", "2"}, secondID, thirdID );
             }
         }
     }
@@ -232,13 +146,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -247,38 +155,30 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.getNodeById( firstID );
-                node.setProperty( "prop", "Hahahaha! potato!" );
-                Node node2 = db.getNodeById( secondID );
-                node2.setProperty( "prop", "This one is a potato farmer." );
+                setNodeProp( firstID, "Hahahaha! potato!" );
+                setNodeProp( secondID, "This one is a potato farmer." );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertFalse( reader.query( "hello" ).hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
-                assertEquals( firstID, reader.query( "hahahaha" ).next() );
-                assertEquals( secondID, reader.query( "farmer" ).next() );
-                PrimitiveLongIterator iterator = reader.query( "potato" );
-                assertEquals( firstID, iterator.next() );
-                assertEquals( secondID, iterator.next() );
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
+                assertExactQueryFindsIds( reader, "hahahaha", firstID );
+                assertExactQueryFindsIds( reader, "farmer", secondID );
+                assertExactQueryFindsIds( reader, "potato", firstID, secondID );
             }
         }
     }
@@ -286,13 +186,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -301,13 +195,10 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
@@ -322,11 +213,10 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertFalse( reader.query( "hello" ).hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
             }
         }
     }
@@ -334,13 +224,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldNotFindRemovedProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
             provider.init();
@@ -350,21 +234,14 @@ public class LuceneFulltextUpdaterTest
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Node node3 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+                thirdID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
 
-                node.setProperty( "prop", "Hello. Hello again." );
-                node.setProperty( "prop", "zebra" );
-
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
-                node2.setProperty( "prop", "Hello. Hello again." );
-
-                node3.setProperty( "prop", "Hello. Hello again." );
+                setNodeProp( firstID, "zebra" );
+                setNodeProp( secondID, "Hello. Hello again." );
 
                 tx.success();
             }
@@ -388,13 +265,10 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( secondID, hello.next() );
-                assertFalse( hello.hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
-                assertFalse( reader.query( "zedonk" ).hasNext() );
-                assertFalse( reader.query( "cross" ).hasNext() );
+                assertExactQueryFindsIds( reader, "hello", secondID );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsNothing( reader, "zedonk" );
+                assertExactQueryFindsNothing( reader, "cross" );
             }
         }
     }
@@ -402,13 +276,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -416,11 +284,10 @@ public class LuceneFulltextUpdaterTest
             long firstID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node.setProperty( "prop2", "zebra" );
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                setNodeProp( firstID, "prop2", "zebra" );
+
+                Node node2 = db.createNode();
                 node2.setProperty( "prop2", "zebra" );
                 node2.setProperty( "prop3", "hello" );
 
@@ -429,11 +296,8 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstID, hello.next() );
-                assertFalse( hello.hasNext() );
-                assertFalse( reader.query( "zebra" ).hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstID );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
         }
     }
@@ -441,13 +305,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ), provider );
             provider.init();
@@ -457,42 +315,28 @@ public class LuceneFulltextUpdaterTest
             long thirdID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Node node3 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
+                firstID = createNodeIndexableByPropertyValue( "Tomtar tomtar oftsat i tomteutstyrsel." );
+                secondID = createNodeIndexableByPropertyValue( "Olof och Hans" );
+                setNodeProp( secondID, "prop2", "och karl" );
+
+                Node node3 = db.createNode();
                 thirdID = node3.getId();
-                node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
-                node2.setProperty( "prop", "Olof och Hans" );
-                node2.setProperty( "prop2", "och karl" );
                 node3.setProperty( "prop2", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
                 tx.success();
             }
 
-            PrimitiveLongIterator iterator;
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                iterator = reader.query( "tomtar", "karl" );
+                assertExactQueryFindsIds( reader, new String[]{"tomtar", "karl"}, firstID, secondID, thirdID );
             }
-            assertEquals( secondID, iterator.next() );
-            assertEquals( thirdID, iterator.next() );
-            assertEquals( firstID, iterator.next() );
         }
     }
 
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "first", "last" ), provider );
             provider.init();
@@ -503,34 +347,25 @@ public class LuceneFulltextUpdaterTest
             long fourthID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Node node3 = db.createNode( LABEL );
-                Node node4 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                fourthID = node4.getId();
-                node.setProperty( "first", "Full" );
-                node.setProperty( "last", "Hanks" );
-                node2.setProperty( "first", "Tom" );
-                node2.setProperty( "last", "Hunk" );
-                node3.setProperty( "first", "Tom" );
-                node3.setProperty( "last", "Hanks" );
-                node4.setProperty( "first", "Tom Hanks" );
-                node4.setProperty( "last", "Tom Hanks" );
+                firstID = db.createNode().getId();
+                secondID = db.createNode().getId();
+                thirdID = db.createNode().getId();
+                fourthID = db.createNode().getId();
+                setNodeProp( firstID, "first", "Full" );
+                setNodeProp( firstID, "last", "Hanks" );
+                setNodeProp( secondID, "first", "Tom" );
+                setNodeProp( secondID, "last", "Hunk" );
+                setNodeProp( thirdID, "first", "Tom" );
+                setNodeProp( thirdID, "last", "Hanks" );
+                setNodeProp( fourthID, "first", "Tom Hanks" );
+                setNodeProp( fourthID, "last", "Tom Hanks" );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
-                assertEquals( fourthID, iterator.next() );
-                assertEquals( thirdID, iterator.next() );
-                assertEquals( firstID, iterator.next() );
-                assertEquals( secondID, iterator.next() );
+                assertExactQueryFindsIds( reader, new String[]{"Tom", "Hanks"}, firstID, secondID, thirdID, fourthID );
             }
         }
     }
@@ -538,13 +373,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -556,46 +385,29 @@ public class LuceneFulltextUpdaterTest
             long secondRelID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-                firstNodeID = node.getId();
-                secondNodeID = node2.getId();
-                firstRelID = rel1.getId();
-                secondRelID = rel2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
-                rel1.setProperty( "prop", "Hello. Hello again." );
-                rel2.setProperty( "prop", "And now, something completely different" );
+                firstNodeID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondNodeID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+                firstRelID = createRelationshipIndexableByPropertyValue(
+                        firstNodeID, secondNodeID, "Hello. Hello again." );
+                secondRelID = createRelationshipIndexableByPropertyValue(
+                        secondNodeID, firstNodeID, "And now, something completely different" );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstNodeID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertEquals( secondNodeID, zebra.next() );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstNodeID );
+                assertExactQueryFindsIds( reader, "zebra", secondNodeID );
+                assertExactQueryFindsNothing( reader, "different" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstRelID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertEquals( secondRelID, different.next() );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstRelID );
+                assertExactQueryFindsNothing( reader, "zebra" );
+                assertExactQueryFindsIds( reader, "different", secondRelID );
             }
         }
     }
@@ -603,13 +415,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void fuzzyQueryShouldBeFuzzy() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -618,28 +424,24 @@ public class LuceneFulltextUpdaterTest
             long secondID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                firstID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                secondID = createNodeIndexableByPropertyValue(
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                assertEquals( firstID, reader.fuzzyQuery( "hella" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "zebre" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "zedink" ).next() );
-                assertEquals( secondID, reader.fuzzyQuery( "cruss" ).next() );
-                assertFalse( reader.query( "hella" ).hasNext() );
-                assertFalse( reader.query( "zebre" ).hasNext() );
-                assertFalse( reader.query( "zedink" ).hasNext() );
-                assertFalse( reader.query( "cruss" ).hasNext() );
+                assertFuzzyQueryFindsIds( reader, "hella", firstID );
+                assertFuzzyQueryFindsIds( reader, "zebre", secondID );
+                assertFuzzyQueryFindsIds( reader, "zedink", secondID );
+                assertFuzzyQueryFindsIds( reader, "cruss", secondID );
+                assertExactQueryFindsNothing( reader, "hella" );
+                assertExactQueryFindsNothing( reader, "zebre" );
+                assertExactQueryFindsNothing( reader, "zedink" );
+                assertExactQueryFindsNothing( reader, "cruss" );
             }
         }
     }
@@ -647,13 +449,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void fuzzyQueryShouldReturnExactMatchesFirst() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             provider.init();
@@ -664,31 +460,17 @@ public class LuceneFulltextUpdaterTest
             long fourthID;
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Node node3 = db.createNode( LABEL );
-                Node node4 = db.createNode( LABEL );
-                firstID = node.getId();
-                secondID = node2.getId();
-                thirdID = node3.getId();
-                fourthID = node4.getId();
-                node.setProperty( "prop", "zibre" );
-                node2.setProperty( "prop", "zebrae" );
-                node3.setProperty( "prop", "zebra" );
-                node4.setProperty( "prop", "zibra" );
+                firstID = createNodeIndexableByPropertyValue( "zibre" );
+                secondID = createNodeIndexableByPropertyValue( "zebrae" );
+                thirdID = createNodeIndexableByPropertyValue( "zebra" );
+                fourthID = createNodeIndexableByPropertyValue( "zibra" );
 
                 tx.success();
             }
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator zebra = reader.fuzzyQuery( "zebra" );
-                assertEquals( thirdID, zebra.next() );
-                assertEquals( secondID, zebra.next() );
-                assertEquals( fourthID, zebra.next() );
-                assertEquals( firstID, zebra.next() );
-                assertFalse( zebra.hasNext() );
+                assertFuzzyQueryFindsIds( reader, "zebra", firstID, secondID, thirdID, fourthID );
             }
         }
     }
@@ -696,13 +478,7 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldNotReturnNonMatches() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -710,29 +486,24 @@ public class LuceneFulltextUpdaterTest
 
             try ( Transaction tx = db.beginTx() )
             {
-                Node node = db.createNode( LABEL );
-                Node node2 = db.createNode( LABEL );
-                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-                node.setProperty( "prop", "Hello. Hello again." );
-                node2.setProperty( "prop2", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
-                rel1.setProperty( "prop", "Hello. Hello again." );
-                rel2.setProperty( "prop2", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                long firstNode = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+                long secondNode = createNodeWithProperty( "prop2",
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
+                createRelationshipIndexableByPropertyValue( firstNode, secondNode, "Hello. Hello again." );
+                createRelationshipWithProperty( secondNode, firstNode, "prop2",
+                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any " +
+                        "cross between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
-
-                PrimitiveLongIterator zebra = reader.query( "zebra" );
-                assertFalse( zebra.hasNext() );
+                assertExactQueryFindsNothing( reader, "zebra" );
             }
         }
     }
@@ -740,37 +511,28 @@ public class LuceneFulltextUpdaterTest
     @Test
     public void shouldPopulateIndexWithExistingNodesAndRelationships() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        JobScheduler scheduler = dbRule.resolveDependency( JobScheduler.class );
-        FileSystemAbstraction fs = dbRule.resolveDependency( FileSystemAbstraction.class );
-        File storeDir = dbRule.getStoreDir();
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
-
         long firstNodeID;
         long secondNodeID;
         long firstRelID;
         long secondRelID;
         try ( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode( LABEL );
-            Node node2 = db.createNode( LABEL );
-            Relationship ignore1 = node.createRelationshipTo( node2, RELTYPE );
-            Relationship ignore2 = node.createRelationshipTo( node2, RELTYPE );
-            Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
-            Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
-            firstNodeID = node.getId();
-            secondNodeID = node2.getId();
-            firstRelID = rel1.getId();
-            secondRelID = rel2.getId();
-            node.setProperty( "prop", "Hello. Hello again." );
-            node2.setProperty( "prop", "This string is slightly shorter than the zebra one" );
-            rel1.setProperty( "prop", "Goodbye" );
-            rel2.setProperty( "prop", "And now, something completely different" );
+            // skip a few rel ids, so the ones we work with are different from the node ids, just in case.
+            Node node = db.createNode();
+            node.createRelationshipTo( node, RELTYPE );
+            node.createRelationshipTo( node, RELTYPE );
+            node.createRelationshipTo( node, RELTYPE );
+
+            firstNodeID = createNodeIndexableByPropertyValue( "Hello. Hello again." );
+            secondNodeID = createNodeIndexableByPropertyValue( "This string is slightly shorter than the zebra one" );
+            firstRelID = createRelationshipIndexableByPropertyValue( firstNodeID, secondNodeID, "Goodbye" );
+            secondRelID = createRelationshipIndexableByPropertyValue( secondNodeID, firstNodeID,
+                    "And now, something completely different" );
 
             tx.success();
         }
 
-        try ( FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler ) )
+        try ( FulltextProvider provider = createProvider() )
         {
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ), provider );
@@ -779,31 +541,47 @@ public class LuceneFulltextUpdaterTest
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertEquals( firstNodeID, hello.next() );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "string" );
-                assertEquals( secondNodeID, zebra.next() );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
-                assertFalse( goodbye.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertFalse( different.hasNext() );
+                assertExactQueryFindsIds( reader, "hello", firstNodeID );
+                assertExactQueryFindsIds( reader, "string", secondNodeID );
+                assertExactQueryFindsNothing( reader, "goodbye" );
+                assertExactQueryFindsNothing( reader, "different" );
             }
             try ( ReadOnlyFulltext reader = provider.getReader( "relationships", RELATIONSHIPS ) )
             {
+                assertExactQueryFindsNothing( reader, "hello" );
+                assertExactQueryFindsNothing( reader, "string" );
+                assertExactQueryFindsIds( reader, "goodbye", firstRelID );
+                assertExactQueryFindsIds( reader, "different", secondRelID );
+            }
+        }
+    }
 
-                PrimitiveLongIterator hello = reader.query( "hello" );
-                assertFalse( hello.hasNext() );
-                PrimitiveLongIterator zebra = reader.query( "string" );
-                assertFalse( zebra.hasNext() );
-                PrimitiveLongIterator goodbye = reader.query( "goodbye" );
-                assertEquals( firstRelID, goodbye.next() );
-                assertFalse( goodbye.hasNext() );
-                PrimitiveLongIterator different = reader.query( "different" );
-                assertEquals( secondRelID, different.next() );
-                assertFalse( different.hasNext() );
+    @Test
+    public void shouldReturnMatchesThatContainLuceneSyntaxCharacters() throws Exception
+    {
+        try ( FulltextProvider provider = createProvider() )
+        {
+            fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ), provider );
+            provider.init();
+            String[] luceneSyntaxElements =
+                    {"+", "-", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "\\"};
+
+            long nodeId;
+            try ( Transaction tx = db.beginTx() )
+            {
+                nodeId = db.createNodeId();
+                tx.success();
+            }
+
+            for ( String elm : luceneSyntaxElements )
+            {
+                setNodeProp( nodeId, "Hello" + elm + " How are you " + elm + "today?" );
+
+                try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
+                {
+                    assertExactQueryFindsIds( reader, "Hello" + elm, nodeId );
+                    assertExactQueryFindsIds( reader, elm + "today", nodeId );
+                }
             }
         }
     }
