@@ -47,7 +47,7 @@ public class SocketAddress
     }
 
     /**
-     * Hostname or IP address; we don't care.
+     * @return hostname or IP address; we don't care.
      */
     public String getHostname()
     {

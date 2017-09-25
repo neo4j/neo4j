@@ -258,6 +258,7 @@ public class Extractors
         }
 
         @Override
+        @SuppressWarnings( "unchecked" )
         public Extractor<T> clone()
         {
             try
@@ -368,7 +369,7 @@ public class Extractors
         @Override
         public Long value()
         {
-            return Long.valueOf( value );
+            return value;
         }
 
         /**
@@ -406,7 +407,7 @@ public class Extractors
         @Override
         public Integer value()
         {
-            return Integer.valueOf( value );
+            return value;
         }
 
         /**
@@ -444,7 +445,7 @@ public class Extractors
         @Override
         public Short value()
         {
-            return Short.valueOf( value );
+            return value;
         }
 
         /**
@@ -482,7 +483,7 @@ public class Extractors
         @Override
         public Byte value()
         {
-            return Byte.valueOf( value );
+            return value;
         }
 
         /**
@@ -527,7 +528,7 @@ public class Extractors
         @Override
         public Boolean value()
         {
-            return Boolean.valueOf( value );
+            return value;
         }
 
         public boolean booleanValue()
@@ -565,7 +566,7 @@ public class Extractors
         @Override
         public Character value()
         {
-            return Character.valueOf( value );
+            return value;
         }
 
         public char charValue()
@@ -608,7 +609,7 @@ public class Extractors
         @Override
         public Float value()
         {
-            return Float.valueOf( value );
+            return value;
         }
 
         public float floatValue()
@@ -651,7 +652,7 @@ public class Extractors
         @Override
         public Double value()
         {
-            return Double.valueOf( value );
+            return value;
         }
 
         public double doubleValue()

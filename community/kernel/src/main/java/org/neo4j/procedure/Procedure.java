@@ -116,12 +116,13 @@ public @interface Procedure
      * the class the procedure is declared in, combined with the method
      * name. Notably, the class name is omitted.
      *
-     * @return the namespace and procedure name
+     * @return the namespace and procedure name.
      */
     String value() default "";
 
     /**
      * Synonym for {@link #value()}
+     * @return the namespace and procedure name.
      */
     String name() default "";
 
@@ -131,12 +132,14 @@ public @interface Procedure
      *      WRITE   allows reading and writing the graph
      *      SCHEMA  allows reading the graphs and performing schema operations
      *      DBMS    allows managing the database (i.e. change password)
+     * @return the associated mode.
      */
     Mode mode() default Mode.DEFAULT;
 
     /**
      * When deprecating a procedure it is useful to indicate a possible
-     * replacement procedure that clients might show in warnings
+     * replacement procedure that clients might show in warnings.
+     * @return a string representation of the replacement procedure.
      */
     String deprecatedBy() default "";
 }

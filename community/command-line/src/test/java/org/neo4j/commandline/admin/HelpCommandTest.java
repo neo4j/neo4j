@@ -19,17 +19,17 @@
  */
 package org.neo4j.commandline.admin;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.function.Consumer;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 import org.neo4j.commandline.arguments.Arguments;
 
@@ -51,6 +51,7 @@ public class HelpCommandTest
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void printsUnknownCommandWhenUnknownCommandIsProvided() throws Exception
     {
         CommandLocator commandLocator = mock( CommandLocator.class );

@@ -30,14 +30,13 @@ import java.lang.annotation.Target;
  * The update method is called multiple times and allows the class to aggregate a result later retrieved from the
  * method
  * annotated with {@link UserAggregationResult}.
- * <p>
+ *
  * <h2>Input declaration</h2>
  * The update method can accept input arguments, which is defined in the arguments to the
  * annotated method. Each method argument must be a valid input type, and
  * each must be annotated with the {@link Name} annotation, declaring the input name.
  * <p>
  * Valid input types are as follows:
- * <p>
  * <ul>
  * <li>{@link String}</li>
  * <li>{@link Long} or {@code long}</li>

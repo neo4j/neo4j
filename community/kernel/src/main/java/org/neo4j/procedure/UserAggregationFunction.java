@@ -30,8 +30,7 @@ import java.lang.annotation.Target;
  * <p>
  * An aggregation function must returned an instance of a class with two annotated methods, one annotated with
  * {@link UserAggregationUpdate} and one annotated with {@link UserAggregationResult}
- * <p>
-
+ *
  * <h2>Resource declarations</h2>
  * The aggregation function method itself can contain arbitrary Java code - but in order to work with the underlying graph,
  * it must have access to the graph API. This is done by declaring fields in the function class, and annotating
@@ -74,12 +73,14 @@ public @interface UserAggregationFunction
 
     /**
      * Synonym for {@link #value()}
+     * @return the namespace and procedure name.
      */
     String name() default "";
 
     /**
      * When deprecating a function it is useful to indicate a possible
-     * replacement procedure that clients might show in warnings
+     * replacement procedure that clients might show in warnings.
+     * @return a string representation of the replacement procedure.
      */
     String deprecatedBy() default "";
 }

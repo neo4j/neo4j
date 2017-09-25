@@ -340,7 +340,10 @@ public class Args
         return new ArrayList<>( this.orphans );
     }
 
-    /** @see #orphans() **/
+    /**
+     * @see #orphans()
+     * @return list of orphan arguments.
+     */
     public String[] orphansAsArray()
     {
         return orphans.toArray( new String[orphans.size()] );

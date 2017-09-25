@@ -47,7 +47,7 @@ import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
  * Manages server authentication and authorization.
  * <p>
  * Through the BasicAuthManager you can create, update and delete userRepository, and authenticate using credentials.
- * <p>>
+ * <p>
  * NOTE: AuthManager will manage the lifecycle of the given UserRepository,
  *       so the given UserRepository should not be added to another LifeSupport.
  * </p>

@@ -28,6 +28,9 @@ public class ListenSocketAddress extends SocketAddress
 
     /**
      * Textual representation format for a listen socket address.
+     * @param hostname of the address.
+     * @param port of the address.
+     * @return a string representing the address.
      */
     public static String listenAddress( String hostname, int port )
     {

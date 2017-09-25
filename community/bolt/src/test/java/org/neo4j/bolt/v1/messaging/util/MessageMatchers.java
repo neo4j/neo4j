@@ -50,12 +50,12 @@ import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
-import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.helpers.BaseToObjectValueWriter;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.values.AnyValue;
@@ -68,6 +68,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
+@SuppressWarnings( "unchecked" )
 public class MessageMatchers
 {
     private MessageMatchers()

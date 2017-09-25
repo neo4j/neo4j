@@ -695,7 +695,9 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final HttpConnectorValidator httpValidator = new HttpConnectorValidator();
 
     /**
-     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
+     * @param key connection identifier.
+     * @return a new connector setting instance.
+     * @deprecated use {@link org.neo4j.kernel.configuration.BoltConnector} instead. This will be removed in 4.0.
      */
     @Deprecated
     public static BoltConnector boltConnector( String key )
@@ -704,7 +706,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     }
 
     /**
-     * DEPRECATED: Use {@link org.neo4j.kernel.configuration.Connector} instead. This will be removed in 4.0.
+     * @deprecated see {@link org.neo4j.kernel.configuration.Connector} instead. This will be removed in 4.0.
      */
     @Group( "dbms.connector" )
     public static class Connector

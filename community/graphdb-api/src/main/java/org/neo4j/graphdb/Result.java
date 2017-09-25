@@ -103,7 +103,6 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * <p>
      * As an example, if we are only interested in a column {@code n} that contains node values, we can extract it like
      * this:
-     * <p>
      * <pre><code>
      *     try ( ResourceIterator&lt;Node&gt; nodes = result.columnAs( "n" ) )
      *     {

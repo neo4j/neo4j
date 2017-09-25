@@ -83,13 +83,22 @@ public abstract class Indicator
     {
         private final Indicator indicator;
 
-        /** Constructor for regular indicators. */
+        /**
+         * Constructor for regular indicators.
+         * @param factory to use.
+         * @param process the process to monitor.
+         */
         public Decorator( ProgressMonitorFactory factory, String process )
         {
             this( factory.newIndicator( process ) );
         }
 
-        /** Constructor for open ended indicators. */
+        /**
+         * Constructor for open ended indicators.
+         * @param factory to use.
+         * @param process to monitor.
+         * @param resolution scale factor for progress.
+         */
         public Decorator( ProgressMonitorFactory factory, String process, int resolution )
         {
             this( factory.newOpenEndedIndicator( process, resolution ) );
