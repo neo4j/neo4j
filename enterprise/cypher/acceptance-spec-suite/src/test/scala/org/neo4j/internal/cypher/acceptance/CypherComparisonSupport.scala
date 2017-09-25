@@ -274,7 +274,12 @@ object CypherComparisonSupport {
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
-  case class Versions(versions: Version*)
+  case class Versions(versions: Version*) {
+    def +(other: Version): Versions = {
+      val newVersions = if (versions.contains(other)) versions :+ other else versions
+      Versions(newVersions: _*)
+    }
+  }
 
   object Versions {
     val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_2, V3_3)
@@ -403,13 +408,14 @@ object CypherComparisonSupport {
             case IPDPlanner(reportedPlanner) => reportedPlanner
           }
 
-          // This means we used the ProcedureOrSchemaRuntime
-          // In this case we will also succeed with other configurations, because ProcedureOrSchema does not specify any
-          // Preparser options and will thus be executed for other Configs too.
-          // So, we do not want to fail if we unexpectedly succeeded here
-          // fail(s"Unexpectedly succeeded using $name for query $query")
+          // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
+          // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
+          val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_2) + Versions.Default
           val (reportedRuntimeName, reportedPlannerName) =
-            (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
+            if (versionsWithUnreportedProcedureUsage.versions.contains(version))
+              (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
+            else
+              (reportedRuntime.get, reportedPlanner.get)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName) && planner.acceptedPlannerNames.contains(reportedPlannerName)) {
             fail(s"Unexpectedly succeeded using $name for query $query, with $reportedRuntimeName & " + s"$reportedPlannerName")
