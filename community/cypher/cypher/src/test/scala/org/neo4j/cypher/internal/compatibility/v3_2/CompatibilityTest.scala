@@ -45,7 +45,7 @@ class CompatibilityTest extends CypherFunSuite {
     val contextWrapper = mock[TransactionalContextWrapperV3_3]
     when(contextWrapper.readOperations).thenAnswer(new Answer[ReadOperations] {
       override def answer(invocationOnMock: InvocationOnMock): ReadOperations = {
-        if(txClosed)
+        if (txClosed)
           null
         else
           mock[ReadOperations]
@@ -59,7 +59,7 @@ class CompatibilityTest extends CypherFunSuite {
     txClosed = true
 
     // then does not fail
-    executionPlanWrapper.plannerInfo
+    executionPlanWrapper.plannerInfo should not be null
   }
 
 }
