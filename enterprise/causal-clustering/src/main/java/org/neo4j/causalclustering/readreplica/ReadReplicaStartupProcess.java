@@ -117,6 +117,11 @@ class ReadReplicaStartupProcess implements Lifecycle
                 lastIssue = issueOf( format( "getting store id from %s", source ), attempt );
                 debugLog.warn( lastIssue );
             }
+            catch ( TopologyLookupException e )
+            {
+                lastIssue = issueOf( format( "getting address of %s", source ), attempt );
+                debugLog.warn( lastIssue );
+            }
 
             try
             {
@@ -150,7 +155,7 @@ class ReadReplicaStartupProcess implements Lifecycle
     }
 
     private void syncStoreWithUpstream( MemberId source )
-            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException, StreamingTransactionsFailedException
+            throws IOException, StoreIdDownloadFailedException, StoreCopyFailedException, StreamingTransactionsFailedException, TopologyLookupException
     {
         if ( localDatabase.isEmpty() )
         {
@@ -173,7 +178,7 @@ class ReadReplicaStartupProcess implements Lifecycle
         }
     }
 
-    private void ensureSameStoreIdAs( MemberId upstream ) throws StoreIdDownloadFailedException
+    private void ensureSameStoreIdAs( MemberId upstream ) throws StoreIdDownloadFailedException, TopologyLookupException
     {
         StoreId localStoreId = localDatabase.storeId();
         AdvertisedSocketAddress advertisedSocketAddress =
