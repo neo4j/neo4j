@@ -63,7 +63,6 @@ public class BloomIT
     private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
     private static final String ENTITYID = "entityid";
 
-
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule

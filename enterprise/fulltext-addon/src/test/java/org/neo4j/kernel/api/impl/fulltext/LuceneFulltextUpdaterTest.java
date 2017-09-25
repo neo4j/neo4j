@@ -39,7 +39,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -70,7 +69,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -97,7 +95,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -124,7 +121,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -154,7 +150,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -195,7 +190,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -234,7 +228,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ) );
             provider.init();
 
@@ -287,7 +280,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -317,7 +309,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "prop", "prop2" ) );
             provider.init();
 
@@ -349,7 +340,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, Arrays.asList( "first", "last" ) );
             provider.init();
 
@@ -387,7 +377,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
             provider.init();
@@ -430,7 +419,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -465,7 +453,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             provider.init();
 
@@ -495,7 +482,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
     {
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
             provider.init();
@@ -550,7 +536,6 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
         try ( FulltextProvider provider = createProvider() )
         {
-            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
             fulltextFactory.createFulltextIndex( "nodes", NODES, singletonList( "prop" ) );
             fulltextFactory.createFulltextIndex( "relationships", RELATIONSHIPS, singletonList( "prop" ) );
             provider.init();
