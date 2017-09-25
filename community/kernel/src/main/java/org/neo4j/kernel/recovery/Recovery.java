@@ -143,7 +143,9 @@ public class Recovery extends LifecycleAdapter
     {
         long numberOfTransactionToRecover =
                 getNumberOfTransactionToRecover( recoveryStartInformation, lastReversedTransaction );
-        progressReporter.start( numberOfTransactionToRecover << 1 );
+        // since we will process each transaction twice (doing reverse and direct detour) we need to
+        // multiply number of transactions that we want to recover by 2 to be able to report correct progress
+        progressReporter.start( numberOfTransactionToRecover * 2 );
     }
 
     private void reportProgress()

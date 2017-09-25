@@ -42,9 +42,9 @@ public class RecoveryProgressIndicatorTest
     @Test
     public void reportProgressOnRecovery() throws Throwable
     {
-        RecoveryService recoveryService = mock( RecoveryService.class, Answers.RETURNS_MOCKS.get() );
+        RecoveryService recoveryService = mock( RecoveryService.class, Answers.RETURNS_MOCKS );
         StartupStatisticsProvider statisticsProvider = mock( StartupStatisticsProvider.class );
-        TransactionLogPruner logPruner = mock( TransactionLogPruner.class );
+        CorruptedLogsTruncator logsTruncator = mock( CorruptedLogsTruncator.class );
         RecoveryMonitor recoveryMonitor = mock( RecoveryMonitor.class );
         TransactionCursor reverseTransactionCursor = mock( TransactionCursor.class );
         TransactionCursor transactionCursor = mock( TransactionCursor.class );
@@ -68,7 +68,7 @@ public class RecoveryProgressIndicatorTest
         when( recoveryService.getTransactions( recoveryStartPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
-        Recovery recovery = new Recovery( recoveryService, statisticsProvider, logPruner, recoveryMonitor,
+        Recovery recovery = new Recovery( recoveryService, statisticsProvider, logsTruncator, recoveryMonitor,
                 progressReporter, true );
         recovery.init();
 
