@@ -855,11 +855,34 @@ public class GBPTreeTest
         CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
         try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
         {
-            // WHEN
-            // Cleanup not finished
+            // WHEN cleanup not finished
             Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
             monitor.barrier.awaitUninterruptibly();
             index.writer().close();
+
+            // THEN
+            Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
+            shouldWait( checkpoint );
+
+            monitor.barrier.release();
+            cleanup.get();
+            checkpoint.get();
+        }
+    }
+
+    @Test( timeout = 5_000L )
+    public void cleanJobShouldLockOutCheckpointOnNoUpdate() throws Exception
+    {
+        // GIVEN
+        makeDirty();
+
+        RecoveryCleanupWorkCollector cleanupWork = new ControlledRecoveryCleanupWorkCollector();
+        CleanJobControlledMonitor monitor = new CleanJobControlledMonitor();
+        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).with( cleanupWork ).build() )
+        {
+            // WHEN cleanup not finished
+            Future<?> cleanup = executor.submit( throwing( cleanupWork::start ) );
+            monitor.barrier.awaitUninterruptibly();
 
             // THEN
             Future<?> checkpoint = executor.submit( throwing( () -> index.checkpoint( IOLimiter.unlimited() ) ) );
@@ -1240,10 +1263,6 @@ public class GBPTreeTest
         try ( GBPTree<MutableLong,MutableLong> index = index().with( checkpointCounter ).build() )
         {
             checkpointCounter.reset();
-            for ( int i = 0; i < 2; i++ )
-            {
-
-            }
             index.checkpoint( unlimited() );
 
             // THEN
@@ -1685,7 +1704,7 @@ public class GBPTreeTest
         }
     }
 
-    private void shouldWait( Future<?> future )throws InterruptedException, ExecutionException
+    private void shouldWait( Future<?> future ) throws InterruptedException, ExecutionException
     {
         try
         {
