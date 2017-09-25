@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -29,8 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptor;
@@ -43,6 +40,7 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Collections.emptyIterator;
+import static java.util.Collections.newSetFromMap;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
@@ -55,16 +53,16 @@ import static java.util.Collections.emptyIterator;
  */
 public class SchemaCache
 {
-    private final Map<Long, IndexRule> indexRuleById = new HashMap<>();
-    private final Map<Long, ConstraintRule> constraintRuleById = new HashMap<>();
-    private final Set<ConstraintDescriptor> constraints = new HashSet<>();
+    private final Map<Long,IndexRule> indexRuleById = new ConcurrentHashMap<>();
+    private final Map<Long,ConstraintRule> constraintRuleById = new ConcurrentHashMap<>();
+    private final Set<ConstraintDescriptor> constraints = newSetFromMap( new ConcurrentHashMap<>() );
 
-    private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors = new HashMap<>();
-    private final PrimitiveIntObjectMap<Set<IndexDescriptor>> indexDescriptorsByLabel = Primitive.intObjectMap();
+    private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors = new ConcurrentHashMap<>();
+    private final Map<Integer,Set<IndexDescriptor>> indexDescriptorsByLabel = new ConcurrentHashMap<>();
     private final ConstraintSemantics constraintSemantics;
 
     private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
-    private final PrimitiveIntObjectMap<List<IndexDescriptor>> indexByProperty = Primitive.intObjectMap();
+    private final Map<Integer,List<IndexDescriptor>> indexByProperty = new ConcurrentHashMap<>();
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
@@ -204,7 +202,7 @@ public class SchemaCache
         if ( constraintRuleById.containsKey( id ) )
         {
             ConstraintRule rule = constraintRuleById.remove( id );
-            constraints.remove( constraintSemantics.readConstraint( rule ) );
+            constraints.remove( rule.getConstraintDescriptor() );
         }
         else if ( indexRuleById.containsKey( id ) )
         {
