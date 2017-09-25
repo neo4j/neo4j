@@ -248,10 +248,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
         log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
         TxStreamFinishedResponse response;
         try
         {
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
             response = catchUpClient.makeBlockingRequest( fromAddress, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
             {
                 @Override
@@ -268,7 +268,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
                 }
             } );
         }
-        catch ( CatchUpClientException e )
+        catch ( CatchUpClientException | TopologyLookupException e )
         {
             log.warn( "Exception occurred while pulling transactions. Will retry shortly.", e );
             streamComplete();
@@ -324,12 +324,12 @@ public class CatchupPollingProcess extends LifecycleAdapter
             throw new RuntimeException( throwable );
         }
 
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
         try
         {
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
             storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
+        catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException | TopologyLookupException e )
         {
             log.warn( format( "Error copying store from: %s. Will retry shortly.", upstream ) );
             return;
