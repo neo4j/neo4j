@@ -25,6 +25,7 @@ import java.io.IOException;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.Validators;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.checkLock;
@@ -53,6 +54,16 @@ public class RestoreDatabaseCommand
         if ( !fs.fileExists( fromPath ) )
         {
             throw new IllegalArgumentException( format( "Source directory does not exist [%s]", fromPath ) );
+        }
+
+        try
+        {
+            Validators.CONTAINS_EXISTING_DATABASE.validate( fromPath );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IllegalArgumentException(
+                    format( "Source directory is not a database backup [%s]", fromPath ) );
         }
 
         if ( fs.fileExists( databaseDir ) && !forceOverwrite )

@@ -140,6 +140,30 @@ public class RestoreDatabaseCommandIT
     }
 
     @Test
+    public void shouldThrowExceptionIfBackupDirectoryDoesNotHaveStoreFiles() throws Exception
+    {
+        // given
+        String databaseName = "to";
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
+
+        File fromPath = new File( directory.absolutePath(), "from" );
+        assertTrue( fromPath.mkdirs() );
+
+        try
+        {
+            // when
+            new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, false ).execute();
+            fail( "Should have thrown exception" );
+        }
+        catch ( IllegalArgumentException exception )
+        {
+            // then
+            assertTrue( exception.getMessage(), exception.getMessage()
+                    .contains( "Source directory is not a database backup" ) );
+        }
+    }
+
+    @Test
     public void shouldAllowForcedCopyOverAnExistingDatabase() throws Exception
     {
         // given
