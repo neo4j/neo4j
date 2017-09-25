@@ -48,7 +48,7 @@ public abstract class ProducerStep extends AbstractStep<Void> implements StatsPr
     @Override
     public long receive( long ticket, Void batch )
     {
-        // It's fone to not store a reference to this thread here because either it completes and exits
+        // It's fine to not store a reference to this thread here because either it completes and exits
         // normally, notices a panic and exits via an exception.
         new Thread( name() )
         {
