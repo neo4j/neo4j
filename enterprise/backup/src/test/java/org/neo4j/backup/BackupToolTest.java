@@ -84,7 +84,7 @@ public class BackupToolTest
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -105,7 +105,7 @@ public class BackupToolTest
         String newTimeout = "3"; /*seconds by default*/
         long expectedTimeout = 3 * 1000;
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-timeout", newTimeout};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -123,7 +123,7 @@ public class BackupToolTest
     public void shouldIgnoreIncrementalFlag() throws Exception
     {
         String[] args = new String[]{"-incremental", "-host", "localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -142,7 +142,7 @@ public class BackupToolTest
     public void shouldIgnoreFullFlag() throws Exception
     {
         String[] args = new String[]{"-full", "-host", "localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         when( service.directoryContainsDb( any( FileSystemAbstraction.class), eq( new File( "my_backup" ) ) ) )
                 .thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
@@ -164,7 +164,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -187,7 +187,7 @@ public class BackupToolTest
         properties.store( new FileWriter( configFile ), null );
 
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", configFile.getPath()};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -206,7 +206,7 @@ public class BackupToolTest
         // given
         File configFile = testDirectory.file( "nonexistent_file" );
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-config", configFile.getPath()};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
 
@@ -231,7 +231,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
 
@@ -255,7 +255,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-host", "foo:localhost", "-port", "123", "-to", "my_backup"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
 
@@ -279,7 +279,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-host", "localhost"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );
 
@@ -303,7 +303,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-host", ":VeryWrongURI:", "-to", "/var/backup/graph"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         try
@@ -329,7 +329,7 @@ public class BackupToolTest
         String host = "localhost";
         File targetDir = new File( "/var/backup/neo4j/" ).getAbsoluteFile();
         String[] args = {"-from", host, "-to", targetDir.getAbsolutePath(), "-verify", "false"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // When
@@ -349,7 +349,7 @@ public class BackupToolTest
     {
         // given
         String[] args = new String[]{"-from", "localhost", "-to", "my_backup", "-gather-forensics"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // when
@@ -365,7 +365,7 @@ public class BackupToolTest
     {
         // Given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "false"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // When
@@ -382,7 +382,7 @@ public class BackupToolTest
         // Given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "false",
                 "-consistency-checker", "legacy"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // When
@@ -398,7 +398,7 @@ public class BackupToolTest
     {
         // Given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // When
@@ -415,7 +415,7 @@ public class BackupToolTest
         // Given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup",
                 "-consistency-checker", "full"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         // When
@@ -432,7 +432,7 @@ public class BackupToolTest
         // Given
         String[] args = new String[]{"-host", "localhost", "-to", "my_backup", "-verify", "true",
                 "-consistency-checker", "notarealname"};
-        BackupService service = mock( BackupService.class );
+        BackupProtocolService service = mock( BackupProtocolService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
         try

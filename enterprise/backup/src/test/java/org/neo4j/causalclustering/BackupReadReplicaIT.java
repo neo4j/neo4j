@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.backup;
+package org.neo4j.causalclustering;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,24 +26,23 @@ import org.junit.Test;
 import java.io.File;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.backupArguments;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.createSomeData;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.getConfig;
+import static org.neo4j.causalclustering.BackupCoreIT.backupArguments;
+import static org.neo4j.causalclustering.BackupCoreIT.createSomeData;
+import static org.neo4j.causalclustering.BackupCoreIT.getConfig;
+import static org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers.transactionAddress;
 import static org.neo4j.function.Predicates.awaitEx;
+import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupReadReplicaIT
 {
@@ -84,7 +83,7 @@ public class BackupReadReplicaIT
         awaitEx( () -> readReplicasUpToDateAsTheLeader( leader, readReplica ), 1, TimeUnit.MINUTES );
 
         DbRepresentation beforeChange = DbRepresentation.of( readReplica );
-        String backupAddress = this.backupAddress( readReplica );
+        String backupAddress = transactionAddress( readReplica );
 
         String[] args = backupArguments( backupAddress, backupPath, "readreplica" );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( clusterRule.clusterDirectory(), args ) );
@@ -97,15 +96,5 @@ public class BackupReadReplicaIT
                 DbRepresentation.of( new File( backupPath, "readreplica" ), getConfig() );
         assertEquals( beforeChange, backupRepresentation );
         assertNotEquals( backupRepresentation, afterChange );
-    }
-
-    private String backupAddress( ReadReplicaGraphDatabase readReplica )
-    {
-        HostnamePort hostnamePort = readReplica
-                .getDependencyResolver()
-                .resolveDependency( Config.class )
-                .get( OnlineBackupSettings.online_backup_server );
-
-        return hostnamePort.toString();
     }
 }

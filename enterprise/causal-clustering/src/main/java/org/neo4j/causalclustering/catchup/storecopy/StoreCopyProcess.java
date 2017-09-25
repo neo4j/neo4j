@@ -37,8 +37,8 @@ public class StoreCopyProcess
     private final Log log;
     private final RemoteStore remoteStore;
 
-    public StoreCopyProcess( FileSystemAbstraction fs, PageCache pageCache, LocalDatabase localDatabase,
-            CopiedStoreRecovery copiedStoreRecovery, RemoteStore remoteStore, LogProvider logProvider )
+    public StoreCopyProcess( FileSystemAbstraction fs, PageCache pageCache, LocalDatabase localDatabase, CopiedStoreRecovery copiedStoreRecovery,
+            RemoteStore remoteStore, LogProvider logProvider )
     {
         this.fs = fs;
         this.pageCache = pageCache;
@@ -51,8 +51,7 @@ public class StoreCopyProcess
     public void replaceWithStoreFrom( AdvertisedSocketAddress source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
-        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache,
-                localDatabase.storeDir() ) )
+        try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.storeDir() ) )
         {
             remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
