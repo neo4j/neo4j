@@ -25,10 +25,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -222,14 +224,24 @@ public class FulltextProvider implements AutoCloseable
 
     public Set<String> getProperties( String identifier, FulltextIndexType type )
     {
+        return applyToMatchingIndex( identifier, type, LuceneFulltext::getProperties );
+    }
+
+    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<LuceneFulltext,E> getProperties )
+    {
         if ( type == FulltextIndexType.NODES )
         {
-            return nodeIndices.get( identifier ).getProperties();
+            return getProperties.apply( nodeIndices.get( identifier ) );
         }
         else
         {
-            return relationshipIndices.get( identifier ).getProperties();
+            return getProperties.apply( relationshipIndices.get( identifier ) );
         }
+    }
+
+    public InternalIndexState getState( String identifier, FulltextIndexType type )
+    {
+        return applyToMatchingIndex( identifier, type, LuceneFulltext::getState );
     }
 
     /**

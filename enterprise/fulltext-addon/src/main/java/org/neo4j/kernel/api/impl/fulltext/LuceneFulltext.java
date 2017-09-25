@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.kernel.api.index.InternalIndexState;
 
 class LuceneFulltext extends AbstractLuceneIndex
 {
@@ -41,6 +42,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     private final String identifier;
     private final FulltextProvider.FulltextIndexType type;
     private final Set<String> properties;
+    private InternalIndexState state;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
                     List<String> properties, Analyzer analyzer, String identifier,
@@ -51,6 +53,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         this.analyzer = analyzer;
         this.identifier = identifier;
         this.type = type;
+        state = InternalIndexState.POPULATING;
     }
 
     @Override
@@ -131,5 +134,15 @@ class LuceneFulltext extends AbstractLuceneIndex
     public String getAnalyzerName()
     {
         return analyzer.getClass().getCanonicalName();
+    }
+
+    public InternalIndexState getState()
+    {
+        return state;
+    }
+
+    public void setPopulated()
+    {
+        state = InternalIndexState.ONLINE;
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -31,6 +32,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -64,6 +66,14 @@ public class BloomProcedures
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
 
+    @Description( "Check the status of the bloom addon" )
+    @Procedure( name = "db.fulltext.bloomFulltextStatus", mode = READ )
+    public Stream<StatusOutput> bloomFulltextStatus() throws Exception
+    {
+        List<InternalIndexState> states = Arrays.asList( provider.getState( BLOOM_NODES, NODES ), provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
+        return states.stream().map( StatusOutput::new );
+    }
+
     @Description( "Queries the bloom index for nodes" )
     @Procedure( name = "db.fulltext.bloomFulltextNodes", mode = READ )
     public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms ) throws Exception
@@ -93,7 +103,7 @@ public class BloomProcedures
 
     public static class EntityOutput
     {
-        public long entityid;
+        public final long entityid;
 
         public EntityOutput( long entityid )
         {
@@ -103,11 +113,34 @@ public class BloomProcedures
 
     public static class PropertyOutput
     {
-        public String propertykey;
+        public final String propertyKey;
 
         public PropertyOutput( String propertykey )
         {
-            this.propertykey = propertykey;
+            this.propertyKey = propertykey;
+        }
+    }
+
+    public class StatusOutput
+    {
+        public final String state;
+
+        public StatusOutput( InternalIndexState internalIndexState )
+        {
+            switch ( internalIndexState )
+            {
+            case POPULATING:
+                state = "POPULATING";
+                break;
+            case ONLINE:
+                state = "ONLINE";
+                break;
+            case FAILED:
+                state = "FAILED";
+                break;
+            default:
+                throw new IllegalArgumentException( String.format( "Illegal index state %s", internalIndexState ) );
+            }
         }
     }
 }
