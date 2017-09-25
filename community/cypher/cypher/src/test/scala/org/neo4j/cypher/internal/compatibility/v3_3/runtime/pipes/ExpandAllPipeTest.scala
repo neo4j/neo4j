@@ -60,14 +60,14 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq.empty)))).thenAnswer(new Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Array.empty)))).thenAnswer(new Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator.empty
     })
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Array(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
     })
 
-    val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
+    val pipe = ExpandAllPipe(newMockedPipe("a", row("a"-> startNode)), "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes(Array("FOO", "BAR")))()
 
     // when
     when(query.getOptRelTypeId("FOO")).thenReturn(None)

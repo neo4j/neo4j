@@ -103,20 +103,20 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val fromSlot = pipeline.getLongOffsetFor(from)
         val relSlot = pipeline.getLongOffsetFor(relName)
         val toSlot = pipeline.getLongOffsetFor(to)
-        ExpandAllSlottedPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipeline)(id)
+        ExpandAllSlottedPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types.toArray), pipeline)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
         val fromOffset = pipeline.getLongOffsetFor(from)
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(to)
-        ExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipeline)(id)
+        ExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val fromOffset = pipeline.getLongOffsetFor(fromName)
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+        OptionalExpandAllSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
                                       pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
@@ -124,7 +124,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val relOffset = pipeline.getLongOffsetFor(relName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate,
+        OptionalExpandIntoSlottedPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types.toArray), predicate,
                                        pipeline)(id)
 
       case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
@@ -144,7 +144,7 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
         val tempNodeOffset = incomingPipeline.getLongOffsetFor(tempNode)
         val tempEdgeOffset = incomingPipeline.getLongOffsetFor(tempEdge)
         val sizeOfTemporaryStorage = 2
-        VarLengthExpandSlottedPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types), min,
+        VarLengthExpandSlottedPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types.toArray), min,
                                     max, shouldExpandAll, pipeline,
                                     tempNodeOffset = tempNodeOffset,
                                     tempEdgeOffset = tempEdgeOffset,

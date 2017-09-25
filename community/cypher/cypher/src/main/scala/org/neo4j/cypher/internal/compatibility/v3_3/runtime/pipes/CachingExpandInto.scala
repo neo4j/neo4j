@@ -48,7 +48,7 @@ trait CachingExpandInto {
    * Finds all relationships connecting fromNode and toNode.
    */
   protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): Iterator[EdgeValue] = {
+                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): Iterator[EdgeValue] = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.id())
     val toNodeIsDense = query.nodeIsDense(toNode.id())
@@ -87,7 +87,7 @@ trait CachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
+                          relTypes: Option[Array[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(ValueUtils.fromRelationshipProxy)
     new PrefetchingIterator[EdgeValue] {
@@ -109,10 +109,10 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: NodeValue, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
+  private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, query: QueryContext) = {
     relTypes.map {
       case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
+      case rels if rels.length == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
       case rels                   => rels.foldLeft(0)(
         (acc, rel)                => acc + query.nodeGetDegree(node.id(), direction, rel)
       )

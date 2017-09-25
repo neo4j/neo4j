@@ -291,7 +291,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def hashJoin(l: Pipe, r: Pipe) = NodeHashJoinPipe(Set("x"), l, r)()
 
-  private def expand(l: Pipe, t: String) = ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Seq(t)))()
+  private def expand(l: Pipe, t: String) = ExpandAllPipe(l, "x", "r", "n", SemanticDirection.OUTGOING, LazyTypes(Array(t)))()
 
   private def allNodes = AllNodesScanPipe("x")()
 

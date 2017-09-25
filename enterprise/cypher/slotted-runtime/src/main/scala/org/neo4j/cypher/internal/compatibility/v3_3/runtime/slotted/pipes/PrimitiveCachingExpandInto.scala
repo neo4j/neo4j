@@ -43,7 +43,7 @@ trait PrimitiveCachingExpandInto {
     * Finds all relationships connecting fromNode and toNode.
     */
   protected def findRelationships(query: QueryContext, fromNode: Long, toNode: Long,
-                                  relCache: PrimitiveRelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): PrimitiveLongIterator = {
+                                  relCache: PrimitiveRelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): PrimitiveLongIterator = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode)
     val toNodeIsDense = query.nodeIsDense(toNode)
@@ -82,7 +82,7 @@ trait PrimitiveCachingExpandInto {
   }
 
   private def relIterator(query: QueryContext, fromNode: Long, toNode: Long, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: PrimitiveRelationshipsCache, dir: SemanticDirection): PrimitiveLongIterator = {
+                          relTypes: Option[Array[Int]], relCache: PrimitiveRelationshipsCache, dir: SemanticDirection): PrimitiveLongIterator = {
     val (start, localDirection, end) = if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships: RelationshipIterator = query.getRelationshipsForIdsPrimitive(start, localDirection, relTypes)
 
@@ -130,10 +130,10 @@ trait PrimitiveCachingExpandInto {
     }
   }
 
-  private def getDegree(node: Long, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
+  private def getDegree(node: Long, relTypes: Option[Array[Int]], direction: SemanticDirection, query: QueryContext) = {
     relTypes.map {
       case rels if rels.isEmpty => query.nodeGetDegree(node, direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node, direction, rels.head)
+      case rels if rels.length == 1 => query.nodeGetDegree(node, direction, rels.head)
       case rels => rels.foldLeft(0)(
         (acc, rel) => acc + query.nodeGetDegree(node, direction, rel)
       )
