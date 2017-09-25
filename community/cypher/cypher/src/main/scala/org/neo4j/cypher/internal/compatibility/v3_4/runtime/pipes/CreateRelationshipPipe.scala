@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.IsMap

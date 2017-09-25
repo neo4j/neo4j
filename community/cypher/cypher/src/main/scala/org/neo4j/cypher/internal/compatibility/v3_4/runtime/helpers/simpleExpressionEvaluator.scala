@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
-import org.neo4j.cypher.internal.apa.v3_4.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.aux.v3_4.{CypherException => InternalCypherException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{NullPipeDecorator, QueryState}

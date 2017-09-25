@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.apa.v3_4.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.aux.v3_4.Rewritable._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.{DummyPosition, Rewriter}
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_4.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_4.planner._

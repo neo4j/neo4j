@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.apa.v3_4.InvalidArgumentException
+import org.neo4j.cypher.internal.aux.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.{BuildCompiledExecutionPlan, EnterpriseRuntimeContext}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.phases.CompilationState

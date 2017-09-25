@@ -26,7 +26,7 @@ import java.nio.file.Paths
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
-import org.neo4j.cypher.internal.apa.v3_4.LoadExternalResourceException
+import org.neo4j.cypher.internal.aux.v3_4.LoadExternalResourceException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.TaskCloser
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.ExternalCSVResource
 import sun.net.www.protocol.http.HttpURLConnection

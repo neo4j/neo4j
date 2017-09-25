@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue, stringValue}
 
 class ProduceResultsPipeTest extends CypherFunSuite {

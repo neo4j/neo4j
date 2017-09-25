@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.Foldable.TreeAny
-import org.neo4j.cypher.internal.apa.v3_4.Rewritable._
-import org.neo4j.cypher.internal.apa.v3_4.{InternalException, Rewriter}
+import org.neo4j.cypher.internal.aux.v3_4.Foldable.TreeAny
+import org.neo4j.cypher.internal.aux.v3_4.Rewritable._
+import org.neo4j.cypher.internal.aux.v3_4.{InternalException, Rewriter}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 

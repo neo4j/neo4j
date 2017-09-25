@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.UnNamedNameGenerator
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{INCOMING, OUTGOING}
 

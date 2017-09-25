@@ -13,7 +13,7 @@
   <version>3.4.0-SNAPSHOT</version>
   <name>Neo4j - Cypher Intermediate Representation 3.4</name>
 
-  <description>The intermediate representations, such as logical plans and query graph</description>
+  <description>The intermediate representations, such as the query graph</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -107,9 +107,10 @@
     </dependency>
 
     <!-- test dependencies -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-util-3.4</artifactId>
+      <artifactId>neo4j-cypher-aux-3.4</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

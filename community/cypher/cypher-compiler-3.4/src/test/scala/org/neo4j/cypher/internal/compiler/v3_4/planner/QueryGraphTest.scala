@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
 
 class QueryGraphTest extends CypherFunSuite {

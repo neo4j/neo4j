@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, symbols}
+import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, symbols}
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v2_3.{ExecutionResultWrapper => ExecutionResultWrapperFor2_3, exceptionHandler => exceptionHandlerFor2_3}
 import org.neo4j.cypher.internal.compatibility.v3_1.{ExecutionResultWrapper => ExecutionResultWrapperFor3_1, exceptionHandler => exceptionHandlerFor3_1}

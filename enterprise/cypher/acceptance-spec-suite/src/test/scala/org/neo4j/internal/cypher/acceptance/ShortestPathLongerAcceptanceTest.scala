@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.util
 
-import org.neo4j.cypher.internal.apa.v3_4.InternalException
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription

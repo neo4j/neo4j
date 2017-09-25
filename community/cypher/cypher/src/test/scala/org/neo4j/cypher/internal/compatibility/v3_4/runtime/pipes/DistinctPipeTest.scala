@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, Literal, Multiply, Variable}
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringArray
 import org.neo4j.values.virtual.MapValue
 

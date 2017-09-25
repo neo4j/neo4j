@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{CypherParser, ParserTest}
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 class StatementReturnColumnsTest extends CypherFunSuite with ParserTest[Statement, List[String]] {
 

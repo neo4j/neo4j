@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{LazyTypes, QueryState}
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.graphdb.Path

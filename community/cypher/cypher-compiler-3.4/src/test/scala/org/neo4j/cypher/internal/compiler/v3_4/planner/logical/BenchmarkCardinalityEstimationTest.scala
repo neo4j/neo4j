@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.dbstructure.QMULDbStructure
 
 class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

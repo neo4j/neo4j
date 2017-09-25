@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService

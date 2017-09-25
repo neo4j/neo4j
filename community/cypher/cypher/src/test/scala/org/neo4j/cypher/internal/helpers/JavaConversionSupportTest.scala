@@ -23,7 +23,7 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v3_4.helpers
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 class JavaConversionSupportTest extends CypherFunSuite {
 

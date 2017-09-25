@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_4.codegen
 import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
-import org.neo4j.cypher.internal.apa.v3_4.symbols
+import org.neo4j.cypher.internal.aux.v3_4.symbols
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}

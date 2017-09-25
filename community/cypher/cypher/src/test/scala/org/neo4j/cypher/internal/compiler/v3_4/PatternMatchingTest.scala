@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.Unre
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.PatternGraphBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.PatternMatchingBuilder
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {

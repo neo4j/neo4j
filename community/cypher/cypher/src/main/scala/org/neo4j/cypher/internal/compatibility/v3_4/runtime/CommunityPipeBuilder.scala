@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.apa.v3_4.InternalException
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Literal}

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.apa.v3_4.DummyPosition
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.parboiled.scala._
 

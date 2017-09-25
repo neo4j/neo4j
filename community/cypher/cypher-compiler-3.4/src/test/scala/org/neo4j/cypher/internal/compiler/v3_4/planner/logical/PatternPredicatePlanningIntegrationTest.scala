@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_4.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_4.planner._

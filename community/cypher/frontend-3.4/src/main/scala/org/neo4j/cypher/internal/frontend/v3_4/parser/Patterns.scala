@@ -26,7 +26,7 @@ package org.neo4j.cypher.internal.frontend.v3_4.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.parboiled.scala._

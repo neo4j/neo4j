@@ -28,8 +28,8 @@ import org.neo4j.codegen.MethodReference.methodReference
 import org.neo4j.codegen._
 import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
-import org.neo4j.cypher.internal.apa.v3_4.{ParameterNotFoundException, symbols}
-import org.neo4j.cypher.internal.apa.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.aux.v3_4.{ParameterNotFoundException, symbols}
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.DirectionConverter.toGraphDb

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
@@ -214,7 +214,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     semanticTable.resolvedPropertyKeyNames(label)
 
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
-    import org.neo4j.cypher.internal.apa.v3_4.Foldable._
+    import org.neo4j.cypher.internal.aux.v3_4.Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)

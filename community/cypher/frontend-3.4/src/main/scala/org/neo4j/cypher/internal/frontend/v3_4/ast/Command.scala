@@ -16,10 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticError, SemanticExpressionCheck}
-import org.neo4j.cypher.internal.apa.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait Command extends Statement {

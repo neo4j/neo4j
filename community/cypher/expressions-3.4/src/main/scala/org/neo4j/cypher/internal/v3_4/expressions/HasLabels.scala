@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 
 case class HasLabels(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends Expression {
 

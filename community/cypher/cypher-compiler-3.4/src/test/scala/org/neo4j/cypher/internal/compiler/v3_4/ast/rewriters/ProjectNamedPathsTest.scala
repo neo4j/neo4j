@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.apa.v3_4.inSequence
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.inSequence
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast._

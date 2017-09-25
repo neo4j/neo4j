@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.apa.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Eager, Limit, LoadCSV, UnwindCollection}
 
 case object cleanUpEager extends Rewriter {

@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
-import org.neo4j.cypher.internal.apa.v3_4.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{TypeSpec, _}
 import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression.{DefaultTypeMismatchMessageGenerator, SemanticContext}
 import org.neo4j.cypher.internal.v3_4.expressions._

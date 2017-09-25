@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.apa.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.PlanRewriter

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parse
-import org.neo4j.cypher.internal.apa.v3_4.symbols.TypeSpec
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.symbols.TypeSpec
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 class ScopeTreeTest extends CypherFunSuite {
 

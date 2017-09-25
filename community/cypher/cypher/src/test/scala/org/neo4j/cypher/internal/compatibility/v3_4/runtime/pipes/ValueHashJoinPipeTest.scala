@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConvers
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.TestableIterator
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleArray, intArray, intValue}
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.rewriteEqualityToInPredicate
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport {
 

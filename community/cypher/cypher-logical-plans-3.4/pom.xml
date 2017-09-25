@@ -127,6 +127,7 @@
     </dependency>
 
     <!-- test dependencies -->
+
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-cypher-frontend-3.4</artifactId>

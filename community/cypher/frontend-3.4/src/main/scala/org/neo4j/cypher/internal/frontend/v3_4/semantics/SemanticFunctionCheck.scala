@@ -16,12 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.semantics
 
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.notification.LengthOnNonPathNotification
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
 import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
-import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.v3_4.functions._
+import org.neo4j.cypher.internal.frontend.v3_4.notification.LengthOnNonPathNotification
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTAny, CTBoolean, CTList, CTPath, CTString}
+import org.neo4j.cypher.internal.frontend.v3_4.{SemanticCheck, TypeGenerator, ast}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
@@ -65,7 +66,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
               case _: PatternExpression => None
               case _: ContainerIndex => None
               case e =>
-                Some(SemanticError(s"Argument to ${Exists.name}(...) is not a property or pattern", e.position, invocation.position))
+                Some(SemanticError(s"Argument to ${invocation.name}(...) is not a property or pattern", e.position, invocation.position))
             })
         } chain specifyType(CTBoolean, invocation)
 

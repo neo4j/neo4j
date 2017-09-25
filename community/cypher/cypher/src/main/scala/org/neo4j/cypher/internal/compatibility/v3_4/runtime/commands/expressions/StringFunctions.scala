@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues

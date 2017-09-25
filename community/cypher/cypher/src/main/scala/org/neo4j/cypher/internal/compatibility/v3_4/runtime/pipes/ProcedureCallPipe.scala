@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.Proced
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.apa.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {

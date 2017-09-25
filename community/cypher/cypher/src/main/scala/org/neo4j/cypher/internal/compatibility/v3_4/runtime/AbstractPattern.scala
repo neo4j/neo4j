@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.apa.v3_4.SyntaxException
+import org.neo4j.cypher.internal.aux.v3_4.SyntaxException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{AstNode, SingleNode}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 
 import scala.collection.Map

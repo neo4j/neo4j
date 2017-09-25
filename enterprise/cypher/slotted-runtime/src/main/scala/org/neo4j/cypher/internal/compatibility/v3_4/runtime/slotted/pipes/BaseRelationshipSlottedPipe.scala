@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import java.util.function.BiConsumer
 
-import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{LazyType, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue

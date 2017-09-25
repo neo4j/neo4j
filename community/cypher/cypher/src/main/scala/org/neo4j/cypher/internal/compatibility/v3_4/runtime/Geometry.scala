@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.apa.v3_4.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.spatial
 import org.neo4j.graphdb.spatial.{Coordinate, Point}
 

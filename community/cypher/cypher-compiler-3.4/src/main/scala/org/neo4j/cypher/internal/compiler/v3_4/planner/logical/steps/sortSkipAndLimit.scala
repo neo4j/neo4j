@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.apa.v3_4.InternalException
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, DescSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}

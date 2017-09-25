@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.apa.v3_4.symbols._
-import org.neo4j.cypher.internal.apa.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.apa.v3_4.{InputPosition, NonEmptyList}
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, NonEmptyList}
 import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast._

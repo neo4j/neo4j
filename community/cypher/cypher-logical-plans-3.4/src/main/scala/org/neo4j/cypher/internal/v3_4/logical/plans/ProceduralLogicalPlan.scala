@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.apa.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.expressions._
 

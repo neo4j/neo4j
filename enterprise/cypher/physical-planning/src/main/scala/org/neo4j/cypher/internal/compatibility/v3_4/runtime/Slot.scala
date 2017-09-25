@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
-import org.neo4j.cypher.internal.apa.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
 
 sealed trait Slot {
   def offset: Int
