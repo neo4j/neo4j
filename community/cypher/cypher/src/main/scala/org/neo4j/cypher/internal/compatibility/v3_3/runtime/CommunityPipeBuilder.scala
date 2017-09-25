@@ -70,7 +70,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
         RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
-                                            LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
+                                            new LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(IdName(ident), label, _) =>
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)

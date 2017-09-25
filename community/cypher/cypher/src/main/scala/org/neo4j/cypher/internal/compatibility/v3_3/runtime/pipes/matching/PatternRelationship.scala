@@ -39,7 +39,7 @@ class PatternRelationship(key: String,
                           val properties: Map[KeyToken, Expression] = Map.empty,
                           val dir: SemanticDirection)
   extends PatternElement(key) {
-  private val types = LazyTypes(relTypes.toArray)
+  private val types = new LazyTypes(relTypes.toArray)
 
   def variables2: Map[String, CypherType] = Map(startNode.key -> CTNode, endNode.key -> CTNode, key -> CTRelationship)
 

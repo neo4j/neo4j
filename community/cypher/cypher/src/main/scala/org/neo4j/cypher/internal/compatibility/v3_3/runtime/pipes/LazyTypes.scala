@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
-case class LazyTypes(names: Array[String]) {
+final class LazyTypes(val names: Array[String]) {
 
   private var ids = Array.empty[Int]
 
@@ -33,13 +33,22 @@ case class LazyTypes(names: Array[String]) {
     }
     Some(ids)
   }
+
+  override def hashCode(): Int = scala.util.hashing.MurmurHash3.seqHash(names)
+
+  override def equals(obj: scala.Any): Boolean = {
+    obj match {
+      case lazyTypes: LazyTypes => names.sameElements(lazyTypes.names)
+      case _ => false
+    }
+  }
 }
 
 object LazyTypes {
   def apply(names: Array[RelTypeName])(implicit table:SemanticTable): LazyTypes = {
-    val types = LazyTypes(names.map(_.name))
+    val types = new LazyTypes(names.map(_.name))
     types.ids = names.flatMap(_.id).map(_.id)
     types
   }
-  val empty = LazyTypes(Array.empty[String])
+  val empty = new LazyTypes(Array.empty[String])
 }

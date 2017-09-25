@@ -27,7 +27,7 @@ class LazyTypesTest extends CypherFunSuite {
 
   test("should not initialize state when state is complete") {
     // given
-    val types = LazyTypes(Array("a", "b", "c"))
+    val types = new LazyTypes(Array("a", "b", "c"))
 
     val context = mock[QueryContext]
     when(context.getOptRelTypeId("a")).thenReturn(Some(1))
@@ -45,7 +45,7 @@ class LazyTypesTest extends CypherFunSuite {
 
   test("should re-initialize if not fully initialized") {
     // given
-    val types = LazyTypes(Array("a", "b", "c"))
+    val types = new LazyTypes(Array("a", "b", "c"))
 
     val context = mock[QueryContext]
     when(context.getOptRelTypeId("a")).thenReturn(Some(1))

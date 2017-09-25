@@ -66,7 +66,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
   test("should return zero if rel-type is missing") {
     implicit val table = new SemanticTable()
 
-    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes(Array("X")), Some(LazyLabel(LabelName("A") _)))()
+    val pipe = RelationshipCountFromCountStorePipe("count(r)", None, new LazyTypes(Array("X")), Some(LazyLabel(LabelName("A") _)))()
 
     val mockedContext: QueryContext = mock[QueryContext]
     // try to guarantee that the mock won't be the reason for the exception

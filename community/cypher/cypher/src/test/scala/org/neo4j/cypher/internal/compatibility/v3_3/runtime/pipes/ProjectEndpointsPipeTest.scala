@@ -109,7 +109,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Array("A"))), directed = true, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(new LazyTypes(Array("A"))), directed = true, simpleLength = true)().
         createResults(queryState).toList
 
     // then
@@ -210,7 +210,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Array("B"))), directed = false, simpleLength = true)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(new LazyTypes(Array("B"))), directed = false, simpleLength = true)().
         createResults(queryState).toList
 
     // then
@@ -280,7 +280,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Array("A"))), directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(new LazyTypes(Array("A"))), directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
@@ -303,7 +303,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // when
     val result =
-      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(LazyTypes(Array("A"))), directed = true, simpleLength = false)().
+      ProjectEndpointsPipe(left, "r", "a", startInScope = false, "b", endInScope = false, Some(new LazyTypes(Array("A"))), directed = true, simpleLength = false)().
         createResults(queryState).toList
 
     // then
