@@ -23,13 +23,15 @@ import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CRS, CartesianPoint, GeographicPoint}
+import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher._
-import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -273,7 +275,12 @@ object CypherComparisonSupport {
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
-  case class Versions(versions: Version*)
+  case class Versions(versions: Version*) {
+    def +(other: Version): Versions = {
+      val newVersions = if (!versions.contains(other)) versions :+ other else versions
+      Versions(newVersions: _*)
+    }
+  }
 
   object Versions {
     val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, v3_4)
@@ -317,7 +324,7 @@ object CypherComparisonSupport {
 
     object Rule extends Planner(Set("RULE"), "planner=rule")
 
-    object Default extends Planner(Set(), "")
+    object Default extends Planner(Set("COST", "IDP", "RULE", "PROCEDURE"), "")
 
   }
 
@@ -333,21 +340,21 @@ object CypherComparisonSupport {
 
     implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
-    object CompiledSource extends Runtime("COMPILED", "runtime=compiled debug=generate_java_source")
+    object CompiledSource extends Runtime(Set("COMPILED"), "runtime=compiled debug=generate_java_source")
 
-    object CompiledBytecode extends Runtime("COMPILED", "runtime=compiled")
+    object CompiledBytecode extends Runtime(Set("COMPILED"), "runtime=compiled")
 
-    object Slotted extends Runtime("SLOTTED", "runtime=slotted")
+    object Slotted extends Runtime(Set("SLOTTED"), "runtime=slotted")
 
-    object Interpreted extends Runtime("INTERPRETED", "runtime=interpreted")
+    object Interpreted extends Runtime(Set("INTERPRETED"), "runtime=interpreted")
 
-    object ProcedureOrSchema extends Runtime("PROCEDURE", "")
+    object ProcedureOrSchema extends Runtime(Set("PROCEDURE"), "")
 
-    object Default extends Runtime("", "")
+    object Default extends Runtime(Set("COMPILED", "SLOTTED" , "INTERPRETED", "PROCEDURE"), "")
 
   }
 
-  case class Runtime(acceptedRuntimeName: String, preparserOption: String)
+  case class Runtime(acceptedRuntimeNames: Set[String], preparserOption: String)
 
 
   sealed trait PlanComparisonStrategy
@@ -381,9 +388,9 @@ object CypherComparisonSupport {
 
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {
       internalExecutionResult.executionPlanDescription().arguments.collect {
-        case IPDRuntime(reportedRuntime) if (reportedRuntime != runtime.acceptedRuntimeName && runtime != Runtimes.Default) =>
-          fail(s"did not use ${runtime.acceptedRuntimeName} runtime - instead $reportedRuntime was used. Scenario $name")
-        case IPDPlanner(reportedPlanner) if (!planner.acceptedPlannerNames.contains(reportedPlanner) && planner != Planners.Default) =>
+        case IPDRuntime(reportedRuntime) if (!runtime.acceptedRuntimeNames.contains(reportedRuntime)) =>
+          fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
+        case IPDPlanner(reportedPlanner) if (!planner.acceptedPlannerNames.contains(reportedPlanner)) =>
           fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
       }
     }
@@ -392,15 +399,25 @@ object CypherComparisonSupport {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
-          val maybeRuntime = result.executionPlanDescription().arguments.collectFirst {
-            case IPDRuntime(reportedRuntime) if (reportedRuntime == runtime.acceptedRuntimeName || runtime == Runtimes.Default) => reportedRuntime
+          val arguments = result.executionPlanDescription().arguments
+          val reportedRuntime = arguments.collectFirst {
+            case IPDRuntime(reportedRuntime) => reportedRuntime
           }
-          val maybePlanner = result.executionPlanDescription().arguments.collectFirst {
-            case IPDPlanner(reportedPlanner) if planner.acceptedPlannerNames.contains(reportedPlanner) => reportedPlanner
+          val reportedPlanner = arguments.collectFirst {
+            case IPDPlanner(reportedPlanner) => reportedPlanner
           }
-          if (maybeRuntime.isDefined && maybePlanner.isDefined) {
-            // We did not fall back
-            fail(s"Unexpectedly succeeded using $name for query $query, with ${maybeRuntime.get} & ${maybePlanner.get}")
+
+          // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
+          // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
+          val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
+          val (reportedRuntimeName, reportedPlannerName) =
+            if (versionsWithUnreportedProcedureUsage.versions.contains(version))
+              (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
+            else
+              (reportedRuntime.get, reportedPlanner.get)
+
+          if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName) && planner.acceptedPlannerNames.contains(reportedPlannerName)) {
+            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedRuntimeName & " + s"$reportedPlannerName")
           }
       }
     }

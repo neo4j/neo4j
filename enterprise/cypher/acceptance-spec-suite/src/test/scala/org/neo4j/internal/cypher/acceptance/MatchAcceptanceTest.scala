@@ -626,7 +626,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val query = "MATCH (a) MERGE (b) WITH * OPTIONAL MATCH (a)--(b) RETURN count(*)"
 
-    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
 
     result.columnAs[Long]("count(*)").next shouldBe 6
   }

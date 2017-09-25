@@ -209,7 +209,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+    val result = executeWith(Configs.Interpreted, """MATCH (n:Foo)
                                                              |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
                                                              |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
                                                              |RETURN n.idx as x
@@ -232,7 +232,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+    val result = executeWith(Configs.Interpreted, """MATCH (n:Foo)
                                                              |WHERE n.bar = 1
                                                              |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
                                                              |RETURN n.baz as x
@@ -255,7 +255,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = executeWith(Configs.CommunityInterpreted, """MATCH (n:Foo)
+    val result = executeWith(Configs.Interpreted, """MATCH (n:Foo)
                                                              |WHERE n.baz = 1
                                                              |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
                                                              |RETURN n.bar as x

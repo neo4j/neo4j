@@ -59,7 +59,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     assertStats(result, nodesCreated = 110, relationshipsCreated = 110, propertiesWritten = 110, labelsAdded = 110)
     val rows = executeScalar[Number]("MATCH (:Root)-[:PARENT]->(:Child) RETURN count(*)")
     rows should equal(10)
-    val ids = executeWith(Configs.CommunityInterpreted, "MATCH (:Root)-[:PARENT*]->(c:Child) RETURN c.id AS id ORDER BY c.id").toList
+    val ids = executeWith(Configs.Interpreted, "MATCH (:Root)-[:PARENT*]->(c:Child) RETURN c.id AS id ORDER BY c.id").toList
     ids should equal((1 to 110).map(i => Map("id" -> i)))
   }
 

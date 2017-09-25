@@ -42,8 +42,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     val params = Map("param" -> 3)
 
-    val result1 = executeWith(Configs.CommunityInterpreted, query1, params = params).toList
-    val result2 = executeWith(Configs.CommunityInterpreted, query2, params = params).toList
+    val result1 = executeWith(Configs.Interpreted, query1, params = params).toList
+    val result2 = executeWith(Configs.Interpreted, query2, params = params).toList
 
     result1.size should equal(result2.size)
   }
@@ -71,6 +71,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
+    // CountStore not supported by sloted
     val result = executeWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
@@ -79,7 +80,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
+    // This does not use countstore
+    val result = executeWith(Configs.All, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -99,21 +101,21 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createNode(Map("prop" -> 2))
     val r1 = relate(node1, node2)
 
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
+    val result = executeWith(Configs.All, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 
   test("combine simple aggregation on projection with sorting") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
+    val result = executeWith(Configs.All, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
     result.toList should equal(List(Map("count(b)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (cannot use count store)") {
     val node1 = createNode(Map("prop" -> 1))
     val node2 = createNode(Map("prop" -> 2))
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
+    val result = executeWith(Configs.All, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
     result.toList should equal(List(Map("count(a.prop)" -> 2)))
   }
 
@@ -128,7 +130,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node1 = createNode()
     val node2 = createNode()
     val r1 = relate(node1, node2)
-    val result = executeWith(Configs.AllExceptSlotted, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
+    val result = executeWith(Configs.All, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
     result.toList should equal(List(Map("count(r)" -> 2)))
   }
 
