@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -51,12 +53,14 @@ class BloomKernelExtension extends LifecycleAdapter
     private LogService logService;
     private final AvailabilityGuard availabilityGuard;
     private final JobScheduler scheduler;
+    private final Supplier<TransactionIdStore> transactionIdStore;
     private FulltextProvider provider;
 
     BloomKernelExtension( FileSystemAbstraction fileSystem, File storeDir, Config config,
                           GraphDatabaseService db, Procedures procedures,
                           LogService logService, AvailabilityGuard availabilityGuard,
-                          JobScheduler scheduler )
+                          JobScheduler scheduler,
+                          Supplier<TransactionIdStore> transactionIdStore )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -66,18 +70,19 @@ class BloomKernelExtension extends LifecycleAdapter
         this.logService = logService;
         this.availabilityGuard = availabilityGuard;
         this.scheduler = scheduler;
+        this.transactionIdStore = transactionIdStore;
     }
 
     @Override
-    public void init() throws IOException, KernelException
+    public void start() throws IOException, KernelException
     {
-        if ( config.get( LoadableBloomFulltextConfig.bloom_enabled ) )
+        if ( config.get( BloomFulltextConfig.bloom_enabled ) )
         {
             List<String> properties = getProperties();
-            String analyzer = config.get( LoadableBloomFulltextConfig.bloom_analyzer );
+            String analyzer = config.get( BloomFulltextConfig.bloom_analyzer );
 
             Log log = logService.getInternalLog( FulltextProvider.class );
-            provider = new FulltextProvider( db, log, availabilityGuard, scheduler );
+            provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get() );
             FulltextFactory fulltextFactory = new FulltextFactory( fileSystem, storeDir, analyzer, provider );
             fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, properties );
             fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS, properties );
@@ -90,7 +95,7 @@ class BloomKernelExtension extends LifecycleAdapter
 
     private List<String> getProperties()
     {
-        List<String> properties = config.get( LoadableBloomFulltextConfig.bloom_indexed_properties );
+        List<String> properties = config.get( BloomFulltextConfig.bloom_indexed_properties );
         if ( properties.isEmpty() )
         {
             throw new RuntimeException( "Properties to index must be configured for bloom fulltext" );
@@ -99,7 +104,7 @@ class BloomKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Exception
+    public void stop() throws Exception
     {
         if ( provider != null )
         {

@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -41,9 +42,11 @@ public class FulltextProvider implements AutoCloseable
     public static final String FIELD_METADATA_DOC = LUCENE_FULLTEXT_ADDON_PREFIX + "metadata__doc__field__";
     public static final String FIELD_CONFIG_ANALYZER = LUCENE_FULLTEXT_ADDON_PREFIX + "analyzer";
     public static final String FIELD_CONFIG_PROPERTIES = LUCENE_FULLTEXT_ADDON_PREFIX + "properties";
+    public static final String FIELD_LAST_COMMITTED_TX_ID = LUCENE_FULLTEXT_ADDON_PREFIX + "tx__id";
 
     private final GraphDatabaseService db;
     private final Log log;
+    private final TransactionIdStore transactionIdStore;
     private final FulltextTransactionEventUpdater fulltextTransactionEventUpdater;
     private final Set<String> nodeProperties;
     private final Set<String> relationshipProperties;
@@ -59,12 +62,14 @@ public class FulltextProvider implements AutoCloseable
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
      * @param scheduler For background work.
+     * @param transactionIdStore
      */
     public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
-                             JobScheduler scheduler )
+                             JobScheduler scheduler, TransactionIdStore transactionIdStore )
     {
         this.db = db;
         this.log = log;
+        this.transactionIdStore = transactionIdStore;
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
@@ -103,10 +108,14 @@ public class FulltextProvider implements AutoCloseable
 
     private boolean matchesConfiguration( WritableFulltext index ) throws IOException
     {
+        long txId = transactionIdStore.getLastCommittedTransactionId();
+        FulltextIndexConfiguration currentConfig =
+                new FulltextIndexConfiguration( index.getAnalyzerName(), index.getProperties(), txId );
+
         try ( ReadOnlyFulltext indexReader = index.getIndexReader() )
         {
-            FulltextIndexConfiguration config = indexReader.getConfigurationDocument();
-            return config != null && config.matches( index.getAnalyzerName(), index.getProperties() );
+            FulltextIndexConfiguration storedConfig = indexReader.getConfigurationDocument();
+            return storedConfig != null && storedConfig.equals( currentConfig );
         }
     }
 
@@ -134,6 +143,7 @@ public class FulltextProvider implements AutoCloseable
         {
             try
             {
+                luceneFulltextIndex.saveConfiguration( transactionIdStore.getLastCommittedTransactionId() );
                 luceneFulltextIndex.close();
             }
             catch ( IOException e )

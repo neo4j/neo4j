@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.Term;
@@ -30,8 +30,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.apache.lucene.document.Field.Store.NO;
+import static org.apache.lucene.document.Field.Store.YES;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_ANALYZER;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_CONFIG_PROPERTIES;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_LAST_COMMITTED_TX_ID;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_METADATA_DOC;
 
 class FulltextIndexConfiguration
@@ -40,22 +42,43 @@ class FulltextIndexConfiguration
 
     private final Set<String> properties;
     private final String analyzerClassName;
+    private final long txId;
 
     FulltextIndexConfiguration( Document doc )
     {
         properties = new HashSet<>( Arrays.asList( doc.getValues( FIELD_CONFIG_PROPERTIES ) ) );
         analyzerClassName = doc.get( FIELD_CONFIG_ANALYZER );
+        txId = Long.parseLong( doc.get( FIELD_LAST_COMMITTED_TX_ID ) );
     }
 
-    FulltextIndexConfiguration( Analyzer analyzer, Set<String> properties )
+    FulltextIndexConfiguration( String analyzerClassName, Set<String> properties, long txId )
     {
         this.properties = properties;
-        this.analyzerClassName = analyzer.getClass().getCanonicalName();
+        this.analyzerClassName = analyzerClassName;
+        this.txId = txId;
     }
 
-    boolean matches( String analyzerClassName, Set<String> properties )
+    @Override
+    public boolean equals( Object o )
     {
-        return this.analyzerClassName.equals( analyzerClassName ) && this.properties.equals( properties );
+        if ( this == o )
+        { return true; }
+        if ( o == null || getClass() != o.getClass() )
+        { return false; }
+
+        FulltextIndexConfiguration that = (FulltextIndexConfiguration) o;
+
+        return txId == that.txId && properties.equals( that.properties ) &&
+               analyzerClassName.equals( that.analyzerClassName );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = properties.hashCode();
+        result = 31 * result + analyzerClassName.hashCode();
+        result = 31 * result + (int) (txId ^ (txId >>> 32));
+        return result;
     }
 
     Document asDocument()
@@ -63,6 +86,7 @@ class FulltextIndexConfiguration
         Document doc = new Document();
         doc.add( new StringField( FIELD_METADATA_DOC, "", NO ) );
         doc.add( new StoredField( FIELD_CONFIG_ANALYZER, analyzerClassName ) );
+        doc.add( new LongField( FIELD_LAST_COMMITTED_TX_ID, txId, YES ) );
         for ( String property : properties )
         {
             doc.add( new StoredField( FIELD_CONFIG_PROPERTIES, property ) );

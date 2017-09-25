@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -52,13 +54,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.LoadableBloomFulltextConfig.bloom_enabled;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_indexed_properties;
 
 public class BloomIT
 {
     private static final String NODES = "CALL db.fulltext.bloomFulltextNodes([\"%s\"])";
     private static final String RELS = "CALL db.fulltext.bloomFulltextRelationships([\"%s\"])";
     private static final String ENTITYID = "entityid";
+
+
     @Rule
     public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     @Rule
@@ -81,7 +86,7 @@ public class BloomIT
     @Test
     public void shouldPopulateAndQueryIndexes() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, relprop" );
+        builder.setConfig( bloom_indexed_properties, "prop, relprop" );
         db = builder.newGraphDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
@@ -106,8 +111,8 @@ public class BloomIT
     @Test
     public void shouldBeAbleToConfigureAnalyzer() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
+        builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.sv.SwedishAnalyzer" );
         db = builder.newGraphDatabase();
         try ( Transaction transaction = db.beginTx() )
         {
@@ -133,7 +138,7 @@ public class BloomIT
     @Test
     public void shouldPopulateIndexWithExistingDataOnIndexCreate() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "something" );
+        builder.setConfig( bloom_indexed_properties, "something" );
         db = builder.newGraphDatabase();
 
         long nodeId;
@@ -148,8 +153,8 @@ public class BloomIT
         assertFalse( result.hasNext() );
         db.shutdown();
 
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
+        builder.setConfig( BloomFulltextConfig.bloom_analyzer, "org.apache.lucene.analysis.da.DanishAnalyzer" );
         db = builder.newGraphDatabase();
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
@@ -163,7 +168,7 @@ public class BloomIT
     @Test
     public void startupPopulationShouldNotCauseDuplicates() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
         long nodeId;
@@ -196,7 +201,7 @@ public class BloomIT
     @Test
     public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
         long nodeId;
@@ -209,7 +214,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        builder.setConfig( bloom_indexed_properties, "not-prop" );
         db = builder.newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -220,7 +225,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
         // Verify that the node is no longer indexed
@@ -233,7 +238,7 @@ public class BloomIT
     @Test
     public void staleDataFromPropertyRemovalShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
 
         db = builder.newGraphDatabase();
         long nodeId;
@@ -246,7 +251,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "not-prop" );
+        builder.setConfig( bloom_indexed_properties, "not-prop" );
         db = builder.newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -257,7 +262,7 @@ public class BloomIT
         }
 
         db.shutdown();
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
         // Verify that the node is no longer indexed
@@ -270,7 +275,7 @@ public class BloomIT
     @Test
     public void updatesAreAvailableToConcurrentReadTransactions() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -315,14 +320,14 @@ public class BloomIT
     public void shouldNotBeAbleToStartWithIllegalPropertyKey() throws Exception
     {
         expectedException.expect( InvalidSettingException.class );
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop, " + FulltextProvider.FIELD_ENTITY_ID + ", hello" );
+        builder.setConfig( bloom_indexed_properties, "prop, " + FulltextProvider.FIELD_ENTITY_ID + ", hello" );
         db = builder.newGraphDatabase();
     }
 
     @Test
     public void shouldBeAbleToRunConsistencyCheck() throws Exception
     {
-        builder.setConfig( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -332,13 +337,105 @@ public class BloomIT
         }
         db.shutdown();
 
-        Config config = Config.defaults( LoadableBloomFulltextConfig.bloom_indexed_properties, "prop" );
+        Config config = Config.defaults( bloom_indexed_properties, "prop" );
         ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService( new Date() );
         CheckConsistencyConfig checkConsistencyConfig = new CheckConsistencyConfig( true, true, true, true );
         ConsistencyCheckService.Result result =
                 consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(),
                         true, checkConsistencyConfig );
         assertTrue( result.isSuccessful() );
+    }
+
+    @Test
+    public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
+    {
+        String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+        String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+
+        builder.setConfig( bloom_indexed_properties, "prop" );
+        builder.setConfig( BloomFulltextConfig.bloom_analyzer, ENGLISH );
+
+        db = builder.newGraphDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Hello and hello again." );
+            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
+
+            tx.success();
+        }
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "and" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 0L ) );
+            }
+            try ( Result result = db.execute( String.format( NODES, "ett" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+        }
+
+        db.shutdown();
+        builder.setConfig( BloomFulltextConfig.bloom_analyzer, SWEDISH );
+        db = builder.newGraphDatabase();
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "and" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+            try ( Result result = db.execute( String.format( NODES, "ett" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 0L ) );
+            }
+        }
+    }
+
+    @Test
+    public void shouldReindexAfterBeingTemporarilyDisabled() throws Exception
+    {
+        builder.setConfig( bloom_indexed_properties, "prop" );
+
+        // Create a node while the index is enabled.
+        db = builder.newGraphDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "Hello and hello again." );
+            tx.success();
+        }
+
+        // Shut down, disable the index, start up again and create a node that would have been indexed had the index
+        // been enabled.
+        db.shutdown();
+        builder.setConfig( bloom_enabled, "false" );
+        db = builder.newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "En tomte bodde i ett hus." );
+            tx.success();
+        }
+
+        // Re-enable the index and restart. Wait for the index to rebuild.
+        db.shutdown();
+        builder.setConfig( bloom_enabled, "true" );
+        db = builder.newGraphDatabase();
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+
+        // Now we should be able to find the node that was added while the index was disabled.
+        try ( Transaction ignore = db.beginTx() )
+        {
+            try ( Result result = db.execute( String.format( NODES, "hello" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+            try ( Result result = db.execute( String.format( NODES, "tomte" ) ) )
+            {
+                assertThat( Iterators.count( result ), is( 1L ) );
+            }
+        }
     }
 
     @After

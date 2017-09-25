@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.Service;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -37,7 +39,7 @@ import org.neo4j.scheduler.JobScheduler;
  * A {@link KernelExtensionFactory} for the bloom fulltext addon.
  *
  * @see BloomProcedures
- * @see LoadableBloomFulltextConfig
+ * @see BloomFulltextConfig
  */
 @Service.Implementation( KernelExtensionFactory.class )
 public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKernelExtensionFactory.Dependencies>
@@ -62,6 +64,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         AvailabilityGuard availabilityGuard();
 
         JobScheduler scheduler();
+
+        TransactionIdStore transactionIdStore();
     }
 
     public BloomKernelExtensionFactory()
@@ -80,7 +84,8 @@ public class BloomKernelExtensionFactory extends KernelExtensionFactory<BloomKer
         LogService logService = dependencies.logService();
         AvailabilityGuard availabilityGuard = dependencies.availabilityGuard();
         JobScheduler scheduler = dependencies.scheduler();
+        Supplier<TransactionIdStore> transactionIdStore = dependencies::transactionIdStore;
         return new BloomKernelExtension(
-                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler );
+                fs, storeDir, config, db, procedures, logService, availabilityGuard, scheduler, transactionIdStore );
     }
 }

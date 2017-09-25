@@ -42,8 +42,9 @@ class LuceneFulltext extends AbstractLuceneIndex
     private final FulltextProvider.FulltextIndexType type;
     private final Set<String> properties;
 
-    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory, List<String> properties, Analyzer analyzer,
-            String identifier, FulltextProvider.FulltextIndexType type )
+    LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
+                    List<String> properties, Analyzer analyzer, String identifier,
+                    FulltextProvider.FulltextIndexType type )
     {
         super( indexStorage, partitionFactory );
         this.properties = Collections.unmodifiableSet( new HashSet<>( properties ) );
@@ -119,13 +120,12 @@ class LuceneFulltext extends AbstractLuceneIndex
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 
-    @Override
-    public void close() throws IOException
+    public void saveConfiguration( long txId ) throws IOException
     {
         PartitionedIndexWriter writer = getIndexWriter( new WritableFulltext( this ) );
-        FulltextIndexConfiguration config = new FulltextIndexConfiguration( analyzer, properties );
+        String analyzerName = analyzer.getClass().getCanonicalName();
+        FulltextIndexConfiguration config = new FulltextIndexConfiguration( analyzerName, properties, txId );
         writer.updateDocument( FulltextIndexConfiguration.TERM, config.asDocument() );
-        super.close();
     }
 
     public String getAnalyzerName()
