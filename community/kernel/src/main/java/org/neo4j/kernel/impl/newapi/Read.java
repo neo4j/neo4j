@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -52,11 +53,13 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 {
     private final NeoStores stores;
     private NodeStore nodeStore;
+    private RelationshipStore relationshipStore;
 
     public Read( NeoStores stores )
     {
         this.stores = stores;
         this.nodeStore = stores.getNodeStore();
+        this.relationshipStore = stores.getRelationshipStore();
     }
 
     @Override
@@ -91,7 +94,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     {
         try
         {
-            PageCursor pageCursor = stores.getNodeStore().openPageCursor( 0 );
+            PageCursor pageCursor = nodeStore.openPageCursor( 0 );
             ((NodeCursor) cursor).scan( pageCursor );
         }
         catch ( IOException e )
@@ -112,7 +115,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     {
         try
         {
-            PageCursor pageCursor = stores.getNodeStore().openPageCursor( reference );
+            PageCursor pageCursor = nodeStore.openPageCursor( reference );
             ((NodeCursor) cursor).single( reference, pageCursor );
         }
         catch ( IOException e )
@@ -124,13 +127,31 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).single( reference );
+        try
+        {
+            PageCursor pageCursor = relationshipStore.openPageCursor( reference );
+            ((RelationshipScanCursor) cursor).single( reference, pageCursor );
+        }
+        catch ( IOException e )
+        {
+            //TODO
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
     public void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/ );
+        try
+        {
+            PageCursor pageCursor = relationshipStore.openPageCursor( 0L );
+            ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/, pageCursor );
+        }
+        catch ( IOException e )
+        {
+            //TODO
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -142,7 +163,16 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        ((RelationshipScanCursor) cursor).scan( label );
+        try
+        {
+            PageCursor pageCursor = relationshipStore.openPageCursor( 0L );
+            ((RelationshipScanCursor) cursor).scan( label, pageCursor );
+        }
+        catch ( IOException e )
+        {
+            //TODO
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -246,7 +276,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 
     RecordCursor<DynamicRecord> labelCursor()
     {
-        return newCursor( stores.getNodeStore().getDynamicLabelStore() );
+        return newCursor( nodeStore.getDynamicLabelStore() );
     }
 
     private static <R extends AbstractBaseRecord> RecordCursor<R> newCursor( RecordStore<R> store )
@@ -259,9 +289,14 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         nodeStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
     }
 
-    void relationship( RelationshipRecord record, long reference )
+    void relationship( RelationshipRecord record, long reference, PageCursor pageCursor )
     {
-        stores.getRelationshipStore().getRecord( reference, record, RecordLoad.CHECK );
+        relationshipStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
+    }
+
+    void relationship( RelationshipRecord record, long reference)
+    {
+       relationshipStore.getRecord( reference, record, RecordLoad.CHECK );
     }
 
     void property( PropertyRecord record, long reference )
@@ -276,12 +311,12 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 
     long nodeHighMark()
     {
-        return stores.getNodeStore().getHighestPossibleIdInUse();
+        return nodeStore.getHighestPossibleIdInUse();
     }
 
     long relationshipHighMark()
     {
-        return stores.getRelationshipStore().getHighestPossibleIdInUse();
+        return relationshipStore.getHighestPossibleIdInUse();
     }
 
     TextValue string( PropertyCursor cursor, long reference )
