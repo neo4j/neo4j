@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, Runtime => IPDRuntime, Version => IPDVersion}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
@@ -298,7 +298,9 @@ object CypherComparisonSupport {
 
     object V3_3 extends Version("3.3")
 
-    object Default extends Version("")
+    object Default extends Version("") {
+      override  val acceptedVersionNames = Set("2.3", "3.1", "3.2", "3.3").map("CYPHER " + _)
+    }
 
   }
 
@@ -309,6 +311,8 @@ object CypherComparisonSupport {
       val toIndex = Versions.orderedVersions.indexOf(other) + 1
       Versions(Versions.orderedVersions.slice(fromIndex, toIndex): _*)
     }
+
+    val acceptedVersionNames : Set[String] = Set("CYPHER " + name)
 
   }
 
@@ -393,6 +397,8 @@ object CypherComparisonSupport {
           fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
         case IPDPlanner(reportedPlanner) if (!planner.acceptedPlannerNames.contains(reportedPlanner)) =>
           fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
+        case IPDVersion(reportedVersion) if(!version.acceptedVersionNames.contains(reportedVersion)) =>
+          fail(s"did not use ${version.acceptedVersionNames} version - instead $reportedVersion was used. Scenario $name")
       }
     }
 
@@ -407,18 +413,23 @@ object CypherComparisonSupport {
           val reportedPlanner = arguments.collectFirst {
             case IPDPlanner(reportedPlanner) => reportedPlanner
           }
+          val reportedVersion = arguments.collectFirst {
+            case IPDVersion(reportedVersion) => reportedVersion
+          }
 
           // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
           // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
           val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_2) + Versions.Default
-          val (reportedRuntimeName, reportedPlannerName) =
+          val (reportedRuntimeName, reportedPlannerName, reportedVersionName) =
             if (versionsWithUnreportedProcedureUsage.versions.contains(version))
-              (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"))
+              (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"))
             else
-              (reportedRuntime.get, reportedPlanner.get)
+              (reportedRuntime.get, reportedPlanner.get, reportedVersion.get)
 
-          if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName) && planner.acceptedPlannerNames.contains(reportedPlannerName)) {
-            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedRuntimeName & " + s"$reportedPlannerName")
+          if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
+            && planner.acceptedPlannerNames.contains(reportedPlannerName)
+            && version.acceptedVersionNames.contains(reportedVersionName)) {
+            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName and $reportedRuntimeName runtime and $reportedPlannerName planner.nMatchAC")
           }
       }
     }
