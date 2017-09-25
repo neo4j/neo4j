@@ -407,6 +407,15 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     /**
+     * DANGER: make sure to always close this cursor.
+     */
+    public PageCursor openPageCursor( long id ) throws IOException
+    {
+        long pageId = pageIdForRecord( id );
+        return storeFile.io( pageId, PF_SHARED_READ_LOCK );
+    }
+
+    /**
      * Should rebuild the id generator from scratch.
      * <p>
      * Note: This method may be called both while the store has the store file mapped in the
@@ -1036,6 +1045,20 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    @Override
+    public void getRecordByCursor( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws UnderlyingStorageException
+    {
+        try
+        {
+            readIntoRecord(id, record, mode, cursor);
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
     }
 
     public void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException

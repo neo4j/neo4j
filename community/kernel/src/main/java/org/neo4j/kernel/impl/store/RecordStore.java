@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Predicate;
 
@@ -114,6 +115,8 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * @throws InvalidRecordException if record not in use and the {@code mode} is allows for throwing.
      */
     RECORD getRecord( long id, RECORD target, RecordLoad mode ) throws InvalidRecordException;
+
+    void getRecordByCursor( long id, RECORD target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException;
 
     /**
      * For stores that have other stores coupled underneath, the "top level" record will have a flag
@@ -263,6 +266,12 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         public R getRecord( long id, R target, RecordLoad mode ) throws InvalidRecordException
         {
             return actual.getRecord( id, target, mode );
+        }
+
+        @Override
+        public void getRecordByCursor( long id, R target, RecordLoad mode, PageCursor cursor ) throws InvalidRecordException
+        {
+            actual.getRecordByCursor( id, target, mode, cursor );
         }
 
         @Override

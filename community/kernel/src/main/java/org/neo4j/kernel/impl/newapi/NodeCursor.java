@@ -23,6 +23,7 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -34,6 +35,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
 {
     private final Read read;
     private final RecordCursor<DynamicRecord> labelCursor;
+    private PageCursor pageCursor;
     private long next;
     private long highMark;
 
@@ -44,24 +46,26 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.labelCursor = read.labelCursor();
     }
 
-    void scan()
+    void scan( PageCursor pageCursor )
     {
         if ( getId() != NO_ID )
         {
             close();
         }
-        next = 0;
-        highMark = read.nodeHighMark();
+        this.pageCursor = pageCursor;
+        this.next = 0;
+        this.highMark = read.nodeHighMark();
     }
 
-    void single( long reference )
+    void single( long reference, PageCursor pageCursor )
     {
         if ( getId() != NO_ID )
         {
             close();
         }
-        next = reference;
-        highMark = NO_ID;
+        this.pageCursor = pageCursor;
+        this.next = reference;
+        this.highMark = NO_ID;
     }
 
     @Override
@@ -118,7 +122,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         }
         do
         {
-            read.node( this, next++ );
+            read.node( this, next++, pageCursor );
             if ( next > highMark )
             {
                 if ( highMark == NO_ID )
@@ -150,6 +154,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     @Override
     public void close()
     {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
+        }
         setId( next = NO_ID );
     }
 

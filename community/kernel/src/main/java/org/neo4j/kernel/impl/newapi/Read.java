@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import org.neo4j.internal.kernel.api.IndexPredicate;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -48,10 +51,12 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 public class Read implements org.neo4j.internal.kernel.api.Read
 {
     private final NeoStores stores;
+    private NodeStore nodeStore;
 
     public Read( NeoStores stores )
     {
         this.stores = stores;
+        this.nodeStore = stores.getNodeStore();
     }
 
     @Override
@@ -84,7 +89,16 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        ((NodeCursor) cursor).scan();
+        try
+        {
+            PageCursor pageCursor = stores.getNodeStore().openPageCursor( 0 );
+            ((NodeCursor) cursor).scan( pageCursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UnsupportedOperationException( "This exception is not implemented" );
+        }
+
     }
 
     @Override
@@ -96,7 +110,15 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        ((NodeCursor) cursor).single( reference );
+        try
+        {
+            PageCursor pageCursor = stores.getNodeStore().openPageCursor( reference );
+            ((NodeCursor) cursor).single( reference, pageCursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UnsupportedOperationException( "This exception is not implemented" );
+        }
     }
 
     @Override
@@ -232,9 +254,9 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         return store.newRecordCursor( store.newRecord() ).acquire( store.getNumberOfReservedLowIds(), NORMAL );
     }
 
-    void node( NodeRecord record, long reference )
+    void node( NodeRecord record, long reference, PageCursor pageCursor )
     {
-        stores.getNodeStore().getRecord( reference, record, RecordLoad.CHECK );
+        nodeStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
     }
 
     void relationship( RelationshipRecord record, long reference )
