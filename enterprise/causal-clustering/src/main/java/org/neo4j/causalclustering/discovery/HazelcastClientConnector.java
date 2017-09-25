@@ -28,23 +28,17 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
-
-import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
 
 public class HazelcastClientConnector implements HazelcastConnector
 {
     private final Config config;
     private final LogProvider logProvider;
-    private final SslPolicy sslPolicy;
     private final HostnameResolver hostnameResolver;
 
-    HazelcastClientConnector( Config config, LogProvider logProvider, SslPolicy sslPolicy,
-            HostnameResolver hostnameResolver )
+    HazelcastClientConnector( Config config, LogProvider logProvider, HostnameResolver hostnameResolver )
     {
         this.config = config;
         this.logProvider = logProvider;
-        this.sslPolicy = sslPolicy;
         this.hostnameResolver = hostnameResolver;
     }
 
@@ -63,8 +57,13 @@ public class HazelcastClientConnector implements HazelcastConnector
             }
         }
 
-        configureSsl( networkConfig, sslPolicy, logProvider );
+        additionalConfig( networkConfig, logProvider );
 
         return HazelcastClient.newHazelcastClient( clientConfig );
+    }
+
+    protected void additionalConfig( ClientNetworkConfig networkConfig, LogProvider logProvider )
+    {
+
     }
 }

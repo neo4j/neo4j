@@ -19,6 +19,11 @@
  */
 package org.neo4j.causalclustering.catchup;
 
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
@@ -32,11 +37,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
-
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
@@ -61,6 +61,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotRequestHandler
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -76,7 +77,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 
 public class CatchupServer extends LifecycleAdapter
 {
@@ -92,7 +92,7 @@ public class CatchupServer extends LifecycleAdapter
     private final BooleanSupplier dataSourceAvailabilitySupplier;
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final SslPolicy sslPolicy;
+    private final PipelineHandlerAppender pipelineAppender;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "catchup-server" );
@@ -104,12 +104,12 @@ public class CatchupServer extends LifecycleAdapter
     private final Supplier<CheckPointer> checkPointerSupplier;
 
     public CatchupServer( LogProvider logProvider, LogProvider userLogProvider, Supplier<StoreId> storeIdSupplier,
-            Supplier<TransactionIdStore> transactionIdStoreSupplier,
-            Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
-            Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
-            CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
-            FileSystemAbstraction fs, PageCache pageCache,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex, SslPolicy sslPolicy )
+                          Supplier<TransactionIdStore> transactionIdStoreSupplier,
+                          Supplier<LogicalTransactionStore> logicalTransactionStoreSupplier,
+                          Supplier<NeoStoreDataSource> dataSourceSupplier, BooleanSupplier dataSourceAvailabilitySupplier,
+                          CoreSnapshotService snapshotService, Config config, Monitors monitors, Supplier<CheckPointer> checkPointerSupplier,
+                          FileSystemAbstraction fs, PageCache pageCache,
+                          StoreCopyCheckPointMutex storeCopyCheckPointMutex, PipelineHandlerAppender pipelineAppender )
     {
         this.snapshotService = snapshotService;
         this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -126,7 +126,7 @@ public class CatchupServer extends LifecycleAdapter
         this.checkPointerSupplier = checkPointerSupplier;
         this.fs = fs;
         this.pageCache = pageCache;
-        this.sslPolicy = sslPolicy;
+        this.pipelineAppender = pipelineAppender;
     }
 
     @Override
@@ -150,10 +150,7 @@ public class CatchupServer extends LifecycleAdapter
 
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        if ( sslPolicy != null )
-                        {
-                            pipeline.addLast( sslPolicy.nettyServerHandler( ch ) );
-                        }
+                        pipelineAppender.addPipelineHandlerForServer( pipeline, ch );
 
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );

@@ -44,6 +44,9 @@ import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
 import org.neo4j.causalclustering.discovery.procedures.CoreRoleProcedure;
+import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingProcessor;
@@ -70,7 +73,6 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -99,7 +101,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
@@ -113,8 +114,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final ConsensusModule consensusModule;
     private final ReplicationModule replicationModule;
     private final CoreTopologyService topologyService;
-    private final LogProvider logProvider;
-    private final Config config;
+    protected final LogProvider logProvider;
+    protected final Config config;
     private CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
@@ -198,17 +199,18 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         IdentityModule identityModule = new IdentityModule( platformModule, clusterStateDirectory.get() );
 
-        SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
-        SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
+        ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
+                clusterStateDirectory, identityModule, dependencies );
 
-        ClusteringModule clusteringModule = new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
-                platformModule, clusterStateDirectory.get(), clusterSslPolicy );
+        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
+        PipelineHandlerAppender pipelineHandlerAppender = appenderFactory.create( config, dependencies, logProvider );
+
         topologyService = clusteringModule.topologyService();
 
         long logThresholdMillis = config.get( CausalClusteringSettings.unknown_address_logging_throttle ).toMillis();
 
         final SenderService raftSender = new SenderService(
-                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, clusterSslPolicy ),
+                new RaftChannelInitializer( new CoreReplicatedContentMarshal(), logProvider, monitors, pipelineHandlerAppender ),
                 logProvider, platformModule.monitors );
         life.add( raftSender );
 
@@ -246,7 +248,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         CoreServerModule coreServerModule = new CoreServerModule( identityModule, platformModule, consensusModule,
                 coreStateMachinesModule, replicationModule, clusterStateDirectory.get(), clusteringModule, localDatabase,
-                messageLogger, databaseHealthSupplier, clusterSslPolicy );
+                messageLogger, databaseHealthSupplier, pipelineHandlerAppender );
 
         editionInvariants( platformModule, dependencies, config, logging, life );
 
@@ -254,6 +256,20 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    protected ClusteringModule getClusteringModule( PlatformModule platformModule,
+                                                  DiscoveryServiceFactory discoveryServiceFactory,
+                                                  ClusterStateDirectory clusterStateDirectory,
+                                                  IdentityModule identityModule, Dependencies dependencies )
+    {
+        return new ClusteringModule( discoveryServiceFactory, identityModule.myself(),
+                platformModule, clusterStateDirectory.get() );
+    }
+
+    protected PipelineHandlerAppenderFactory appenderFactory()
+    {
+        return new NoOpPipelineHandlerAppenderFactory();
     }
 
     @Override

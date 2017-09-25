@@ -19,6 +19,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -31,13 +37,6 @@ import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -49,7 +48,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.ssl.SslPolicy;
 
 import static com.hazelcast.spi.properties.GroupProperty.INITIAL_MIN_CLUSTER_SIZE;
 import static com.hazelcast.spi.properties.GroupProperty.LOGGING_TYPE;
@@ -65,14 +63,11 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extr
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
-import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
 {
     private static final long HAZELCAST_IS_HEALTHY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis( 10 );
     private final Config config;
-    private final SslPolicy sslPolicy;
     private final MemberId myself;
     private final Log log;
     private final Log userLog;
@@ -94,12 +89,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
+    HazelcastCoreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.config = config;
-        this.sslPolicy = sslPolicy;
         this.myself = myself;
         this.listenerService = new CoreTopologyListenerService();
         this.log = logProvider.getLog( getClass() );
@@ -215,7 +209,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             networkConfig.setInterfaces( interfaces );
         }
 
-        configureSsl( networkConfig, sslPolicy, logProvider );
+        additionalConfig( networkConfig, logProvider );
 
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
@@ -279,6 +273,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         refreshGroups( hazelcastInstance, myself.getUuid().toString(), groups );
 
         return hazelcastInstance;
+    }
+
+    protected void additionalConfig( NetworkConfig networkConfig, LogProvider logProvider )
+    {
+
     }
 
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )

@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
@@ -54,18 +55,18 @@ import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
 import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class CoreClusterMember implements ClusterMember
+public class CoreClusterMember implements ClusterMember<GraphDatabaseFacade>
 {
     private final File neo4jHome;
-    private final DiscoveryServiceFactory discoveryServiceFactory;
-    private final File storeDir;
+    protected final DiscoveryServiceFactory discoveryServiceFactory;
+    protected final File storeDir;
     private final File clusterStateDir;
     private final File raftLogDir;
     private final Map<String, String> config = stringMap();
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
     private final int discoveryPort;
-    private CoreGraphDatabase database;
+    protected CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId,
                               int discoveryPort,

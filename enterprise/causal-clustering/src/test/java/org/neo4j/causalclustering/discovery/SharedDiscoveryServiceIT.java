@@ -19,9 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +29,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
@@ -97,7 +97,7 @@ public class SharedDiscoveryServiceIT
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
         CoreTopologyService topologyService = disoveryServiceFactory
-                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+                .coreTopologyService( config(), member, jobScheduler, logProvider, userLogProvider, hostnameResolver,
                         new TopologyServiceNoRetriesStrategy() );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }

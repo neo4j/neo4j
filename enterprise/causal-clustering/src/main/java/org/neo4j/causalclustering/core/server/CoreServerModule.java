@@ -57,6 +57,7 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
@@ -75,7 +76,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
 public class CoreServerModule
@@ -85,9 +85,12 @@ public class CoreServerModule
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
-    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
-            CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule, File clusterStateDirectory, ClusteringModule clusteringModule,
-            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier, SslPolicy sslPolicy )
+    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
+                             ConsensusModule consensusModule, CoreStateMachinesModule coreStateMachinesModule,
+                             ReplicationModule replicationModule, File clusterStateDirectory,
+                             ClusteringModule clusteringModule, LocalDatabase localDatabase,
+                             MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier,
+                             PipelineHandlerAppender pipelineAppender )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -109,14 +112,14 @@ public class CoreServerModule
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), sslPolicy, config, logProvider, userLogProvider, monitors );
+        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), pipelineAppender, config, logProvider, userLogProvider, monitors );
 
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life
                 .add( new CatchUpClient(  logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors, sslPolicy ) );
+                        inactivityTimeoutMillis, monitors, pipelineAppender ) );
 
         RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
                 new StoreCopyClient( catchUpClient, logProvider ),
@@ -199,7 +202,7 @@ public class CoreServerModule
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                 platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                 snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
-                platformModule.storeCopyCheckPointMutex, sslPolicy );
+                platformModule.storeCopyCheckPointMutex, pipelineAppender );
 
         // Exposes this so that tests can start/stop the catchup server
         dependencies.satisfyDependency( catchupServer );

@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.handlers;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 
-public interface DiscoveryServiceFactory
+public interface PipelineHandlerAppender
 {
-    CoreTopologyService coreTopologyService( Config config, MemberId myself,
-            JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    default void addPipelineHandlerForServer( ChannelPipeline pipeline, Channel ch ) throws Exception
+    {
 
-    TopologyService topologyService( Config config, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    }
+
+    default void addPipelineHandlerForClient( ChannelPipeline pipeline, Channel ch ) throws Exception
+    {
+
+    }
 }
