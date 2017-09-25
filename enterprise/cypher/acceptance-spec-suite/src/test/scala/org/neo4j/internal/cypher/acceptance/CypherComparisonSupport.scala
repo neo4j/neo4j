@@ -276,7 +276,7 @@ object CypherComparisonSupport {
 
   case class Versions(versions: Version*) {
     def +(other: Version): Versions = {
-      val newVersions = if (versions.contains(other)) versions :+ other else versions
+      val newVersions = if (!versions.contains(other)) versions :+ other else versions
       Versions(newVersions: _*)
     }
   }
