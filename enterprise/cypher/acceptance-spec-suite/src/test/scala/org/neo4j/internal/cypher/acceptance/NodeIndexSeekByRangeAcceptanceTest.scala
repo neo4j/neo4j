@@ -1149,7 +1149,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan shouldNot useOperators(IndexSeekByRange.name)
@@ -1165,7 +1165,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan shouldNot useOperators(IndexSeekByRange.name)
@@ -1181,7 +1181,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan shouldNot useOperators(IndexSeekByRange.name)
@@ -1197,7 +1197,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)
@@ -1214,7 +1214,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     // When
     val query = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should useOperators(IndexSeekByRange.name)

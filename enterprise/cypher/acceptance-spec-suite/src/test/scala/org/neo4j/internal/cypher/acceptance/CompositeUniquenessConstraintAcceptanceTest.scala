@@ -40,7 +40,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should be able to create and remove single property uniqueness constraint") {
 
-    val testconfiguration = TestConfiguration(Versions(V3_2, V3_3, Default), Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.ProcedureOrSchema))
+    val testconfiguration = TestConfiguration(Versions(V3_2, V3_3, Default), Planners.Default, Runtimes.ProcedureOrSchema)
     // When
     executeWith(testconfiguration, "CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
 
