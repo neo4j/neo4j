@@ -28,18 +28,22 @@ public interface ReadOnlyFulltext extends AutoCloseable
     /**
      * Searches the fulltext index for any exact match of any of the given terms against any token in any of the indexed properties.
      *
+     *
+     * @param matchAll If true, only resluts that match all the given terms will be returned
      * @param terms The terms to query for.
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
      */
-    PrimitiveLongIterator query( String... terms );
+    PrimitiveLongIterator query( boolean matchAll, String... terms );
 
     /**
      * Searches the fulltext index for any fuzzy match of any of the given terms against any token in any of the indexed properties.
      *
+     *
+     * @param matchAll If true, only resluts that match all the given terms will be returned
      * @param terms The terms to query for.
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
      */
-    PrimitiveLongIterator fuzzyQuery( String... terms );
+    PrimitiveLongIterator fuzzyQuery( boolean matchAll, String... terms );
 
     @Override
     void close();

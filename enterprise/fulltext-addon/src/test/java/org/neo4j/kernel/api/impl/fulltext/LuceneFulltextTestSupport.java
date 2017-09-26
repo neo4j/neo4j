@@ -26,6 +26,7 @@ import org.junit.Rule;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Arrays;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -44,6 +45,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class LuceneFulltextTestSupport
@@ -110,24 +112,41 @@ public class LuceneFulltextTestSupport
 
     protected void assertExactQueryFindsNothing( ReadOnlyFulltext reader, String query )
     {
-        assertExactQueryFindsIds( reader, query );
+        assertExactQueryFindsIds( reader, query, false );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String[] query, long... ids )
+    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.query( query );
+        PrimitiveLongIterator result = reader.query( matchAll, query );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
+    protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
     {
-        assertExactQueryFindsIds( reader, new String[]{query}, ids );
+        PrimitiveLongIterator result = reader.query( matchAll, query );
+        assertQueryResultsMatchInOrder( result, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, long... ids )
+    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( query );
+        assertExactQueryFindsIds( reader, new String[]{query}, matchAll, ids );
+    }
+
+    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    {
+        assertFuzzyQueryFindsIds( reader, new String[]{query}, matchAll, ids );
+    }
+
+    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
+    {
+        PrimitiveLongIterator result = reader.fuzzyQuery( matchAll, query );
         assertQueryResultsMatch( result, ids );
+    }
+
+    protected void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
+    {
+        PrimitiveLongIterator result = reader.fuzzyQuery( matchAll, query );
+        assertQueryResultsMatchInOrder( result, ids );
     }
 
     protected void assertQueryResultsMatch( PrimitiveLongIterator result, long[] ids )
@@ -135,9 +154,22 @@ public class LuceneFulltextTestSupport
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         while ( result.hasNext() )
         {
-            assertTrue( set.remove( result.next() ) );
+            long next = result.next();
+            assertTrue( String.format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
         }
-        assertTrue( set.isEmpty() );
+        assertTrue( "Number of results differ from expected", set.isEmpty() );
+    }
+
+    protected void assertQueryResultsMatchInOrder( PrimitiveLongIterator result, long[] ids )
+    {
+        int num = 0;
+        while ( result.hasNext() )
+        {
+            long next = result.next();
+            assertEquals( String.format( "Result returned node id %d, expected %d", next, ids[num] ), ids[num], next );
+            num++;
+        }
+        assertEquals( "Number of results differ from expected", ids.length, num );
     }
 
     protected void setNodeProp( long nodeId, String value )

@@ -55,27 +55,27 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String... terms )
+    public PrimitiveLongIterator query( boolean matchAll, String... terms )
     {
-        return partitionedOperation( reader -> innerQuery( reader, terms ) );
+        return partitionedOperation( reader -> innerQuery( reader, matchAll, terms ) );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( String... terms )
+    public PrimitiveLongIterator fuzzyQuery( boolean matchAll, String... terms )
     {
-        return partitionedOperation( reader -> innerFuzzyQuery( reader, terms ) );
+        return partitionedOperation( reader -> innerFuzzyQuery( reader, matchAll, terms ) );
     }
 
-    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, String... query )
+    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, String... query )
     {
 
-        return reader.query( query );
+        return reader.query( matchAll, query );
     }
 
-    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, String... query )
+    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, String... query )
     {
 
-        return reader.fuzzyQuery( query );
+        return reader.fuzzyQuery( matchAll, query );
     }
 
     public void close()

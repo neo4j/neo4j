@@ -76,27 +76,37 @@ public class BloomProcedures
 
     @Description( "Queries the bloom index for nodes" )
     @Procedure( name = "db.fulltext.bloomFulltextNodes", mode = READ )
-    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms ) throws Exception
+    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( "fuzzy" ) boolean fuzzy,
+            @Name( "Require that all terms are matched" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_NODES, NODES ) )
         {
-            return queryAsStream( terms, indexReader );
+            return queryAsStream( terms, indexReader, fuzzy, matchAll );
         }
     }
 
     @Description( "Queries the bloom index for relationships" )
     @Procedure( name = "db.fulltext.bloomFulltextRelationships", mode = READ )
-    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms ) throws Exception
+    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( "fuzzy" ) boolean fuzzy,
+            @Name( "Require that all terms are matched" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) )
         {
-            return queryAsStream( terms, indexReader );
+            return queryAsStream( terms, indexReader, fuzzy, matchAll );
         }
     }
 
-    private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader )
+    private Stream<EntityOutput> queryAsStream( List<String> terms, ReadOnlyFulltext indexReader, boolean fuzzy, boolean matchAll )
     {
-        PrimitiveLongIterator primitiveLongIterator = indexReader.fuzzyQuery( terms.toArray( new String[0] ) );
+        PrimitiveLongIterator primitiveLongIterator;
+        if ( fuzzy )
+        {
+            primitiveLongIterator = indexReader.fuzzyQuery( matchAll, terms.toArray( new String[0] ) );
+        }
+        else
+        {
+            primitiveLongIterator = indexReader.query( matchAll, terms.toArray( new String[0] ) );
+        }
         Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
         return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );
     }
