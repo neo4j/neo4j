@@ -182,6 +182,13 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
       <artifactId>neo4j-enterprise-cypher</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
