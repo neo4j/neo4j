@@ -42,11 +42,11 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("really weird query that breaks IDP") {
     val result = executeWithAllPlannersAndCompatibilityMode(
-      """MATCH (a)
-        |WITH a WHERE true
-        |MATCH (c), (a)-[r]->(x)
-        |WHERE (a)-->(c)
-        |RETURN *""".stripMargin)
+    """MATCH (a)
+      |WITH a WHERE true
+      |MATCH (c), (a)-[r]->(x)
+      |WHERE a.foo = c.bar
+      |RETURN *""".stripMargin)
 
     result.size should equal(0)// does not throw
   }
@@ -67,6 +67,15 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     )
 
     result.size should equal(0)// does not throw
+  }
+
+  test("another query that was difficult to plan for IDP") {
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """MATCH (a1)-[r]->(b1)
+        |WITH r WHERE true
+        |MATCH (a2)-[r]->(b2), (c)
+        |WHERE a2.foo = c.bar
+        |RETURN *""".stripMargin)
   }
 
   test("Should not use both pruning var expand and projections that need path info") {

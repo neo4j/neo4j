@@ -259,4 +259,15 @@ class QueryGraphConnectedComponentsTest
 
     graph.connectedComponents should equal(Seq(graph))
   }
+
+  test("query parts not connected to the arguments should not be pulled in by mistake") {
+    val graph = QueryGraph(
+      patternNodes = Set(A, B, C),
+      argumentIds = Set(A),
+      patternRelationships = Set(A_to_B),
+      selections = Selections.from(Equals(prop("a", "foo"), prop("c", "bar"))(pos))
+    )
+
+    graph.connectedComponents.size should equal(2)
+  }
 }

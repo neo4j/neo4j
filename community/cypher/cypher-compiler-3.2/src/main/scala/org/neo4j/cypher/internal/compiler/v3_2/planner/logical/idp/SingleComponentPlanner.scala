@@ -91,15 +91,9 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val accessPlans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
         val relationships = qg.patternRelationships.map(_.name)
         val argumentContainsRelationship = qg.argumentIds.exists(relationships.contains)
-        val plans = if (argumentContainsRelationship) {
-          accessPlans
-        } else {
-          val maxSize = accessPlans.map(_.availableSymbols.size).max
-          accessPlans.filter(lp => lp.availableSymbols.size == maxSize)
-        }
+        val plans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
         val bestAccessor = kit.pickBest(plans).getOrElse(
           throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
         Set(pattern) -> bestAccessor
