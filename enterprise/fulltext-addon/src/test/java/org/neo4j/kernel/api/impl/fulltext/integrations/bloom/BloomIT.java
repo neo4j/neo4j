@@ -502,11 +502,26 @@ public class BloomIT
         {
             // Good
         }
-        finally
+        catch ( Throwable th )
         {
-            if ( !dir.setReadable( true ) )
+            makeReadable( dir, th );
+            throw th;
+        }
+        makeReadable( dir, null );
+    }
+
+    private void makeReadable( File dir, Throwable th )
+    {
+        if ( !dir.setReadable( true ) )
+        {
+            AssertionError error = new AssertionError( "Failed to make " + dir + " writable again!" );
+            if ( th != null )
             {
-                System.err.println( "!!! Failed to make " + dir + " writable again !!!" );
+                th.addSuppressed( error );
+            }
+            else
+            {
+                throw error;
             }
         }
     }
