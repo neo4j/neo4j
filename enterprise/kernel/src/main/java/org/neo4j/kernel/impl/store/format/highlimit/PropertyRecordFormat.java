@@ -81,7 +81,7 @@ class PropertyRecordFormat extends BaseOneByteHeaderRecordFormat<PropertyRecord>
 
     protected PropertyRecordFormat()
     {
-        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimit.DEFAULT_MAXIMUM_BITS_PER_ID );
+        super( fixedRecordSize( RECORD_SIZE ), 0, IN_USE_BIT, HighLimitFormatSettings.PROPERTY_MAXIMUM_ID_BITS );
     }
 
     @Override

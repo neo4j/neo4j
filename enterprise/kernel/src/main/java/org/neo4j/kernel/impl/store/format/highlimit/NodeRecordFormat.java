@@ -74,7 +74,7 @@ class NodeRecordFormat extends BaseHighLimitRecordFormat<NodeRecord>
 
     NodeRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0 );
+        super( fixedRecordSize( recordSize ), 0, HighLimitFormatSettings.NODE_MAXIMUM_ID_BITS );
     }
 
     @Override

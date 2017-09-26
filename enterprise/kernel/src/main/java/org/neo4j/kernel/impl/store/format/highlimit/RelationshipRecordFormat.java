@@ -99,7 +99,7 @@ class RelationshipRecordFormat extends BaseHighLimitRecordFormat<RelationshipRec
 
     RelationshipRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0 );
+        super( fixedRecordSize( recordSize ), 0, HighLimitFormatSettings.RELATIONSHIP_MAXIMUM_ID_BITS );
     }
 
     @Override
