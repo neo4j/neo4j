@@ -160,16 +160,9 @@ public class UniqueIndexRecoveryTest
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
         FileUtils.copyRecursively( path, snapshotDir, pathName ->
         {
-            String subPath = pathName.getAbsolutePath().substring( path.getPath().length() ).replace( File.separatorChar, '/' );
-            if ( "/store_lock".equals( subPath ) )
-            {
-                return false; // since the db is running, exclude the 'store_lock' file
-            }
-            if ( subPath.startsWith( "/schema/index/lucene/" ) || subPath.startsWith( "/schema/label/lucene/" ) )
-            {
-                return !subPath.endsWith( "/write.lock" ); // since the db is running, exclude lucene lock files
-            }
-            return true;
+            String subPath = pathName.getAbsolutePath().substring( path.getPath().length() + 1 );
+            // since the db is running, exclude the lock files
+            return !"store_lock".equals( subPath ) && !subPath.endsWith( "write.lock" );
         } );
         return snapshotDir;
     }
