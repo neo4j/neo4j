@@ -366,6 +366,36 @@ public class GBPTree<KEY,VALUE> implements Closeable
      *     }
      * </pre>
      *
+     * Expected state after first time tree is opened, where initial state is created:
+     * <ul>
+     * <li>StateA
+     * <ul>
+     * <li>stableGeneration=2</li>
+     * <li>unstableGeneration=3</li>
+     * <li>rootId=3</li>
+     * <li>rootGeneration=2</li>
+     * <li>lastId=4</li>
+     * <li>freeListWritePageId=4</li>
+     * <li>freeListReadPageId=4</li>
+     * <li>freeListWritePos=0</li>
+     * <li>freeListReadPos=0</li>
+     * <li>clean=false</li>
+     * </ul>
+     * <li>StateB
+     * <ul>
+     * <li>stableGeneration=2</li>
+     * <li>unstableGeneration=4</li>
+     * <li>rootId=3</li>
+     * <li>rootGeneration=2</li>
+     * <li>lastId=4</li>
+     * <li>freeListWritePageId=4</li>
+     * <li>freeListReadPageId=4</li>
+     * <li>freeListWritePos=0</li>
+     * <li>freeListReadPos=0</li>
+     * <li>clean=false</li>
+     * </ul>
+     * </ul>
+     *
      * @param pageCache {@link PageCache} to use to map index file
      * @param indexFile {@link File} containing the actual index
      * @param layout {@link Layout} to use in the tree, this must match the existing layout
@@ -456,6 +486,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Initialize free-list
         freeList.initializeAfterCreation();
         changesSinceLastCheckpoint = true;
+
+        // Checkpoint to make the created root node stable. Forcing tree state also piggy-backs on this.
         checkpoint( IOLimiter.unlimited(), headerWriter );
         clean = true;
     }
@@ -828,12 +860,6 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
     private void checkpoint( IOLimiter ioLimiter, Header.Writer headerWriter ) throws IOException
     {
-        if ( !changesSinceLastCheckpoint && headerWriter == CARRY_OVER_PREVIOUS_HEADER )
-        {
-            // No changes has happened since last checkpoint was called, no need to do another checkpoint
-            return;
-        }
-
         // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
         // blocked while we do this
         pagedFile.flushAndForce( ioLimiter );
