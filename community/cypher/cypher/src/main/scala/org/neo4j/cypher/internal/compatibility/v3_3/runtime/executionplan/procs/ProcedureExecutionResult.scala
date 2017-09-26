@@ -61,7 +61,7 @@ class ProcedureExecutionResult(context: QueryContext,
                                val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
 
-  override def fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
+  override val fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
 
   private final val executionResults = executeCall
 
@@ -95,9 +95,10 @@ class ProcedureExecutionResult(context: QueryContext,
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     executionResults.foreach { res =>
       val fieldArray = new Array[AnyValue](indexResultNameMappings.size)
-      var i = 0
-      for ((pos, _, typ) <- indexResultNameMappings) {
-        fieldArray(i) = typ match {
+      for (i <- indexResultNameMappings.indices) {
+        val mapping = indexResultNameMappings(i)
+        val pos = mapping._1
+        fieldArray(i) = mapping._3 match {
           case CTNode => transform(res(pos), fromNodeProxy)
           case CTRelationship => transform(res(pos), fromRelationshipProxy)
           case CTPath => transform(res(pos), asPathValue)
@@ -112,7 +113,6 @@ class ProcedureExecutionResult(context: QueryContext,
           case ListType(_) => transform(res(pos), asListValue)
           case CTAny => transform(res(pos), ValueUtils.of)
         }
-        i += 1
       }
       visitor.visit(new Record {
         override def fields(): Array[AnyValue] = fieldArray
