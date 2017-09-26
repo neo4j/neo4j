@@ -90,6 +90,20 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
         }
     }
 
+    @Override
+    public FulltextIndexConfiguration getConfigurationDocument() throws IOException
+    {
+        for ( ReadOnlyFulltext indexReader : indexReaders )
+        {
+            FulltextIndexConfiguration config = indexReader.getConfigurationDocument();
+            if ( config != null )
+            {
+                return config;
+            }
+        }
+        return null;
+    }
+
     private PrimitiveLongIterator partitionedOperation( Function<ReadOnlyFulltext,PrimitiveLongIterator> readerFunction )
     {
         return PrimitiveLongCollections.concat( indexReaders.parallelStream().map( readerFunction ).collect( Collectors.toList() ) );

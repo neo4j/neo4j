@@ -26,6 +26,8 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
 
@@ -37,7 +39,7 @@ import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.joining;
-import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.LUCENE_FULLTEXT_ADDON_INTERNAL_ID;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FIELD_ENTITY_ID;
 
 /**
  * Lucene index reader that is able to read/sample a single partition of a partitioned Lucene index.
@@ -84,6 +86,18 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         }
     }
 
+    @Override
+    public FulltextIndexConfiguration getConfigurationDocument() throws IOException
+    {
+        IndexSearcher indexSearcher = getIndexSearcher();
+        TopDocs docs = indexSearcher.search( new TermQuery( FulltextIndexConfiguration.TERM ), 1 );
+        if ( docs.scoreDocs.length < 1 )
+        {
+            return null;
+        }
+        return new FulltextIndexConfiguration( indexSearcher.doc( docs.scoreDocs[0].doc ) );
+    }
+
     private PrimitiveLongIterator innerQuery( String queryString )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
@@ -107,7 +121,7 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getSortedValuesIterator( LUCENE_FULLTEXT_ADDON_INTERNAL_ID, Sort.RELEVANCE );
+            return docValuesCollector.getSortedValuesIterator( FIELD_ENTITY_ID, Sort.RELEVANCE );
         }
         catch ( IOException e )
         {

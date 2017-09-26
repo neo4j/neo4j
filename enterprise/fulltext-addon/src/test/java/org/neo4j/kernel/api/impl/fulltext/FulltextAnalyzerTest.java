@@ -27,16 +27,20 @@ import org.neo4j.graphdb.Transaction;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {
+    private static final String ENGLISH = EnglishAnalyzer.class.getCanonicalName();
+    private static final String SWEDISH = SwedishAnalyzer.class.getCanonicalName();
+
     @Test
     public void shouldBeAbleToSpecifyEnglishAnalyzer() throws Exception
     {
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new EnglishAnalyzer() );
         try ( FulltextProvider provider = createProvider() )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;
@@ -48,7 +52,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsNothing( reader, "and" );
                 assertExactQueryFindsNothing( reader, "in" );
@@ -63,10 +67,10 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
     @Test
     public void shouldBeAbleToSpecifySwedishAnalyzer() throws Exception
     {
-        FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, new SwedishAnalyzer() );
         try ( FulltextProvider provider = createProvider(); )
         {
-            fulltextFactory.createFulltextIndex( "bloomNodes", NODES, singletonList( "prop" ), provider );
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
             provider.init();
 
             long id;
@@ -78,11 +82,61 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 tx.success();
             }
 
-            try ( ReadOnlyFulltext reader = provider.getReader( "bloomNodes", NODES ) )
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
                 assertExactQueryFindsIds( reader, "and", id );
                 assertExactQueryFindsIds( reader, "in", id );
                 assertExactQueryFindsIds( reader, "the", id );
+                assertExactQueryFindsNothing( reader, "en" );
+                assertExactQueryFindsNothing( reader, "och" );
+                assertExactQueryFindsNothing( reader, "ett" );
+            }
+        }
+    }
+
+    @Test
+    public void shouldReindexNodesWhenAnalyzerIsChanged() throws Exception
+    {
+        long firstID;
+        long secondID;
+        try ( FulltextProvider provider = createProvider() )
+        {
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, ENGLISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.init();
+
+            try ( Transaction tx = db.beginTx() )
+            {
+                firstID = createNodeIndexableByPropertyValue( "Hello and hello again, in the end." );
+                secondID = createNodeIndexableByPropertyValue( "En apa och en tomte bodde i ett hus." );
+
+                tx.success();
+            }
+
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
+            {
+
+                assertExactQueryFindsNothing( reader, "and" );
+                assertExactQueryFindsNothing( reader, "in" );
+                assertExactQueryFindsNothing( reader, "the" );
+                assertExactQueryFindsIds( reader, "en", secondID );
+                assertExactQueryFindsIds( reader, "och", secondID );
+                assertExactQueryFindsIds( reader, "ett", secondID );
+            }
+        }
+
+        try ( FulltextProvider provider = createProvider() )
+        {
+            FulltextFactory fulltextFactory = new FulltextFactory( fs, storeDir, SWEDISH, provider );
+            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, singletonList( "prop" ) );
+            provider.init();
+            provider.awaitPopulation();
+
+            try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
+            {
+                assertExactQueryFindsIds( reader, "and",  firstID );
+                assertExactQueryFindsIds( reader, "in",  firstID );
+                assertExactQueryFindsIds( reader, "the",  firstID );
                 assertExactQueryFindsNothing( reader, "en" );
                 assertExactQueryFindsNothing( reader, "och" );
                 assertExactQueryFindsNothing( reader, "ett" );
