@@ -35,6 +35,7 @@ case object IDPPlannerOption extends PlannerPreParserOption("idp")
 case object DPPlannerOption extends PlannerPreParserOption("dp")
 case object InterpretedRuntimeOption extends RuntimePreParserOption("interpreted")
 case object SlottedRuntimeOption extends RuntimePreParserOption("slotted")
+case object MorselRuntimeOption extends RuntimePreParserOption("morsel")
 case object CompiledRuntimeOption extends RuntimePreParserOption("compiled")
 case object EagerOption extends UpdateStrategyOption("eager")
 case class DebugOption(key: String) extends PreParserOption

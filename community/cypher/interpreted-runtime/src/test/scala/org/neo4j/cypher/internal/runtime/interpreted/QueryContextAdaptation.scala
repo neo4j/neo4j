@@ -23,7 +23,6 @@ import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IdempotentResult, IndexDescriptor}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
@@ -34,6 +33,8 @@ import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 trait QueryContextAdaptation {
   self: QueryContext =>
+
+  override def createNewQueryContext(): QueryContext = ???
 
   override type EntityAccessor = this.type
 

@@ -31,8 +31,8 @@ case class SortSlottedPipe(source: Pipe, orderBy: Seq[ColumnOrder], pipelineInfo
   extends PipeWithSource(source) {
   assert(orderBy.nonEmpty)
 
-  private val comparator = orderBy
-    .map(ExecutionContextOrdering.comparator(_))
+  private val comparator: Comparator[ExecutionContext] = orderBy
+    .map(ExecutionContextOrdering.comparator)
     .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

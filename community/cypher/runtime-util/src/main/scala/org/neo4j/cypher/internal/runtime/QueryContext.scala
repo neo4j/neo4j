@@ -146,6 +146,11 @@ trait QueryContext extends TokenContext {
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
+  /*
+  This is an ugly hack to get multi threading to work
+   */
+  def createNewQueryContext(): QueryContext
+
   def edgeGetStartNode(edge: EdgeValue): NodeValue
 
   def edgeGetEndNode(edge: EdgeValue): NodeValue

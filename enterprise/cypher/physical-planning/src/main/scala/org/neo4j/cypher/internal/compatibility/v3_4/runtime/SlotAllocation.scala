@@ -277,15 +277,17 @@ object SlotAllocation {
            _: ConditionalApply =>
         rhsPipeline
 
-      case _: CartesianProduct =>
-        val newPipeline = lhsPipeline.breakPipelineAndClone()
+      case _: CartesianProduct |
+           _: NodeHashJoin =>
+        val joinedPipeline = lhsPipeline.breakPipelineAndClone()
         // For the implementation of the slotted pipe to use array copy
         // it is very important that we add the slots in the same order
         rhsPipeline.foreachSlotOrdered {
-          case (k, slot) =>
-            newPipeline.add(k, slot)
+          case (k, slot) if lhsPipeline.get(k).isEmpty =>
+            joinedPipeline.add(k, slot)
+          case _ =>
         }
-        newPipeline
+        joinedPipeline
 
       case NodeHashJoin(nodes, _, _) =>
         val nodeKeys = nodes.map(_.name)

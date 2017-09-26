@@ -19,9 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import java.io.File
+
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.runtime.PathImpl
+import org.neo4j.cypher.internal.runtime.vectorized.dispatcher.Dispatcher
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.helpers.collection.Iterators.single
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
@@ -29,6 +34,113 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+  test("apa") {
+
+    val db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("/home/systay/dev/temp"))
+    //
+    //    println("creating graph")
+    //
+    //    var tx = db.beginTx()
+    //    var i = 0
+    //
+    //    def ping() = {
+    //      i += 1
+    //      if (i % 5000 == 0) {
+    //        tx.success()
+    //        tx.close()
+    //        tx = db.beginTx()
+    //      }
+    //    }
+    //
+    //    val NODES = 10000
+    //    val EDGES = 1000000
+    //
+    //    val nodes = (0 to NODES).map { x =>
+    //      ping()
+    //      db.createNode()
+    //    }.toArray
+    //
+    //    val r = new Random()
+    //
+    //    (0 to EDGES).foreach(_ => {
+    //      val lhs = nodes(r.nextInt(NODES))
+    //      val rhs = nodes(r.nextInt(NODES))
+    //      ping()
+    //      lhs.createRelationshipTo(rhs, RelationshipType.withName("apa"))
+    //    })
+    //
+    //
+    //    db.shutdown()
+
+    println("running query")
+    val q = "cypher runtime=morsel match (a) return a order by id(a)"
+    val res = db.execute(q)
+    val visitor = new ResultVisitor[RuntimeException] {
+      override def visit(row: Result.ResultRow): Boolean = {
+        println(s"${Thread.currentThread().getId} -=> ${row.getNode("a")}")
+        true
+      }
+    }
+    res.accept(visitor)
+
+    if (false) {
+      val threads =
+        0 to 10 map { _ =>
+          val thread = new Thread(new Runnable {
+            override def run(): Unit = {
+              val result = db.execute(q)
+              result.accept(visitor)
+            }
+          })
+          thread.start()
+          thread
+        }
+      threads.foreach(_.join())
+    }
+
+    Dispatcher.instance.shutdown()
+    db.shutdown()
+  }
+
+  test("apa666") {
+
+    val db = new GraphDatabaseFactory().newEmbeddedDatabase(new File("/home/systay/Downloads/apa/db_sf001_p006_regular_utc_33ee"))
+    try {
+      val res =
+        db.execute(
+
+          """profile MATCH (a:Person {id: 2199023263568})-[:PERSON_IS_LOCATED_IN]->(city:City)<-[:PERSON_IS_LOCATED_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b)
+            |WHERE city.name = "Stockholm" OR city.name = "Berlin"
+            |with distinct a, b
+            |return *""".stripMargin)
+
+      println(res.resultAsString())
+      println(res.getExecutionPlanDescription)
+    } finally db.shutdown()
+
+  }
+
+  test("apa2") {
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    createNode()
+    val res = graph.execute("CYPHER runtime=interpreted MATCH (a) RETURN a ORDER BY id(a)")
+    val visitor = new ResultVisitor[RuntimeException] {
+      override def visit(row: Result.ResultRow): Boolean = {
+        println(s"${row.getNode("a")} ${row.getNode("b")}")
+        true
+      }
+    }
+    res.accept(visitor)
+
+  }
 
   test("Do not count null elements in nodes without labels") {
 
@@ -577,9 +689,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     //WHEN
 
     val first = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
- .length
+      .length
     val second = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
- .length
+      .length
     val check = executeWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
