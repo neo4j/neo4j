@@ -28,12 +28,13 @@ import java.util.concurrent.CountDownLatch;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
 
-public class JettyThreadLimitTest
+public class JettyThreadLimitIT
 {
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
@@ -48,7 +49,7 @@ public class JettyThreadLimitTest
         int selectorThreads = 1; // ... and 1 thread will become a selector...
         int jobThreads = configuredMaxThreads - acceptorThreads - selectorThreads; // ... and the rest are job threads
         server.setMaxThreads( numCores );
-        server.setAddress( new ListenSocketAddress( "localhost", 7480 ) );
+        server.setAddress( new ListenSocketAddress( "localhost", PortAuthority.allocatePort() ) );
         try
         {
             server.start();

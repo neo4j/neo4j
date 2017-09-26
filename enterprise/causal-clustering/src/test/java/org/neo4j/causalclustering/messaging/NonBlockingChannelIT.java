@@ -36,6 +36,7 @@ import org.junit.Test;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -44,9 +45,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class NonBlockingChannelTest
+public class NonBlockingChannelIT
 {
-    private static final int PORT = 7000;
+    private static final int PORT = PortAuthority.allocatePort();
     private static final ChannelHandler VOID_HANDLER = new ChannelInitializer<SocketChannel>()
     {
         @Override
