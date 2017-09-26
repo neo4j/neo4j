@@ -81,7 +81,7 @@ class FulltextUpdateApplier
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
             {
-                Set<String> indexedProperties = index.properties();
+                Set<String> indexedProperties = index.getProperties();
                 if ( !Collections.disjoint( indexedProperties, stateEntry.getValue().keySet() ) )
                 {
                     long entityId = stateEntry.getKey();
@@ -120,7 +120,7 @@ class FulltextUpdateApplier
         {
             for ( PropertyEntry<E> propertyEntry : propertyEntries )
             {
-                if ( index.properties().contains( propertyEntry.key() ) )
+                if ( index.getProperties().contains( propertyEntry.key() ) )
                 {
                     long entityId = propertyEntry.entity().getId();
                     Map<String,Object> allProperties = state.get( entityId );
@@ -163,7 +163,7 @@ class FulltextUpdateApplier
         FulltextIndexUpdate population = () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
-            String[] indexedPropertyKeys = index.properties().toArray( new String[0] );
+            String[] indexedPropertyKeys = index.getProperties().toArray( new String[0] );
             ArrayList<Supplier<Document>> documents = new ArrayList<>();
             try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
             {

@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.Clock;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -46,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 
 public class LuceneFulltextTestSupport
 {
-    protected static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
+    protected static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
     protected static final Log LOG = NullLog.getInstance();
 
     @Rule
@@ -60,6 +62,7 @@ public class LuceneFulltextTestSupport
     protected JobScheduler scheduler;
     protected FileSystemAbstraction fs;
     protected File storeDir;
+    private TransactionIdStore transactionIdStore;
 
     @Before
     public void setUp() throws Exception
@@ -68,12 +71,14 @@ public class LuceneFulltextTestSupport
         scheduler = dbRule.resolveDependency( JobScheduler.class );
         fs = dbRule.resolveDependency( FileSystemAbstraction.class );
         storeDir = dbRule.getStoreDir();
-        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER );
+        transactionIdStore = dbRule.resolveDependency( TransactionIdStore.class );
     }
 
-    protected FulltextProvider createProvider()
+    protected FulltextProvider createProvider() throws IOException
     {
-        return new FulltextProvider( db, LOG, availabilityGuard, scheduler );
+        FulltextProvider provider = new FulltextProvider( db, LOG, availabilityGuard, scheduler, transactionIdStore );
+        fulltextFactory = new FulltextFactory( fs, storeDir, ANALYZER, provider );
+        return provider;
     }
 
     protected long createNodeIndexableByPropertyValue( Object propertyValue )

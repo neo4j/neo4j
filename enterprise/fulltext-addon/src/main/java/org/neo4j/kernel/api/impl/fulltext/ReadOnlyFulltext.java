@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 public interface ReadOnlyFulltext extends AutoCloseable
@@ -38,4 +40,9 @@ public interface ReadOnlyFulltext extends AutoCloseable
      * @return An iterator over the matching entityIDs, ordered by lucene scoring of the match.
      */
     PrimitiveLongIterator fuzzyQuery( String... terms );
+
+    @Override
+    void close();
+
+    FulltextIndexConfiguration getConfigurationDocument() throws IOException;
 }
