@@ -34,8 +34,10 @@ case object pruningVarExpander extends Rewriter {
                            dependencies: Option[Set[String]]): Option[Set[String]] = {
 
       val lowerDistinctLand: Option[Set[String]] = plan match {
-        case Aggregation(_, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
+        case Distinct(_, groupExpr) =>
+          Some(groupExpr.values.flatMap(_.dependencies.map(_.name)).toSet)
 
+        case Aggregation(_, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
           val variablesInTheDistinctSet = (groupExpr.values.flatMap(_.dependencies.map(_.name)) ++
             aggrExpr.values.flatMap(_.dependencies.map(_.name))).toSet
           Some(variablesInTheDistinctSet)
