@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters.namePatternPredicatePatternElements
@@ -94,7 +94,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedStrategy(plan: LogicalPlan) = {
     val strategy = mock[QueryGraphSolver]
-    doReturn(plan).when(strategy).plan(any())(any())
+    doReturn(plan, Nil: _*).when(strategy).plan(any())(any())
     strategy
   }
 
@@ -120,7 +120,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
     val context = mock[PlanContext]
-    doReturn(statistics).when(context).statistics
+    doReturn(statistics, Nil: _*).when(context).statistics
     context
   }
 

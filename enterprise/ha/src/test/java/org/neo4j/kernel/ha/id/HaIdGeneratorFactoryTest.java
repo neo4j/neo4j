@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.ha.id;
 
-import java.io.File;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
+
 import org.neo4j.com.ComException;
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -47,6 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -81,7 +81,7 @@ public class HaIdGeneratorFactoryTest
         // GIVEN
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 123, 0 );
         Response<IdAllocation> response = response( firstResult );
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -91,7 +91,7 @@ public class HaIdGeneratorFactoryTest
         {
             assertEquals(i, gen.nextId());
         }
-        verify( master, times( 1 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
+        verify( master, times( 1 ) ).allocateIds( isNull(), eq( IdType.NODE ) );
     }
 
     @Test
@@ -101,7 +101,7 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[]{}, 42, 123 ), 42 + 123, 0 );
         IdAllocation secondResult = new IdAllocation( new IdRange( new long[]{}, 1042, 223 ), 1042 + 223, 0 );
         Response<IdAllocation> response = response( firstResult, secondResult );
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -113,7 +113,7 @@ public class HaIdGeneratorFactoryTest
         {
             assertEquals( i, gen.nextId() );
         }
-        verify( master, times( 1 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
+        verify( master, times( 1 ) ).allocateIds( isNull(), eq( IdType.NODE ) );
 
         startAt = secondResult.getIdRange().getRangeStart();
         forThatMany = secondResult.getIdRange().getRangeLength();
@@ -122,7 +122,7 @@ public class HaIdGeneratorFactoryTest
             assertEquals( i, gen.nextId() );
         }
 
-        verify( master, times( 2 ) ).allocateIds( any( RequestContext.class ), eq( IdType.NODE ) );
+        verify( master, times( 2 ) ).allocateIds( isNull(), eq( IdType.NODE ) );
     }
 
     @Test
@@ -132,7 +132,7 @@ public class HaIdGeneratorFactoryTest
         long[] defragIds = {42, 27172828, 314159};
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 0 ), 0, defragIds.length );
         Response<IdAllocation> response = response( firstResult );
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -151,7 +151,7 @@ public class HaIdGeneratorFactoryTest
         long[] defragIds = {42, 27172828, 314159};
         IdAllocation firstResult = new IdAllocation( new IdRange( defragIds, 0, 10 ), 100, defragIds.length );
         Response<IdAllocation> response = response( firstResult );
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -171,7 +171,7 @@ public class HaIdGeneratorFactoryTest
         IdAllocation firstResult = new IdAllocation( new IdRange( new long[] {}, 42, highIdFromAllocation ),
                 highIdFromAllocation, 0 );
         Response<IdAllocation> response = response( firstResult );
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenReturn( response );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenReturn( response );
 
         // WHEN
         IdGenerator gen = switchToSlave();
@@ -221,7 +221,7 @@ public class HaIdGeneratorFactoryTest
     @Test( expected = TransientTransactionFailureException.class )
     public void shouldTranslateComExceptionsIntoTransientTransactionFailures() throws Exception
     {
-        when( master.allocateIds( any( RequestContext.class ), any( IdType.class ) ) ).thenThrow( new ComException() );
+        when( master.allocateIds( isNull(), any( IdType.class ) ) ).thenThrow( new ComException() );
         IdGenerator generator = switchToSlave();
         generator.nextId();
     }

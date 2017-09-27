@@ -122,8 +122,8 @@ public class ReplicatedTokenHolderTest
         StorageEngine storageEngine = mock( StorageEngine.class );
         doAnswer( invocation ->
         {
-            Collection<StorageCommand> target = invocation.getArgumentAt( 0, Collection.class );
-            ReadableTransactionState txState = invocation.getArgumentAt( 1, ReadableTransactionState.class );
+            Collection<StorageCommand> target = invocation.getArgument( 0 );
+            ReadableTransactionState txState = invocation.getArgument( 1 );
             txState.accept( new TxStateVisitor.Adapter()
             {
                 @Override

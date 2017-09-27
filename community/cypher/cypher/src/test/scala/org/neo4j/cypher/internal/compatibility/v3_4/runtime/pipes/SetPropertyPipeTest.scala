@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.mockito.Matchers.{anyInt, anyLong}
+import org.mockito.ArgumentMatchers.{anyInt, anyLong}
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.{KeyToken, TokenType}

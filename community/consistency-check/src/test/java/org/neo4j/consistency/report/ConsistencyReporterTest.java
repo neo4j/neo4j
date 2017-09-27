@@ -31,6 +31,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Suite;
 import org.junit.runners.model.Statement;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -52,8 +53,8 @@ import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -75,13 +76,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 
@@ -230,8 +231,7 @@ public class ConsistencyReporterTest
                 else
                 {
                     verify( report ).error( any( RecordType.class ),
-                                            any( AbstractBaseRecord.class ),
-                                            argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                            any( AbstractBaseRecord.class ), argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
             else
@@ -246,7 +246,7 @@ public class ConsistencyReporterTest
                 {
                     verify( report ).warning( any( RecordType.class ),
                                               any( AbstractBaseRecord.class ),
-                                              argThat( hasExpectedFormat() ), any( Object[].class ) );
+                                              argThat( hasExpectedFormat() ), nullSafeAny() );
                 }
             }
         }
@@ -455,6 +455,11 @@ public class ConsistencyReporterTest
                         ex );
             }
         }
+    }
+
+    private static <T> T[] nullSafeAny()
+    {
+        return ArgumentMatchers.argThat( argument -> true );
     }
 
     private static Matcher<String> hasExpectedFormat()

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken, _}

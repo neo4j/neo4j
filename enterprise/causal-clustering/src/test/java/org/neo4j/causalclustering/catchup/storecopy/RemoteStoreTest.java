@@ -28,15 +28,14 @@ import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
-import org.neo4j.causalclustering.catchup.tx.TxPullResponseListener;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
@@ -69,7 +68,7 @@ public class RemoteStoreTest
 
         // then
         verify( storeCopyClient ).copyStoreFiles( eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) );
+        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), isNull() );
     }
 
     @Test
@@ -85,7 +84,7 @@ public class RemoteStoreTest
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
+        when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), isNull() ) )
                 .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13 ) );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
@@ -99,7 +98,7 @@ public class RemoteStoreTest
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
         verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ),
-                any( TxPullResponseListener.class ) );
+                isNull() );
     }
 
     @Test
@@ -116,7 +115,7 @@ public class RemoteStoreTest
                 storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
-                .pullTransactions( any( AdvertisedSocketAddress.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
+                .pullTransactions( isNull(), eq( storeId ), anyLong(), any() );
 
         // when
         try
@@ -135,8 +134,8 @@ public class RemoteStoreTest
     private TransactionLogCatchUpFactory factory( TransactionLogCatchUpWriter writer ) throws IOException
     {
         TransactionLogCatchUpFactory factory = mock( TransactionLogCatchUpFactory.class );
-        when( factory.create( any( File.class ), any( FileSystemAbstraction.class ),
-                any( PageCache.class ), any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
+        when( factory.create( isNull(), any( FileSystemAbstraction.class ),
+                isNull(), any( LogProvider.class ), anyLong(), anyBoolean() ) ).thenReturn( writer );
         return factory;
     }
 }

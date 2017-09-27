@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.mockito.Matchers
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -60,10 +60,12 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq.empty)))).thenAnswer(new Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), ArgumentMatchers.eq(Some(Seq.empty)))).thenAnswer(new
+        Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator.empty
     })
-    when(query.getRelationshipsForIds(any(), any(), Matchers.eq(Some(Seq(1,2))))).thenAnswer(new Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), ArgumentMatchers.eq(Some(Seq(1,2))))).thenAnswer(new
+        Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
     })
 

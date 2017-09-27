@@ -19,21 +19,20 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
 import java.io.IOException;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
 import org.neo4j.function.ThrowingConsumer;
 
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.io.fs.FileVisitors.onFile;
 
 @RunWith( MockitoJUnitRunner.class )

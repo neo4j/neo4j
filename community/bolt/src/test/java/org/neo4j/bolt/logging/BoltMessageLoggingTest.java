@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.logging;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-
 import io.netty.channel.Channel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +42,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.startsWith;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.bolt_logging_enabled;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -64,7 +63,6 @@ public class BoltMessageLoggingTest
     {
         Config config = newConfig( false );
 
-        when( channel.remoteAddress() ).thenReturn( inetSocketAddress );
         BoltMessageLogging logging = BoltMessageLogging.create( fs, jobScheduler, config, log );
         BoltMessageLogger logger = logging.newLogger( channel );
 

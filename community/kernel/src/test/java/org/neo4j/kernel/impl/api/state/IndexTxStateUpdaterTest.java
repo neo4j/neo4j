@@ -42,6 +42,8 @@ import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
@@ -89,12 +91,10 @@ public class IndexTxStateUpdaterTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( storeReadLayer.indexesGetAll() ).thenAnswer( x -> indexes.iterator() );
         when( storeReadLayer.indexesGetForLabel(anyInt() ) )
-                .thenAnswer(
-                    x -> filter( hasLabel( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
+                .thenAnswer( x -> filter( hasLabel( x.getArgument( 0 ) ), indexes.iterator() ) );
 
         when( storeReadLayer.indexesGetRelatedToProperty( anyInt() ) )
-                .thenAnswer(
-                    x -> filter( hasProperty( (Integer)x.getArguments()[0] ), indexes.iterator() ) );
+                .thenAnswer( x -> filter( hasProperty( x.getArgument( 0 ) ), indexes.iterator() ) );
 
         PrimitiveIntSet labels = Primitive.intSet();
         labels.add( labelId1 );
@@ -141,7 +141,7 @@ public class IndexTxStateUpdaterTest
         // THEN
         verifyIndexUpdate( indexOn1_1.schema(), node.id(), null, values( "hi1" ) );
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), null, values( "hi2" ) );
-        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), isNull(), any() );
     }
 
     @Test
@@ -152,7 +152,7 @@ public class IndexTxStateUpdaterTest
 
         // THEN
         verifyIndexUpdate( uniqueOn2_2_3.schema(), node.id(), values( "hi2", "hi3" ), null );
-        verify( txState, times( 1 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, times( 1 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
     // PROPERTIES
@@ -178,7 +178,7 @@ public class IndexTxStateUpdaterTest
         // THEN
         verifyIndexUpdate( indexOn2_new.schema(), node.id(), null, values( "newHi" ) );
         verifyIndexUpdate( indexOn1_1_new.schema(), node.id(), null, values( "hi1", "newHi" ) );
-        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), isNull(), any() );
     }
 
     @Test
@@ -190,7 +190,7 @@ public class IndexTxStateUpdaterTest
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), null );
         verifyIndexUpdate( uniqueOn2_2_3.schema(), node.id(), values( "hi2", "hi3" ), null );
-        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
     @Test
@@ -202,7 +202,7 @@ public class IndexTxStateUpdaterTest
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.id(), values( "hi2" ), values( "new2" ) );
         verifyIndexUpdate( uniqueOn2_2_3.schema(), node.id(), values( "hi2", "hi3" ), values( "new2", "hi3" ) );
-        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
+        verify( txState, times( 2 ) ).indexDoUpdateEntry( any(), anyLong(), any(), any() );
     }
 
     private ValueTuple values( Object... values )

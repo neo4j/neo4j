@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.mockito.Matchers
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ListLiteral, Literal, Variable}
@@ -256,7 +256,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     when(query.indexSeek(any(), any())).thenReturn(Iterator.empty)
 
     values.foreach {
-      case (searchTerm, result) => when(query.indexSeek(any(), Matchers.eq(searchTerm))).thenReturn(result)
+      case (searchTerm, result) => when(query.indexSeek(any(), ArgumentMatchers.eq(searchTerm))).thenReturn(result)
     }
 
     query

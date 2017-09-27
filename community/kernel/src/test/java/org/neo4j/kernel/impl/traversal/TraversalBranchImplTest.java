@@ -29,6 +29,7 @@ import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -52,7 +53,7 @@ public class TraversalBranchImplTest
         when( expander.expand( eq( branch ), any( BranchState.class ) ) )
                 .thenReturn( Iterables.emptyResourceIterable() );
         TraversalContext context = mock( TraversalContext.class );
-        when( context.evaluate( eq( branch ), any( BranchState.class ) ) ).thenReturn( INCLUDE_AND_CONTINUE );
+        when( context.evaluate( eq( branch ), isNull() ) ).thenReturn( INCLUDE_AND_CONTINUE );
 
         // WHEN initializing
         branch.initialize( expander, context );

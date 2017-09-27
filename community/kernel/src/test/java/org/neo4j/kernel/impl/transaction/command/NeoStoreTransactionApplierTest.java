@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -78,6 +77,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -129,9 +129,9 @@ public class NeoStoreTransactionApplierTest
         when( neoStores.getPropertyKeyTokenStore() ).thenReturn( propertyKeyTokenStore );
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( nodeStore.getDynamicLabelStore() ).thenReturn( dynamicLabelStore );
-        when( lockService.acquireNodeLock( anyLong(), Matchers.any() ) )
+        when( lockService.acquireNodeLock( anyLong(), any() ) )
                 .thenReturn( LockService.NO_LOCK );
-        when( lockService.acquireRelationshipLock( anyLong(), Matchers.any() ) )
+        when( lockService.acquireRelationshipLock( anyLong(), any() ) )
                 .thenReturn( LockService.NO_LOCK );
         when( transactionToApply.transactionId() ).thenReturn( transactionId );
     }

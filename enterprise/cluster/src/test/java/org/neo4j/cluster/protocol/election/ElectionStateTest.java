@@ -20,7 +20,7 @@
 package org.neo4j.cluster.protocol.election;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.net.URI;
@@ -33,11 +33,10 @@ import java.util.Map;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
-import org.neo4j.cluster.com.message.MessageType;
+import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.AtomicBroadcastMessage;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.cluster.ClusterMessage;
-import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.logging.NullLog;
 
 import static org.junit.Assert.assertEquals;
@@ -63,10 +62,10 @@ public class ElectionStateTest
     {
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
-        when( context.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
 
         when( context.electionOk() ).thenReturn( false );
-        when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -83,8 +82,8 @@ public class ElectionStateTest
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
         when( context.electionOk() ).thenReturn( false );
-        when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
-        when( context.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( context.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
 
         MessageHolder holder = mock( MessageHolder.class );
 
@@ -106,7 +105,7 @@ public class ElectionStateTest
         ElectionContext context = mock( ElectionContext.class );
         ClusterContext clusterContextMock = mock( ClusterContext.class );
 
-        when( clusterContextMock.getLog( Matchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
+        when( clusterContextMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( NullLog.getInstance() );
         MessageHolder holder = mock( MessageHolder.class );
 
           // These mean the election can proceed normally, by us
@@ -137,9 +136,9 @@ public class ElectionStateTest
 
         // Then
           // Make sure that we asked ourselves to vote for that role and that no timer was set
-        verify( holder, times(1) ).offer( Matchers.argThat( new MessageArgumentMatcher<ElectionMessage>()
+        verify( holder, times(1) ).offer( ArgumentMatchers.argThat( new MessageArgumentMatcher<ElectionMessage>()
                 .onMessageType( ElectionMessage.vote ).withPayload( voteRequest ) ) );
-        verify( context, times( 0 ) ).setTimeout( Matchers.<String>any(), Matchers.<Message>any() );
+        verify( context, times( 0 ) ).setTimeout( ArgumentMatchers.<String>any(), ArgumentMatchers.<Message>any() );
     }
 
     @Test
@@ -164,7 +163,7 @@ public class ElectionStateTest
         // When
         election.handle( context, vote, holder );
 
-        verify( context ).getLog( Matchers.<Class>any() );
+        verify( context ).getLog( ArgumentMatchers.<Class>any() );
         verify( context ).voted( role, voter, voteCredentialComparable, 4 );
 
         // Then

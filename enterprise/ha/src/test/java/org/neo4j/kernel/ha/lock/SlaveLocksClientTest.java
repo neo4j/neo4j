@@ -23,12 +23,11 @@ import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
-import org.mockito.Matchers;
 import org.mockito.stubbing.OngoingStubbing;
 
 import org.neo4j.com.ComException;
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionObligationResponse;
@@ -55,6 +54,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
@@ -106,17 +106,17 @@ public class SlaveLocksClientTest
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireShared()
     {
         return when( master.acquireSharedLock(
-                any( RequestContext.class ),
+                isNull(),
                 any( ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) );
+                ArgumentMatchers.<long[]>any() ) );
     }
 
     private OngoingStubbing<Response<LockResult>> whenMasterAcquireExclusive()
     {
         return when( master.acquireExclusiveLock(
-                any( RequestContext.class ),
+                isNull(),
                 any( ResourceType.class ),
-                Matchers.<long[]>anyVararg() ) );
+                ArgumentMatchers.<long[]>any() ) );
     }
 
     @After
@@ -243,7 +243,7 @@ public class SlaveLocksClientTest
     @Test( expected = DistributedLockFailureException.class )
     public void mustThrowIfStartingNewLockSessionOnMasterThrowsComException() throws Exception
     {
-        when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow( new ComException() );
+        when( master.newLockSession( isNull() ) ).thenThrow( new ComException() );
 
         client.acquireShared( LockTracer.NONE, NODE, 1 );
     }
@@ -251,7 +251,7 @@ public class SlaveLocksClientTest
     @Test( expected = DistributedLockFailureException.class )
     public void mustThrowIfStartingNewLockSessionOnMasterThrowsTransactionFailureException() throws Exception
     {
-        when( master.newLockSession( any( RequestContext.class ) ) ).thenThrow(
+        when( master.newLockSession( isNull() ) ).thenThrow(
                 new TransactionFailureException( Status.General.DatabaseUnavailable, "Not now" ) );
 
         client.acquireShared( LockTracer.NONE, NODE, 1 );
@@ -288,7 +288,7 @@ public class SlaveLocksClientTest
     @Test( expected = DistributedLockFailureException.class )
     public void closeMustThrowIfMasterThrows() throws Exception
     {
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
+        when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
 
         client.acquireExclusive( LockTracer.NONE, NODE, 1 ); // initialise
         client.close();
@@ -297,7 +297,7 @@ public class SlaveLocksClientTest
     @Test
     public void mustCloseLocalClientEvenIfMasterThrows() throws Exception
     {
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( new ComException() );
+        when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( new ComException() );
 
         try
         {
@@ -485,7 +485,7 @@ public class SlaveLocksClientTest
         client.stop();
 
         verify( local ).stop();
-        verify( master ).endLockSession( any( RequestContext.class ), eq( false ) );
+        verify( master ).endLockSession( isNull(), eq( false ) );
     }
 
     @Test
@@ -496,7 +496,7 @@ public class SlaveLocksClientTest
         client.close();
 
         verify( local ).close();
-        verify( master ).endLockSession( any( RequestContext.class ), eq( true ) );
+        verify( master ).endLockSession( isNull(), eq( true ) );
     }
 
     @Test
@@ -508,7 +508,7 @@ public class SlaveLocksClientTest
         client.close();
 
         InOrder inOrder = inOrder( master, local );
-        inOrder.verify( master ).endLockSession( any( RequestContext.class ), eq( false ) );
+        inOrder.verify( master ).endLockSession( isNull(), eq( false ) );
         inOrder.verify( local ).close();
     }
 
@@ -525,7 +525,7 @@ public class SlaveLocksClientTest
     public void stopDoesNotThrowWhenMasterCommunicationThrowsComException()
     {
         ComException error = new ComException( "Communication failure" );
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
+        when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( error );
 
         client.stop();
 
@@ -538,7 +538,7 @@ public class SlaveLocksClientTest
     public void stopDoesNotThrowWhenMasterCommunicationThrows()
     {
         RuntimeException error = new IllegalArgumentException( "Wrong params" );
-        when( master.endLockSession( any( RequestContext.class ), anyBoolean() ) ).thenThrow( error );
+        when( master.endLockSession( isNull(), anyBoolean() ) ).thenThrow( error );
 
         client.stop();
 
@@ -556,7 +556,7 @@ public class SlaveLocksClientTest
         Response<LockResult> response = new TransactionObligationResponse<>( lockResult, DEFAULT, 2, NO_OP );
         long nodeId = 0;
         ResourceTypes resourceType = NODE;
-        when( master.acquireExclusiveLock( any( RequestContext.class ),
+        when( master.acquireExclusiveLock( isNull(),
                 eq( resourceType ), anyLong() ) ).thenReturn( response );
 
         // WHEN

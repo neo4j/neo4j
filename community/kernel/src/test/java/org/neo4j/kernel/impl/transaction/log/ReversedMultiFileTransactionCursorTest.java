@@ -29,14 +29,12 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
+import static java.lang.Math.toIntExact;
+import static java.util.Arrays.copyOfRange;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.lang.Math.toIntExact;
-import static java.util.Arrays.copyOfRange;
-
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.given;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
@@ -135,7 +133,7 @@ public class ReversedMultiFileTransactionCursorTest
 
         when( result.apply( any( LogPosition.class ) ) ).thenAnswer( invocation ->
         {
-            LogPosition position = invocation.getArgumentAt( 0, LogPosition.class );
+            LogPosition position = invocation.getArgument( 0 );
             if ( position == null )
             {
                 // A mockito issue when calling the "when" methods, I believe
