@@ -189,7 +189,6 @@ public class LogTailScanner
     protected ExtractedTransactionRecord extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion ) throws IOException
     {
         LogPosition currentPosition = initialPosition;
-        ExtractedTransactionRecord transactionRecord = new ExtractedTransactionRecord();
         while ( currentPosition.getLogVersion() <= maxLogVersion )
         {
             LogVersionedStoreChannel storeChannel = PhysicalLogFile.tryOpenForVersion( logFiles, fileSystem,
@@ -207,8 +206,7 @@ public class LogTailScanner
                             LogEntry entry = cursor.get();
                             if ( entry instanceof LogEntryCommit )
                             {
-                                transactionRecord.setId( ((LogEntryCommit) entry).getTxId() );
-                                return transactionRecord;
+                                return new ExtractedTransactionRecord( ((LogEntryCommit) entry).getTxId() );
                             }
                         }
                     }
@@ -216,8 +214,7 @@ public class LogTailScanner
                 catch ( Throwable t )
                 {
                     monitor.corruptedLogFile( currentPosition.getLogVersion(), t );
-                    transactionRecord.setFailure( true );
-                    return transactionRecord;
+                    return new ExtractedTransactionRecord( true );
                 }
                 finally
                 {
@@ -227,7 +224,7 @@ public class LogTailScanner
 
             currentPosition = LogPosition.start( currentPosition.getLogVersion() + 1 );
         }
-        return transactionRecord;
+        return new ExtractedTransactionRecord();
     }
 
     /**
@@ -260,13 +257,28 @@ public class LogTailScanner
 
     static class ExtractedTransactionRecord
     {
-        private long id;
-        private boolean failure;
+        private final long id;
+        private final boolean failure;
 
         ExtractedTransactionRecord()
         {
-            id = NO_TRANSACTION_ID;
-            failure = false;
+            this( NO_TRANSACTION_ID, false );
+        }
+
+        ExtractedTransactionRecord( long txId )
+        {
+            this( txId, false );
+        }
+
+        ExtractedTransactionRecord( boolean failure )
+        {
+            this( NO_TRANSACTION_ID, failure );
+        }
+
+        private ExtractedTransactionRecord( long txId, boolean failure )
+        {
+            this.id = txId;
+            this.failure = failure;
         }
 
         public long getId()
@@ -274,19 +286,9 @@ public class LogTailScanner
             return id;
         }
 
-        public void setId( long id )
-        {
-            this.id = id;
-        }
-
         public boolean isFailure()
         {
             return failure;
-        }
-
-        public void setFailure( boolean failure )
-        {
-            this.failure = failure;
         }
     }
 

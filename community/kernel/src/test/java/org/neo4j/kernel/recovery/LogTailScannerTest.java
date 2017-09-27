@@ -608,9 +608,7 @@ public class LogTailScannerTest
         @Override
         protected ExtractedTransactionRecord extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion )
         {
-            ExtractedTransactionRecord record = new ExtractedTransactionRecord();
-            record.setId( txId );
-            return record;
+            return new ExtractedTransactionRecord( txId );
         }
     }
 }

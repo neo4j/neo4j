@@ -397,7 +397,7 @@ public class RecoveryCorruptedTransactionLogIT
             assertThat( numberOfRecoveredTransactions, Matchers.greaterThanOrEqualTo( 0 ) );
         }
 
-        File corruptedLogArchives = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogArchives = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertThat( corruptedLogArchives.listFiles(), not( emptyArray() ) );
     }
 

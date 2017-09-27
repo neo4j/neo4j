@@ -32,13 +32,14 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 
 import static java.lang.String.format;
 
 /**
  * Transaction log truncator used during recovery to truncate all the logs after some specified position, that
- * recovery threats as corrupted or non-readable.
+ * recovery treats as corrupted or non-readable.
  * Transaction log file specified by provided log position will be truncated to provided length, any
  * subsequent files will be removed.
  * Any removed or modified log content will be stored in separate corruption logs archive for further analysis and as
@@ -46,8 +47,8 @@ import static java.lang.String.format;
  */
 public class CorruptedLogsTruncator
 {
-    public static final String CORRUPTED_TX_LOGS_FOLDER_NAME = "corrupted-tx-logs";
-    private static final String LOG_FILE_ARCHIVE_PATTERN = "corrupted-logs-%d-%d-%d.zip";
+    public static final String CORRUPTED_TX_LOGS_BASE_NAME = "corrupted-" + PhysicalLogFile.DEFAULT_NAME;
+    private static final String LOG_FILE_ARCHIVE_PATTERN = CORRUPTED_TX_LOGS_BASE_NAME + "-%d-%d-%d.zip";
 
     private final File storeDir;
     private final PhysicalLogFiles logFiles;
@@ -72,7 +73,7 @@ public class CorruptedLogsTruncator
         long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
         long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();
         if ( isRecoveredLogCorrupted( recoveredTransactionLogVersion, recoveredTransactionOffset ) ||
-                isNotLastLogFile( recoveredTransactionLogVersion ) )
+                haveMoreRecentLogFiles( recoveredTransactionLogVersion ) )
         {
             backupCorruptedContent( recoveredTransactionLogVersion, recoveredTransactionOffset );
             truncateLogFiles( recoveredTransactionLogVersion, recoveredTransactionOffset );
@@ -124,7 +125,7 @@ public class CorruptedLogsTruncator
     private File getArchiveFile( long recoveredTransactionLogVersion, long recoveredTransactionOffset )
             throws IOException
     {
-        File corruptedLogsFolder = new File( storeDir, CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogsFolder = new File( storeDir, CORRUPTED_TX_LOGS_BASE_NAME );
         fs.mkdirs( corruptedLogsFolder );
         return new File( corruptedLogsFolder,
                 format( LOG_FILE_ARCHIVE_PATTERN, recoveredTransactionLogVersion, recoveredTransactionOffset,
@@ -155,7 +156,7 @@ public class CorruptedLogsTruncator
         destination.closeEntry();
     }
 
-    private boolean isNotLastLogFile( long recoveredTransactionLogVersion )
+    private boolean haveMoreRecentLogFiles( long recoveredTransactionLogVersion )
     {
         return logFiles.getHighestLogVersion() > recoveredTransactionLogVersion;
     }

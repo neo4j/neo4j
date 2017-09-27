@@ -108,7 +108,7 @@ public class CorruptedLogsTruncatorTest
         assertEquals( TOTAL_NUMBER_OF_LOG_FILES, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
         assertEquals( byteOffset, highestLogFile.length() );
 
-        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( corruptedLogsDirectory.exists() );
         File[] files = corruptedLogsDirectory.listFiles();
         assertEquals( 1, files.length );
@@ -139,7 +139,7 @@ public class CorruptedLogsTruncatorTest
         assertEquals( 6, storeDir.listFiles( LogFiles.FILENAME_FILTER ).length );
         assertEquals( byteOffset, highestCorrectLogFile.length() );
 
-        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_FOLDER_NAME );
+        File corruptedLogsDirectory = new File( storeDir, CorruptedLogsTruncator.CORRUPTED_TX_LOGS_BASE_NAME );
         assertTrue( corruptedLogsDirectory.exists() );
         File[] files = corruptedLogsDirectory.listFiles();
         assertEquals( 1, files.length );
@@ -176,7 +176,7 @@ public class CorruptedLogsTruncatorTest
     private void checkArchiveName( long highestLogVersion, long byteOffset, File corruptedLogsArchive )
     {
         String name = corruptedLogsArchive.getName();
-        assertTrue( name.startsWith( "corrupted-logs-" + highestLogVersion + "-" + byteOffset ) );
+        assertTrue( name.startsWith( "corrupted-neostore.transaction.db-" + highestLogVersion + "-" + byteOffset ) );
         assertTrue( FilenameUtils.isExtension( name, "zip" ) );
     }
 
