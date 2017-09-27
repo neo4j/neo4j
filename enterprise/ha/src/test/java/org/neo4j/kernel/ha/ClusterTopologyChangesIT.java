@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.ha.ClusterRule;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -265,7 +266,7 @@ public class ClusterTopologyChangesIT
         Config config = Config.defaults( MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
                 ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
-                ClusterSettings.cluster_server.name(), "0.0.0.0:8888" ) );
+                ClusterSettings.cluster_server.name(), "0.0.0.0:" + PortAuthority.allocatePort() ) );
 
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
