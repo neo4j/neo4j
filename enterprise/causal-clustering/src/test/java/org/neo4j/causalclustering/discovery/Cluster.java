@@ -74,15 +74,15 @@ public class Cluster
     private static final int DEFAULT_TIMEOUT_MS = 120_000;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
-    private final File parentDir;
+    protected final File parentDir;
     private final Map<String,String> coreParams;
     private final Map<String,IntFunction<String>> instanceCoreParams;
     private final Map<String,String> readReplicaParams;
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
-    private final DiscoveryServiceFactory discoveryServiceFactory;
-    private final String listenAddress;
-    private final String advertisedAddress;
+    protected final DiscoveryServiceFactory discoveryServiceFactory;
+    protected final String listenAddress;
+    protected final String advertisedAddress;
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
@@ -433,7 +433,7 @@ public class Cluster
         }
     }
 
-    private CoreClusterMember createCoreClusterMember( int serverId,
+    protected CoreClusterMember createCoreClusterMember( int serverId,
                                                        int hazelcastPort,
                                                        int clusterSize,
                                                        List<AdvertisedSocketAddress> initialHosts,

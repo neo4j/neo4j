@@ -35,6 +35,10 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
+    protected CoreGraphDatabase()
+    {
+    }
+
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {

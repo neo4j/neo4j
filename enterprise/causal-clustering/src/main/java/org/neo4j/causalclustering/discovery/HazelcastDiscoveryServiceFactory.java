@@ -24,29 +24,28 @@ import com.hazelcast.spi.properties.GroupProperty;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
+import org.neo4j.scheduler.JobScheduler;
 
 public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
-    public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
+    public CoreTopologyService coreTopologyService( Config config, MemberId myself, JobScheduler jobScheduler,
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+        return new HazelcastCoreTopologyService( config, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
                 topologyServiceRetryStrategy );
     }
 
     @Override
-    public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
+    public TopologyService topologyService( Config config, LogProvider logProvider,
                                             JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
                                             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         configureHazelcast( config );
-        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy, hostnameResolver ), jobScheduler,
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, hostnameResolver ), jobScheduler,
                 logProvider, config, myself, topologyServiceRetryStrategy );
     }
 

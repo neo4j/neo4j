@@ -19,6 +19,9 @@
  */
 package org.neo4j.causalclustering.core.consensus;
 
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -33,9 +36,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.core.replication.ReplicatedContent;
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.messaging.Inbound;
 import org.neo4j.causalclustering.messaging.marshalling.ChannelMarshal;
 import org.neo4j.causalclustering.messaging.marshalling.RaftMessageDecoder;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
 
@@ -62,7 +62,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 {
     private static final Setting<ListenSocketAddress> setting = CausalClusteringSettings.raft_listen_address;
     private final ChannelMarshal<ReplicatedContent> marshal;
-    private final SslPolicy sslPolicy;
+    private final PipelineHandlerAppender pipelineAppender;
     private final ListenSocketAddress listenAddress;
     private final LogProvider logProvider;
     private final Log log;
@@ -75,11 +75,11 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
 
     private final NamedThreadFactory threadFactory = new NamedThreadFactory( "raft-server" );
 
-    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, SslPolicy sslPolicy, Config config,
-            LogProvider logProvider, LogProvider userLogProvider, Monitors monitors )
+    public RaftServer( ChannelMarshal<ReplicatedContent> marshal, PipelineHandlerAppender pipelineAppender, Config config,
+                       LogProvider logProvider, LogProvider userLogProvider, Monitors monitors )
     {
         this.marshal = marshal;
-        this.sslPolicy = sslPolicy;
+        this.pipelineAppender = pipelineAppender;
         this.listenAddress = config.get( setting );
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
@@ -131,10 +131,7 @@ public class RaftServer extends LifecycleAdapter implements Inbound<RaftMessages
                     {
                         ChannelPipeline pipeline = ch.pipeline();
 
-                        if ( sslPolicy != null )
-                        {
-                            pipeline.addLast( sslPolicy.nettyServerHandler( ch ) );
-                        }
+                        pipelineAppender.addPipelineHandlerForServer( pipeline, ch );
 
                         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
                         pipeline.addLast( new LengthFieldPrepender( 4 ) );
