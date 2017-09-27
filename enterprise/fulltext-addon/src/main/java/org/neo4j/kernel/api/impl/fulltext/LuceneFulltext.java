@@ -42,7 +42,7 @@ class LuceneFulltext extends AbstractLuceneIndex
     private final String identifier;
     private final FulltextProvider.FulltextIndexType type;
     private final Set<String> properties;
-    private InternalIndexState state;
+    private volatile InternalIndexState state;
 
     LuceneFulltext( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
                     List<String> properties, Analyzer analyzer, String identifier,

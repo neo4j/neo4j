@@ -227,15 +227,15 @@ public class FulltextProvider implements AutoCloseable
         return applyToMatchingIndex( identifier, type, LuceneFulltext::getProperties );
     }
 
-    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<LuceneFulltext,E> getProperties )
+    private <E> E applyToMatchingIndex( String identifier, FulltextIndexType type, Function<LuceneFulltext,E> function )
     {
         if ( type == FulltextIndexType.NODES )
         {
-            return getProperties.apply( nodeIndices.get( identifier ) );
+            return function.apply( nodeIndices.get( identifier ) );
         }
         else
         {
-            return getProperties.apply( relationshipIndices.get( identifier ) );
+            return function.apply( relationshipIndices.get( identifier ) );
         }
     }
 
