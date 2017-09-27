@@ -76,7 +76,7 @@ public class MemoryAllocatorTest
     @Test
     public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
     {
-        MemoryAllocator mman = createAllocator( "32 KiB" );
+        MemoryAllocator mman = createAllocator( "2 MiB" );
         long page1 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
         long largeBlock = mman.allocateAligned( 1024 * 1024, 1 ); // 1 MiB
         long page2 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
