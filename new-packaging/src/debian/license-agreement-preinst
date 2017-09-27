@@ -1,0 +1,12 @@
+
+. /usr/share/debconf/confmodule
+
+if [ "$1" = "install" ]; then
+    db_input high neo4j/license || true
+    db_input high neo4j/question || true
+    db_go
+    db_get neo4j/question
+    test "$RET" = "I ACCEPT"
+fi
+
+#DEBHELPER#
