@@ -446,6 +446,14 @@
             <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
           </systemPropertyVariables>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
