@@ -30,10 +30,13 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.index.GBPTreeFileUtil;
 
+import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
 class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
 {
@@ -41,23 +44,45 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
     final File storeFile;
     final Layout<KEY,VALUE> layout;
     final GBPTreeFileUtil gbpTreeFileUtil;
+    private final IndexDescriptor descriptor;
+    private final long indexId;
+    private final SchemaIndexProvider.Monitor monitor;
 
     GBPTree<KEY,VALUE> tree;
 
-    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout )
+    NativeSchemaNumberIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
         this.layout = layout;
         this.gbpTreeFileUtil = new GBPTreeFileSystemFileUtil( fs );
+        this.descriptor = descriptor;
+        this.indexId = indexId;
+        this.monitor = monitor;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
             throws IOException
     {
         ensureDirectoryExist();
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER, headerWriter,
-                recoveryCleanupWorkCollector );
+        GBPTree.Monitor monitor = treeMonitor();
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
+    }
+
+    private GBPTree.Monitor treeMonitor( )
+    {
+        return new GBPTree.Monitor.Adaptor()
+        {
+            @Override
+            public void cleanupFinished( long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
+            {
+                monitor.recoveryCompleted( indexId, descriptor, map(
+                        "Number of pages visited", numberOfPagesVisited,
+                        "Number of cleaned crashed pointers", numberOfCleanedCrashPointers,
+                        "Time spent", duration( durationMillis ) ) );
+            }
+        };
     }
 
     private void ensureDirectoryExist() throws IOException

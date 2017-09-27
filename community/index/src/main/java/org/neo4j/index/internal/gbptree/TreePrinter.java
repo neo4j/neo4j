@@ -21,19 +21,34 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.StandardOpenOption;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 
 import static java.lang.String.format;
+
+import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
+ *
+ * @param <KEY> type of keys in the tree.
+ * @param <VALUE> type of values in the tree.
  */
-class TreePrinter<KEY,VALUE>
+public class TreePrinter<KEY,VALUE>
 {
     private final TreeNode<KEY,VALUE> node;
     private final Layout<KEY,VALUE> layout;
@@ -46,6 +61,52 @@ class TreePrinter<KEY,VALUE>
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
+    }
+
+    /**
+     * Prints the header, that is tree state and meta information, about the tree present in the given {@code file}.
+     *
+     * @param fs {@link FileSystemAbstraction} where the {@code file} exists.
+     * @param file {@link File} containing the tree to print header for.
+     * @param out {@link PrintStream} to print at.
+     * @throws IOException on I/O error.
+     */
+    public static void printHeader( FileSystemAbstraction fs, File file, PrintStream out ) throws IOException
+    {
+        SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
+        swapper.open( fs, EMPTY );
+        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, (int) kibiBytes( 8 ), NULL, PageCursorTracerSupplier.NULL ) )
+        {
+            printHeader( pageCache, file, out );
+        }
+    }
+
+    /**
+     * Prints the header, that is tree state and meta information, about the tree present in the given {@code file}.
+     *
+     * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
+     * @param file {@link File} containing the tree to print header for.
+     * @param out {@link PrintStream} to print at.
+     * @throws IOException on I/O error.
+     */
+    public static void printHeader( PageCache pageCache, File file, PrintStream out ) throws IOException
+    {
+        try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.READ ) )
+        {
+            try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK ) )
+            {
+                // TODO add printing of meta information here when that abstraction has been merged.
+                printTreeState( cursor, out );
+            }
+        }
+    }
+
+    private static void printTreeState( PageCursor cursor, PrintStream out ) throws IOException
+    {
+        Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
+                cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+        out.println( "StateA: " + statePair.getLeft() );
+        out.println( "StateB: " + statePair.getRight() );
     }
 
     /**
@@ -65,11 +126,8 @@ class TreePrinter<KEY,VALUE>
         if ( printState )
         {
             long currentPage = cursor.getCurrentPageId();
-            Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
-                    cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+            printTreeState( cursor, out );
             TreeNode.goTo( cursor, "back to tree node from reading state", currentPage );
-            out.println( "StateA: " + statePair.getLeft() );
-            out.println( "StateB: " + statePair.getRight() );
         }
         assertOnTreeNode( cursor );
 

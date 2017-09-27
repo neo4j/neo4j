@@ -42,8 +42,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.api.schema.index.IndexDescriptor.Type.UNIQUE;
 
@@ -52,21 +50,21 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     static final int PRIORITY = 1;
 
     private final IndexStorageFactory indexStorageFactory;
-    private final Log log;
     private final Config config;
     private final OperationalMode operationalMode;
     private final FileSystemAbstraction fileSystem;
+    private final Monitor monitor;
 
     public LuceneSchemaIndexProvider( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory,
-            IndexDirectoryStructure.Factory directoryStructureFactory, LogProvider logging, Config config,
+            IndexDirectoryStructure.Factory directoryStructureFactory, Monitor monitor, Config config,
             OperationalMode operationalMode )
     {
         super( LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR, PRIORITY, directoryStructureFactory );
+        this.monitor = monitor;
         this.indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.operationalMode = operationalMode;
-        this.log = logging.getLog( getClass() );
     }
 
     public static IndexDirectoryStructure.Factory defaultDirectoryStructure( File storeDir )
@@ -141,7 +139,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
         }
         catch ( IOException e )
         {
-            log.error( "Failed to open index:" + indexId + ", requesting re-population.", e );
+            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }

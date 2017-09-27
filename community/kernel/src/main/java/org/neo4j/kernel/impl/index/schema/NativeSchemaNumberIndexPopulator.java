@@ -41,6 +41,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
@@ -66,9 +68,10 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     private byte[] failureBytes;
     private boolean dropped;
 
-    NativeSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout )
+    NativeSchemaNumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, Layout<KEY,VALUE> layout,
+            SchemaIndexProvider.Monitor monitor, IndexDescriptor descriptor, long indexId )
     {
-        super( pageCache, fs, storeFile, layout );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.conflictDetectingValueMerger = new ConflictDetectingValueMerger<>();

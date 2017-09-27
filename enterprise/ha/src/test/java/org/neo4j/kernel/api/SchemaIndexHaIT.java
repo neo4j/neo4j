@@ -72,7 +72,6 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.ha.ClusterRule;
@@ -561,13 +560,13 @@ public class SchemaIndexHaIT
             PageCache pageCache = deps.pageCache();
             File storeDir = context.storeDir();
             DefaultFileSystemAbstraction fs = fileSystemRule.get();
-            NullLogProvider logProvider = NullLogProvider.getInstance();
+            SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
             Config config = deps.config();
             OperationalMode operationalMode = context.databaseInfo().operationalMode;
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = deps.recoveryCleanupWorkCollector();
 
             FusionSchemaIndexProvider fusionSchemaIndexProvider = NativeLuceneFusionSchemaIndexProviderFactory
-                    .newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, recoveryCleanupWorkCollector );
+                    .newInstance( pageCache, storeDir, fs, monitor, config, operationalMode, recoveryCleanupWorkCollector );
 
             if ( injectLatchPredicate.test( deps.db() ) )
             {

@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -90,7 +90,7 @@ public class LuceneIndexRecoveryIT
         waitForIndex( index );
 
         long nodeId = createNode( myLabel, 12 );
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertNotNull( db.getNodeById( nodeId ) );
         }
@@ -103,7 +103,7 @@ public class LuceneIndexRecoveryIT
         startDb( createLuceneIndexFactory() );
 
         // Then
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             assertNotNull( db.getNodeById( nodeId ) );
         }
@@ -177,7 +177,7 @@ public class LuceneIndexRecoveryIT
         // When
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignored = db.beginTx() )
         {
             IndexDefinition index = db.schema().getIndexes().iterator().next();
             waitForIndex( index );
@@ -220,7 +220,7 @@ public class LuceneIndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
-        factory.setKernelExtensions( Arrays.asList( indexProviderFactory ) );
+        factory.setKernelExtensions( Collections.singletonList( indexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
     }
 
@@ -315,9 +315,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newInstance( KernelContext context, LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( fs.get(),directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
-                        context.databaseInfo().operationalMode )
+                return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
+                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
@@ -341,8 +340,7 @@ public class LuceneIndexRecoveryIT
                     throws Throwable
             {
                 return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.storeDir() ),
-                        dependencies.getLogging().getInternalLogProvider(), dependencies.getConfig(),
-                        context.databaseInfo().operationalMode )
+                        SchemaIndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )
