@@ -88,6 +88,24 @@ class PageList
     // xxx Since we know up front how many pages we have at our disposal, and that 32 TiB of RAM is far from common,
     // xxx we can place our preferred cut-off point at one or two bit-widths higher than the required bits to address
     // xxx the memory. This would keep the risk of collisions down. Hopefully to a somewhat reasonable level.
+    // xxx Actually, if we don't need the swapper id in the page list anymore, then we could use those 11 spare bits
+    // xxx to store the wrap-around counter. We'd have to consult the page list before we know whether we've found the
+    // xxx correct translation table entry or not, but that is hopefully a rare occurrence. We can also use a few of the
+    // xxx bits to indicate the entry offset from its ideal location, such that collisions don't necessarily have to
+    // xxx cause an existing entry to be evicted. The offset can either be as a difference from the given file page id –
+    // xxx which might not work so well with scans, for instance – or it can be the levels of hashing, where a zero
+    // xxx would mean that the file page id is unhashed (directly addressed), and any number above this is the number of
+    // xxx recursive hashes that the file page id has gone through in search of a free translation table entry.
+    // xxx Not having the swapper id will, however, make it impossible to reconstruct the translation tables from the
+    // xxx page list, which would be required in order to resume a page cache from stored memory, e.g. a /dev/shm file.
+    // xxx Perhaps, if we stored the buffers base address separately (the address of the first page buffer we allocate),
+    // xxx and we then assume that 47 bits is enough to address all the memory we need (128 TiB of RAM addressable),
+    // xxx then we would be able to get 64-47=17 spare bits. 10 of those bits could go to the swapper id (1024 swappers
+    // xxx possible), 2 bits goes to the usage counter, 4 bits goes to the wrap-around counter allowing us to map files
+    // xxx up to 512 TiB in size, and one bit for whether the file page id was rehashed or not.
+    // xxx Store segments, if implemented, might change the dynamics around a bit; we might get an upper bound on file
+    // xxx sizes, and instead have a lot more files. In such a case, we might want to drop the wrap-around idea for
+    // xxx translation tables entirely, and instead invest those bits into the swapper id.
 
     private final int pageCount;
     private final int cachePageSize;
