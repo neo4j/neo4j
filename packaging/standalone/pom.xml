@@ -30,7 +30,6 @@
 
   <modules>
     <module>standalone-community</module>
-    <module>standalone-enterprise</module>
   </modules>
 
   <properties>
