@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.LongerShortString;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
@@ -49,6 +50,9 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     private long next;
     private int block;
     ByteBuffer buffer;
+    private PageCursor page;
+    private PageCursor stringPage;
+    private PageCursor arrayPage;
 
     public PropertyCursor( Read read )
     {
@@ -60,10 +64,14 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     {
         if ( getId() != NO_ID )
         {
-            close();
+            clear();
         }
         next = reference;
         block = Integer.MAX_VALUE;
+        if ( page == null )
+        {
+            page = read.propertyPage( reference );
+        }
     }
 
     @Override
@@ -88,7 +96,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
         {
             return false;
         }
-        read.property( this, next );
+        read.property( this, next, page );
         next = getNextProp();
         block = -1;
         return next();
@@ -108,6 +116,21 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
     @Override
     public void close()
     {
+        if ( page != null )
+        {
+            page.close();
+            page = null;
+        }
+        if ( stringPage != null )
+        {
+            stringPage.close();
+            stringPage = null;
+        }
+        if ( arrayPage != null )
+        {
+            arrayPage.close();
+            arrayPage = null;
+        }
         clear();
     }
 
@@ -193,12 +216,22 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.internal
 
     private ArrayValue readLongArray()
     {
-        return read.array( this, PropertyBlock.fetchLong( currentBlock() ) );
+        long reference = PropertyBlock.fetchLong( currentBlock() );
+        if ( arrayPage == null )
+        {
+            arrayPage = read.arrayPage( reference );
+        }
+        return read.array( this, reference, arrayPage );
     }
 
     private TextValue readLongString()
     {
-        return read.string( this, PropertyBlock.fetchLong( currentBlock() ) );
+        long reference = PropertyBlock.fetchLong( currentBlock() );
+        if ( stringPage == null )
+        {
+            stringPage = read.stringPage( reference );
+        }
+        return read.string( this, reference, stringPage );
     }
 
     private Value readShortArray()

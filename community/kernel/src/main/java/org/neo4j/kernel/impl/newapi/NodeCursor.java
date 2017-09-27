@@ -46,24 +46,30 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         this.labelCursor = read.labelCursor();
     }
 
-    void scan( PageCursor pageCursor )
+    void scan()
     {
         if ( getId() != NO_ID )
         {
-            close();
+            reset();
         }
-        this.pageCursor = pageCursor;
+        if ( pageCursor == null )
+        {
+            pageCursor = read.nodePage( 0 );
+        }
         this.next = 0;
         this.highMark = read.nodeHighMark();
     }
 
-    void single( long reference, PageCursor pageCursor )
+    void single( long reference )
     {
         if ( getId() != NO_ID )
         {
-            close();
+            reset();
         }
-        this.pageCursor = pageCursor;
+        if ( pageCursor == null )
+        {
+            pageCursor = read.nodePage( reference );
+        }
         this.next = reference;
         this.highMark = NO_ID;
     }
@@ -117,7 +123,7 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     {
         if ( next == NO_ID )
         {
-            close();
+            reset();
             return false;
         }
         do
@@ -159,6 +165,11 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
             pageCursor.close();
             pageCursor = null;
         }
+        reset();
+    }
+
+    private void reset()
+    {
         setId( next = NO_ID );
     }
 

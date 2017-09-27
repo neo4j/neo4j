@@ -409,10 +409,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * DANGER: make sure to always close this cursor.
      */
-    public PageCursor openPageCursor( long id ) throws IOException
+    public PageCursor openPageCursor( long id )
     {
-        long pageId = pageIdForRecord( id );
-        return storeFile.io( pageId, PF_SHARED_READ_LOCK );
+        try
+        {
+            long pageId = pageIdForRecord( id );
+            return storeFile.io( pageId, PF_SHARED_READ_LOCK );
+        }
+        catch ( IOException e )
+        {
+            // TODO: think about what we really should be doing with the exception handling here...
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     /**
@@ -1052,7 +1060,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         try
         {
-            readIntoRecord(id, record, mode, cursor);
+            readIntoRecord( id, record, mode, cursor );
         }
         catch ( IOException e )
         {
@@ -1061,7 +1069,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     }
 
-    public void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
+    void readIntoRecord( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         // Mark the record with this id regardless of whether or not we load the contents of it.
         // This is done in this method since there are multiple call sites and they all want the id

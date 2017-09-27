@@ -31,8 +31,10 @@ import org.neo4j.kernel.impl.api.store.PropertyUtil;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordCursor;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -51,15 +53,17 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class Read implements org.neo4j.internal.kernel.api.Read
 {
-    private final NeoStores stores;
+    private final RelationshipGroupStore groupStore;
+    private final PropertyStore propertyStore;
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
 
     public Read( NeoStores stores )
     {
-        this.stores = stores;
         this.nodeStore = stores.getNodeStore();
         this.relationshipStore = stores.getRelationshipStore();
+        this.groupStore = stores.getRelationshipGroupStore();
+        this.propertyStore = stores.getPropertyStore();
     }
 
     @Override
@@ -92,16 +96,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void allNodesScan( org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        try
-        {
-            PageCursor pageCursor = nodeStore.openPageCursor( 0 );
-            ((NodeCursor) cursor).scan( pageCursor );
-        }
-        catch ( IOException e )
-        {
-            throw new UnsupportedOperationException( "This exception is not implemented" );
-        }
-
+        ((NodeCursor) cursor).scan();
     }
 
     @Override
@@ -113,45 +108,19 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void singleNode( long reference, org.neo4j.internal.kernel.api.NodeCursor cursor )
     {
-        try
-        {
-            PageCursor pageCursor = nodeStore.openPageCursor( reference );
-            ((NodeCursor) cursor).single( reference, pageCursor );
-        }
-        catch ( IOException e )
-        {
-            throw new UnsupportedOperationException( "This exception is not implemented" );
-        }
+        ((NodeCursor) cursor).single( reference );
     }
 
     @Override
     public void singleRelationship( long reference, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        try
-        {
-            PageCursor pageCursor = relationshipStore.openPageCursor( reference );
-            ((RelationshipScanCursor) cursor).single( reference, pageCursor );
-        }
-        catch ( IOException e )
-        {
-            //TODO
-            throw new RuntimeException( e );
-        }
+        ((RelationshipScanCursor) cursor).single( reference );
     }
 
     @Override
     public void allRelationshipsScan( org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        try
-        {
-            PageCursor pageCursor = relationshipStore.openPageCursor( 0L );
-            ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/, pageCursor );
-        }
-        catch ( IOException e )
-        {
-            //TODO
-            throw new RuntimeException( e );
-        }
+        ((RelationshipScanCursor) cursor).scan( -1/*include all labels*/ );
     }
 
     @Override
@@ -163,16 +132,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     @Override
     public void relationshipLabelScan( int label, org.neo4j.internal.kernel.api.RelationshipScanCursor cursor )
     {
-        try
-        {
-            PageCursor pageCursor = relationshipStore.openPageCursor( 0L );
-            ((RelationshipScanCursor) cursor).scan( label, pageCursor );
-        }
-        catch ( IOException e )
-        {
-            //TODO
-            throw new RuntimeException( e );
-        }
+        ((RelationshipScanCursor) cursor).scan( label );
     }
 
     @Override
@@ -274,6 +234,36 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     {
     }
 
+    PageCursor nodePage( long reference )
+    {
+        return nodeStore.openPageCursor( reference );
+    }
+
+    PageCursor relationshipPage( long reference )
+    {
+        return relationshipStore.openPageCursor( reference );
+    }
+
+    PageCursor groupPage( long reference )
+    {
+        return groupStore.openPageCursor( reference );
+    }
+
+    PageCursor propertyPage( long reference )
+    {
+        return propertyStore.openPageCursor( reference );
+    }
+
+    PageCursor stringPage( long reference )
+    {
+        return propertyStore.getStringStore().openPageCursor( reference );
+    }
+
+    PageCursor arrayPage( long reference )
+    {
+        return propertyStore.getArrayStore().openPageCursor( reference );
+    }
+
     RecordCursor<DynamicRecord> labelCursor()
     {
         return newCursor( nodeStore.getDynamicLabelStore() );
@@ -294,19 +284,14 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         relationshipStore.getRecordByCursor( reference, record, RecordLoad.CHECK, pageCursor );
     }
 
-    void relationship( RelationshipRecord record, long reference)
+    void property( PropertyRecord record, long reference, PageCursor pageCursor )
     {
-       relationshipStore.getRecord( reference, record, RecordLoad.CHECK );
+        propertyStore.getRecordByCursor( reference, record, RecordLoad.NORMAL, pageCursor );
     }
 
-    void property( PropertyRecord record, long reference )
+    void group( RelationshipGroupRecord record, long reference, PageCursor page )
     {
-        stores.getPropertyStore().getRecord( reference, record, RecordLoad.NORMAL );
-    }
-
-    void group( RelationshipGroupRecord record, long reference )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
+        groupStore.getRecordByCursor( reference, record, RecordLoad.NORMAL, page );
     }
 
     long nodeHighMark()
@@ -319,18 +304,16 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         return relationshipStore.getHighestPossibleIdInUse();
     }
 
-    TextValue string( PropertyCursor cursor, long reference )
+    TextValue string( PropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer =
-                cursor.buffer = readDynamic( stores.getPropertyStore().getStringStore(), reference, cursor.buffer );
+        ByteBuffer buffer = cursor.buffer = readDynamic( propertyStore.getStringStore(), reference, cursor.buffer, page );
         buffer.flip();
         return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
     }
 
-    ArrayValue array( PropertyCursor cursor, long reference )
+    ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer =
-                cursor.buffer = readDynamic( stores.getPropertyStore().getArrayStore(), reference, cursor.buffer );
+        ByteBuffer buffer = cursor.buffer = readDynamic( propertyStore.getArrayStore(), reference, cursor.buffer, page );
         buffer.flip();
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
@@ -355,7 +338,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         return -2 - reference;
     }
 
-    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer )
+    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer, PageCursor page )
     {
         if ( buffer == null )
         {
@@ -368,7 +351,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         DynamicRecord record = store.newRecord();
         do
         {
-            store.getRecord( reference, record, RecordLoad.NORMAL );
+            store.getRecordByCursor( reference, record, RecordLoad.CHECK, page );
             reference = record.getNextBlock();
             byte[] data = record.getData();
             if ( buffer.remaining() < data.length )

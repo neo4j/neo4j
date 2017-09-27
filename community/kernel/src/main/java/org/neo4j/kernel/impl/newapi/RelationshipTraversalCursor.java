@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 class RelationshipTraversalCursor extends RelationshipCursor
@@ -28,6 +29,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private long originNodeReference;
     private long next;
     private Record buffer;
+    private PageCursor pageCursor;
 
     RelationshipTraversalCursor( Read read )
     {
@@ -49,6 +51,10 @@ class RelationshipTraversalCursor extends RelationshipCursor
      */
     void chain( long nodeReference, long reference )
     {
+        if ( pageCursor == null )
+        {
+            pageCursor = read.relationshipPage( reference );
+        }
         setId( NO_ID );
         originNodeReference = nodeReference;
         next = reference;
@@ -59,6 +65,13 @@ class RelationshipTraversalCursor extends RelationshipCursor
      */
     void groups( long nodeReference, long reference )
     {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    void filtered( long nodeReference, long reference )
+    {
+        // TODO: read the first record and use the type of it for filtering the chain
+        // - only include records with that type
         throw new UnsupportedOperationException( "not implemented" );
     }
 
@@ -112,7 +125,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             buffer = buffer.next;
             if ( !hasBufferedData() )
             {
-                close();
+                reset();
                 return false;
             }
             else
@@ -130,10 +143,10 @@ class RelationshipTraversalCursor extends RelationshipCursor
 
         if ( next == NO_ID )
         {
-            close();
+            reset();
             return false;
         }
-        read.relationship( this, next );
+        read.relationship( this, next, pageCursor );
         final long source = sourceNodeReference(), target = targetNodeReference();
         if ( source == originNodeReference )
         {
@@ -158,6 +171,16 @@ class RelationshipTraversalCursor extends RelationshipCursor
 
     @Override
     public void close()
+    {
+        if ( pageCursor != null )
+        {
+            pageCursor.close();
+            pageCursor = null;
+        }
+        reset();
+    }
+
+    private void reset()
     {
         setId( next = NO_ID );
         buffer = null;

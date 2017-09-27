@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -33,6 +34,8 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     private final Read read;
     private final RelationshipRecord edge = new RelationshipRecord( NO_ID );
     private Group current;
+    private PageCursor page;
+    private PageCursor edgePage;
 
     RelationshipGroupCursor( Read read )
     {
@@ -46,12 +49,13 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         setId( NO_ID );
         setNext( NO_ID );
         // TODO: read first record to get the required capacity (from the count value in the prev field)
-        try ( PrimitiveIntObjectMap<Group> buffer = Primitive.intObjectMap() )
+        try ( PrimitiveIntObjectMap<Group> buffer = Primitive.intObjectMap();
+              PageCursor edgePage = read.relationshipPage( relationshipReference ) )
         {
             Group current = null;
             while ( relationshipReference != NO_ID )
             {
-                read.relationship( edge, relationshipReference );
+                read.relationship( edge, relationshipReference, edgePage );
                 // find the group
                 Group group = buffer.get( edge.getType() );
                 if ( group == null )
@@ -91,6 +95,10 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         current = null;
         clear();
         setNext( reference );
+        if ( page == null )
+        {
+            page = read.groupPage( reference );
+        }
     }
 
     @Override
@@ -125,7 +133,7 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         {
             return false;
         }
-        read.group( this, getNext() );
+        read.group( this, getNext(), page );
         return true;
     }
 
@@ -138,6 +146,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
     @Override
     public void close()
     {
+        if ( page != null )
+        {
+            page.close();
+            page = null;
+        }
         current = null;
         setId( NO_ID );
         clear();
@@ -185,7 +198,11 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
         {
             return 0;
         }
-        read.relationship( edge, reference );
+        if ( edgePage == null )
+        {
+            edgePage = read.relationshipPage( reference );
+        }
+        read.relationship( edge, reference, edgePage );
         if ( edge.getFirstNode() == getOwningNode() )
         {
             return (int) edge.getFirstPrevRel();
