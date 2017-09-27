@@ -35,8 +35,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
@@ -52,17 +50,18 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
-    private final Log log;
+    private final Monitor monitor;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure,
-            LogProvider logging, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
+    public NativeSchemaNumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs,
+            IndexDirectoryStructure.Factory directoryStructure, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure );
         this.pageCache = pageCache;
         this.fs = fs;
-        this.log = logging.getLog( getClass() );
+        this.monitor = monitor;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
     }
@@ -79,9 +78,11 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         switch ( descriptor.type() )
         {
         case GENERAL:
-            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig );
+            return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new NonUniqueNumberLayout(), samplingConfig,
+                    monitor, descriptor, indexId );
         case UNIQUE:
-            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout() );
+            return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, fs, storeFile, new UniqueNumberLayout(), monitor, descriptor,
+                    indexId );
         default:
             throw new UnsupportedOperationException( "Can not create index populator of type " + descriptor.type() );
         }
@@ -104,7 +105,8 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         default:
             throw new UnsupportedOperationException( "Can not create index accessor of type " + descriptor.type() );
         }
-        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector );
+        return new NativeSchemaNumberIndexAccessor<>( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+                indexId );
     }
 
     @Override
@@ -155,7 +157,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         }
         catch ( IOException e )
         {
-            log.error( "Failed to open index:" + indexId + ", requesting re-population.", e );
+            monitor.failedToOpenIndex( indexId, descriptor, "Requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }

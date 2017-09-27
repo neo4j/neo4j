@@ -25,6 +25,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -32,7 +33,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
@@ -50,7 +52,9 @@ public class LuceneSchemaIndexProviderFactory extends
     {
         Config getConfig();
 
-        LogService getLogging();
+        Monitors monitors();
+
+        LogService getLogService();
 
         FileSystemAbstraction fileSystem();
     }
@@ -66,24 +70,27 @@ public class LuceneSchemaIndexProviderFactory extends
         FileSystemAbstraction fileSystemAbstraction = dependencies.fileSystem();
         File storeDir = context.storeDir();
         Config config = dependencies.getConfig();
-        LogService logging = dependencies.getLogging();
-        LogProvider internalLogProvider = logging.getInternalLogProvider();
+        Log log = dependencies.getLogService().getInternalLogProvider().getLog( LuceneSchemaIndexProvider.class );
+        Monitors monitors = dependencies.monitors();
+        monitors.addMonitorListener( new LoggingMonitor( log ), KEY );
+        SchemaIndexProvider.Monitor monitor = monitors.newMonitor( SchemaIndexProvider.Monitor.class, KEY );
         OperationalMode operationalMode = context.databaseInfo().operationalMode;
-        return create( fileSystemAbstraction, storeDir, internalLogProvider, config, operationalMode );
+        return create( fileSystemAbstraction, storeDir, monitor, config, operationalMode );
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction, File storeDir,
-            LogProvider logProvider, Config config, OperationalMode operationalMode )
+            SchemaIndexProvider.Monitor monitor, Config config, OperationalMode operationalMode )
     {
-        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), logProvider, config, operationalMode );
+        return create( fileSystemAbstraction, directoriesByProviderKey( storeDir ), monitor, config, operationalMode );
     }
 
     public static LuceneSchemaIndexProvider create( FileSystemAbstraction fileSystemAbstraction,
-            IndexDirectoryStructure.Factory directoryStructure, LogProvider logProvider, Config config, OperationalMode operationalMode )
+            IndexDirectoryStructure.Factory directoryStructure, SchemaIndexProvider.Monitor monitor, Config config,
+            OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
         DirectoryFactory directoryFactory = directoryFactory( ephemeral, fileSystemAbstraction );
-        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure,
-                logProvider, config, operationalMode );
+        return new LuceneSchemaIndexProvider( fileSystemAbstraction, directoryFactory, directoryStructure, monitor, config,
+                operationalMode );
     }
 }

@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Utility for loading {@link SchemaIndexProvider} instances from {@link KernelExtensions}.
@@ -63,10 +64,10 @@ public class SchemaIndexExtensionLoader
     @SuppressWarnings( "unchecked" )
     public static KernelExtensions instantiateKernelExtensions( File storeDir, FileSystemAbstraction fileSystem,
             Config config, LogService logService, PageCache pageCache,
-            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo )
+            RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo, Monitors monitors )
     {
         Dependencies deps = new Dependencies();
-        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector );
+        deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors );
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( storeDir, databaseInfo, deps );

@@ -37,6 +37,8 @@ import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.LoggingMonitor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -52,7 +54,6 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
@@ -63,6 +64,7 @@ public class LuceneSchemaIndexCorruptionTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
+    private final SchemaIndexProvider.Monitor monitor = new LoggingMonitor( logProvider.getLog( "test" ) );
 
     @Test
     public void shouldRequestIndexPopulationIfTheIndexIsCorrupt() throws Exception
@@ -123,7 +125,7 @@ public class LuceneSchemaIndexCorruptionTest
         DirectoryFactory directoryFactory = mock( DirectoryFactory.class );
         File indexRootFolder = testDirectory.graphDbDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
-        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), logProvider,
+        return new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
                 Config.defaults(), OperationalMode.single )
         {
             @Override
