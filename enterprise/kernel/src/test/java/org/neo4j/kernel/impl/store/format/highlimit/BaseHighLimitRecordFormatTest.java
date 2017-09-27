@@ -97,7 +97,7 @@ public class BaseHighLimitRecordFormatTest
 
         protected MyRecordFormat()
         {
-            super( header -> 4, 4 );
+            super( header -> 4, 4, HighLimitFormatSettings.DEFAULT_MAXIMUM_BITS_PER_ID );
         }
 
         @Override
