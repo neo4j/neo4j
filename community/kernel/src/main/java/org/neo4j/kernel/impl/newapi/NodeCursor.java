@@ -99,6 +99,12 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     }
 
     @Override
+    public void allRelationships( RelationshipTraversalCursor cursor )
+    {
+        read.relationships( nodeReference(), allRelationshipsReference(), cursor );
+    }
+
+    @Override
     public void properties( PropertyCursor cursor )
     {
         read.nodeProperties( propertiesReference(), cursor );
@@ -110,6 +116,14 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
         // use negatives to encode the fact that this is not a proper group reference,
         // although not -1, because it is special
         return isDense() ? getNextRel() : invertReference( getNextRel() );
+    }
+
+    @Override
+    public long allRelationshipsReference()
+    {
+        // use negatives to encode the fact that this is not a proper relationship reference,
+        // although not -1, because it is special
+        return isDense() ? invertReference( getNextRel() ) : getNextRel();
     }
 
     @Override
@@ -171,23 +185,5 @@ class NodeCursor extends NodeRecord implements org.neo4j.internal.kernel.api.Nod
     private void reset()
     {
         setId( next = NO_ID );
-    }
-
-    @Override
-    public void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 }

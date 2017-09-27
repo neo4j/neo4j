@@ -134,6 +134,7 @@ public class NodeRecord extends PrimitiveRecord
         return filter( notInUseFilter(), dynamicLabelRecords );
     }
 
+    @Override
     public boolean isDense()
     {
         return dense;

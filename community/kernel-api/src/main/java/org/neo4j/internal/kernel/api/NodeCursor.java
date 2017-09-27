@@ -32,15 +32,15 @@ public interface NodeCursor extends Cursor
 
     void relationships( RelationshipGroupCursor cursor );
 
-    void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
-
-    void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
-
-    void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships );
+    void allRelationships( RelationshipTraversalCursor relationships );
 
     void properties( PropertyCursor cursor );
 
     long relationshipGroupReference();
 
+    long allRelationshipsReference();
+
     long propertiesReference();
+
+    boolean isDense();
 }

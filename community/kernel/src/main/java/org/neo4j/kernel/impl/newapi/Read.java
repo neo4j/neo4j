@@ -187,6 +187,8 @@ public class Read implements org.neo4j.internal.kernel.api.Read
          *    b) Traversing the relationships of a particular group of a node with grouped relationships.
          *
          * 5. There are no relationships - i.e. passing in NO_ID to this method.
+         *
+         * This means that we need reference encodings (flags) for cases: 1, 3, 4, 5
          */
         if ( reference == NO_ID ) // there are no relationships for this node
         {
