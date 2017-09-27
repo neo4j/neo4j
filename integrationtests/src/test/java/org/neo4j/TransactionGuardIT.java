@@ -99,7 +99,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class TransactionGuardIntegrationTest
+public class TransactionGuardIT
 {
     @ClassRule
     public static CleanupRule cleanupRule = new CleanupRule();

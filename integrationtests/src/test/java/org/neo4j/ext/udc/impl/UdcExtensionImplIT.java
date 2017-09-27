@@ -82,7 +82,7 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  * GraphDatabase is instantiated, as part of
  * {@link org.neo4j.helpers.Service#load}.
  */
-public class UdcExtensionImplTest extends LocalServerTestBase
+public class UdcExtensionImplIT extends LocalServerTestBase
 {
     private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
 

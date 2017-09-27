@@ -53,7 +53,7 @@ import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.EXACT_CONFIG;
 import static org.neo4j.index.impl.lucene.explicit.LuceneIndexImplementation.FULLTEXT_CONFIG;
 
-public class ExplicitIndexesUpgradeTest
+public class ExplicitIndexesUpgradeIT
 {
     @Rule
     public TestDirectory testDir = TestDirectory.testDirectory();

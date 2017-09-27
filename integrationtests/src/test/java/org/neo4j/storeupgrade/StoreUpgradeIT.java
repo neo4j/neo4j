@@ -89,7 +89,7 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
 @RunWith( Enclosed.class )
-public class StoreUpgradeIntegrationTest
+public class StoreUpgradeIT
 {
     // NOTE: the zip files must contain the database files and NOT the graph.db folder itself!!!
     private static final List<Store[]> STORES23 = Arrays.asList(
