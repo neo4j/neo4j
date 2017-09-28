@@ -60,7 +60,36 @@ public class Credential
 
     public boolean matchesPassword( String password )
     {
-        return Arrays.equals( passwordHash, hash( salt, password ) );
+        return byteEquals( passwordHash, hash( salt, password ) );
+    }
+
+
+    /**
+     * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.
+     * The length of the loop executed will always be the length of the given password</p>
+     *
+     * @param actual the actual password
+     * @param given password given by the user
+     * @return whether the two byte arrays are equal
+     */
+    private boolean byteEquals( byte[] actual, byte[] given )
+    {
+        if ( actual == given )
+        {
+            return true;
+        }
+        if ( actual == null || given == null )
+        {
+            return false;
+        }
+        boolean result = true;
+        int actualLength = actual.length;
+        int givenLength = given.length;
+        for ( int i = 0; i < givenLength; ++i )
+        {
+            result &= actual[i % actualLength] == given[i];
+        }
+        return result && actualLength == givenLength;
     }
 
     @Override
@@ -77,7 +106,7 @@ public class Credential
 
         Credential that = (Credential) o;
 
-        return Arrays.equals( salt, that.salt ) && Arrays.equals( passwordHash, that.passwordHash );
+        return byteEquals( this.salt, that.salt ) && byteEquals( this.passwordHash, that.passwordHash );
     }
 
     @Override
