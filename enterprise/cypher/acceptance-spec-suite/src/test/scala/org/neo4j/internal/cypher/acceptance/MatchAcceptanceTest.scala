@@ -65,7 +65,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |MATCH p=(source:Neo)-[rel *0..1]->(dest)
         |WITH nodes(p) as d
         |RETURN DISTINCT d""".stripMargin
-    val result = executeWith(Configs.CommunityInterpreted, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
   }
@@ -248,7 +248,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |MATCH paths = (n)-[*..1]-(m)
         |RETURN paths""".stripMargin
 
-    val result = executeWith(Configs.CommunityInterpreted, query,
+    val result = executeWith(Configs.Interpreted, query,
       //      expectedDifferentPlans = Configs.AbsolutelyAll,
       params = Map("0" -> node1.getId, "1" -> node2.getId))
     graph.inTx(
@@ -775,7 +775,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n3, createNode())
 
     // When
-    val result = executeWith(Configs.CommunityInterpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
+    val result = executeWith(Configs.Interpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
 
     // Then
     result.toList should equal(List(Map("size" -> 8)))
