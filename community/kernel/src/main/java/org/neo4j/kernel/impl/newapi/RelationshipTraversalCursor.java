@@ -23,15 +23,63 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.INCOMING;
-import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.LOOP;
-import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.NONE;
-import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.OUTGOING;
 
 class RelationshipTraversalCursor extends RelationshipCursor
         implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 {
-    enum GroupState { INCOMING, OUTGOING, LOOP, NONE };
+    private enum GroupState
+    {
+        INCOMING,
+        OUTGOING,
+        LOOP,
+        NONE
+    }
+
+    private enum FilterState
+    {
+        NOT_INITIALIZED
+                {
+                    @Override
+                    boolean check( long source, long target, long origin )
+                    {
+                        throw new IllegalStateException( "Cannot call check on uninitialized filter" );
+                    }
+                },
+        INCOMING
+                {
+                    @Override
+                    boolean check( long source, long target, long origin )
+                    {
+                        return origin == target;
+                    }
+                },
+        OUTGOING
+                {
+                    @Override
+                    boolean check( long source, long target, long origin )
+                    {
+                        return origin == source;
+                    }
+                },
+        LOOP
+                {
+                    @Override
+                    boolean check( long source, long target, long origin )
+                    {
+                        return source == target;
+                    }
+                },
+        NONE
+                {
+                    @Override
+                    boolean check( long source, long target, long origin )
+                    {
+                        return true;
+                    }
+                };
+
+        abstract boolean check( long source, long target, long origin );
+    }
 
     private long originNodeReference;
     private long next;
@@ -39,7 +87,8 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private PageCursor pageCursor;
     private final RelationshipGroupCursor group;
     private GroupState groupState;
-
+    private FilterState filterState;
+    private int filterType = NO_ID;
 
     RelationshipTraversalCursor( Read read )
     {
@@ -55,6 +104,9 @@ class RelationshipTraversalCursor extends RelationshipCursor
     {
         this.originNodeReference = nodeReference;
         this.buffer = Record.initialize( record );
+        this.groupState = GroupState.NONE;
+        this.filterState = FilterState.NONE;
+        this.filterType = NO_ID;
     }
 
     /*
@@ -67,7 +119,9 @@ class RelationshipTraversalCursor extends RelationshipCursor
             pageCursor = read.relationshipPage( reference );
         }
         setId( NO_ID );
-        groupState = NONE;
+        groupState = GroupState.NONE;
+        filterState = FilterState.NONE;
+        filterType = NO_ID;
         originNodeReference = nodeReference;
         next = reference;
     }
@@ -79,16 +133,24 @@ class RelationshipTraversalCursor extends RelationshipCursor
     {
         setId( NO_ID );
         next = NO_ID;
-        groupState = INCOMING;
+        groupState = GroupState.INCOMING;
+        filterState = FilterState.NONE;
+        filterType = NO_ID;
         originNodeReference = nodeReference;
         read.relationshipGroups( nodeReference, groupReference, group );
     }
 
     void filtered( long nodeReference, long reference )
     {
-        // TODO: read the first record and use the type of it for filtering the chain
-        // - only include records with that type
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( pageCursor == null )
+        {
+            pageCursor = read.relationshipPage( reference );
+        }
+        setId( NO_ID );
+        groupState = GroupState.NONE;
+        filterState = FilterState.NOT_INITIALIZED;
+        originNodeReference = nodeReference;
+        next = reference;
     }
 
     @Override
@@ -136,33 +198,35 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean next()
     {
-        /*
-            Node(dense=true)
 
-                |
-                v
-
-            Group(:HOLDS) -incoming-> Rel(id=2) -> Rel(id=3)
-                          -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
-                          -loop->     Rel(id=9)
-                |
-                v
-
-            Group(:USES)  -incoming-> Rel(id=14)
-                          -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
-                          -loop->     Rel(id=21) -> Rel(id=11)
-
-                |
-                v
-                ...
-
-         */
         if ( traversingDenseNode() )
         {
+
             while ( next == NO_ID )
             {
-                /*
-                  Defines a small state machine, we start in state INCOMING.
+                 /*
+                  Dense nodes looks something like:
+
+                        Node(dense=true)
+
+                                |
+                                v
+
+                            Group(:HOLDS)   -incoming-> Rel(id=2) -> Rel(id=3)
+                                            -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
+                                            -loop->     Rel(id=9)
+                                |
+                                v
+
+                            Group(:USES)    -incoming-> Rel(id=14)
+                                            -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
+                                            -loop->     Rel(id=21) -> Rel(id=11)
+
+                                |
+                                v
+                                ...
+
+                  We iterate over dense nodes using a small state machine staring in state INCOMING.
                   1) fetch next group, if no more group stop.
                   2) set next to group.incomingReference, switch state to OUTGOING
                   3) Iterate relationship chain until we reach the end
@@ -186,17 +250,17 @@ class RelationshipTraversalCursor extends RelationshipCursor
                     {
                         pageCursor = read.relationshipPage( Math.max( next, 0L ) );
                     }
-                    groupState = OUTGOING;
+                    groupState = GroupState.OUTGOING;
                     break;
 
                 case OUTGOING:
                     next = group.outgoingReference();
-                    groupState = LOOP;
+                    groupState = GroupState.LOOP;
                     break;
 
                 case LOOP:
                     next = group.loopsReference();
-                    groupState = INCOMING;
+                    groupState = GroupState.INCOMING;
                     break;
 
                 default:
@@ -216,11 +280,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             else
             {
                 // Copy buffer data to self
-                this.setId( buffer.id );
-                this.setType( buffer.type );
-                this.setNextProp( buffer.nextProp );
-                this.setFirstNode( buffer.firstNode );
-                this.setSecondNode( buffer.secondNode );
+                copyFromBuffer();
                 return true;
             }
         }
@@ -231,7 +291,66 @@ class RelationshipTraversalCursor extends RelationshipCursor
             reset();
             return false;
         }
+
+        if ( filteringTraversal() )
+        {
+            if ( filterState == FilterState.NOT_INITIALIZED )
+            {
+                //Initialize filtering:
+                //  - Read first record
+                //  - Check type and direction
+                //  - Subsequent records need to have same type and direction
+                read.relationship( this, next, pageCursor );
+                filterType = getType();
+                final long source = sourceNodeReference(), target = targetNodeReference();
+                if ( source == target )
+                {
+                    next = getFirstNextRel();
+                    filterState = FilterState.LOOP;
+                }
+                else if ( source == originNodeReference )
+                {
+                    next = getFirstNextRel();
+                    filterState = FilterState.OUTGOING;
+                }
+                else if ( target == originNodeReference )
+                {
+                    next = getSecondNextRel();
+                    filterState = FilterState.INCOMING;
+                }
+                return true;
+            }
+            else
+            {
+                //Iterate until we stop on a valid record,
+                //i.e. one with the same type and direction.
+                while ( true )
+                {
+                    read.relationship( this, next, pageCursor );
+                    computeNext();
+                    if ( predicate() )
+                    {
+                        return true;
+                    }
+                    if ( next == NO_ID )
+                    {
+                        reset();
+                        return false;
+                    }
+
+                }
+            }
+        }
+
+        //Not a group, nothing buffered, no filtering.
+        //Just a plain old traversal.
         read.relationship( this, next, pageCursor );
+        computeNext();
+        return true;
+    }
+
+    private void computeNext()
+    {
         final long source = sourceNodeReference(), target = targetNodeReference();
         if ( source == originNodeReference )
         {
@@ -245,12 +364,31 @@ class RelationshipTraversalCursor extends RelationshipCursor
         {
             throw new IllegalStateException( "NOT PART OF CHAIN" );
         }
-        return true;
+    }
+
+    private boolean predicate()
+    {
+        return filterType == getType() &&
+               filterState.check( sourceNodeReference(), targetNodeReference(), originNodeReference );
+    }
+
+    private void copyFromBuffer()
+    {
+        this.setId( buffer.id );
+        this.setType( buffer.type );
+        this.setNextProp( buffer.nextProp );
+        this.setFirstNode( buffer.firstNode );
+        this.setSecondNode( buffer.secondNode );
     }
 
     private boolean traversingDenseNode()
     {
-        return groupState != NONE;
+        return groupState != GroupState.NONE;
+    }
+
+    private boolean filteringTraversal()
+    {
+        return filterState != FilterState.NONE;
     }
 
     @Override
@@ -273,7 +411,9 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private void reset()
     {
         setId( next = NO_ID );
-        groupState = NONE;
+        groupState = GroupState.NONE;
+        filterState = FilterState.NONE;
+        filterType = NO_ID;
         buffer = null;
     }
 

@@ -483,7 +483,10 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                 {
                     assertEquals( "same type", type.intValue(), relationship.label() );
                 }
-                type = relationship.label();
+                else
+                {
+                    type = relationship.label();
+                }
             }
             counts.compute( relationship.label(), ( key, value ) -> value == null ? 1 : value + 1 );
         }

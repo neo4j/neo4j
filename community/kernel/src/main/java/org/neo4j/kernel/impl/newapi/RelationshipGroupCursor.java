@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.neo4j.kernel.impl.newapi.Read.invertReference;
+import static org.neo4j.kernel.impl.newapi.Read.addFilteringFlag;
 
 class RelationshipGroupCursor extends RelationshipGroupRecord
         implements org.neo4j.internal.kernel.api.RelationshipGroupCursor
@@ -322,24 +322,18 @@ class RelationshipGroupCursor extends RelationshipGroupRecord
 
         long outgoing()
         {
-            return flaggedAsRequiringFiltering( firstOut );
+            return addFilteringFlag( firstOut );
         }
 
         long incoming()
         {
-            return flaggedAsRequiringFiltering( firstIn );
+            return addFilteringFlag( firstIn );
         }
 
         long loops()
         {
-            return flaggedAsRequiringFiltering( firstLoop );
+            return addFilteringFlag( firstLoop );
         }
 
-        private long flaggedAsRequiringFiltering( long reference )
-        {
-            // set a high order bit as flag noting that "filtering is required"
-            // invert the reference to note that "this reference is special"
-            return invertReference( reference | 0x2000_0000_0000_0000L );
-        }
     }
 }

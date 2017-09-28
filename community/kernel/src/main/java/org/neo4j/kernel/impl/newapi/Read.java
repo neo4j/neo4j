@@ -53,6 +53,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class Read implements org.neo4j.internal.kernel.api.Read
 {
+    static final long FILTER_MASK = 0x2000_0000_0000_0000L;
     private final RelationshipGroupStore groupStore;
     private final PropertyStore propertyStore;
     private NodeStore nodeStore;
@@ -198,6 +199,10 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         {
             ((RelationshipTraversalCursor) cursor).groups( nodeReference, invertReference( reference ) );
         }
+        else if ( needsFiltering( reference ) )
+        {
+            ((RelationshipTraversalCursor) cursor).filtered( nodeReference, removeFilteringFlag( reference ) );
+        }
         else // this is a normal relationship reference
         {
             ((RelationshipTraversalCursor) cursor).chain( nodeReference, reference );
@@ -308,14 +313,16 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 
     TextValue string( PropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = readDynamic( propertyStore.getStringStore(), reference, cursor.buffer, page );
+        ByteBuffer buffer =
+                cursor.buffer = readDynamic( propertyStore.getStringStore(), reference, cursor.buffer, page );
         buffer.flip();
         return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
     }
 
     ArrayValue array( PropertyCursor cursor, long reference, PageCursor page )
     {
-        ByteBuffer buffer = cursor.buffer = readDynamic( propertyStore.getArrayStore(), reference, cursor.buffer, page );
+        ByteBuffer buffer =
+                cursor.buffer = readDynamic( propertyStore.getArrayStore(), reference, cursor.buffer, page );
         buffer.flip();
         return PropertyUtil.readArrayFromBuffer( buffer );
     }
@@ -331,8 +338,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
      * <p>
      * This function is its own inverse function.
      *
-     * @param reference
-     *         the reference to invert.
+     * @param reference the reference to invert.
      * @return the inverted reference.
      */
     static long invertReference( long reference )
@@ -340,7 +346,24 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         return -2 - reference;
     }
 
-    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer, PageCursor page )
+    static long addFilteringFlag( long reference )
+    {
+        // set a high order bit as flag noting that "filtering is required"
+        return reference | FILTER_MASK;
+    }
+
+    static long removeFilteringFlag( long reference )
+    {
+        return reference & ~FILTER_MASK;
+    }
+
+    static boolean needsFiltering( long reference )
+    {
+        return (reference & FILTER_MASK) != 0L;
+    }
+
+    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer,
+            PageCursor page )
     {
         if ( buffer == null )
         {
