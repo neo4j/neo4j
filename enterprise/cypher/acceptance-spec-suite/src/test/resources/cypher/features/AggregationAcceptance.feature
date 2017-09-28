@@ -39,3 +39,83 @@ Feature: AggregationAcceptance
       | aCount | zCount |
       | 1      | 1      |
     And no side effects
+
+  Scenario: Should give max of integer values
+    When executing query:
+      """
+      UNWIND [1,2] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 2      |
+    And no side effects
+
+  Scenario: Should give max of float values
+    When executing query:
+      """
+      UNWIND [1.0,2.0] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 2.0    |
+    And no side effects
+
+  Scenario: Should give max of numerical values
+    When executing query:
+      """
+      UNWIND [1,2.0] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 2.0    |
+    And no side effects
+
+  Scenario: Should give max of text values
+    When executing query:
+      """
+      UNWIND ['fu','bar'] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x)  |
+      | 'fu'    |
+    And no side effects
+
+  Scenario: Should give max of numerical and text values
+    When executing query:
+      """
+      UNWIND [1,'a'] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 1      |
+    And no side effects
+
+  Scenario: Should give max of list values
+    When executing query:
+      """
+      UNWIND [[1],[2]] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | [2]    |
+    And no side effects
+
+  Scenario: Should give max of numerical and list values
+    When executing query:
+      """
+      UNWIND [1,[2]] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 1      |
+    And no side effects
+
+  Scenario: Should give max of numerical and null values
+    When executing query:
+      """
+      UNWIND [1,null] AS x RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 1      |
+    And no side effects

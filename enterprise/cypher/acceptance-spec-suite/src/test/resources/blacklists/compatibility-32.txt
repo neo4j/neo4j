@@ -1,3 +1,7 @@
 //MatchAcceptance.feature
 difficult to plan query number 1
 difficult to plan query number 2
+
+//AggregationAcceptance.feature
+Should give max of numerical and list values
+Should give max of list values

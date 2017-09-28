@@ -9,3 +9,8 @@ ORDER BY node problem
 
 // ReturnAcceptance.feature
 LIMIT 0 should stop side effects
+
+//AggregationAcceptance.feature
+Should give max of numerical and text values
+Should give max of list values
+Should give max of numerical and list values

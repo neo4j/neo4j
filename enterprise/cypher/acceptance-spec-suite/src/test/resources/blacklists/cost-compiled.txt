@@ -174,6 +174,16 @@ Handles checking properties on relationships in path - using ALL() function on r
 Handles checking properties on relationships in path - using ALL() function on path relationship properties
 Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
 
+//AggregationAcceptance.feature
+Should give max of integer values
+Should give max of float values
+Should give max of numerical values
+Should give max of numerical and text values
+Should give max of text values
+Should give max of list values
+Should give max of numerical and list values
+Should give max of numerical and null values
+
 //MatchAcceptance.feature
 difficult to plan query number 1
 difficult to plan query number 2
