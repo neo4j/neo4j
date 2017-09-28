@@ -35,6 +35,7 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -64,12 +65,15 @@ public class BoltMetricsIT
     @Test
     public void shouldMonitorBolt() throws Throwable
     {
+        int port = PortAuthority.allocatePort();
+
         // Given
         File metricsFolder = tmpDir.newFolder( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
                 .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
+                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:" + port )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
                 .setConfig( MetricsSettings.csvEnabled, "true" )
@@ -80,7 +84,7 @@ public class BoltMetricsIT
 
         // When
         conn = new SocketConnection()
-                .connect( new HostnamePort( "localhost", 7687 ) )
+                .connect( new HostnamePort( "localhost", port ) )
                 .send( acceptedVersions( 1, 0, 0, 0 ) )
                 .send( chunk( InitMessage.init( "TestClient",
                         map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );
@@ -109,5 +113,4 @@ public class BoltMetricsIT
         conn.disconnect();
         db.shutdown();
     }
-
 }
