@@ -8,7 +8,6 @@
   </parent>
 
   <properties>
-    <short-name>unsafe</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -42,17 +41,6 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>ignore</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>

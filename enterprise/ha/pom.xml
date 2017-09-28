@@ -18,11 +18,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}/</url>
   <packaging>jar</packaging>
 
-  <properties>
-    <short-name>ha</short-name>
-    <version-package>kernel.ha.impl</version-package>
-  </properties>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -48,6 +43,15 @@
       </comments>
     </license>
   </licenses>
+
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>

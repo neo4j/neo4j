@@ -8,7 +8,6 @@
   </parent>
 
   <properties>
-    <short-name>neo4j-slf4j</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -50,14 +49,9 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/logging/slf4j/*</include>
-          </includes>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

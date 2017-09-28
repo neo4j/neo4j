@@ -38,11 +38,8 @@
   <packaging>jar</packaging>
 
   <properties>
-    <short-name>server</short-name>
-    <version-package>server.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <docs-plugin.filter>true</docs-plugin.filter>
 
     <neo4j.version>${project.version}</neo4j.version>
     <neo4j-browser.version>3.0.10</neo4j-browser.version>
@@ -86,6 +83,183 @@
       </comments>
     </license>
   </licenses>
+
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+
+      <!-- Development execution -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <mainClass>${neo4j-server.mainClass}</mainClass>
+          <classpathScope>test</classpathScope>
+          <arguments>
+            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
+            <argument>--home-dir=${basedir}/neo4j-home</argument>
+          </arguments>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/sources-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+          <execution>
+            <id>test-sources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <appendAssemblyId>true</appendAssemblyId>
+              <descriptors>
+                <descriptor>src/main/assemblies/test-sources-assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <strictCheck>true</strictCheck>
+          <header>${license-text.header}</header>
+          <includes>
+            <include>src/**/*.java</include>
+            <include>src/**/*.js</include>
+            <include>src/**/*.scala</include>
+            <include>src/**/*.xml</include>
+          </includes>
+          <mapping>
+            <scala>JAVADOC_STYLE</scala>
+          </mapping>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-jar</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <archive>
+                <manifest>
+                  <mainClass>${neo4j-server.mainClass}</mainClass>
+                </manifest>
+              </archive>
+              <excludes>
+                <exclude>lib/**</exclude>
+              </excludes>
+            </configuration>
+          </execution>
+          <execution>
+            <id>attach-docs</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>surefire-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <forkMode>always</forkMode>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>all-tests</id>
+      <activation>
+        <property>
+          <name>tests</name>
+          <value>all</value>
+        </property>
+      </activation>
+    </profile>
+
+    <profile>
+      <id>initial-build</id>
+      <repositories>
+        <repository>
+          <id>neo4j-dev</id>
+          <name>Neo4j Developer Repository</name>
+          <url>http://m2.neo4j.org/content/groups/everything/</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
+
+  <repositories>
+    <repository>
+      <id>java.net</id>
+      <url>http://download.java.net/maven/2/</url>
+    </repository>
+    <repository>
+      <id>neo4j-release-repository</id>
+      <name>Neo4j Maven 2 release repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
 
   <dependencies>
     <dependency>
@@ -313,206 +487,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-
-      <!-- Development execution -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <mainClass>${neo4j-server.mainClass}</mainClass>
-          <classpathScope>test</classpathScope>
-          <arguments>
-            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
-            <argument>--home-dir=${basedir}/neo4j-home</argument>
-          </arguments>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assemblies/sources-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-          <execution>
-            <id>test-sources</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <appendAssemblyId>true</appendAssemblyId>
-              <descriptors>
-                <descriptor>src/main/assemblies/test-sources-assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>license-maven-plugin</artifactId>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>${license-text.header}</header>
-          <includes>
-            <include>src/**/*.java</include>
-            <include>src/**/*.js</include>
-            <include>src/**/*.scala</include>
-            <include>src/**/*.xml</include>
-          </includes>
-          <mapping>
-            <scala>JAVADOC_STYLE</scala>
-          </mapping>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                  <mainClass>${neo4j-server.mainClass}</mainClass>
-                </manifest>
-              </archive>
-              <excludes>
-                <exclude>lib/**</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-          <execution>
-            <id>attach-docs</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <groups>
-            <group>
-              <title>Server</title>
-              <packages>org.neo4j.server:org.neo4j.server.*</packages>
-            </group>
-            <group>
-              <title>Server REST Interface</title>
-              <packages>org.neo4j.server.rest:org.neo4j.server.rest.*</packages>
-            </group>
-          </groups>
-        </configuration>
-      </plugin>
-
-    </plugins>
-
-  </build>
-
-  <profiles>
-    <profile>
-      <id>surefire-windows</id>
-      <activation>
-        <os>
-          <family>windows</family>
-        </os>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <forkMode>always</forkMode>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>all-tests</id>
-      <activation>
-        <property>
-          <name>tests</name>
-          <value>all</value>
-        </property>
-      </activation>
-    </profile>
-
-    <profile>
-      <id>initial-build</id>
-      <repositories>
-        <repository>
-          <id>neo4j-dev</id>
-          <name>Neo4j Developer Repository</name>
-          <url>http://m2.neo4j.org/content/groups/everything/</url>
-        </repository>
-      </repositories>
-    </profile>
-  </profiles>
-
-  <repositories>
-    <repository>
-      <id>java.net</id>
-      <url>http://download.java.net/maven/2/</url>
-    </repository>
-    <repository>
-      <id>neo4j-release-repository</id>
-      <name>Neo4j Maven 2 release repository</name>
-      <url>http://m2.neo4j.org/content/repositories/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>neo4j-snapshot-repository</id>
-      <name>Neo4j Maven 2 snapshot repository</name>
-      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
 </project>

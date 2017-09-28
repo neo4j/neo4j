@@ -44,10 +44,6 @@
     </license>
   </licenses>
 
-  <properties>
-    <version-package>cypher.internal</version-package>
-  </properties>
-
   <repositories>
     <repository>
       <id>neo4j-releases-repository</id>

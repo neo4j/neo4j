@@ -8,8 +8,6 @@
   </parent>
 
   <properties>
-    <short-name>graph-algo</short-name>
-    <version-package>graphalgo.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <test.runner.jvm.settings.additional>
@@ -54,14 +52,9 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/graphalgo/*</include>
-          </includes>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

@@ -8,10 +8,8 @@
   </parent>
 
   <properties>
-    <short-name>import-tool</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <version-package>tooling.import_tool</version-package>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>

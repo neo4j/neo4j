@@ -15,10 +15,8 @@
     <description>Neo4j Stored Procedure compile-time annotation processor</description>
 
     <properties>
-        <short-name>procedure-compiler</short-name>
         <license-text.header>GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-        <version-package>tooling.procedure</version-package>
     </properties>
 
     <licenses>
@@ -40,6 +38,44 @@
             </comments>
         </license>
     </licenses>
+
+    <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/java</directory>
+                <includes>
+                    <include>org/neo4j/tooling/procedure/procedures/**/*.java</include>
+                </includes>
+            </testResource>
+        </testResources>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessors>
+                        <annotationProcessor>com.google.auto.service.processor.AutoServiceProcessor
+                        </annotationProcessor>
+                    </annotationProcessors>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>org/neo4j/tooling/procedure/procedures/valid/**/*</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
@@ -72,46 +108,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/java</directory>
-                <includes>
-                    <include>org/neo4j/tooling/procedure/procedures/**/*.java</include>
-                </includes>
-            </testResource>
-        </testResources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-javadoc-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessors>
-                        <annotationProcessor>com.google.auto.service.processor.AutoServiceProcessor
-                        </annotationProcessor>
-                    </annotationProcessors>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                        <configuration>
-                            <includes>
-                                <include>org/neo4j/tooling/procedure/procedures/valid/**/*</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
 </project>

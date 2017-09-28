@@ -18,15 +18,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>community-build</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
-
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
 
   <modules>
     <module>common</module>

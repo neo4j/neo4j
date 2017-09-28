@@ -40,8 +40,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>kernel</short-name>
-    <version-package>kernel.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -76,6 +74,11 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
@@ -113,35 +116,9 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
-          <groups>
-            <group>
-              <title>Graph database</title>
-              <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
-            </group>
-            <group>
-              <title>Procedures</title>
-              <packages>org.neo4j.procedure:org.neo4j.procedure.*</packages>
-            </group>
-            <group>
-              <title>Helpers</title>
-              <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
-            </group>
-          </groups>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
         <configuration>
-          <includes>
-            <include>org/neo4j/graphdb/factory/*</include>
-            <include>org/neo4j/unsafe/batchinsert/*</include>
-            <include>org/neo4j/procedure/*</include>
-            <include>org/neo4j/helpers/collection/*</include>
-          </includes>
           <ignored combine.children="append">
             <difference>
               <className>org/neo4j/unsafe/batchinsert/DirectRecordAccess</className>

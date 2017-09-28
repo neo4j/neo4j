@@ -16,8 +16,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>jmx</short-name>
-    <version-package>jmx.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -52,14 +50,9 @@ the relevant Commercial Agreement.
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/jmx/*</include>
-          </includes>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

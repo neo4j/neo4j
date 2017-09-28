@@ -23,9 +23,6 @@
   </scm>
 
   <properties>
-    <version-package>cypher.internal.frontend.v3_4</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
     <license.header>${project.baseUri}/ASL-2-header.txt</license.header>
   </properties>
 
@@ -128,40 +125,5 @@
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>neo-full-build-with-javadoc</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-dummy-javadocs-jar</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-                <configuration>
-                  <classifier>javadoc</classifier>
-                  <excludes>
-                    <exclude>**</exclude>
-                  </excludes>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>

@@ -14,11 +14,6 @@
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <properties>
-    <short-name>backup</short-name>
-    <version-package>backup.impl</version-package>
-  </properties>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -47,24 +42,9 @@
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/backup/OnlineBackupExtensionFactory.Dependencies</include>
-            <include>org/neo4j/backup/OnlineBackupKernelExtension.BackupProvider</include>
-            <include>org/neo4j/backup/TheBackupInterface</include>
-            <include>org/neo4j/backup/BackupExtensionService</include>
-            <include>org/neo4j/backup/BackupTool</include>
-            <include>org/neo4j/backup/OnlineBackup</include>
-            <include>org/neo4j/backup/OnlineBackupExtensionFactory</include>
-            <!--<include>org/neo4j/backup/OnlineBackupKernelExtension</include> broken atm -->
-            <include>org/neo4j/backup/OnlineBackupSettings</include>
-            <include>org/neo4j/backup/StoreCopyResponsePacker</include>
-            <include>org/neo4j/backup/IncrementalBackupNotPossibleException</include>
-          </includes>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

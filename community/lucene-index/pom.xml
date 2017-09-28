@@ -16,10 +16,7 @@ Integration layer between Neo4j and Lucene, providing one possible implementatio
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>lucene-index</short-name>
-    <version-package>index.impl.lucene</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs-plugin.filter>true</docs-plugin.filter>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -50,6 +47,15 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
+
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>
@@ -129,30 +135,4 @@ the relevant Commercial Agreement.
     </dependency>
 
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- Override parent to include impl package in javadocs. -->
-          <excludePackageNames>*.dummy</excludePackageNames>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/index/lucene/*</include>
-            <include>org/neo4j/index/lucene/unsafe/batchinsert/*</include>
-          </includes>
-          <excludes>
-            <exclude>org/neo4j/index/lucene/LuceneLabelScanStoreBuilder</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

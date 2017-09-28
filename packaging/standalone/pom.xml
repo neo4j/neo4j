@@ -33,8 +33,6 @@
   </modules>
 
   <properties>
-    <short-name>neo4j-standalone</short-name>
-
     <!-- Document substitution properties are in document.properties file -->
 
     <!-- other filter properties -->
