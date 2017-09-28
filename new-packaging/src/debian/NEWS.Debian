@@ -1,8 +1,0 @@
-${PACKAGE_NAME} (3.2.0) ${DISTRIBUTION}; urgency=medium
-
-  * Neo4j now ships a native systemd service. Options in
-    /etc/default/neo4j have migrated to
-    /etc/systemd/system/neo4j.service.d/override.conf.
-    In addition, the main neo4j log is now written to journald instead.
-
- -- Neo Technology <debian@neotechnology.com>  Mon, 13 Feb 2017 11:35:10 +0100
