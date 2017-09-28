@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -57,9 +58,10 @@ public class ConfiguringPageCacheFactoryTest
     public void shouldFitAsManyPagesAsItCan() throws Throwable
     {
         // Given
-        final long maxPages = 60;
+        long pageCount = 60;
+        long memory = MuninnPageCache.memoryRequiredForPages( pageCount );
         Config config = Config.defaults(
-                pagecache_memory, Long.toString( PageCache.PAGE_SIZE * maxPages ) );
+                pagecache_memory, Long.toString( memory ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -70,7 +72,7 @@ public class ConfiguringPageCacheFactoryTest
         try ( PageCache cache = factory.getOrCreatePageCache() )
         {
             assertThat( cache.pageSize(), equalTo( PageCache.PAGE_SIZE ) );
-            assertThat( cache.maxCachedPages(), equalTo( maxPages ) );
+            assertThat( cache.maxCachedPages(), equalTo( pageCount ) );
         }
     }
 

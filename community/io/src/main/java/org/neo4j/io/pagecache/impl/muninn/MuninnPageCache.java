@@ -193,6 +193,16 @@ public class MuninnPageCache implements PageCache
     private boolean printExceptionsOnClose;
 
     /**
+     * Compute the amount of memory needed for a page cache with the given number of 8 KiB pages.
+     * @param pageCount The number of pages
+     * @return The memory required for the buffers and meta-data of the given number of pages
+     */
+    public static long memoryRequiredForPages( long pageCount )
+    {
+        return pageCount * MEMORY_USE_PER_PAGE;
+    }
+
+    /**
      * Create page cache.
      * @param swapperFactory page cache swapper factory
      * @param maxPages maximum number of pages
@@ -208,7 +218,7 @@ public class MuninnPageCache implements PageCache
     {
         this( swapperFactory,
                 // Cast to long prevents overflow:
-                MemoryAllocator.createAllocator( ((long) maxPages) * MEMORY_USE_PER_PAGE ),
+                MemoryAllocator.createAllocator( "" + memoryRequiredForPages( maxPages ) ),
                 PAGE_SIZE,
                 pageCacheTracer,
                 pageCursorTracerSupplier );

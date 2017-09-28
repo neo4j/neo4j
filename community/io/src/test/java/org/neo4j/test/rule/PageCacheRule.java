@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
@@ -182,16 +181,14 @@ public class PageCacheRule extends ExternalResource
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fs, Configuration.EMPTY );
 
-        long pageCacheMemory = ByteUnit.mebiBytes( 8 );
-        int pageCount = (int) (pageCacheMemory / PageCache.PAGE_SIZE);
+        MemoryAllocator mman = MemoryAllocator.createAllocator( "8 MiB" );
         if ( pageSize != null )
         {
-            MemoryAllocator mman = MemoryAllocator.createAllocator( pageCacheMemory );
             pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier );
         }
         else
         {
-            pageCache = new MuninnPageCache( factory, pageCount, cacheTracer, cursorTracerSupplier );
+            pageCache = new MuninnPageCache( factory, mman, cacheTracer, cursorTracerSupplier );
         }
         pageCachePostConstruct( overriddenConfig );
         return pageCache;

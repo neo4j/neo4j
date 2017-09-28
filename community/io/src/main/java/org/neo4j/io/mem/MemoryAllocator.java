@@ -31,11 +31,6 @@ public interface MemoryAllocator
         return new GrabAllocator( ByteUnit.parse( expectedMemory ) );
     }
 
-    static MemoryAllocator createAllocator( long expectedMaxMemory )
-    {
-        return new GrabAllocator( expectedMaxMemory );
-    }
-
     /**
      * @return The sum, in bytes, of all the memory currently allocating through this allocator.
      */

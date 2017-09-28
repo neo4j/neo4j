@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,7 +47,7 @@ public final class StandalonePageCacheFactory
 
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( ByteUnit.mebiBytes( 8 ) );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( "8 MiB" );
         return new MuninnPageCache( factory, memoryAllocator, cacheTracer, cursorTracerSupplier );
     }
 }

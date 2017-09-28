@@ -43,7 +43,7 @@ public class LargePageListIT
         long pageCacheSize = ByteUnit.gibiBytes( 513 ) + pageSize;
         int pages = Math.toIntExact( pageCacheSize / pageSize );
 
-        MemoryAllocator mman = MemoryAllocator.createAllocator( ByteUnit.gibiBytes( 2 ) );
+        MemoryAllocator mman = MemoryAllocator.createAllocator( "2 GiB" );
         SwapperSet swappers = new SwapperSet();
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
