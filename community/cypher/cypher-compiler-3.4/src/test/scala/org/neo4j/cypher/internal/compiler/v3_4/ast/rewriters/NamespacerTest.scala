@@ -20,16 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
 import org.neo4j.cypher.internal.aux.v3_4.inSequence
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.helpers.StatementHelper._
 import org.neo4j.cypher.internal.compiler.v3_4.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.compiler.v3_4.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.ContextHelper
-import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Statement}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticFeature
 
@@ -83,6 +82,28 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
       test(q) {
         assertRewritten(q, rewritten)
       }
+  }
+
+  test("graph return items in RETURN are protected") {
+    val original =
+      """FROM GRAPH AT '/test/graph2' AS myGraph
+        |MATCH (n:Person)
+        |RETURN n.name AS name GRAPHS myGraph
+      """.stripMargin
+
+    assertRewritten(original, original, SemanticFeature.MultipleGraphs)
+  }
+
+  test("graph return items in WITH are protected") {
+    val original =
+      """FROM GRAPH AT '/test/graph2' AS myGraph
+        |WITH 1 AS a GRAPHS myGraph
+        |MATCH (n:Person)
+        |WITH n GRAPHS GRAPH AT 'foo' AS fooG >> myGraph AS barG
+        |RETURN n.name AS name GRAPHS fooG, barG
+      """.stripMargin
+
+    assertRewritten(original, original, SemanticFeature.MultipleGraphs)
   }
 
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never)
