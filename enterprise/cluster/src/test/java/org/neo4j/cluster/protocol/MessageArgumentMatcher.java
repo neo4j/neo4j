@@ -81,13 +81,13 @@ public class MessageArgumentMatcher<T extends MessageType> implements ArgumentMa
             return false;
         }
         boolean toMatches = to == null || to.toString().equals( message.getHeader( Message.TO ) );
-        boolean fromMatches = from == null || from.toString().equals( ((Message) message).getHeader( Message.FROM ) );
+        boolean fromMatches = from == null || from.toString().equals( message.getHeader( Message.FROM ) );
         boolean typeMatches = theMessageType == null || theMessageType == ((Message) message).getMessageType();
-        boolean payloadMatches = payload == null || payload.equals( ((Message) message).getPayload() );
+        boolean payloadMatches = payload == null || payload.equals( message.getPayload() );
         boolean headersMatch = true;
         for ( String header : headers )
         {
-            headersMatch = headersMatch && matchHeaderAndValue( header, ((Message) message).getHeader( header ) );
+            headersMatch = headersMatch && matchHeaderAndValue( header, message.getHeader( header ) );
         }
         return fromMatches && toMatches && typeMatches && payloadMatches && headersMatch;
     }

@@ -24,7 +24,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.net.URI;
 import java.util.HashSet;
@@ -67,6 +66,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
@@ -101,7 +101,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollection() );
         outputOrder.verify( output ).transactionStatus( anyLong() );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -135,9 +135,9 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
-        outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
+        outputOrder.verify( output ).notifications( anyCollection() );
         outputOrder.verify( output ).transactionStatus( anyLong() );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -179,7 +179,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -213,7 +213,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[]) null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -251,7 +251,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( result, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -279,7 +279,7 @@ public class TransactionHandleTest
         transactionOrder.verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -318,7 +318,7 @@ public class TransactionHandleTest
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
         outputOrder.verify( output ).transactionStatus( anyLong() );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasNoErrors() ) );
+        outputOrder.verify( output ).errors( argThat( hasNoErrors() ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -350,7 +350,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -390,7 +390,7 @@ public class TransactionHandleTest
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( executionResult, false, (ResultDataContent[])null );
         outputOrder.verify( output ).notifications( anyCollectionOf( Notification.class ) );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasErrors( Status.Transaction
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Transaction
                 .TransactionCommitFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
@@ -422,7 +422,7 @@ public class TransactionHandleTest
         verify( registry ).forget( 1337L );
 
         InOrder outputOrder = inOrder( output );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasErrors( Status.Statement.SyntaxError ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.SyntaxError ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -454,7 +454,7 @@ public class TransactionHandleTest
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).statementResult( isNull(), eq( false ), isNull() );
-        outputOrder.verify( output ).errors( MockitoHamcrest.argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
+        outputOrder.verify( output ).errors( argThat( hasErrors( Status.Statement.ExecutionFailed ) ) );
         outputOrder.verify( output ).finish();
         verifyNoMoreInteractions( output );
     }
@@ -503,7 +503,7 @@ public class TransactionHandleTest
                 mock( HttpServletRequest.class ) );
 
         // then
-        verify( output ).errors( MockitoHamcrest.argThat( hasErrors( Status.Transaction.DeadlockDetected ) ) );
+        verify( output ).errors( argThat( hasErrors( Status.Transaction.DeadlockDetected ) ) );
     }
 
     @Test

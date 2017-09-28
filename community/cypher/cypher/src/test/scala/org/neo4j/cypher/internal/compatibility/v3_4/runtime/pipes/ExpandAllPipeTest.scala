@@ -64,8 +64,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
         Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator.empty
     })
-    when(query.getRelationshipsForIds(any(), any(), ArgumentMatchers.eq(Some(Seq(1,2))))).thenAnswer(new
-        Answer[Iterator[Relationship]]{
+    when(query.getRelationshipsForIds(any(), any(), ArgumentMatchers.eq(Some(Seq(1,2)))))
+      .thenAnswer(new Answer[Iterator[Relationship]]{
       override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = Iterator(relationship1, relationship2)
     })
 
