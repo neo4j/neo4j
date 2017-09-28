@@ -70,10 +70,14 @@ public class TwoPhaseNodeForRelationshipLockingTest
         Collector collector = new Collector();
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( ops, collector );
 
-        RelationshipData relationship1 = new RelationshipData( 21L, nodeId, 43L );
-        RelationshipData relationship2 = new RelationshipData( 22L, 40L, nodeId );
-        RelationshipData relationship3 = new RelationshipData( 23L, nodeId, 41L );
-        returnRelationships( ops, state, nodeId, false, relationship1, relationship2, relationship3 );
+        returnRelationships(
+                ops, state, nodeId, false,
+                new RelationshipData( 21L, nodeId, 43L ),
+                new RelationshipData( 22L, 40L, nodeId ),
+                new RelationshipData( 23L, nodeId, 41L ),
+                new RelationshipData( 2L, nodeId, 3L ),
+                new RelationshipData( 3L, 49L, nodeId ),
+                new RelationshipData( 50L, nodeId, 41L ) );
 
         InOrder inOrder = inOrder( locks );
 
@@ -81,11 +85,13 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3L );
         inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
         inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
         inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
         inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
-        assertEquals( set( 21L, 22L, 23L ), collector.set );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 49L );
+        assertEquals( set( 21L, 22L, 23L, 2L, 3L, 50L ), collector.set );
     }
 
     @Test
