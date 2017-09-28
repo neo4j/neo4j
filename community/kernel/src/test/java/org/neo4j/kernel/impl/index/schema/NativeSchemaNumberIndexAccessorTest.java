@@ -83,7 +83,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumb
     @Before
     public void setupAccessor() throws IOException
     {
-        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE );
+        accessor = new NativeSchemaNumberIndexAccessor<>( pageCache, fs, indexFile, layout, IMMEDIATE, monitor, indexDescriptor, indexId );
     }
 
     @After

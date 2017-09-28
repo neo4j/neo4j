@@ -183,17 +183,18 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             IndexStoreView indexStoreView =
                     new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
 
-            LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView );
-            SchemaIndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider );
+            Monitors monitors = new Monitors();
+            LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
+            SchemaIndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory, config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
     }
 
-    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView )
+    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, directory, new FullLabelStream( indexStoreView ), false, new Monitors(),
+                new NativeLabelScanStore( pageCache, directory, new FullLabelStream( indexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
         try
         {
@@ -208,11 +209,11 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     }
 
     private SchemaIndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
-            Config config, LogProvider logProvider )
+            Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
-                pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY ) );
+                pageCache, RECOVERY_PREVENTING_COLLECTOR, DatabaseInfo.COMMUNITY, monitors ) );
         return loadSchemaIndexProviders( extensions );
     }
 

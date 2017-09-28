@@ -34,6 +34,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
@@ -47,9 +49,10 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;
 
     NativeSchemaNumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile,
-            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
+            Layout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, SchemaIndexProvider.Monitor monitor,
+            IndexDescriptor descriptor, long indexId ) throws IOException
     {
-        super( pageCache, fs, storeFile, layout );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, indexId );
         singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
         instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
     }

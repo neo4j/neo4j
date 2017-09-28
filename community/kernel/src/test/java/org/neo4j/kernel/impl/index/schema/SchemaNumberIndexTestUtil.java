@@ -38,6 +38,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -50,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -72,6 +72,8 @@ public abstract class SchemaNumberIndexTestUtil<KEY extends SchemaNumberKey,VALU
     Layout<KEY,VALUE> layout;
     File indexFile;
     PageCache pageCache;
+    SchemaIndexProvider.Monitor monitor = SchemaIndexProvider.Monitor.EMPTY;
+    long indexId = 1;
 
     @Before
     public void setup()

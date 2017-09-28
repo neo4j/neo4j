@@ -85,7 +85,7 @@ class RelationshipGroupRecordFormat extends BaseHighLimitRecordFormat<Relationsh
 
     RelationshipGroupRecordFormat( int recordSize )
     {
-        super( fixedRecordSize( recordSize ), 0 );
+        super( fixedRecordSize( recordSize ), 0, HighLimitFormatSettings.RELATIONSHIP_GROUP_MAXIMUM_ID_BITS );
     }
 
     @Override

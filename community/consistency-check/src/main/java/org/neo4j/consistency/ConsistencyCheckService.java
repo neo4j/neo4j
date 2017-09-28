@@ -226,12 +226,14 @@ public class ConsistencyCheckService
         } ) );
 
         // Bootstrap kernel extensions
+        Monitors monitors = new Monitors();
         LifeSupport life = new LifeSupport();
         KernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache,
                 RECOVERY_PREVENTING_COLLECTOR,
                 // May be enterprise edition, but in consistency checker we only care about the operational mode
-                COMMUNITY ) );
+                COMMUNITY,
+                monitors ) );
 
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
@@ -240,7 +242,7 @@ public class ConsistencyCheckService
             SchemaIndexProviderMap indexes = loadSchemaIndexProviders( extensions );
 
             LabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),
+                    new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, monitors,
                             RecoveryCleanupWorkCollector.IMMEDIATE );
             life.add( labelScanStore );
 

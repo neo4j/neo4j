@@ -32,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -44,13 +43,13 @@ import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
@@ -58,6 +57,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -87,7 +87,7 @@ public class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
-                NullLogProvider.getInstance(), Config.defaults(), OperationalMode.single );
+                SchemaIndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         indexPopulator = provider.getPopulator( indexId, index, samplingConfig );
@@ -149,7 +149,7 @@ public class LuceneSchemaIndexPopulatorTest
         addUpdate( indexPopulator, 1, "value" );
         addUpdate( indexPopulator, 2, "value" );
         addUpdate( indexPopulator, 3, "value" );
-        updatePopulator( indexPopulator, asList( remove( 2, "value" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ), indexStoreView );
 
         // THEN
         assertIndexedValues(
@@ -162,7 +162,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ), indexStoreView );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -196,7 +196,7 @@ public class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( remove( 2, "2" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ), indexStoreView );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -300,7 +300,7 @@ public class LuceneSchemaIndexPopulatorTest
     private static void addUpdate( IndexPopulator populator, long nodeId, Object value )
             throws IOException, IndexEntryConflictException
     {
-        populator.add( Collections.singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
+        populator.add( singletonList( IndexQueryHelper.add( nodeId, index.schema(), value ) ) );
     }
 
     private static void updatePopulator(
