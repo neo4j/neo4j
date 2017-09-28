@@ -69,6 +69,10 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         case x => x
       }).toList
 
+    val head = result.head
+    val bool = head == Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))
+    print(bool)
+
     result should equal(List(
       Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
       Map("p" -> 42),

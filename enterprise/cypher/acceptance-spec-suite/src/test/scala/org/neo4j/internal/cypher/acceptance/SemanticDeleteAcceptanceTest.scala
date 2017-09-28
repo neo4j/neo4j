@@ -20,7 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, PatternGen}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalacheck.{Gen, Shrink}
 
 /*
@@ -28,7 +29,9 @@ import org.scalacheck.{Gen, Shrink}
  *  - uses updateWithBothPlanners to verify that the statistics match the rule planner
  *  - when done the database should be empty.
  */
-class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport {
+class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternGen with CypherComparisonSupport {
+
+  val expectedToSucceed = Configs.All
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)
@@ -43,13 +46,13 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
+          executeWith(expectedToSucceed, s"CREATE $patternString")
           //delete
           val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
+          executeWith(expectedToSucceed, s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWith(expectedToSucceed, "MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -65,13 +68,13 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
+          executeWith(expectedToSucceed, s"CREATE $patternString")
           //delete
           val variables = findAllNodeNames(pattern)
-          updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${variables.mkString(",")} RETURN count(*)")
+          executeWith(expectedToSucceed, s"MATCH $patternString DETACH DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWith(expectedToSucceed, "MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -87,14 +90,14 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
+          executeWith(expectedToSucceed, s"CREATE $patternString")
           //delete
           val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DELETE ${variables.mkString(",")}")
+          executeWith(expectedToSucceed, s"MATCH $undirected DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWith(expectedToSucceed, "MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }
@@ -110,14 +113,14 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
+          executeWith(expectedToSucceed, s"CREATE $patternString")
           //delete
           val variables = findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
+          executeWith(expectedToSucceed, s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWith(expectedToSucceed, "MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
         }
       }
     }

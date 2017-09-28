@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
 import org.neo4j.cypher.internal.v3_3.logical.plans.{CartesianProduct, NodeIndexSeek}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
 import org.neo4j.graphdb.config.Setting
@@ -380,9 +379,10 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.execute(initQuery)
 
     val query =
-      s"""MATCH (a:A)-->(b:B)
-          |USING JOIN ON a
-          |RETURN a.prop AS res""".stripMargin
+      s"""
+         |MATCH (a:A)-->(b:B)
+         |USING JOIN ON a
+         |RETURN a.prop AS res""".stripMargin
 
     val result = executeWith(expectedToSucceed, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("a"),
@@ -396,7 +396,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.execute(initQuery)
 
     val query =
-      s"""MATCH (a:A)-->(b:B)
+      s"""
+          |MATCH (a:A)-->(b:B)
           |USING JOIN ON b
           |RETURN b.prop AS res""".stripMargin
 
@@ -407,57 +408,43 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     result.toList should equal (List(Map("res" -> "bar")))
   }
 
-  val plannersThatSupportJoinHints = Seq(IDPPlannerName)
+  test("should fail when join hint is applied to an undefined node") {
+    failWithError(allPossibleConfigs,
+      s"""
+         |MATCH (a:A)-->(b:B)<--(c:C)
+         |USING JOIN ON d
+         |RETURN a.prop""".stripMargin,
+      List("Variable `d` not defined", "d not defined"))
+  }
 
-  plannersThatSupportJoinHints.foreach { planner =>
-
-    val plannerName = planner.name.toLowerCase
-
-    test(s"$plannerName should fail when join hint is applied to an undefined node") {
-      failWithError(allPossibleConfigs,
-        s"""
-           |CYPHER planner=$plannerName
-           |MATCH (a:A)-->(b:B)<--(c:C)
-           |USING JOIN ON d
-           |RETURN a.prop
-         """.stripMargin,
-      List("Variable  `d` not defined"))
-    }
-
-    test(s"$plannerName should fail when join hint is applied to a single node") {
-      failWithError(allPossibleConfigs,
-        s"""
-           |CYPHER planner=$plannerName
-           |MATCH (a:A)
-           |USING JOIN ON a
-           |RETURN a.prop
-        """.stripMargin,
+  test("should fail when join hint is applied to a single node") {
+    failWithError(allPossibleConfigs,
+      s"""
+         |MATCH (a:A)
+         |USING JOIN ON a
+         |RETURN a.prop""".stripMargin,
       List("Cannot use join hint for single node pattern"))
     }
 
-    test(s"$plannerName should fail when join hint is applied to a relationship") {
+  test("should fail when join hint is applied to a relationship") {
       failWithError(allPossibleConfigs,
         s"""
-          |CYPHER planner=$plannerName
-          |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
-          |USING JOIN ON r1
-          |RETURN a.prop
-        """.stripMargin,
+           |MATCH (a:A)-[r1]->(b:B)-[r2]->(c:C)
+           |USING JOIN ON r1
+           |RETURN a.prop""".stripMargin,
         List("Type mismatch: expected Node but was Relationship"))
     }
 
-    test(s"$plannerName should fail when join hint is applied to a path") {
+  test("should fail when join hint is applied to a path") {
       failWithError(allPossibleConfigs,
         s"""
-          |CYPHER planner=$plannerName
-          |MATCH p=(a:A)-->(b:B)-->(c:C)
-          |USING JOIN ON p
-          |RETURN a.prop
-        """.stripMargin,
+           |MATCH p=(a:A)-->(b:B)-->(c:C)
+           |USING JOIN ON p
+           |RETURN a.prop""".stripMargin,
         List("Type mismatch: expected Node but was Path"))
     }
 
-    test(s"$plannerName should be able to use join hints for multiple hop pattern") {
+  test("should be able to use join hints for multiple hop pattern") {
       val a = createNode(("prop", "foo"))
       val b = createNode()
       val c = createNode()
@@ -469,9 +456,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.AllExceptSlotted,
         s"""
-           |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON c
            |WHERE a.prop = e.prop
@@ -482,7 +468,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       result.toList should equal(List(Map("c" -> c)))
     }
 
-    test(s"$plannerName should be able to use join hints for queries with var length pattern") {
+  test("should be able to use join hints for queries with var length pattern") {
       val a = createLabeledNode(Map("prop" -> "foo"), "Foo")
       val b = createNode()
       val c = createNode()
@@ -494,9 +480,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(e, d, "Y")
 
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.CommunityInterpreted,
         s"""
-           |CYPHER planner=$plannerName
            |MATCH (a:Foo)-[:X*]->(b)<-[:Y]->(c:Bar)
            |USING JOIN ON b
            |WHERE a.prop = c.prop
@@ -507,7 +492,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       result.toList should equal(List(Map("c" -> e)))
     }
 
-    test(s"$plannerName should be able to use multiple join hints") {
+  test("should be able to use multiple join hints") {
       val a = createNode(("prop", "foo"))
       val b = createNode()
       val c = createNode()
@@ -519,9 +504,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(c, d, "X")
       relate(d, e, "X")
 
-      val result = executeWith(Configs.Interpreted,
+    executeWith(Configs.AllExceptSlotted,
         s"""
-           |CYPHER planner=$plannerName
            |MATCH (a)-[:X]->(b)-[:X]->(c)-[:X]->(d)-[:X]->(e)
            |USING JOIN ON b
            |USING JOIN ON c
@@ -535,7 +519,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         }, expectPlansToFail = Configs.AllRulePlanners))
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b)") {
+  test("should work when join hint is applied to x in (a)-->(x)<--(b)") {
       val a = createNode()
       val b = createNode()
       val x = createNode()
@@ -544,17 +528,17 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       relate(b, x)
 
       val query =
-        s"""CYPHER planner=$plannerName
+        s"""
             |MATCH (a)-->(x)<--(b)
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.Interpreted, query,
+      executeWith(Configs.AllExceptSlotted, query,
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("x"),
           expectPlansToFail = Configs.AllRulePlanners))
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where a and b can use an index") {
+  test("should work when join hint is applied to x in (a)-->(x)<--(b) where a and b can use an index") {
       graph.createIndex("Person", "name")
 
       val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
@@ -578,15 +562,15 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       }
 
       val query =
-        s"""CYPHER planner=$plannerName
+        s"""
             |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      val result = executeWith(Configs.Interpreted, query)
+      executeWith(Configs.AllExceptSlotted, query)
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where a and b are labeled") {
+  test("should work when join hint is applied to x in (a)-->(x)<--(b) where a and b are labeled") {
       val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
       val meg = createLabeledNode(Map("name" -> "Meg Ryan"), "Person")
 
@@ -608,19 +592,19 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       }
 
       val query =
-        s"""CYPHER planner=$plannerName
+        s"""
             |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.Interpreted, query,
+      executeWith(Configs.AllExceptSlotted, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription.toString should not include "AllNodesScan"
         }, expectPlansToFail = Configs.AllRulePlanners))
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where using index hints on a and b") {
+  test("should work when join hint is applied to x in (a)-->(x)<--(b) where using index hints on a and b") {
       graph.createIndex("Person", "name")
 
       val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
@@ -644,21 +628,21 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       }
 
       val query =
-        s"""CYPHER planner=$plannerName
+        s"""
             |MATCH (a:Person {name:"Tom Hanks"})-[:ACTS_IN]->(x)<-[:ACTS_IN]-(b:Person {name:"Meg Ryan"})
             |USING INDEX a:Person(name)
             |USING INDEX b:Person(name)
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.Interpreted, query,
+      executeWith(Configs.AllExceptSlotted, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription.toString should not include "AllNodesScan"
-        }))
+        }, expectPlansToFail = Configs.AllRulePlanners))
     }
 
-    test(s"$plannerName should work when join hint is applied to x in (a)-->(x)<--(b) where x can use an index") {
+  test("should work when join hint is applied to x in (a)-->(x)<--(b) where x can use an index") {
       graph.createIndex("Movie", "title")
 
       val tom = createLabeledNode(Map("name" -> "Tom Hanks"), "Person")
@@ -682,17 +666,16 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
       }
 
       val query =
-        s"""CYPHER planner=$plannerName
+        s"""
             |MATCH (a:Person)-[:ACTS_IN]->(x:Movie {title: "When Harry Met Sally"})<-[:ACTS_IN]-(b:Person)
             |USING JOIN ON x
             |RETURN x""".stripMargin
 
-      executeWith(Configs.Interpreted, query,
+      executeWith(Configs.AllExceptSlotted, query,
         planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
           planDescription should includeOnlyOneHashJoinOn("x")
           planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "x")
         }, expectPlansToFail = Configs.AllRulePlanners))
-    }
   }
 
   test("should handle using index hint on both ends of pattern") {

@@ -823,7 +823,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
       """.stripMargin, Map.empty)
 
     graph.inTx {
-      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (m:X)-[r]->() DELETE m, r")
+      executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (m:X)-[r]->() DELETE m, r", rollback = false)
       executeWith(Configs.Interpreted - Configs.Cost2_3,
         s"""
            |MATCH (p:$label1 {name: 'Petra'})
@@ -831,9 +831,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
            |CREATE (c:$label3 {name: 'Craig'})
            |CREATE (p)-[:$type2]->(c)
            |CREATE (c)-[:$type3]->(s)
-        """.stripMargin)
+        """.stripMargin, rollback = false)
       val result = executeWith(expectedToSucceed, query,
-        planComparisonStrategy = ComparePlansWithAssertion(_ should includeOperation(expectedLogicalPlan), expectPlansToFail = plansExpectedToFail))
+        planComparisonStrategy = ComparePlansWithAssertion(_ should includeOperation(expectedLogicalPlan), expectPlansToFail = plansExpectedToFail), rollback = false)
       f(result)
     }
 

@@ -85,7 +85,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     failWithError(
       Configs.AbsolutelyAll - Configs.Version2_3,
       "CALL db.labels() YIELD label WHERE label <> 'A'",
-      "Cannot use standalone call with WHERE")
+      List("Cannot use standalone call with WHERE"))
   }
 
   test("should be able to find labels from built-in-procedure") {

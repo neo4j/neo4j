@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -167,10 +167,12 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
   test("Shortest path from first to last node via top right") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.All,
+    val results = executeWith(Configs.CommunityInterpreted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
-         |RETURN nodes(p) AS nodes""".stripMargin)
+         |RETURN nodes(p) AS nodes""".stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
 
@@ -180,16 +182,18 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(row(0) ++ col(dMax))
-    results should use("VarLengthExpand(Into)")
     results shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Shortest path from first to last node via bottom left") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.Interpreted,
+    val results = executeWith(Configs.CommunityInterpreted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
-         |RETURN nodes(p) AS nodes""".stripMargin)
+         |RETURN nodes(p) AS nodes""".stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+
     val result = results.columnAs[List[Node]]("nodes").toList
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
@@ -198,24 +202,25 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     // Then
     result.length should equal(1)
     result.head.toSet should equal(col(0) ++ row(dMax))
-    results should use("VarLengthExpand(Into)")
     results shouldNot executeShortestPathFallbackWith(minRows = 1)
   }
 
   test("Fallback expander should take on rel-type predicates") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.Interpreted,
+    val results = executeWith(Configs.CommunityInterpreted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[rels*]-(dst:$bottomRight))
          |WHERE ALL(r in rels WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
-         |RETURN nodes(p) AS nodes""".stripMargin)
+         |RETURN nodes(p) AS nodes""".stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"),
+        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+
     val result = results.columnAs[List[Node]]("nodes").toList
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
 
     // Then
     result should be(empty)
-    results should use("VarLengthExpand(Into)")
     results should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
   }
 
@@ -226,14 +231,15 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ALL(r in rels(p) WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
-         |RETURN nodes(p) AS nodes""".stripMargin)
+         |RETURN nodes(p) AS nodes""".stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)"), expectPlansToFail = Configs.AllRulePlanners))
+
     val result = results.columnAs[List[Node]]("nodes").toList
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
 
     // Then
     result should be(empty)
-    results should use("VarLengthExpand(Into)")
     results should executeShortestPathFallbackWith(minRows = 0, maxRows = 0)
   }
 

@@ -69,7 +69,7 @@ class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite wit
       drain(graph.execute("MATCH (u:User {name: 'Stephan'}) DELETE u"))
       drain(graph.execute("MATCH (u:User {name: 'Stefanie'}) SET u.name = 'steffi'"))
 
-      val result = executeWith(Configs.All - Configs.Compiled, "MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name").columnAs("name").toList.toSet
+      val result = executeWith(Configs.Interpreted, "MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name").columnAs("name").toList.toSet
 
       result should equal(Set[String]("Stefan", "Steven"))
     }

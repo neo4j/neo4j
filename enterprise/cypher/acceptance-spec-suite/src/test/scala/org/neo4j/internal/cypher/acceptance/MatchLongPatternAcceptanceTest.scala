@@ -205,7 +205,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          val result = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
+          innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
           acc(configValue) = monitor.maxStartIteration
       }
       acc
