@@ -21,6 +21,8 @@ package org.neo4j.causalclustering.discovery;
 
 import com.hazelcast.spi.properties.GroupProperty;
 
+import java.util.logging.Level;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.kernel.configuration.Config;
@@ -35,7 +37,7 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
             LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver,
             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureHazelcast( config );
+        configureHazelcast( config, logProvider );
         return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver,
                 topologyServiceRetryStrategy );
     }
@@ -45,11 +47,11 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
                                             JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
                                             TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
-        configureHazelcast( config );
+        configureHazelcast( config, logProvider );
         return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy, hostnameResolver ), jobScheduler, logProvider, config, myself, topologyServiceRetryStrategy );
     }
 
-    private static void configureHazelcast( Config config )
+    private static void configureHazelcast( Config config, LogProvider logProvider )
     {
         // tell hazelcast to not phone home
         System.setProperty( "hazelcast.phone.home.enabled", "false" );
@@ -66,6 +68,18 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
         {
             // This is clunky, but the documented programmatic way doesn't seem to work
             System.setProperty( "hazelcast.logging.type", "none" );
+        }
+        else
+        {
+            HazelcastLogging.enable( logProvider, new HazelcastLogLevel( config ) );
+        }
+    }
+
+    private static class HazelcastLogLevel extends Level
+    {
+        HazelcastLogLevel( Config config )
+        {
+            super( "HAZELCAST", config.get( CausalClusteringSettings.middleware_logging_level ) );
         }
     }
 }
