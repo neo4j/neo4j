@@ -106,6 +106,10 @@ class RunnableBoltWorker implements Runnable, BoltWorker
         {
             log.error( "Bolt protocol breach in session '" + machine.key() + "'", e );
         }
+        catch ( InterruptedException e )
+        {
+            log.info( "Worker for session '" + machine.key() + "' interrupted probably due to server shutdown." );
+        }
         catch ( Throwable t )
         {
             userLog.error( "Worker for session '" + machine.key() + "' crashed.", t );
