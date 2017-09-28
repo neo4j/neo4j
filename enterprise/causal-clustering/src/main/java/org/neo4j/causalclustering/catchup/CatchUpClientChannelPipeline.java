@@ -47,9 +47,9 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreSnapshotResponseHandle
 import org.neo4j.causalclustering.handlers.ExceptionLoggingHandler;
 import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
 import org.neo4j.causalclustering.handlers.ExceptionSwallowingHandler;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 
 class CatchUpClientChannelPipeline
 {
@@ -58,16 +58,13 @@ class CatchUpClientChannelPipeline
     }
 
     static void initChannel( SocketChannel ch, CatchUpResponseHandler handler, LogProvider logProvider,
-            Monitors monitors, SslPolicy sslPolicy ) throws Exception
+                             Monitors monitors, PipelineHandlerAppender pipelineHandlerAppender ) throws Exception
     {
         CatchupClientProtocol protocol = new CatchupClientProtocol();
 
         ChannelPipeline pipeline = ch.pipeline();
 
-        if ( sslPolicy != null )
-        {
-            pipeline.addLast( sslPolicy.nettyClientHandler( ch ) );
-        }
+        pipelineHandlerAppender.addPipelineHandlerForClient( pipeline, ch );
 
         pipeline.addLast( new LengthFieldBasedFrameDecoder( Integer.MAX_VALUE, 0, 4, 0, 4 ) );
         pipeline.addLast( new LengthFieldPrepender( 4 ) );

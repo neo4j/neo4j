@@ -48,6 +48,9 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
 import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
+import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
+import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -61,7 +64,6 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
@@ -95,6 +97,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -102,7 +105,6 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -178,19 +180,22 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
-        SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
+        configureDiscoveryService( discoveryServiceFactory, dependencies, config, logProvider );
+
         TopologyService topologyService =
-                discoveryServiceFactory.topologyService( config, clusterSslPolicy, logProvider, platformModule.jobScheduler, myself,
+                discoveryServiceFactory.topologyService( config, logProvider, platformModule.jobScheduler, myself,
                         hostnameResolver, resolveStrategy( config ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
+        PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
+        PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
+
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
+                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, handlerAppender ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -283,13 +288,23 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.dependencies.provideDependency( TransactionIdStore.class ),
                         platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
                         null, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, pageCache,
-                        platformModule.storeCopyCheckPointMutex, clusterSslPolicy );
+                        platformModule.storeCopyCheckPointMutex, handlerAppender );
 
         servicesToStopOnStoreCopy.add( catchupServer );
 
         dependencies.satisfyDependency( createSessionTracker() );
 
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+    }
+
+    protected void configureDiscoveryService( DiscoveryServiceFactory discoveryServiceFactory, Dependencies dependencies,
+                                              Config config, LogProvider logProvider )
+    {
+    }
+
+    protected PipelineHandlerAppenderFactory appenderFactory()
+    {
+        return new NoOpPipelineHandlerAppenderFactory();
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
