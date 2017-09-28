@@ -28,8 +28,8 @@ object CardinalityCostModel extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
-  private val PROBE_BUILD_COST: CostPerRow = 19.4
-  private val PROBE_SEARCH_COST: CostPerRow = 11.5
+  private val PROBE_BUILD_COST: CostPerRow = 3.1
+  private val PROBE_SEARCH_COST: CostPerRow = 2.4
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
@@ -38,9 +38,10 @@ object CardinalityCostModel extends CostModel {
      * see ActualCostCalculationTest
      */
 
-    case _: NodeByLabelScan  => 1.0
-    case _: NodeIndexScan |
-         _: ProjectEndpoints => 2.4
+    case _: NodeByLabelScan |
+         _: NodeIndexScan |
+         _: ProjectEndpoints
+    => 1.0
 
     // Filtering on labels and properties
     case Selection(predicates, _) =>
@@ -54,22 +55,22 @@ object CardinalityCostModel extends CostModel {
         DEFAULT_COST_PER_ROW
 
     case _: AllNodesScan
-    => 1.8
+    => 1.2
 
     case _: Expand |
          _: VarExpand
-    => 5.0
+    => 1.5
 
     case _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
          _: NodeIndexContainsScan |
          _: NodeIndexEndsWithScan
-    => 2.3
+    => 1.9
 
     case _: NodeByIdSeek |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek
-    => 25.0
+    => 6.2
 
     case _: NodeHashJoin |
          _: Aggregation |
