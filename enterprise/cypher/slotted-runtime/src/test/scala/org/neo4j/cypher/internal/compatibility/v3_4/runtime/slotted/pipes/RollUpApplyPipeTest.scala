@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.slotted.pipes
+package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeTestSupport, QueryState, QueryStateHelper}
+import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
