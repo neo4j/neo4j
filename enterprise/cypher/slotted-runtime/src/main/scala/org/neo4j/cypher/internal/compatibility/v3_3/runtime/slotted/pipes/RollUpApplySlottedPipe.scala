@@ -32,10 +32,30 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe, collectionName: String, 
                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(lhs) {
 
-  private val slot = pipelineInformation.get(collectionName).get
+  private val collectionSlot = pipelineInformation.get(collectionName).get
+  private val identifierToCollectSlot = pipelineInformation.get(identifierToCollect).get
 
-  private val setCollection: (ExecutionContext, AnyValue) => Unit = {
-    slot match {
+  private val getValueToCollectFunction =
+    identifierToCollectSlot match {
+      case LongSlot(offset, _, _, _) => (ctx: ExecutionContext) => Values.longValue(ctx.getLongAt(offset))
+      case RefSlot(offset, _, _, _) => (ctx: ExecutionContext) => ctx.getRefAt(offset)
+    }
+
+  private val hasNullValuePredicates: Seq[(ExecutionContext) => Boolean] =
+    nullableIdentifiers.toSeq.map { elem =>
+      val elemSlot = pipelineInformation.get(elem)
+      elemSlot match {
+        case Some(LongSlot(offset, true, _, _)) => { (ctx: ExecutionContext) => ctx.getLongAt(offset) == -1 }
+        case Some(RefSlot(offset, true, _, _)) => { (ctx: ExecutionContext) => ctx.getRefAt(offset) == NO_VALUE }
+        case _ => { (ctx: ExecutionContext) => false }
+      }
+    }
+
+  private def hasNullValue(ctx: ExecutionContext): Boolean =
+    hasNullValuePredicates.exists(p => p(ctx))
+
+  private val setCollectionInRow: (ExecutionContext, AnyValue) => Unit = {
+    collectionSlot match {
       case RefSlot(offset, _, _, _) =>
         (ctx: ExecutionContext, value: AnyValue) => ctx.setRefAt(offset, value)
       case _ => throw new InternalError("Expected collection to be allocated to a ref slot")
@@ -48,33 +68,14 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe, collectionName: String, 
         val outputRow = PrimitiveExecutionContext(pipelineInformation)
         ctx.copyTo(outputRow)
 
-        if (nullableIdentifiers.exists { elem =>
-          val elemSlot = pipelineInformation.get(elem)
-          elemSlot match {
-            case Some(LongSlot(offset, true, _, _)) if (ctx.getLongAt(offset) == -1) => true
-            case Some(RefSlot(offset, true, _, _)) if (ctx.getRefAt(offset) == NO_VALUE) => true
-            case _ => false
-          }
-        }) {
-          setCollection(outputRow, NO_VALUE)
+        if (hasNullValue(ctx)) {
+          setCollectionInRow(outputRow, NO_VALUE)
         }
         else {
           val innerState = state.withInitialContext(outputRow)
           val innerResults: Iterator[ExecutionContext] = rhs.createResults(innerState)
-          val collection = VirtualValues.list(innerResults.map { m =>
-            //TODO: Is this correct?
-            val maybeSlot = pipelineInformation.get(identifierToCollect)
-            if (maybeSlot.isEmpty) {
-              NO_VALUE
-            } else {
-              val rhsSlot = maybeSlot.get
-              rhsSlot match {
-                case LongSlot(offset, _, _, _) => Values.longValue(m.getLongAt(offset))
-                case RefSlot(offset, _, _, _) => m.getRefAt(offset)
-              }
-            }
-          }.toArray: _*)
-          setCollection(outputRow, collection)
+          val collection = VirtualValues.list(innerResults.map(getValueToCollectFunction).toArray: _*)
+          setCollectionInRow(outputRow, collection)
         }
         outputRow
     }

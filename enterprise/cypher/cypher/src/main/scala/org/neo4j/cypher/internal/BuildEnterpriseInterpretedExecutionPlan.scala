@@ -78,7 +78,6 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
-        e.printStackTrace()  //TODO: remove
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, None)
     }

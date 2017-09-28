@@ -36,7 +36,7 @@ class RollUpApplySlottedPipeTest extends CypherFunSuite with PipeTestSupport {
     .empty
     .newReference("a", nullable = true, CTNumber)
     .newReference("y", nullable = true, CTNumber)
-    .newReference("x", nullable = false, CTList(CTNumber)) // TODO: If you exchange the order of x and y an error will occur in test 3. Still okay?
+    .newReference("x", nullable = false, CTList(CTNumber)) // NOTE: This has to be last since that is the order in which the slots are assumed to be allocated
 
   test("when rhs returns nothing, an empty collection should be produced") {
     // given
