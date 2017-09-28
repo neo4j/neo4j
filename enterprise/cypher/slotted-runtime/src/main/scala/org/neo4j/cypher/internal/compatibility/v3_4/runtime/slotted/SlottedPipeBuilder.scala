@@ -275,26 +275,26 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
   }
 
   private def createProjectionsForResult(columns: Seq[String], pipelineInformation1: PipelineInformation) = {
-    val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
-      k =>
-        pipelineInformation1(k) match {
-          case LongSlot(offset, false, CTNode, _) =>
-            k -> slottedExpressions.NodeFromSlot(offset)
-          case LongSlot(offset, true, CTNode, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
-          case LongSlot(offset, false, CTRelationship, _) =>
-            k -> slottedExpressions.RelationshipFromSlot(offset)
-          case LongSlot(offset, true, CTRelationship, _) =>
-            k -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
-
-          case RefSlot(offset, _, _, _) =>
-            k -> slottedExpressions.ReferenceFromSlot(offset)
-
-          case _ =>
-            throw new InternalException(s"Did not find `$k` in the pipeline information")
-        }
-    }
+    val runtimeColumns: Seq[(String, commandExpressions.Expression)] =
+      columns.map(createProjectionForIdentifier(pipelineInformation1))
     runtimeColumns
+  }
+
+  private def createProjectionForIdentifier(pipelineInformation1: PipelineInformation)(identifier: String) = {
+    pipelineInformation1(identifier) match {
+      case LongSlot(offset, false, CTNode, _) =>
+        identifier -> slottedExpressions.NodeFromSlot(offset)
+      case LongSlot(offset, true, CTNode, _) =>
+        identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.NodeFromSlot(offset))
+      case LongSlot(offset, false, CTRelationship, _) =>
+        identifier -> slottedExpressions.RelationshipFromSlot(offset)
+      case LongSlot(offset, true, CTRelationship, _) =>
+        identifier -> slottedExpressions.NullCheck(offset, slottedExpressions.RelationshipFromSlot(offset))
+      case RefSlot(offset, _, _, _) =>
+        identifier -> slottedExpressions.ReferenceFromSlot(offset)
+      case _ =>
+        throw new InternalException(s"Did not find `$identifier` in the pipeline information")
+    }
   }
 
   private def buildPredicate(expr: frontEndAst.Expression)
@@ -319,8 +319,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
            _: AntiSemiApply =>
         fallback.build(plan, lhs, rhs)
 
-      case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
-        RollUpApplySlottedPipe(lhs, rhs, collectionName.name, identifierToCollection.name,
+      case RollUpApply(_, rhsPlan, collectionName, identifierToCollect, nullables) =>
+        val rhsPipeline = pipelines(rhsPlan.assignedId)
+        val identifierToCollectExpression = createProjectionForIdentifier(rhsPipeline)(identifierToCollect.name)
+        RollUpApplySlottedPipe(lhs, rhs, collectionName.name, identifierToCollectExpression,
           nullables.map(_.name), pipeline)(id = id)
 
       case _: CartesianProduct =>

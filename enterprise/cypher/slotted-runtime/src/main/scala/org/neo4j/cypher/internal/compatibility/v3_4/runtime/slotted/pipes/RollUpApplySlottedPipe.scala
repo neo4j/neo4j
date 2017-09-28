@@ -20,26 +20,28 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.VirtualValues
 
-case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String], pipelineInformation: PipelineInformation)
+case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe,
+                                  collectionName: String,
+                                  identifierToCollect: (String, Expression),
+                                  nullableIdentifiers: Set[String],
+                                  pipelineInformation: PipelineInformation)
                                  (val id: LogicalPlanId = LogicalPlanId.DEFAULT)
   extends PipeWithSource(lhs) {
 
   private val collectionSlot = pipelineInformation.get(collectionName).get
-  private val identifierToCollectSlot = pipelineInformation.get(identifierToCollect).get
 
-  private val getValueToCollectFunction =
-    identifierToCollectSlot match {
-      case LongSlot(offset, _, _, _) => (ctx: ExecutionContext) => Values.longValue(ctx.getLongAt(offset))
-      case RefSlot(offset, _, _, _) => (ctx: ExecutionContext) => ctx.getRefAt(offset)
-    }
+  private val getValueToCollectFunction = {
+    val expression: Expression = identifierToCollect._2
+    (state: QueryState) => (ctx: ExecutionContext) => expression(ctx, state)
+  }
 
   private val hasNullValuePredicates: Seq[(ExecutionContext) => Boolean] =
     nullableIdentifiers.toSeq.map { elem =>
@@ -67,14 +69,13 @@ case class RollUpApplySlottedPipe(lhs: Pipe, rhs: Pipe, collectionName: String, 
       ctx =>
         val outputRow = PrimitiveExecutionContext(pipelineInformation)
         ctx.copyTo(outputRow)
-
         if (hasNullValue(ctx)) {
           setCollectionInRow(outputRow, NO_VALUE)
         }
         else {
-          val innerState = state.withInitialContext(outputRow)
+          val innerState = state.withInitialContext(ctx)
           val innerResults: Iterator[ExecutionContext] = rhs.createResults(innerState)
-          val collection = VirtualValues.list(innerResults.map(getValueToCollectFunction).toArray: _*)
+          val collection = VirtualValues.list(innerResults.map(getValueToCollectFunction(state)).toArray: _*)
           setCollectionInRow(outputRow, collection)
         }
         outputRow

@@ -42,7 +42,6 @@ Returning an `extract()` expression
 Using an `extract()` expression in a WITH
 Using an `extract()` expression in a WHERE
 Using a pattern expression and a CASE expression in a WHERE
-Pattern expressions and ORDER BY
 Returning a pattern expression with bound nodes
 Using a variable-length pattern expression in a WITH
 Pattern expression inside list comprehension
