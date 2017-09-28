@@ -29,57 +29,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
-  test("reported query that should work") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """MATCH (account23907) WHERE (ID(account23907) = 23907)
-        |MATCH (account23907)<-[rel1:`ACCOUNT`]-(result_owners)
-        |WHERE `result_owners`:`Persona::Superhero`:`Persona`
-        |   OR `result_owners`:`Persona::Supervillian`:`Persona`
-        |RETURN result_owners""".stripMargin)
-
-    result.size should equal(0)// does not throw
-  }
-
-  test("really weird query that breaks IDP") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
-    """MATCH (a)
-      |WITH a WHERE true
-      |MATCH (c), (a)-[r]->(x)
-      |WHERE a.foo = c.bar
-      |RETURN *""".stripMargin)
-
-    result.size should equal(0)// does not throw
-  }
-
-  test("other query that breaks IDP") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """
-        |MATCH (ts)
-        |MATCH (k)-[:M]->(sta)
-        |OPTIONAL MATCH (sta)<-[:N]-(p)
-        |WITH k, ts, coalesce(p, sta) AS ab
-        |MATCH (d:A)
-        |WHERE d.Id = ab.OtherId
-        |WITH k, ts, d
-        |MATCH (ts)-[:R]->(f)
-        |RETURN k, ts, f, d
-      """.stripMargin
-    )
-
-    result.size should equal(0)// does not throw
-  }
-
-  test("another query that was difficult to plan for IDP") {
-    val result = executeWithAllPlannersAndCompatibilityMode(
-      """MATCH (a1)-[r]->(b1)
-        |WITH r WHERE true
-        |MATCH (a2)-[r]->(b2), (c)
-        |WHERE a2.foo = c.bar
-        |RETURN *""".stripMargin)
-  }
-
   test("Should not use both pruning var expand and projections that need path info") {
-
     val n1 = createLabeledNode("Neo")
     val n2 = createLabeledNode()
     createLabeledNode()

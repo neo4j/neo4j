@@ -91,8 +91,6 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan])(implicit context: LogicalPlanningContext) = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val relationships = qg.patternRelationships.map(_.name)
-        val argumentContainsRelationship = qg.argumentIds.exists(relationships.contains)
         val plans = planSinglePattern(qg, pattern, leaves).map(plan => kit.select(plan, qg))
         val bestAccessor = kit.pickBest(plans).getOrElse(
           throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))

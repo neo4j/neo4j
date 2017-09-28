@@ -220,7 +220,9 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("one node and a relationship connected through an optional QG") {
-    // MATCH (a), (b)-->(x)
+    // MATCH (x)
+    // WITH x MATCH (a), (b)-->(x)
+    // OPTIONAL MATCH (a)-->(b)
     val graph = QueryGraph(
       argumentIds = Set(X),
       patternNodes = Set(A, B, X),
@@ -231,7 +233,7 @@ class QueryGraphConnectedComponentsTest
     )
 
     val components = graph.connectedComponents
-    components should equal(Seq(
+    components.toSet should equal(Set(
       QueryGraph(patternNodes = Set(A), argumentIds = Set(X)),
       QueryGraph(patternNodes = Set(B, X), patternRelationships = Set(B_to_X), argumentIds = Set(X))
     ))
