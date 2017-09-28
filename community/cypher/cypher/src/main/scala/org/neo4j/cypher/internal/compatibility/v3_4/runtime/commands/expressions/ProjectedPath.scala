@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 object ProjectedPath {
 
@@ -34,43 +32,38 @@ object ProjectedPath {
 
   case class singleNodeProjector(node: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) = {
-      tailProjector(ctx, builder.addNode(valueOrNull(ctx(node))))
+      tailProjector(ctx, builder.addNode(ctx(node)))
     }
   }
 
   case class singleIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addIncomingRelationship(valueOrNull(ctx(rel))))
+      tailProjector(ctx, builder.addIncomingRelationship(ctx(rel)))
   }
 
   case class singleOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addOutgoingRelationship(valueOrNull(ctx(rel))))
+      tailProjector(ctx, builder.addOutgoingRelationship(ctx(rel)))
   }
 
   case class singleUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addUndirectedRelationship(valueOrNull(ctx(rel))))
+      tailProjector(ctx, builder.addUndirectedRelationship(ctx(rel)))
   }
 
-  case class multiIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+  case class multiIncomingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addIncomingRelationships(valueOrNull(ctx(rel))))
+      tailProjector(ctx, builder.addIncomingRelationships(ctx(rels)))
   }
 
-  case class multiOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+  case class multiOutgoingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addOutgoingRelationships(valueOrNull(ctx(rel))))
+      tailProjector(ctx, builder.addOutgoingRelationships(ctx(rels)))
   }
 
-  case class multiUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+  case class multiUndirectedRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addUndirectedRelationships(valueOrNull(ctx(rel))))
-  }
-
-  private def valueOrNull[T](value: AnyValue): T = {
-    if (value == Values.NO_VALUE) null.asInstanceOf[T]
-    else value.asInstanceOf[T]
+      tailProjector(ctx, builder.addUndirectedRelationships(ctx(rels)))
   }
 }
 

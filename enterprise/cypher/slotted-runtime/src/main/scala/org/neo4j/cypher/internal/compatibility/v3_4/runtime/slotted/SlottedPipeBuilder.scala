@@ -319,6 +319,10 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
            _: AntiSemiApply =>
         fallback.build(plan, lhs, rhs)
 
+      case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
+        RollUpApplySlottedPipe(lhs, rhs, collectionName.name, identifierToCollection.name,
+          nullables.map(_.name), pipeline)(id = id)
+
       case _: CartesianProduct =>
         val lhsPlan = plan.lhs.get
         val lhsPipeline = pipelines(lhsPlan.assignedId)

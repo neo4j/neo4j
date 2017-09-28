@@ -155,16 +155,16 @@ class PipelineInformation(private var slots: Map[String, Slot],
   }
 
   def newLong(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    checkNotAlreadyTaken(name)
     val slot = LongSlot(numberOfLongs, nullable, typ, name)
+    checkNotAlreadyTaken(name, slot)
     slots = slots + (name -> slot)
     numberOfLongs = numberOfLongs + 1
     this
   }
 
   def newReference(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
-    checkNotAlreadyTaken(name)
     val slot = RefSlot(numberOfReferences, nullable, typ, name)
+    checkNotAlreadyTaken(name, slot)
     slots = slots + (name -> slot)
     numberOfReferences = numberOfReferences + 1
     this
@@ -203,7 +203,7 @@ class PipelineInformation(private var slots: Map[String, Slot],
 
   override def toString = s"PipelineInformation(slots=$slots, longs=$numberOfLongs, objs=$numberOfReferences)"
 
-  private def checkNotAlreadyTaken(key: String) =
+  private def checkNotAlreadyTaken(key: String, slot: Slot) =
     if (slots.contains(key))
-      throw new InternalException("Tried overwriting already taken variable name")
+      throw new InternalException(s"Tried overwriting already taken variable name $key as $slot (was: ${slots.get(key).get})")
 }

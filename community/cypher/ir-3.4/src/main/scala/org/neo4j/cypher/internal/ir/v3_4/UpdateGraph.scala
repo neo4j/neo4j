@@ -71,7 +71,7 @@ trait UpdateGraph {
     // DELETE n
     case DeleteExpression(identifier: Variable, _) => Seq(IdName.fromVariable(identifier))
     // DELETE (n)-[r]-()
-    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(IdName.fromVariable)
+    case DeleteExpression(PathExpression(e), _) => e.dependencies.map(x => IdName.fromVariable(x.asInstanceOf[Variable]))
     // DELETE expr
     case DeleteExpression(expr, _) => Seq(findVariableInNestedStructure(expr))
   }).toSet

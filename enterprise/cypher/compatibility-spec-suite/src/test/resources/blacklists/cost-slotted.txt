@@ -5,13 +5,8 @@ Keeping used expression 1
 Simple counting of nodes
 Support column renaming for aggregates as well
 Support multiple divisions in aggregate function
-Handle aggregation on functions
 Aggregates in aggregates
 Aggregates with arithmetics
-Aggregation of named paths
-Aggregation with `min()`
-Keeping used expression 2
-Keeping used expression 3
 Handling numerical ranges 1
 Handling numerical ranges 2
 Handling numerical ranges 3
@@ -47,27 +42,9 @@ Removing a non-existent label
 Returning a list comprehension
 Using a list comprehension in a WITH
 Using a list comprehension in a WHERE
-Path query should return results in written order
-Longer path query should return results in written order
-Return a simple path
-Return a three node path
-Do not return anything because path length does not match
-Pass the path length test
-Return relationships by fetching them from the path - starting from the end
-Return relationships by fetching them from the path
-Return a var length path
-Return a var length path of length zero
-Return a named var length path of length zero
-Aggregation with named paths
-Variable length relationship without lower bound
-Variable length relationship without bounds
-Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
 Variable length relationship in OPTIONAL MATCH
-Handling direction of named paths
-Zero-length named path
-Variable-length named path
 Matching using a relationship that is already bound
 Matching using a relationship that is already bound, in conjunction with aggregation
 Matching using a relationship that is already bound, in conjunction with aggregation and ORDER BY
@@ -85,17 +62,8 @@ Matching and optionally matching with unbound nodes and equality predicate in re
 Fail when using property access on primitive type
 Counting an empty graph
 Variable length pattern checking labels on endnodes
-Undirected named path
-Named path with WITH
-Named path with alternating directed/undirected relationships
-Named path with multiple alternating directed/undirected relationships
 Named path with undirected fixed variable length pattern
 Variable length patterns and nulls
-Respecting direction when matching existing path
-Respecting direction when matching non-existent path
-Respecting direction when matching non-existent path with multiple directions
-Matching path with both directions should respect other directions
-Matching path with multiple bidirectional relationships
 Failing on merging relationship with null property
 Failing on merging node with null property
 Failing when setting a list of maps as a property
@@ -108,27 +76,14 @@ Ignore null when removing label
 Ignore null when deleting node
 Ignore null when deleting relationship
 MATCH after OPTIONAL MATCH
-Named paths in optional matches
-Named paths inside optional matches with node predicates
 Variable length optional relationships
 Variable length optional relationships with length predicates
 Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
 Pattern comprehension and ORDER BY
-Returning a pattern comprehension
-Returning a pattern comprehension with label predicate
 Returning a pattern comprehension with bound nodes
-Using a pattern comprehension in a WITH
 Using a variable-length pattern comprehension in a WITH
-Using pattern comprehension in RETURN
-Aggregating on pattern comprehension
-Using pattern comprehension to test existence
 Pattern comprehension inside list comprehension
-Get node degree via size of pattern comprehension
-Get node degree via size of pattern comprehension that specifies a relationship type
-Get node degree via size of pattern comprehension that specifies multiple relationship types
-Introducing new node variable in pattern comprehension
-Introducing new relationship variable in pattern comprehension
 Should ignore nulls
 Remove a single label
 Remove multiple labels
@@ -143,7 +98,6 @@ Fail when returning labels of deleted nodes
 Fail when returning properties of deleted relationships
 Do not fail when returning type of deleted relationships
 Fail when sorting on variable removed by DISTINCT
-Return all variables
 Setting and returning the size of a list property
 Setting and returning the size of a list property
 Arithmetic expressions inside aggregation
@@ -265,7 +219,6 @@ Using ON CREATE and ON MATCH
 Creating relationship using merged nodes
 Mixing MERGE with CREATE
 Introduce named paths 1
-Introduce named paths 2
 Use outgoing direction when unspecified
 Match outgoing relationship when direction unspecified
 Match both incoming and outgoing relationships when direction unspecified
@@ -300,10 +253,7 @@ Returning nested expressions based on list property
 
 Many CREATE clauses
 
-Comparing across types yields null, except numbers
-
 `labels()` failing on invalid arguments
-Direction of traversed relationship is not significant for path equality, simple
 In-query call to procedure that takes no arguments
 Calling the same procedure twice using the same outputs in each call
 In-query call to VOID procedure that takes no arguments

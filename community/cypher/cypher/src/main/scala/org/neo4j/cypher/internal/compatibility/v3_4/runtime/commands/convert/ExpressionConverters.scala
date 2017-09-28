@@ -107,7 +107,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     }
 
     val projector = project(e.step)
-    val dependencies = e.step.dependencies.map(_.name)
+    val dependencies = e.step.dependencies.map(_.asInstanceOf[Variable].name)
 
     ProjectedPath(dependencies, projector)
   }

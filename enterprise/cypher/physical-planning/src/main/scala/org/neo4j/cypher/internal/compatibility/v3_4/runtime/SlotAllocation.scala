@@ -272,12 +272,17 @@ object SlotAllocation {
         rhsPipeline
 
       case _:CartesianProduct =>
-        val cartesianProductPipeline = lhsPipeline.seedClone()
+        val newPipeline = lhsPipeline.seedClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>
-            cartesianProductPipeline.add(k, slot)
+            newPipeline.add(k, slot)
         }
-        cartesianProductPipeline
+        newPipeline
+
+      case RollUpApply(_, _, collectionName, _, _) =>
+        val newPipeline = rhsPipeline.seedClone()
+        newPipeline.newReference(collectionName.name, true, CTList(CTAny))
+        newPipeline
 
       case p => throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }

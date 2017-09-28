@@ -21,8 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{ExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => commands}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.expressions.SlottedProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ast => runtimeAst}
+import org.neo4j.cypher.internal.v3_4.expressions._
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 
 object SlottedExpressionConverters extends ExpressionConverter {
@@ -61,7 +63,44 @@ object SlottedExpressionConverters extends ExpressionConverter {
       case runtimeAst.NullCheck(offset, inner) =>
         val a = self.toCommandExpression(inner)
         Some(runtimeExpression.NullCheck(offset, a))
+      case e: ast.PathExpression => Some(toCommandProjectedPath(e, self))
       case _ =>
         None
     }
+
+  def toCommandProjectedPath(e: ast.PathExpression, self: ExpressionConverters): SlottedProjectedPath = {
+    def project(pathStep: PathStep): Projector = pathStep match {
+
+      case NodePathStep(nodeExpression, next) =>
+        singleNodeProjector(toCommandExpression(nodeExpression, self).get, project(next))
+
+      case SingleRelationshipPathStep(relExpression, SemanticDirection.INCOMING, next) =>
+        singleIncomingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case SingleRelationshipPathStep(relExpression, SemanticDirection.OUTGOING, next) =>
+        singleOutgoingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case SingleRelationshipPathStep(relExpression, SemanticDirection.BOTH, next) =>
+        singleUndirectedRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case MultiRelationshipPathStep(relExpression, SemanticDirection.INCOMING, next) =>
+        multiIncomingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case MultiRelationshipPathStep(relExpression, SemanticDirection.OUTGOING, next) =>
+        multiOutgoingRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case MultiRelationshipPathStep(relExpression, SemanticDirection.BOTH, next) =>
+        multiUndirectedRelationshipProjector(toCommandExpression(relExpression, self).get, project(next))
+
+      case NilPathStep =>
+        nilProjector
+    }
+
+    val projector = project(e.step)
+//    val dependencies = e.step.dependencies.map(_.asInstanceOf[Variable].name) // TODO: Verify that we never need this after slot rewriting
+    val dependencies = null
+
+    SlottedProjectedPath(dependencies, projector)
+  }
+
 }
