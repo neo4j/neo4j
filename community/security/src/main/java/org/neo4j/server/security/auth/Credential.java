@@ -63,7 +63,6 @@ public class Credential
         return byteEquals( passwordHash, hash( salt, password ) );
     }
 
-
     /**
      * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.
      * The length of the loop executed will always be the length of the given password</p>
