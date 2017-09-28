@@ -23,17 +23,28 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.INCOMING;
+import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.LOOP;
+import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.NONE;
+import static org.neo4j.kernel.impl.newapi.RelationshipTraversalCursor.GroupState.OUTGOING;
+
 class RelationshipTraversalCursor extends RelationshipCursor
         implements org.neo4j.internal.kernel.api.RelationshipTraversalCursor
 {
+    enum GroupState { INCOMING, OUTGOING, LOOP, NONE };
+
     private long originNodeReference;
     private long next;
     private Record buffer;
     private PageCursor pageCursor;
+    private final RelationshipGroupCursor group;
+    private GroupState groupState;
+
 
     RelationshipTraversalCursor( Read read )
     {
         super( read );
+        this.group = new RelationshipGroupCursor( read );
     }
 
     /*
@@ -56,6 +67,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
             pageCursor = read.relationshipPage( reference );
         }
         setId( NO_ID );
+        groupState = NONE;
         originNodeReference = nodeReference;
         next = reference;
     }
@@ -63,9 +75,13 @@ class RelationshipTraversalCursor extends RelationshipCursor
     /*
      * Reference to a group record
      */
-    void groups( long nodeReference, long reference )
+    void groups( long nodeReference, long groupReference )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        setId( NO_ID );
+        next = NO_ID;
+        groupState = INCOMING;
+        originNodeReference = nodeReference;
+        read.relationshipGroups( nodeReference, groupReference, group );
     }
 
     void filtered( long nodeReference, long reference )
@@ -120,6 +136,75 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean next()
     {
+        /*
+            Node(dense=true)
+
+                |
+                v
+
+            Group(:HOLDS) -incoming-> Rel(id=2) -> Rel(id=3)
+                          -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
+                          -loop->     Rel(id=9)
+                |
+                v
+
+            Group(:USES)  -incoming-> Rel(id=14)
+                          -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
+                          -loop->     Rel(id=21) -> Rel(id=11)
+
+                |
+                v
+                ...
+
+         */
+        if ( traversingDenseNode() )
+        {
+            while ( next == NO_ID )
+            {
+                /*
+                  Defines a small state machine, we start in state INCOMING.
+                  1) fetch next group, if no more group stop.
+                  2) set next to group.incomingReference, switch state to OUTGOING
+                  3) Iterate relationship chain until we reach the end
+                  4) set next to group.outgoingReference and state to LOOP
+                  5) Iterate relationship chain until we reach the end
+                  6) set next to group.loop and state back to INCOMING
+                  7) Iterate relationship chain until we reach the end
+                  8) GOTO 1
+                 */
+                switch ( groupState )
+                {
+                case INCOMING:
+                    boolean hasNext = group.next();
+                    if ( !hasNext )
+                    {
+                        reset();
+                        return false;
+                    }
+                    next = group.incomingReference();
+                    if ( pageCursor == null )
+                    {
+                        pageCursor = read.relationshipPage( Math.max( next, 0L ) );
+                    }
+                    groupState = OUTGOING;
+                    break;
+
+                case OUTGOING:
+                    next = group.outgoingReference();
+                    groupState = LOOP;
+                    break;
+
+                case LOOP:
+                    next = group.loopsReference();
+                    groupState = INCOMING;
+                    break;
+
+                default:
+                    throw new IllegalStateException( "We cannot get here, but checkstyle forces this!" );
+                }
+            }
+        }
+
         if ( hasBufferedData() )
         {   //We have buffered data, iterate the chain of buffered records
             buffer = buffer.next;
@@ -163,6 +248,11 @@ class RelationshipTraversalCursor extends RelationshipCursor
         return true;
     }
 
+    private boolean traversingDenseNode()
+    {
+        return groupState != NONE;
+    }
+
     @Override
     public boolean shouldRetry()
     {
@@ -183,6 +273,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
     private void reset()
     {
         setId( next = NO_ID );
+        groupState = NONE;
         buffer = null;
     }
 
