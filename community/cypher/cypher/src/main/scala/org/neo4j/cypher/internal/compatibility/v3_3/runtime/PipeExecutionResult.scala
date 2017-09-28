@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
 
 import scala.collection.JavaConverters._
-import scala.collection.Map
+import scala.collection.{Map, mutable}
 
 class PipeExecutionResult(val result: ResultIterator,
                           val fieldNames: Array[String],
@@ -118,9 +118,12 @@ class PipeExecutionResult(val result: ResultIterator,
   override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
     accept(new QueryResultVisitor[E] {
       override def visit(record: QueryResult.Record): Boolean = {
-        val row = new MapBasedRow
-        row.map = fieldNames.zip(record.fields().map(state.query.asObject)).toMap
-        visitor.visit(row)
+        val fields = record.fields()
+        val mapData = new mutable.AnyRefMap[String, Any](fieldNames.length)
+        for (i <- 0 until fieldNames.length) {
+          mapData.put(fieldNames(i), state.query.asObject(fields(i)))
+        }
+        visitor.visit(new MapBasedRow(mapData))
       }
     })
   }
