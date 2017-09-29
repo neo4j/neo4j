@@ -390,6 +390,10 @@ object RewindableExecutionResult {
   private case class InternalExecutionResultCompatibilityWrapperFor3_2(inner: v3_2.executionplan.InternalExecutionResult)
     extends InternalExecutionResult {
 
+    private val cache = inner.toList
+
+    override def toList: List[Map[String, Any]] = cache
+
     override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
 
     override def queryType: InternalQueryType = inner.executionType match {
