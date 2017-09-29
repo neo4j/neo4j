@@ -348,6 +348,7 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 
     static long addFilteringFlag( long reference )
     {
+        assert reference >= -1;
         // set a high order bit as flag noting that "filtering is required"
         return reference | FILTER_MASK;
     }

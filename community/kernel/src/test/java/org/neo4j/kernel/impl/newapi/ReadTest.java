@@ -69,11 +69,4 @@ public class ReadTest
             assertThat( removeFilteringFlag( needsFiltering ), equalTo( reference ) );
         }
     }
-
-    @Test
-    public void shouldOnlyFilterRealReferences()
-    {
-        assertThat( addFilteringFlag( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( addFilteringFlag( -1337L ), equalTo( -1337L ) );
-    }
 }

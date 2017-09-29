@@ -198,91 +198,19 @@ class RelationshipTraversalCursor extends RelationshipCursor
     @Override
     public boolean next()
     {
-
         if ( traversingDenseNode() )
         {
-
-            while ( next == NO_ID )
-            {
-                 /*
-                  Dense nodes looks something like:
-
-                        Node(dense=true)
-
-                                |
-                                v
-
-                            Group(:HOLDS)   -incoming-> Rel(id=2) -> Rel(id=3)
-                                            -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
-                                            -loop->     Rel(id=9)
-                                |
-                                v
-
-                            Group(:USES)    -incoming-> Rel(id=14)
-                                            -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
-                                            -loop->     Rel(id=21) -> Rel(id=11)
-
-                                |
-                                v
-                                ...
-
-                  We iterate over dense nodes using a small state machine staring in state INCOMING.
-                  1) fetch next group, if no more group stop.
-                  2) set next to group.incomingReference, switch state to OUTGOING
-                  3) Iterate relationship chain until we reach the end
-                  4) set next to group.outgoingReference and state to LOOP
-                  5) Iterate relationship chain until we reach the end
-                  6) set next to group.loop and state back to INCOMING
-                  7) Iterate relationship chain until we reach the end
-                  8) GOTO 1
-                 */
-                switch ( groupState )
-                {
-                case INCOMING:
-                    boolean hasNext = group.next();
-                    if ( !hasNext )
-                    {
-                        reset();
-                        return false;
-                    }
-                    next = group.incomingReference();
-                    if ( pageCursor == null )
-                    {
-                        pageCursor = read.relationshipPage( Math.max( next, 0L ) );
-                    }
-                    groupState = GroupState.OUTGOING;
-                    break;
-
-                case OUTGOING:
-                    next = group.outgoingReference();
-                    groupState = GroupState.LOOP;
-                    break;
-
-                case LOOP:
-                    next = group.loopsReference();
-                    groupState = GroupState.INCOMING;
-                    break;
-
-                default:
-                    throw new IllegalStateException( "We cannot get here, but checkstyle forces this!" );
-                }
-            }
+            traverseDenseNode();
         }
 
         if ( hasBufferedData() )
         {   //We have buffered data, iterate the chain of buffered records
-            buffer = buffer.next;
-            if ( !hasBufferedData() )
-            {
-                reset();
-                return false;
-            }
-            else
-            {
-                // Copy buffer data to self
-                copyFromBuffer();
-                return true;
-            }
+            return nextBufferedData();
+        }
+
+        if ( filteringTraversal() )
+        {
+            return nextFilteredData();
         }
 
         if ( next == NO_ID )
@@ -291,61 +219,151 @@ class RelationshipTraversalCursor extends RelationshipCursor
             return false;
         }
 
-        if ( filteringTraversal() )
-        {
-            if ( filterState == FilterState.NOT_INITIALIZED )
-            {
-                //Initialize filtering:
-                //  - Read first record
-                //  - Check type and direction
-                //  - Subsequent records need to have same type and direction
-                read.relationship( this, next, pageCursor );
-                filterType = getType();
-                final long source = sourceNodeReference(), target = targetNodeReference();
-                if ( source == target )
-                {
-                    next = getFirstNextRel();
-                    filterState = FilterState.LOOP;
-                }
-                else if ( source == originNodeReference )
-                {
-                    next = getFirstNextRel();
-                    filterState = FilterState.OUTGOING;
-                }
-                else if ( target == originNodeReference )
-                {
-                    next = getSecondNextRel();
-                    filterState = FilterState.INCOMING;
-                }
-                return true;
-            }
-            else
-            {
-                //Iterate until we stop on a valid record,
-                //i.e. one with the same type and direction.
-                while ( true )
-                {
-                    read.relationship( this, next, pageCursor );
-                    computeNext();
-                    if ( predicate() )
-                    {
-                        return true;
-                    }
-                    if ( next == NO_ID )
-                    {
-                        reset();
-                        return false;
-                    }
-
-                }
-            }
-        }
-
         //Not a group, nothing buffered, no filtering.
         //Just a plain old traversal.
         read.relationship( this, next, pageCursor );
         computeNext();
         return true;
+    }
+
+    private boolean nextFilteredData()
+    {
+        if ( next == NO_ID )
+        {
+            reset();
+            return false;
+        }
+        if ( filterState == FilterState.NOT_INITIALIZED )
+        {
+            //Initialize filtering:
+            //  - Read first record
+            //  - Check type and direction
+            //  - Subsequent records need to have same type and direction
+            read.relationship( this, next, pageCursor );
+            filterType = getType();
+            final long source = sourceNodeReference(), target = targetNodeReference();
+            if ( source == target )
+            {
+                next = getFirstNextRel();
+                filterState = FilterState.LOOP;
+            }
+            else if ( source == originNodeReference )
+            {
+                next = getFirstNextRel();
+                filterState = FilterState.OUTGOING;
+            }
+            else if ( target == originNodeReference )
+            {
+                next = getSecondNextRel();
+                filterState = FilterState.INCOMING;
+            }
+            return true;
+        }
+        else
+        {
+            //Iterate until we stop on a valid record,
+            //i.e. one with the same type and direction.
+            while ( true )
+            {
+                read.relationship( this, next, pageCursor );
+                computeNext();
+                if ( predicate() )
+                {
+                    return true;
+                }
+                if ( next == NO_ID )
+                {
+                    reset();
+                    return false;
+                }
+
+            }
+        }
+    }
+
+    private boolean nextBufferedData()
+    {
+        buffer = buffer.next;
+        if ( !hasBufferedData() )
+        {
+            reset();
+            return false;
+        }
+        else
+        {
+            // Copy buffer data to self
+            copyFromBuffer();
+            return true;
+        }
+    }
+
+    private void traverseDenseNode()
+    {
+        while ( next == NO_ID )
+        {
+             /*
+              Dense nodes looks something like:
+
+                    Node(dense=true)
+
+                            |
+                            v
+
+                        Group(:HOLDS)   -incoming-> Rel(id=2) -> Rel(id=3)
+                                        -outgoing-> Rel(id=5) -> Rel(id=10) -> Rel(id=3)
+                                        -loop->     Rel(id=9)
+                            |
+                            v
+
+                        Group(:USES)    -incoming-> Rel(id=14)
+                                        -outgoing-> Rel(id=55) -> Rel(id=51) -> ...
+                                        -loop->     Rel(id=21) -> Rel(id=11)
+
+                            |
+                            v
+                            ...
+
+              We iterate over dense nodes using a small state machine staring in state INCOMING.
+              1) fetch next group, if no more group stop.
+              2) set next to group.incomingReference, switch state to OUTGOING
+              3) Iterate relationship chain until we reach the end
+              4) set next to group.outgoingReference and state to LOOP
+              5) Iterate relationship chain until we reach the end
+              6) set next to group.loop and state back to INCOMING
+              7) Iterate relationship chain until we reach the end
+              8) GOTO 1
+             */
+            switch ( groupState )
+            {
+            case INCOMING:
+                boolean hasNext = group.next();
+                if ( !hasNext )
+                {
+                    reset();
+                    return;
+                }
+                next = group.incomingReference();
+                if ( pageCursor == null )
+                {
+                    pageCursor = read.relationshipPage( Math.max( next, 0L ) );
+                }
+                groupState = GroupState.OUTGOING;
+                break;
+
+            case OUTGOING:
+                next = group.outgoingReference();
+                groupState = GroupState.LOOP;
+                break;
+
+            case LOOP:
+                next = group.loopsReference();
+                groupState = GroupState.INCOMING;
+                break;
+
+            default:
+                throw new IllegalStateException( "We cannot get here, but checkstyle forces this!" );
+            }
+        }
     }
 
     private void computeNext()
