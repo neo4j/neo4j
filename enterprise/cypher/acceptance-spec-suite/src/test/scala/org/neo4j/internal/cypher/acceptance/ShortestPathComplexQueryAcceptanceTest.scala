@@ -26,7 +26,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
 
   val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
 
-  test("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
+  ignore("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
     val result = executeWith(Configs.CommunityInterpreted,
       """
@@ -45,7 +45,7 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
     results should be(List(List(0, 4, 3, 2)))
   }
 
-  test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
+  ignore("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
     val result = executeWith(Configs.CommunityInterpreted,
       """

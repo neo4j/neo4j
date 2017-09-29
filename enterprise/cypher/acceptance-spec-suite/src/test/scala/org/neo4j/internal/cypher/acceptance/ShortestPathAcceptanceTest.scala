@@ -364,7 +364,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     ))
   }
 
-  test("shortest path should work with multiple expressions and predicates - relationship expander") {
+  ignore("shortest path should work with multiple expressions and predicates - relationship expander") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
@@ -398,7 +398,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
       "nodes2" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
   }
 
-  test("shortest path should work with multiple expressions and predicates - relationship and node expander") {
+  ignore("shortest path should work with multiple expressions and predicates - relationship and node expander") {
     val nodes = largerShortestPathModel()
 
     val query = """PROFILE CYPHER

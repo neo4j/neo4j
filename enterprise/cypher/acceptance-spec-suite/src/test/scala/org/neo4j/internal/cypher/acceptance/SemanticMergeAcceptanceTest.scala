@@ -20,9 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite,PatternGen, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{ResourceIterator, Result}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.scalacheck.{Gen, Shrink}
 
 /*
@@ -31,9 +30,7 @@ import org.scalacheck.{Gen, Shrink}
  *  - makes sure that whatever pattern we create is returned when doing MATCH on pattern.
  */
 class SemanticMergeAcceptanceTest
-  extends ExecutionEngineFunSuite with PatternGen with QueryStatisticsTestSupport with CypherComparisonSupport {
-
-  val expectedToSucceed = Configs.All
+  extends ExecutionEngineFunSuite with PatternGen with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
   //we don't want scala check to shrink patterns here and leave things in the database
   implicit val dontShrink: Shrink[List[Element]] = Shrink(s => Stream.empty)
@@ -47,7 +44,7 @@ class SemanticMergeAcceptanceTest
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          executeWith(expectedToSucceed, s"MERGE $patternString", rollback = false)
+          updateWithBothPlannersAndCompatibilityMode(s"MERGE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
           val result1: Result = graph.execute(s"MATCH $patternString RETURN 42")
@@ -56,7 +53,7 @@ class SemanticMergeAcceptanceTest
           hasSingleRow(result2)
 
           //clean up
-         executeWith(expectedToSucceed, s"MATCH (n) DETACH DELETE n", rollback = false)
+          updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
         }
       }
     }
@@ -71,15 +68,15 @@ class SemanticMergeAcceptanceTest
         val patternString = pattern.map(_.string).mkString
         withClue(s"failing on pattern $patternString") {
           //update
-          executeWith(expectedToSucceed, s"CREATE $patternString")
+          updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
 
           //find created pattern (cannot return * since everything might be unnamed)
-          val result = executeWith(expectedToSucceed, s"MERGE $patternString RETURN 42")
+          val result = updateWithBothPlannersAndCompatibilityMode(s"MERGE $patternString RETURN 42")
           result.toList should have size 1
           assertStats(result, nodesCreated = 0)
 
           //clean up
-          executeWith(expectedToSucceed, s"MATCH (n) DETACH DELETE n")
+          updateWithBothPlannersAndCompatibilityMode(s"MATCH (n) DETACH DELETE n")
         }
       }
     }

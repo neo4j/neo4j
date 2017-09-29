@@ -53,7 +53,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     result.toList.head("p").asInstanceOf[Long] should equal(42)
   }
 
-  test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
+  ignore("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
     val start = createLabeledNode("A")
     val c = createLabeledNode("C")
     val rel1 = relate(start, c)

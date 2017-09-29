@@ -539,7 +539,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
     results should use("VarLengthExpand(Into)")
   }
 
-  test("GH #5803 query should work with shortest path") {
+  ignore("GH #5803 query should work with shortest path") {
     def createTestGraph() = {
       graph.createIndex("WP", "id")
       val query = """create (_31801:`WP` {`id`:1})
