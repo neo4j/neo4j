@@ -29,12 +29,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -50,12 +49,12 @@ public class CausalClusterConfigurationValidatorTest
     public ExpectedException expected = ExpectedException.none();
 
     @Parameterized.Parameter
-    public Mode mode;
+    public ClusterSettings.Mode mode;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static List<Mode> recordFormats()
+    public static List<ClusterSettings.Mode> recordFormats()
     {
-        return Arrays.asList( Mode.CORE, Mode.READ_REPLICA );
+        return Arrays.asList( ClusterSettings.Mode.CORE, ClusterSettings.Mode.READ_REPLICA );
     }
 
     @Test
@@ -63,7 +62,7 @@ public class CausalClusterConfigurationValidatorTest
     {
         // when
         Config config = Config.fromSettings(
-                stringMap( mode.name(), Mode.SINGLE.name(),
+                stringMap( ClusterSettings.mode.name(), ClusterSettings.Mode.SINGLE.name(),
                         initial_discovery_members.name(), "" ) )
                 .withValidator( new CausalClusterConfigurationValidator() ).build();
 
@@ -78,7 +77,7 @@ public class CausalClusterConfigurationValidatorTest
     {
         // when
         Config config = Config.fromSettings(
-                stringMap( mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         initial_discovery_members.name(), "localhost:99,remotehost:2",
                         new BoltConnector( "bolt" ).enabled.name(), "true" ))
                 .withValidator( new CausalClusterConfigurationValidator() ).build();
@@ -97,7 +96,7 @@ public class CausalClusterConfigurationValidatorTest
         expected.expectMessage( "Missing mandatory non-empty value for 'causal_clustering.initial_discovery_members'" );
 
         // when
-        Config.builder().withSetting( EnterpriseEditionSettings.mode, mode.name() ).withValidator( new CausalClusterConfigurationValidator() ).build();
+        Config.builder().withSetting( ClusterSettings.mode, mode.name() ).withValidator( new CausalClusterConfigurationValidator() ).build();
     }
 
     @Test
@@ -109,7 +108,7 @@ public class CausalClusterConfigurationValidatorTest
 
         // when
         Config.fromSettings(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         initial_discovery_members.name(), "localhost:99,remotehost:2" ) )
                 .withValidator( new CausalClusterConfigurationValidator() ).build();
     }
