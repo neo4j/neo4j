@@ -129,7 +129,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with Cypher
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWith(Configs.All, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     // Then
     result.toList should equal(List(

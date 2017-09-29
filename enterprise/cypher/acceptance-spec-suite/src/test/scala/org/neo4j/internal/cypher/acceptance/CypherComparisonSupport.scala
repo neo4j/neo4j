@@ -111,18 +111,20 @@ trait CypherComparisonSupport extends CypherTestSupport {
           // It was not expected to fail with the specified error message, do nothing
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || message.filter(e.getMessage.contains(_)).isEmpty) {
+            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
               fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'")
             }
           } else {
-            if (message.filter(e.getMessage.contains(_)).nonEmpty) {
+            if (message.exists(e.getMessage.contains(_))) {
               fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
             }
             // It failed like expected, and we did not specify any message for this config
           }
         case Failure(e: Throwable) => {
           if (expectedToFailWithSpecificMessage) {
-            fail(s"Unexpected exception in ${thisScenario.name} with error message " + e.getMessage, e)
+            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
+              fail(s"Unexpected exception in ${thisScenario.name} with error message " + e.getMessage, e)
+            }
           }
         }
       }
@@ -528,6 +530,8 @@ object CypherComparisonSupport {
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
+
+    def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 

@@ -132,8 +132,12 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
     graph.createIndex("Food", "name")
 
     // WHEN
-    failWithError(allPossibleConfigs, "match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n",
-    List("Failed to fulfil the hints of the query.", "Unknown variable"))
+    failWithError(allPossibleConfigs,
+      "match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n",
+      List("Failed to fulfil the hints of the query.",
+        "Unknown variable",
+        "Cannot use index hint in this context",
+        "The given query is not currently supported in the selected cost-based planner"))
   }
 
   test("scan hints are handled by ronja") {
@@ -384,7 +388,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
          |USING JOIN ON a
          |RETURN a.prop AS res""".stripMargin
 
-    val result = executeWith(expectedToSucceed, query,
+    val result = executeWith(Configs.Version3_3 - Configs.SlottedInterpreted + Configs.AllRulePlanners , query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("a"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -401,7 +405,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
           |USING JOIN ON b
           |RETURN b.prop AS res""".stripMargin
 
-    val result = executeWith(expectedToSucceed, query,
+    val result = executeWith(Configs.Version3_3 - Configs.SlottedInterpreted + Configs.AllRulePlanners, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeOnlyOneHashJoinOn("b"),
         expectPlansToFail = Configs.AllRulePlanners))
 
@@ -728,7 +732,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |RETURN count(p)
         |""".stripMargin
 
-    executeWith(Configs.Interpreted, query,
+    executeWith(Configs.CommunityInterpreted - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "k")
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "t")
@@ -760,7 +764,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         |USING INDEX a:PERSON(prop)
         |USING INDEX b:PERSON(prop)
         |RETURN a, b""".stripMargin
-    val result = executeWith(expectedToSucceed, query,
+    val result = executeWith(Configs.All - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
@@ -781,7 +785,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
           |WHERE a.prop = 'foo' and b.prop = 'bar'
           |RETURN b.prop AS res""".stripMargin
 
-    val result = executeWith(expectedToSucceed, query,
+    val result = executeWith(Configs.All - Configs.Cost3_2 - Configs.Cost3_1 - Configs.Cost2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "a")
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "b")
@@ -800,7 +804,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | WHERE f.bar=5 and f.baz=3
         | RETURN f
       """.stripMargin
-    val result = executeWith(Configs.Interpreted - Configs.Rule3_2, query,
+    val result = executeWith(Configs.Version3_3 + Configs.Cost3_2 - Configs.Compiled - Configs.AllRulePlanners, query,
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
       }, expectPlansToFail = Configs.AllRulePlanners))

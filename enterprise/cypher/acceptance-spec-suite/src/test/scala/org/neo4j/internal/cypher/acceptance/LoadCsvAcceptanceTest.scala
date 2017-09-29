@@ -104,7 +104,7 @@ class LoadCsvAcceptanceTest
          | WITH row.field1 as field, row.OrderId as order
          | MATCH (o) WHERE o.OrderId = order
          | SET o.field1 = field""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should not( useOperators("Eager"))))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should not( useOperators("Eager")),expectPlansToFail = Configs.Cost3_1))
 
     assertStats(result, nodesCreated = 0, propertiesWritten = 1)
   }
