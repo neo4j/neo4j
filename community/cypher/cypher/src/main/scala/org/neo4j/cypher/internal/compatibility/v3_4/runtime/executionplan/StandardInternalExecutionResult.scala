@@ -97,10 +97,14 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
 
   override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
     accept(new QueryResultVisitor[E] {
+      val names = fieldNames()
       override def visit(record: QueryResult.Record): Boolean = {
-        val row = new MapBasedRow
-        row.map = fieldNames().zip(record.fields().map(context.asObject)).toMap
-        visitor.visit(row)
+        val fields = record.fields()
+        val mapData = new mutable.AnyRefMap[String, Any](names.length)
+        for (i <- 0 until names.length) {
+          mapData.put(names(i), context.asObject(fields(i)))
+        }
+        visitor.visit(new MapBasedRow(mapData))
       }
     })
   }
