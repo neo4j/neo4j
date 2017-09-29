@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.concurrent.RecentK;
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcConstants;
@@ -49,6 +51,7 @@ import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -82,7 +85,7 @@ import static org.neo4j.ext.udc.UdcConstants.VERSION;
  * GraphDatabase is instantiated, as part of
  * {@link org.neo4j.helpers.Service#load}.
  */
-public class UdcExtensionImplTest extends LocalServerTestBase
+public class UdcExtensionImplIT extends LocalServerTestBase
 {
     private static final String VersionPattern = "(\\d\\.\\d+((\\.|\\-).*)?)|(dev)";
 
@@ -110,6 +113,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         config = new HashMap<>();
         config.put( UdcSettings.first_delay.name(), "100" );
         config.put( UdcSettings.udc_host.name(), serverAddress );
+        config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
 
         blockUntilServerAvailable( new URL( "http", serviceHostName, servicePort, "/" ) );
     }
@@ -127,7 +131,8 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     public void shouldLoadWhenNormalGraphdbIsCreated() throws Exception
     {
         // When
-        graphdb = createDatabase();
+        Map<String, String> config = Collections.singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        graphdb = createDatabase(config);
 
         // Then, when the UDC extension successfully loads, it initializes the attempts count to 0
         assertGotSuccessWithRetry( IS_ZERO );
@@ -139,8 +144,9 @@ public class UdcExtensionImplTest extends LocalServerTestBase
     @Test
     public void shouldLoadForEachCreatedGraphdb() throws IOException
     {
-        GraphDatabaseService graphdb1 = createDatabase( path.directory( "first-db" ), null );
-        GraphDatabaseService graphdb2 = createDatabase( path.directory( "second-db" ), null );
+        Map<String, String> config = Collections.singletonMap( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        GraphDatabaseService graphdb1 = createDatabase( path.directory( "first-db" ), config );
+        GraphDatabaseService graphdb2 = createDatabase( path.directory( "second-db" ), config );
         Set<String> successCountValues = UdcTimerTask.successCounts.keySet();
         assertThat( successCountValues.size(), equalTo( 2 ) );
         assertThat( "this", is( not( "that" ) ) );
@@ -157,6 +163,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
                 loadPropertiesFromURL( getClass().getResource( "/org/neo4j/ext/udc/udc.properties" ) ).
                 setConfig( UdcSettings.first_delay, "100" ).
                 setConfig( UdcSettings.udc_host, "127.0.0.1:1" ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                 newGraphDatabase();
 
         // Then

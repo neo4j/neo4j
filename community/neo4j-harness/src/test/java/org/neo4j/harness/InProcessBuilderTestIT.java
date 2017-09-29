@@ -55,6 +55,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
@@ -114,10 +115,11 @@ public class InProcessBuilderTestIT
                 .withConfig( httpConnector.type, "HTTP" )
                 .withConfig( httpConnector.enabled, "true" )
                 .withConfig( httpConnector.encryption, "NONE" )
+                .withConfig( httpConnector.listen_address, "localhost:" + PortAuthority.allocatePort())
                 .withConfig( httpsConnector.type, "HTTP" )
                 .withConfig( httpsConnector.enabled, "true" )
                 .withConfig( httpsConnector.encryption, "TLS" )
-                .withConfig( httpsConnector.address, "localhost:7473" )
+                .withConfig( httpsConnector.address, "localhost:" + PortAuthority.allocatePort() )
                 .withConfig( LegacySslPolicyConfig.certificates_directory.name(), testDir.directory( "certificates" ).getAbsolutePath() )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 .newServer() )
