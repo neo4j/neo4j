@@ -52,12 +52,6 @@ public class BloomFulltextConfig implements LoadableConfig
     @Internal
     static final Setting<Boolean> bloom_enabled = setting( "unsupported.dbms.bloom_enabled", BOOLEAN, FALSE );
 
-    @Description( "Property keys to index" )
-    @Internal
-    static final Setting<List<String>> bloom_indexed_properties =
-            buildSetting( "unsupported.dbms.bloom_indexed_properties", STRING_LIST, "" )
-                    .constraint( ILLEGAL_VALUE_CONSTRAINT ).build();
-
     @Description( "Define the analyzer to use for the bloom index. Expects the fully qualified classname of the " +
                   "analyzer to use" )
     @Internal

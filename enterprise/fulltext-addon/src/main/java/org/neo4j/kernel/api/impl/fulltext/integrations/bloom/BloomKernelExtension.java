@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -78,28 +77,18 @@ class BloomKernelExtension extends LifecycleAdapter
     {
         if ( config.get( BloomFulltextConfig.bloom_enabled ) )
         {
-            List<String> properties = getProperties();
             String analyzer = config.get( BloomFulltextConfig.bloom_analyzer );
 
             Log log = logService.getInternalLog( FulltextProvider.class );
             provider = new FulltextProvider( db, log, availabilityGuard, scheduler, transactionIdStore.get() );
             FulltextFactory fulltextFactory = new FulltextFactory( fileSystem, storeDir, analyzer, provider );
-            fulltextFactory.createFulltextIndex( BLOOM_NODES, NODES, properties );
-            fulltextFactory.createFulltextIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS, properties );
+            fulltextFactory.openFulltextIndex( BLOOM_NODES, NODES );
+            fulltextFactory.openFulltextIndex( BLOOM_RELATIONSHIPS, RELATIONSHIPS );
 
             provider.init();
             procedures.registerComponent( FulltextProvider.class, context -> provider, true );
+            procedures.registerComponent( FulltextFactory.class, context -> fulltextFactory, true );
         }
-    }
-
-    private List<String> getProperties()
-    {
-        List<String> properties = config.get( BloomFulltextConfig.bloom_indexed_properties );
-        if ( properties.isEmpty() )
-        {
-            throw new RuntimeException( "Properties to index must be configured for bloom fulltext" );
-        }
-        return properties;
     }
 
     @Override

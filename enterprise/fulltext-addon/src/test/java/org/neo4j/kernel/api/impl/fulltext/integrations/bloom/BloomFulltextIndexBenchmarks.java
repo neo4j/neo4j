@@ -81,7 +81,8 @@ public class BloomFulltextIndexBenchmarks
         createTestGraphDatabaseFactory();
         configureBloomExtension();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
+        //todo
+//        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
         db = builder.newGraphDatabase();
 
         int trials = 50;
@@ -152,7 +153,8 @@ public class BloomFulltextIndexBenchmarks
         // Then measure startup performance
         configureBloomExtension();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
+        //todo
+//        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
 
         for ( int i = 0; i < 50; i++ )
         {

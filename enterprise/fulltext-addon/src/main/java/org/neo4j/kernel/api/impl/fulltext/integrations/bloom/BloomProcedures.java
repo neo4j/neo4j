@@ -29,6 +29,7 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.api.impl.fulltext.FulltextFactory;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProvider;
 import org.neo4j.kernel.api.impl.fulltext.ReadOnlyFulltext;
 import org.neo4j.kernel.api.index.InternalIndexState;
@@ -42,6 +43,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexT
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_RELATIONSHIPS;
 import static org.neo4j.procedure.Mode.READ;
+import static org.neo4j.procedure.Mode.SCHEMA;
 
 /**
  * Procedures for querying the bloom fulltext addon.
@@ -50,6 +52,8 @@ public class BloomProcedures
 {
     @Context
     public FulltextProvider provider;
+    @Context
+    public FulltextFactory factory;
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "db.fulltext.bloomAwaitPopulation", mode = READ )
@@ -59,8 +63,8 @@ public class BloomProcedures
     }
 
     @Description( "Returns the property keys indexed by the bloom addon" )
-    @Procedure( name = "db.fulltext.bloomFulltextProperties", mode = READ )
-    public Stream<PropertyOutput> bloomFulltextProperties() throws Exception
+    @Procedure( name = "db.fulltext.bloomFulltextGetPropertyKeys", mode = READ )
+    public Stream<PropertyOutput> bloomFulltextGetPropertyKeys() throws Exception
     {
         return provider.getProperties( BLOOM_NODES, NODES ).stream().map( PropertyOutput::new );
     }
@@ -71,6 +75,15 @@ public class BloomProcedures
     {
         List<InternalIndexState> states = Arrays.asList( provider.getState( BLOOM_NODES, NODES ), provider.getState( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) );
         return states.stream().map( StatusOutput::new );
+    }
+
+    @Description( "Set the property keys to index" )
+    @Procedure( name = "db.fulltext.bloomFulltextSetPropertyKeys", mode = SCHEMA )
+    public void bloomFulltextSetPropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
+    {
+        factory.ensureIndexPropertyKeys( BLOOM_NODES, NODES, propertyKeys );
+        factory.ensureIndexPropertyKeys( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
+        provider.awaitPopulation();
     }
 
     @Description( "Queries the bloom index for nodes" )

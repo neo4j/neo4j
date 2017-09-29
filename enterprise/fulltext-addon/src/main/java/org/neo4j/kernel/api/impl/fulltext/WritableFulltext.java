@@ -42,6 +42,13 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
     }
 
     @Override
+    public void close() throws IOException
+    {
+        super.close();
+        indexWriter = null;
+    }
+
+    @Override
     public void drop() throws IOException
     {
         super.drop();
@@ -76,5 +83,10 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
     String getAnalyzerName()
     {
         return luceneIndex.getAnalyzerName();
+    }
+
+    public void saveConfiguration( long lastCommittedTransactionId ) throws IOException
+    {
+        luceneIndex.saveConfiguration( lastCommittedTransactionId );
     }
 }
