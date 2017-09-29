@@ -282,10 +282,13 @@
       <artifactId>neo4j-import-tool</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <!-- Defined to allow maven to calculate build order, it's used in the plugin above -->
     <dependency>
       <groupId>org.neo4j.build</groupId>
       <artifactId>licensecheck-config</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 
