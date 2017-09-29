@@ -12,6 +12,7 @@
   <artifactId>neo4j-command-line</artifactId>
   <name>Neo4j - Command Line</name>
   <version>3.4.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
 
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
