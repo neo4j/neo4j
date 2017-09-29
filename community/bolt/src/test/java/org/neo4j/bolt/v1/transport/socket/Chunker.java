@@ -22,15 +22,13 @@ package org.neo4j.bolt.v1.transport.socket;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelPromise;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -48,9 +46,9 @@ public class Chunker
 
         Channel ch = mock( Channel.class );
         when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
-        when( ch.writeAndFlush( any(), any( ChannelPromise.class ) ) ).then( inv ->
+        when( ch.writeAndFlush( any(), isNull() ) ).then( inv ->
         {
-            ByteBuf buf = (ByteBuf) inv.getArguments()[0];
+            ByteBuf buf = inv.getArgument( 0 );
             outputBuffer.limit( outputBuffer.position() + buf.readableBytes() );
             buf.readBytes( outputBuffer );
             buf.release();

@@ -171,8 +171,8 @@ public class PropertyLoaderTest
     {
         when( store.getRecord( eq( id ), any( recordClass ), any( RecordLoad.class ) ) ).thenAnswer( invocation ->
         {
-            R record = (R) invocation.getArguments()[1];
-            record.setId( ((Number)invocation.getArguments()[0]).longValue() );
+            R record = invocation.getArgument( 1 );
+            record.setId( ((Number) invocation.getArgument( 0 )).longValue() );
             record.setNextProp( 1 );
             return record;
         } );

@@ -27,6 +27,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+
 import java.io.ByteArrayOutputStream;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
@@ -621,7 +622,7 @@ public class ProgressMonitorTest
             ProgressMonitorFactory factory = Mockito.mock( ProgressMonitorFactory.class );
             when( factory.newOpenEndedIndicator( any( String.class ), anyInt() ) ).thenAnswer( invocation ->
             {
-                when( indicatorMock.reportResolution() ).thenReturn( (Integer) invocation.getArguments()[1] );
+                when( indicatorMock.reportResolution() ).thenReturn( invocation.getArgument(1) );
                 return indicatorMock;
             } );
             factoryMocks.put( factory, true );

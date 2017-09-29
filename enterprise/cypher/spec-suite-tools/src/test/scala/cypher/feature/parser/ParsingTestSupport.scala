@@ -112,9 +112,9 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
 
     when(result.columns()).thenReturn(cols.toList.asJava)
 
-    when(result.accept(org.mockito.Matchers.any())).thenAnswer(new Answer[Unit] {
+    when(result.accept(org.mockito.ArgumentMatchers.any())).thenAnswer(new Answer[Unit] {
       override def answer(invocationOnMock: InvocationOnMock): Unit = {
-        val visitor = invocationOnMock.getArgumentAt(0, classOf[ResultVisitor[_]])
+        val visitor:ResultVisitor[_] = invocationOnMock.getArgument( 0 )
         var continue = true
         while (continue && itr.hasNext) {
           val row = new MapRow(itr.next())

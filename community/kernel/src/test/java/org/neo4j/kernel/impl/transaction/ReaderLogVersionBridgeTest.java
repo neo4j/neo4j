@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -66,9 +66,9 @@ public class ReaderLogVersionBridgeTest
         when( logFiles.getLogFileForVersion( version + 1 ) ).thenReturn( file );
         when( fs.fileExists( file ) ).thenReturn( true );
         when( fs.open( file, "r" ) ).thenReturn( newStoreChannel );
-        when( newStoreChannel.read( Matchers.<ByteBuffer>any() ) ).then( invocationOnMock ->
+        when( newStoreChannel.read( ArgumentMatchers.<ByteBuffer>any() ) ).then( invocationOnMock ->
         {
-            ByteBuffer buffer = (ByteBuffer) invocationOnMock.getArguments()[0];
+            ByteBuffer buffer = invocationOnMock.getArgument( 0 );
             buffer.putLong( encodeLogVersion( version + 1 ) );
             buffer.putLong( 42 );
             return LOG_HEADER_SIZE;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_4
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -47,23 +47,23 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   // We need to have the inner mock return the right counts for added/removed labels.
   when( inner.setLabelsOnNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
     def answer(invocation: InvocationOnMock):Int = {
-      invocation.getArguments()(1).asInstanceOf[Iterator[String]].size
+      invocation.getArgument(1).asInstanceOf[Iterator[String]].size
     }
   } )
 
   when( inner.removeLabelsFromNode(anyLong(), any()) ).thenAnswer( new Answer[Int]() {
     def answer(invocation: InvocationOnMock):Int = {
-      invocation.getArguments()(1).asInstanceOf[Iterator[String]].size
+      invocation.getArgument(1).asInstanceOf[Iterator[String]].size
     }
   } )
 
-  when(inner.createUniqueConstraint(anyObject())).thenReturn(true)
+  when(inner.createUniqueConstraint(any())).thenReturn(true)
 
   when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
-  when(inner.addIndexRule(anyObject()))
+  when(inner.addIndexRule(any()))
     .thenReturn(IdempotentResult(mock[IndexDescriptor]))
 
   var context: UpdateCountingQueryContext = null

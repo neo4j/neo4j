@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.assumeIndependence
 
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -90,7 +90,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val stats: GraphStatistics = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(any())).thenAnswer(new Answer[Cardinality] {
       override def answer(invocationOnMock: InvocationOnMock): Cardinality = {
-        val arg = invocationOnMock.getArguments()(0).asInstanceOf[Option[LabelId]]
+        val arg:Option[LabelId] = invocationOnMock.getArgument(0)
         arg match {
           case None => Cardinality(10)
           case Some(_) => Cardinality(1)

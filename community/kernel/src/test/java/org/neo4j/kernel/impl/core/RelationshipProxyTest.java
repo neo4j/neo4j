@@ -61,9 +61,9 @@ public class RelationshipProxyTest extends PropertyContainerProxyTest
         // GIVEN
         RelationshipActions actions = mock( RelationshipActions.class );
         when( actions.newNodeProxy( anyLong() ) ).then(
-                invocation -> nodeWithId( (Long) invocation.getArguments()[0] ) );
+                invocation -> nodeWithId( invocation.getArgument( 0 ) ) );
         when( actions.getRelationshipTypeById( anyInt() ) ).then(
-                invocation -> new RelationshipTypeToken( "whatever", (Integer) invocation.getArguments()[0] ) );
+                invocation -> new RelationshipTypeToken( "whatever", invocation.getArgument( 0 ) ) );
 
         long[] ids = new long[]{
                 1437589437,

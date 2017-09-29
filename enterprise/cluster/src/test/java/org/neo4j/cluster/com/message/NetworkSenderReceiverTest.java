@@ -20,7 +20,7 @@
 package org.neo4j.cluster.com.message;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
 import java.util.Map;
@@ -116,7 +116,7 @@ public class NetworkSenderReceiverTest
         {
             LogProvider logProviderMock = mock( LogProvider.class );
             Log logMock = mock( Log.class );
-            when( logProviderMock.getLog( Matchers.<Class>any() ) ).thenReturn( logMock );
+            when( logProviderMock.getLog( ArgumentMatchers.<Class>any() ) ).thenReturn( logMock );
 
             final Semaphore sem = new Semaphore( 0 );
 

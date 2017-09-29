@@ -112,7 +112,7 @@ public class NumberArrayFactoryTest
     {
         // GIVEN
         NumberArrayFactory lowMemoryFactory = mock( NumberArrayFactory.class );
-        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyInt() );
+        doThrow( OutOfMemoryError.class ).when( lowMemoryFactory ).newIntArray( anyLong(), anyInt(), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( lowMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN
@@ -131,7 +131,7 @@ public class NumberArrayFactoryTest
         // GIVEN
         NumberArrayFactory throwingMemoryFactory = mock( NumberArrayFactory.class );
         doThrow( ArithmeticException.class ).when( throwingMemoryFactory )
-                .newByteArray( anyLong(), any( byte[].class ), anyInt() );
+                .newByteArray( anyLong(), any( byte[].class ), anyLong() );
         NumberArrayFactory factory = new NumberArrayFactory.Auto( throwingMemoryFactory, NumberArrayFactory.HEAP );
 
         // WHEN

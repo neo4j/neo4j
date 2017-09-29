@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,7 +69,6 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 public class NeoStoreIndexStoreViewTest
@@ -104,7 +104,7 @@ public class NeoStoreIndexStoreViewTest
         when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
                 invocation ->
                 {
-                    Long nodeId = (Long) invocation.getArguments()[0];
+                    Long nodeId = invocation.getArgument( 0 );
                     return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
                 } );
         storeView = new NeoStoreIndexStoreView( locks, neoStores );

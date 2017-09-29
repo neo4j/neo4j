@@ -22,8 +22,6 @@ package org.neo4j.server.rest.transactional;
 import org.codehaus.jackson.JsonNode;
 import org.junit.Test;
 import org.mockito.internal.stubbing.answers.ThrowsException;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -992,7 +990,7 @@ public class ExecutionResultSerializerTest extends TxStateCheckerTestSupport
         doAnswer( invocation ->
         {
             Result result = (Result) invocation.getMock();
-            Result.ResultVisitor visitor = (Result.ResultVisitor) invocation.getArguments()[0];
+            Result.ResultVisitor visitor = invocation.getArgument( 0 );
             while ( result.hasNext() )
             {
                 visitor.visit( new MapRow( result.next() ) );

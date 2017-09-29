@@ -55,7 +55,7 @@ public class EncodeGroupsStepTest
         doAnswer( invocation ->
         {
             // our own way of marking that this has record been prepared (firstOut=1)
-            invocation.getArgumentAt( 0, RelationshipGroupRecord.class ).setFirstOut( 1 );
+            invocation.<RelationshipGroupRecord>getArgument( 0 ).setFirstOut( 1 );
             return null;
         } ).when( store ).prepareForCommit( any( RelationshipGroupRecord.class ) );
         Configuration config = Configuration.withBatchSize( DEFAULT, 10 );

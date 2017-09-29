@@ -20,7 +20,7 @@
 package org.neo4j.cluster.protocol.heartbeat;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.net.URI;
@@ -176,7 +176,7 @@ public class HeartbeatStateTest
         heartbeat.handle( heartbeatContext, received, holder );
 
         // Then
-        verify( holder, times( 1 ) ).offer( Matchers.argThat( new MessageArgumentMatcher<LearnerMessage>()
+        verify( holder, times( 1 ) ).offer( ArgumentMatchers.argThat( new MessageArgumentMatcher<LearnerMessage>()
                 .onMessageType( LearnerMessage.catchUp ).withHeader( Message.INSTANCE_ID, "2" ) ) );
     }
 

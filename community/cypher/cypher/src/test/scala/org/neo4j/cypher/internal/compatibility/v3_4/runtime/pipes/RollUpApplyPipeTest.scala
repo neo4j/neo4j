@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -80,7 +80,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val rhs = mock[Pipe]
     when(rhs.createResults(any())).then(new Answer[Iterator[ExecutionContext]] {
       override def answer(invocation: InvocationOnMock) = {
-        val state = invocation.getArguments.apply(0).asInstanceOf[QueryState]
+        val state:QueryState = invocation.getArgument(0)
         state.initialContext should not be empty
         Iterator.empty
       }

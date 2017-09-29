@@ -37,7 +37,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
@@ -92,7 +91,7 @@ public class CollectUserAgentFilterTest
     public void shouldSwallowAnyExceptionsThrownByTheRequest() throws IOException, ServletException
     {
         HttpServletRequest request = mock( HttpServletRequest.class );
-        stub(request.getHeader( anyString() )).toThrow( new RuntimeException() );
+        when(request.getHeader( anyString() )).thenThrow( new RuntimeException() );
         filter.doFilter( request, null, filterChain );
     }
 

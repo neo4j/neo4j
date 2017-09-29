@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -107,10 +105,10 @@ public class NodeProxySingleRelationshipTest
         final RelationshipProxy.RelationshipActions relActions = mock( RelationshipProxy.RelationshipActions.class );
         when( nodeActions.newRelationshipProxy( anyLong(), anyLong(), anyInt(), anyLong() ) ).then( invocation ->
         {
-            Long id = (Long) invocation.getArguments()[0];
-            Long startNode = (Long) invocation.getArguments()[1];
-            Integer type = (Integer) invocation.getArguments()[2];
-            Long endNode = (Long) invocation.getArguments()[3];
+            Long id = invocation.getArgument(0);
+            Long startNode = invocation.getArgument( 1 );
+            Integer type = invocation.getArgument( 2 );
+            Long endNode = invocation.getArgument( 3 );
             return new RelationshipProxy( relActions, id, startNode, type, endNode );
         } );
 

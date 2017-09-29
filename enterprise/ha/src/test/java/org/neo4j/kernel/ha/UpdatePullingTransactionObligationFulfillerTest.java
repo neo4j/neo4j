@@ -48,7 +48,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
     @Before
     public void setup() throws Throwable
     {
-        doAnswer( invocation -> ((UpdatePuller.Condition) invocation.getArguments()[0]).evaluate( 33, 34 )
+        doAnswer( invocation -> ((UpdatePuller.Condition) invocation.getArgument( 0 )).evaluate( 33, 34 )
         ).when( updatePuller ).pullUpdates( any( UpdatePuller.Condition.class ), anyBoolean() );
     }
 
@@ -79,7 +79,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
 
         doAnswer( invocation ->
         {
-            ((HighAvailabilityMemberListener) invocation.getArguments()[0]).slaveIsAvailable(
+            ((HighAvailabilityMemberListener) invocation.getArgument( 0 )).slaveIsAvailable(
                     new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
             );
             return null;
@@ -87,7 +87,7 @@ public class UpdatePullingTransactionObligationFulfillerTest
 
         doAnswer( invocation ->
         {
-            ((HighAvailabilityMemberListener) invocation.getArguments()[0]).instanceStops(
+            ((HighAvailabilityMemberListener) invocation.getArgument( 0 )).instanceStops(
                     new HighAvailabilityMemberChangeEvent( null, null, serverId, null )
             );
             return null;

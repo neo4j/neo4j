@@ -163,7 +163,7 @@ public class ReplicatedTransactionStateMachineTest
                 any( TransactionToApply.class), any( CommitEvent.class ), any( TransactionApplicationMode.class ) )
         ).thenAnswer( invocation ->
         {
-            TransactionToApply txToApply = (TransactionToApply) invocation.getArguments()[0];
+            TransactionToApply txToApply = invocation.getArgument( 0 );
             txToApply.commitment( new FakeCommitment( txId, mock( TransactionIdStore.class ) ), txId );
             txToApply.commitment().publishAsCommitted();
             txToApply.commitment().publishAsClosed();

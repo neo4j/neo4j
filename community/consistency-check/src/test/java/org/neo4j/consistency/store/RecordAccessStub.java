@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static java.util.Collections.singletonMap;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -114,6 +115,7 @@ public class RecordAccessStub implements RecordAccess
             {
                 PendingReferenceCheck mock = mock( PendingReferenceCheck.class );
                 DeferredReferenceCheck check = new DeferredReferenceCheck( Engine.this, checker );
+                doAnswer( check ).when( mock ).checkReference( isNull(), isNull() );
                 doAnswer( check ).when( mock ).checkReference( any( AbstractBaseRecord.class ),
                                                                any( RecordAccess.class ) );
                 doAnswer( check ).when( mock ).checkDiffReference( any( AbstractBaseRecord.class ),

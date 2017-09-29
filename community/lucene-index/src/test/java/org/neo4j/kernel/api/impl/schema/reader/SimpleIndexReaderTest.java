@@ -22,9 +22,10 @@ package org.neo4j.kernel.api.impl.schema.reader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TotalHitCountCollector;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,7 +82,7 @@ public class SimpleIndexReaderTest
 
         simpleIndexReader.query( IndexQuery.exact( 1, "test" ) );
 
-        verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
@@ -101,7 +102,7 @@ public class SimpleIndexReaderTest
 
         simpleIndexReader.query( range( 1, "a", false, "b", true ) );
 
-        verify( indexSearcher ).search( any( TermQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( TermRangeQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
@@ -111,7 +112,7 @@ public class SimpleIndexReaderTest
 
         simpleIndexReader.query( IndexQuery.stringPrefix( 1, "bb" ) );
 
-        verify( indexSearcher ).search( any( PrefixQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( MultiTermQuery.class ), any( DocValuesCollector.class ) );
     }
 
     @Test
@@ -131,7 +132,7 @@ public class SimpleIndexReaderTest
 
         simpleIndexReader.countIndexedNodes( 2, Values.of( "testValue" ) );
 
-        verify( indexSearcher ).search( any( BooleanQuery.class ), any( DocValuesCollector.class ) );
+        verify( indexSearcher ).search( any( BooleanQuery.class ), any( TotalHitCountCollector.class ) );
     }
 
     @Test

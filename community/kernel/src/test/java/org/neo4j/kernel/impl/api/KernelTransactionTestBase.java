@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -57,8 +58,8 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyCollectionOf;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -94,9 +95,10 @@ public class KernelTransactionTestBase
         when( readLayer.newStatement() ).thenReturn( mock( StoreStatement.class ) );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
-        doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArguments()[0]).add( null ) )
+        doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
+                .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
-                    anyCollectionOf( StorageCommand.class ),
+                    anyCollection(),
                     any( ReadableTransactionState.class ),
                     any( StorageStatement.class ), any( ResourceLocker.class ),
                     anyLong() );

@@ -55,7 +55,7 @@ abstract class PruningStrategyTest
     {
         doAnswer( invocation ->
         {
-            Visitor<SegmentFile,RuntimeException> visitor = (Visitor) invocation.getArguments()[0];
+            Visitor<SegmentFile,RuntimeException> visitor = invocation.getArgument( 0 );
             ListIterator<SegmentFile> itr = files.listIterator( files.size() );
             boolean terminate = false;
             while ( itr.hasPrevious() && !terminate )

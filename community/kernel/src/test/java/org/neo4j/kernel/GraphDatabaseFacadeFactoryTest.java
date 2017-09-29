@@ -126,7 +126,7 @@ public class GraphDatabaseFacadeFactoryTest
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
-                doAnswer( invocation -> invocation.getArguments()[0] ).when( lifeMock ).add( any( Lifecycle.class ) );
+                doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
                 return new PlatformModule( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade )
                 {

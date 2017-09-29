@@ -22,7 +22,7 @@ package org.neo4j.ha.upgrade;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
@@ -151,7 +151,7 @@ public class MasterClientTest
 
         ResponseUnpacker responseUnpacker = mock( ResponseUnpacker.class );
         MasterImpl.SPI masterImplSPI = MasterImplTest.mockedSpi( storeId );
-        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), Matchers.anyObject() ) )
+        when( masterImplSPI.packTransactionObligationResponse( any( RequestContext.class ), ArgumentMatchers.any() ) )
                 .thenReturn( Response.empty() );
         when( masterImplSPI.getTransactionChecksum( anyLong() ) ).thenReturn( txChecksum );
 

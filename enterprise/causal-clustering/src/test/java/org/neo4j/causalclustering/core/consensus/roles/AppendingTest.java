@@ -27,8 +27,8 @@ import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
 import org.neo4j.causalclustering.core.consensus.log.ReadableRaftLog;
-import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.Outcome;
+import org.neo4j.causalclustering.core.consensus.outcome.RaftLogCommand;
 import org.neo4j.causalclustering.core.consensus.outcome.TruncateLogCommand;
 import org.neo4j.causalclustering.core.consensus.state.ReadableRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -37,11 +37,11 @@ import org.neo4j.logging.NullLog;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 
 public class AppendingTest

@@ -104,6 +104,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -162,7 +163,7 @@ public class IndexingServiceTest
     {
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
-                .thenAnswer( invocation -> invocation.getArguments()[1] );
+                .thenAnswer( invocation -> invocation.getArgument( 1 ) );
     }
 
     @Test
@@ -1201,14 +1202,14 @@ public class IndexingServiceTest
         void getsProcessedByStoreScanFrom( IndexStoreView mock )
         {
             when( mock.visitNodes( any(int[].class), any( IntPredicate.class ),
-                    any( Visitor.class ), any( Visitor.class ), anyBoolean() ) ).thenAnswer( this );
+                    any( Visitor.class ), isNull(), anyBoolean() ) ).thenAnswer( this );
         }
 
         @Override
         public StoreScan<IndexPopulationFailedKernelException> answer( InvocationOnMock invocation ) throws Throwable
         {
             final Visitor<NodeUpdates,IndexPopulationFailedKernelException> visitor =
-                    visitor( invocation.getArguments()[2] );
+                    visitor( invocation.getArgument( 2 ) );
             return new StoreScan<IndexPopulationFailedKernelException>()
             {
                 @Override
@@ -1268,7 +1269,7 @@ public class IndexingServiceTest
         @Override
         public String answer( InvocationOnMock invocation ) throws Throwable
         {
-            int id = (Integer) invocation.getArguments()[0];
+            int id = invocation.getArgument( 0 );
             return kind + "[" + id + "]";
         }
     }

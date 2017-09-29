@@ -20,7 +20,7 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -105,7 +105,7 @@ public class LearnerStateTest
         verify( ctx, times( 0 ) ).notifyLearnMiss( paxosInstanceIdIDontHave );
         // but the learn failed went out anyway
         verify( outgoing, times( 1 ) ).offer(
-                Matchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
+                ArgumentMatchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
                         .onMessageType( LearnerMessage.learnFailed ).to( URI.create( "c:/2" ) ) )
         );
     }
@@ -175,11 +175,11 @@ public class LearnerStateTest
 
         // Then
         verify( outgoing, times( 1 ) ).offer(
-                Matchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
+                ArgumentMatchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
                         .onMessageType( LearnerMessage.learnRequest ).to( instance2 ) )
         );
         verify( outgoing, times( 1 ) ).offer(
-                Matchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
+                ArgumentMatchers.<Message<? extends MessageType>>argThat( new MessageArgumentMatcher()
                         .onMessageType( LearnerMessage.learnRequest ).to( instance4 ) )
         );
         verifyNoMoreInteractions( outgoing );

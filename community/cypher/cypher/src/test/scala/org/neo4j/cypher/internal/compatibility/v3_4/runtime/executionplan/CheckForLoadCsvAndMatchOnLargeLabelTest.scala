@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -40,7 +40,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val planContext = mock[PlanContext]
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {
-     val label = invocationOnMock.getArguments()(0).asInstanceOf[String]
+      val label: String = invocationOnMock.getArgument(0)
       indexFor.get(label)
     }
   })

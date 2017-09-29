@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, 
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  import org.mockito.Matchers._
+  import org.mockito.ArgumentMatchers._
 
   test("Rewrites pattern expressions") {
     // given
@@ -104,7 +104,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     when(strategy.planPatternExpression(any[Set[IdName]], any[PatternExpression])(any[LogicalPlanningContext])).thenAnswer(
       new Answer[(LogicalPlan, PatternExpression)] {
         override def answer(invocation: InvocationOnMock): (LogicalPlan, PatternExpression) = {
-          val expr = invocation.getArguments()(1).asInstanceOf[PatternExpression]
+          val expr:PatternExpression = invocation.getArgument(1)
           val (namedExpr, _) = PatternExpressionPatternElementNamer(expr)
           (dummyPlan, namedExpr)
         }

@@ -41,7 +41,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.index.internal.gbptree.FreeListIdProvider.NO_MONITOR;
 
 public class FreeListIdProviderTest
@@ -65,7 +64,7 @@ public class FreeListIdProviderTest
     public void setUpPagedFile() throws IOException
     {
         when( pagedFile.io( anyLong(), anyInt() ) ).thenAnswer(
-                invocation -> cursor.duplicate( invocation.getArgumentAt( 0, Long.class ).longValue() ) );
+                invocation -> cursor.duplicate( invocation.getArgument( 0 ) ) );
         freelist.initialize( BASE_ID + 1, BASE_ID + 1, BASE_ID + 1, 0, 0 );
     }
 

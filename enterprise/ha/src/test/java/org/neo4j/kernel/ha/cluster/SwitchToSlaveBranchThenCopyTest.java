@@ -82,6 +82,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -325,7 +326,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
-                any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
+                argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlaveBranchThenCopy( new File( "" ), NullLogService.getInstance(),
                 configMock(), resolver,

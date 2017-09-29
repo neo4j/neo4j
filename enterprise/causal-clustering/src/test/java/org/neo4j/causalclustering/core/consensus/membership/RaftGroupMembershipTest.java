@@ -25,7 +25,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import org.neo4j.causalclustering.core.consensus.DirectNetworking;
 import org.neo4j.causalclustering.core.consensus.RaftTestFixture;

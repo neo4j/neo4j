@@ -59,7 +59,7 @@ trait CodeGenSugar extends MockitoSugar {
   def compile(plan: LogicalPlan): CompiledPlan = {
     val statistics: GraphStatistics = mock[GraphStatistics]
     val context = mock[PlanContext]
-    doReturn(statistics).when(context).statistics
+    doReturn(statistics, Nil: _*).when(context).statistics
     new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock())
       .generate(plan, context, semanticTable, CostBasedPlannerName.default)
   }

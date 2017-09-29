@@ -249,7 +249,7 @@ public class DumpCommandTest
         doAnswer( invocation ->
         {
             //noinspection unchecked
-            Predicate<Path> exclude = (Predicate<Path>) invocation.getArgumentAt( 2, Predicate.class );
+            Predicate<Path> exclude = invocation.getArgument( 2 );
             assertThat( exclude.test( Paths.get( StoreLocker.STORE_LOCK_FILENAME ) ), is( true ) );
             assertThat( exclude.test( Paths.get( "some-other-file" ) ), is( false ) );
             return null;

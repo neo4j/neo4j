@@ -23,7 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -82,6 +82,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
@@ -207,7 +209,7 @@ public class IndexPopulationJobTest
         verify( populator ).create();
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
-        verify( populator, times( 2 ) ).add( Matchers.anyCollection() );
+        verify( populator, times( 2 ) ).add( anyCollection() );
         verify( populator ).sampleResult();
         verify( populator ).close( true );
 
@@ -299,8 +301,8 @@ public class IndexPopulationJobTest
         IndexStoreView storeView = mock( IndexStoreView.class );
         ControlledStoreScan storeScan = new ControlledStoreScan();
         when( storeView.visitNodes( any(int[].class), any( IntPredicate.class ),
-                Matchers.<Visitor<NodeUpdates,RuntimeException>>any(),
-                Matchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
+                ArgumentMatchers.<Visitor<NodeUpdates,RuntimeException>>any(),
+                ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
                 .thenReturn(storeScan );
 
         final IndexPopulationJob job = newIndexPopulationJob( populator, index, storeView,
@@ -324,7 +326,7 @@ public class IndexPopulationJobTest
 
         // THEN
         verify( populator, times( 1 ) ).close( false );
-        verify( index, times( 0 ) ).flip( Matchers.any(), Matchers.any() );
+        verify( index, times( 0 ) ).flip( any(), any() );
     }
 
     @Test
@@ -408,7 +410,7 @@ public class IndexPopulationJobTest
         job.run();
 
         // Then
-        verify( populator ).markAsFailed( Matchers.contains( failureMessage ) );
+        verify( populator ).markAsFailed( contains( failureMessage ) );
     }
 
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
