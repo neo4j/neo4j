@@ -158,30 +158,41 @@ class FulltextUpdateApplier extends LifecycleAdapter
     {
         FulltextIndexUpdate population = new FulltextIndexUpdate( index, () ->
         {
-            PartitionedIndexWriter indexWriter = index.getIndexWriter();
-            String[] indexedPropertyKeys = index.getProperties().toArray( new String[0] );
-            ArrayList<Supplier<Document>> documents = new ArrayList<>();
-            try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
+            try
             {
-                ResourceIterable<? extends Entity> entities = entitySupplier.get();
-                for ( Entity entity : entities )
+                PartitionedIndexWriter indexWriter = index.getIndexWriter();
+                String[] indexedPropertyKeys = index.getProperties().toArray( new String[0] );
+                ArrayList<Supplier<Document>> documents = new ArrayList<>();
+                try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
                 {
-                    long entityId = entity.getId();
-                    Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
-                    if ( !properties.isEmpty() )
+                    ResourceIterable<? extends Entity> entities = entitySupplier.get();
+                    for ( Entity entity : entities )
                     {
-                        documents.add( documentBuilder( entityId, properties ) );
-                    }
+                        long entityId = entity.getId();
+                        Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
+                        if ( !properties.isEmpty() )
+                        {
+                            documents.add( documentBuilder( entityId, properties ) );
+                        }
 
-                    if ( documents.size() > POPULATING_BATCH_SIZE )
-                    {
-                        indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
-                        documents.clear();
+                        if ( documents.size() > POPULATING_BATCH_SIZE )
+                        {
+                            indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+                            documents.clear();
+                        }
                     }
                 }
+                indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+                index.setPopulated();
             }
-            indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
-            index.setPopulated();
+            catch ( Throwable th )
+            {
+                if ( index != null )
+                {
+                    index.setFailed();
+                }
+                throw th;
+            }
         } );
 
         enqueueUpdate( population );
@@ -268,7 +279,7 @@ class FulltextUpdateApplier extends LifecycleAdapter
             }
         }
 
-        public void applyUpdate()
+        void applyUpdate()
         {
             try
             {
@@ -395,7 +406,7 @@ class FulltextUpdateApplier extends LifecycleAdapter
                     index.maybeRefreshBlocking();
                 }
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 log.error( "Failed to refresh fulltext after updates.", e );
             }

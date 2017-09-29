@@ -26,7 +26,9 @@ import org.junit.Test;
 import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
@@ -56,7 +58,7 @@ public class FulltextUpdateApplierTest
         life.start();
     }
 
-    private void startApplier( Log log, JobScheduler scheduler )
+    private void startApplier()
     {
         applier = life.add( new FulltextUpdateApplier( log, availabilityGuard, scheduler ) );
     }
@@ -70,7 +72,7 @@ public class FulltextUpdateApplierTest
     @Test
     public void exceptionsDuringIndexUpdateMustPropagateToTheCaller() throws Exception
     {
-        startApplier( log, scheduler );
+        startApplier();
         AsyncFulltextIndexOperation op = applier.updatePropertyData( null, null );
 
         try
@@ -83,6 +85,46 @@ public class FulltextUpdateApplierTest
             assertThat( e.getCause(), is( instanceOf( NullPointerException.class ) ) );
         }
     }
-    // todo exceptions during population most be logged and mark the index as failed
-    // todo the applier must shut down if the availability guard is shut down at start
+
+    @Test
+    public void exceptionsDuringNodePopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
+    {
+        startApplier();
+        LuceneFulltext index = new StubLuceneFulltext();
+        GraphDatabaseService db = new StubGraphDatabaseService();
+        WritableFulltext writableFulltext = new WritableFulltext( index );
+        AsyncFulltextIndexOperation op = applier.populateNodes( writableFulltext, db );
+
+        try
+        {
+            op.awaitCompletion();
+            fail( "awaitCompletion should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), is( instanceOf( NullPointerException.class ) ) );
+        }
+        assertThat( index.getState(), is( InternalIndexState.FAILED ) );
+    }
+
+    @Test
+    public void exceptionsDuringRelationshipPopulationMustBeLoggedAndMarkTheIndexAsFailed() throws Exception
+    {
+        startApplier();
+        LuceneFulltext index = new StubLuceneFulltext();
+        GraphDatabaseService db = new StubGraphDatabaseService();
+        WritableFulltext writableFulltext = new WritableFulltext( index );
+        AsyncFulltextIndexOperation op = applier.populateRelationships( writableFulltext, db );
+
+        try
+        {
+            op.awaitCompletion();
+            fail( "awaitCompletion should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), is( instanceOf( NullPointerException.class ) ) );
+        }
+        assertThat( index.getState(), is( InternalIndexState.FAILED ) );
+    }
 }

@@ -123,7 +123,7 @@ class LuceneFulltext extends AbstractLuceneIndex
         return new PartitionedFulltextReader( searchers, properties.toArray( new String[0] ), analyzer );
     }
 
-    public void saveConfiguration( long txId ) throws IOException
+    void saveConfiguration( long txId ) throws IOException
     {
         PartitionedIndexWriter writer = getIndexWriter( new WritableFulltext( this ) );
         String analyzerName = analyzer.getClass().getCanonicalName();
@@ -131,18 +131,23 @@ class LuceneFulltext extends AbstractLuceneIndex
         writer.updateDocument( FulltextIndexConfiguration.TERM, config.asDocument() );
     }
 
-    public String getAnalyzerName()
+    String getAnalyzerName()
     {
         return analyzer.getClass().getCanonicalName();
     }
 
-    public InternalIndexState getState()
+    InternalIndexState getState()
     {
         return state;
     }
 
-    public void setPopulated()
+    void setPopulated()
     {
         state = InternalIndexState.ONLINE;
+    }
+
+    void setFailed()
+    {
+        state = InternalIndexState.FAILED;
     }
 }

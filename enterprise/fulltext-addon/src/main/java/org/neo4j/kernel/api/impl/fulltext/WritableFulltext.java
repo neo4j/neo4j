@@ -58,17 +58,22 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         return luceneIndex.getProperties();
     }
 
-    public void setPopulated()
+    void setPopulated()
     {
         luceneIndex.setPopulated();
     }
 
-    public ReadOnlyFulltext getIndexReader() throws IOException
+    void setFailed()
+    {
+        luceneIndex.setFailed();
+    }
+
+    ReadOnlyFulltext getIndexReader() throws IOException
     {
         return luceneIndex.getIndexReader();
     }
 
-    public String getAnalyzerName()
+    String getAnalyzerName()
     {
         return luceneIndex.getAnalyzerName();
     }
