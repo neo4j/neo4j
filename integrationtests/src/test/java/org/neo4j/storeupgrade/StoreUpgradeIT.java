@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -56,8 +57,10 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.ha.ClusterManager;
@@ -68,6 +71,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.server.CommunityBootstrapper;
@@ -148,6 +152,7 @@ public class StoreUpgradeIT
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
+            builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -180,6 +185,10 @@ public class StoreUpgradeIT
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
             props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
+            props.setProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+            props.setProperty( new HttpConnector( "https" ).enabled.name(), Settings.FALSE );
+            props.setProperty( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+            props.setProperty( new BoltConnector( "bolt" ).enabled.name(), Settings.FALSE );
             try ( FileWriter writer = new FileWriter( configFile ) )
             {
                 props.store( writer, "" );
@@ -210,6 +219,7 @@ public class StoreUpgradeIT
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
+            builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
@@ -332,6 +342,7 @@ public class StoreUpgradeIT
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
             builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.record_format, store.getFormatFamily() );
+            builder.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
             GraphDatabaseService db = builder.newGraphDatabase();
             try
             {
