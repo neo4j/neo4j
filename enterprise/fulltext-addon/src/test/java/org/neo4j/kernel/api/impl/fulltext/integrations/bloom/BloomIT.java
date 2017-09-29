@@ -451,7 +451,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         Result result = db.execute( "CALL db.fulltext.bloomFulltextProperties" );
         assertEquals( "otherprop", result.next().get( "propertyKey" ) );
@@ -465,7 +465,7 @@ public class BloomIT
     {
         builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
 
-        db = builder.newGraphDatabase();
+        db = getDb();
 
         db.execute( "CALL db.fulltext.bloomAwaitPopulation" );
         Result result = db.execute( "CALL db.fulltext.bloomFulltextStatus" );
