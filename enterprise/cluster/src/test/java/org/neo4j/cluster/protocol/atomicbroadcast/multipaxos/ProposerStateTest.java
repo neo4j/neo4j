@@ -20,11 +20,10 @@
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import java.io.Serializable;
-import java.net.URI;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
@@ -84,7 +83,7 @@ public class ProposerStateTest
 
         // Verify it was resent as a propose with the same value
         verify( mockHolder, times(1) ).offer(
-                Matchers.<Message<? extends MessageType>>argThat(
+                ArgumentMatchers.<Message<? extends MessageType>>argThat(
                         new MessageArgumentMatcher().onMessageType( ProposerMessage.propose ).withPayload( theTimedoutPayload )
                 ) );
         verify( context, times(1) ).unbookInstance( instanceId );

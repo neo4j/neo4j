@@ -19,21 +19,18 @@
  */
 package org.neo4j.io.fs;
 
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
+
 import java.io.IOException;
 import java.nio.file.FileVisitor;
 import java.nio.file.Path;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.stub;
-
 import static org.neo4j.io.fs.FileVisitors.throwExceptions;
 
 @RunWith( MockitoJUnitRunner.class )
@@ -46,7 +43,6 @@ public class ThrowExceptionsFileVisitorTest
     public void shouldThrowExceptionFromVisitFileFailed() throws IOException
     {
         IOException exception = new IOException();
-        stub( wrapped.visitFileFailed( any(), any() ) ).toThrow( exception );
         try
         {
             throwExceptions( wrapped ).visitFileFailed( null, exception );
@@ -62,7 +58,6 @@ public class ThrowExceptionsFileVisitorTest
     public void shouldThrowExceptionFromPostVisitDirectory() throws IOException
     {
         IOException exception = new IOException();
-        stub( wrapped.postVisitDirectory( any(), any() ) ).toThrow( exception );
         try
         {
             throwExceptions( wrapped ).postVisitDirectory( null, exception );

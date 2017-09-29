@@ -57,9 +57,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 assertExactQueryFindsNothing( reader, "and" );
                 assertExactQueryFindsNothing( reader, "in" );
                 assertExactQueryFindsNothing( reader, "the" );
-                assertExactQueryFindsIds( reader, "en", id );
-                assertExactQueryFindsIds( reader, "och", id );
-                assertExactQueryFindsIds( reader, "ett", id );
+                assertExactQueryFindsIds( reader, "en", false, id );
+                assertExactQueryFindsIds( reader, "och", false, id );
+                assertExactQueryFindsIds( reader, "ett", false, id );
             }
         }
     }
@@ -84,9 +84,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
-                assertExactQueryFindsIds( reader, "and", id );
-                assertExactQueryFindsIds( reader, "in", id );
-                assertExactQueryFindsIds( reader, "the", id );
+                assertExactQueryFindsIds( reader, "and", false, id );
+                assertExactQueryFindsIds( reader, "in", false, id );
+                assertExactQueryFindsIds( reader, "the", false, id );
                 assertExactQueryFindsNothing( reader, "en" );
                 assertExactQueryFindsNothing( reader, "och" );
                 assertExactQueryFindsNothing( reader, "ett" );
@@ -119,9 +119,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
                 assertExactQueryFindsNothing( reader, "and" );
                 assertExactQueryFindsNothing( reader, "in" );
                 assertExactQueryFindsNothing( reader, "the" );
-                assertExactQueryFindsIds( reader, "en", secondID );
-                assertExactQueryFindsIds( reader, "och", secondID );
-                assertExactQueryFindsIds( reader, "ett", secondID );
+                assertExactQueryFindsIds( reader, "en", false, secondID );
+                assertExactQueryFindsIds( reader, "och", false, secondID );
+                assertExactQueryFindsIds( reader, "ett", false, secondID );
             }
         }
 
@@ -134,9 +134,9 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( BLOOM_NODES, NODES ) )
             {
-                assertExactQueryFindsIds( reader, "and",  firstID );
-                assertExactQueryFindsIds( reader, "in",  firstID );
-                assertExactQueryFindsIds( reader, "the",  firstID );
+                assertExactQueryFindsIds( reader, "and",  false, firstID );
+                assertExactQueryFindsIds( reader, "in",  false, firstID );
+                assertExactQueryFindsIds( reader, "the",  false, firstID );
                 assertExactQueryFindsNothing( reader, "en" );
                 assertExactQueryFindsNothing( reader, "och" );
                 assertExactQueryFindsNothing( reader, "ett" );

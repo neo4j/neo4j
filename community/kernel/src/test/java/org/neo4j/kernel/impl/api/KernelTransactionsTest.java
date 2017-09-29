@@ -508,7 +508,8 @@ public class KernelTransactionsTest
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation ->
         {
-            invocation.getArgumentAt( 0, Collection.class ).add( mock( StorageCommand.class ) );
+            Collection<StorageCommand> argument = invocation.getArgument( 0 );
+            argument.add( mock( StorageCommand.class ) );
             return null;
         } ).when( storageEngine ).createCommands(
                 anyCollection(),
@@ -582,7 +583,7 @@ public class KernelTransactionsTest
                 any( TransactionApplicationMode.class ) ) )
                 .then( invocation ->
                 {
-                    slot[0] = ((TransactionToApply) invocation.getArguments()[0]).transactionRepresentation();
+                    slot[0] = ((TransactionToApply) invocation.getArgument( 0 )).transactionRepresentation();
                     return 1L;
                 } );
 

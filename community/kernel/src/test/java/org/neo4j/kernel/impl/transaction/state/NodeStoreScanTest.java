@@ -50,17 +50,19 @@ public class NodeStoreScanTest
     public void shouldGiveBackCompletionPercentage() throws Throwable
     {
         // given
-        final int total = 10;
-        when( nodeStore.getHighId() ).thenReturn( (long) total );
+        long total = 10;
+        when( nodeStore.getHighId() ).thenReturn( total );
+        NodeRecord emptyRecord = new NodeRecord( 0 );
         NodeRecord inUseRecord = new NodeRecord( 42 );
         inUseRecord.setInUse( true );
+        when( nodeStore.newRecord() ).thenReturn( emptyRecord );
         when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn(
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord,
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
 
-        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks,  total )
+        final NodeStoreScan<RuntimeException> scan = new NodeStoreScan<RuntimeException>( nodeStore, locks, total )
         {
             private int read;
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.mockito.{Matchers, Mockito}
+import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.graphdb.spatial.Point
@@ -45,8 +45,8 @@ object QueryStateHelper {
   def emptyWithValueSerialization: QueryState = emptyWith(query = context)
 
   private val context = Mockito.mock(classOf[QueryContext])
-  Mockito.when(context.asObject(Matchers.any())).thenAnswer(new Answer[Any] {
-    override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObject(invocationOnMock.getArgumentAt(0, classOf[AnyValue]))
+  Mockito.when(context.asObject(ArgumentMatchers.any())).thenAnswer(new Answer[Any] {
+    override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObject(invocationOnMock.getArgument(0))
   })
 
   private def toObject(any: AnyValue) = {

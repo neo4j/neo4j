@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryStateHelper
@@ -33,28 +33,30 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
 
   private val mockedContext = mock[QueryContext]
   private val operations = mock[Operations[Relationship]]
-  doReturn(operations).when(mockedContext).relationshipOps
+  result(operations).when(mockedContext).relationshipOps
 
   private val state = QueryStateHelper.emptyWith(query = mockedContext)
   private val function = RelationshipTypeFunction(Variable("r"))
 
   test("should give the type of a relationship") {
-    doReturn(false).when(operations).isDeletedInThisTx(any())
+    result(false).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
     function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
   test("should handle deleted relationships since types are inlined") {
-    doReturn(true).when(operations).isDeletedInThisTx(any())
+    result(true).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
     function.compute(rel, null, state) should equal(stringValue("T"))
   }
 
   test("should throw if encountering anything other than a relationship") {
-    doReturn(false).when(operations).isDeletedInThisTx(any())
+    result(false).when(operations).isDeletedInThisTx(any())
 
     a [ParameterWrongTypeException] should be thrownBy function.compute(1337L, null, state)
   }
+
+  private def result(value: Any) = doReturn(value, Nil: _*)
 }

@@ -472,7 +472,8 @@ public class StorePropertyPayloadCursorTest
             DynamicArrayStore dynamicArrayStore, Object... values )
     {
         StorePropertyPayloadCursor cursor = new StorePropertyPayloadCursor(
-                dynamicStringStore.newRecordCursor( null ), dynamicArrayStore.newRecordCursor( null ) );
+                dynamicStringStore.newRecordCursor( new DynamicRecord( -1 ) ),
+                dynamicArrayStore.newRecordCursor( new DynamicRecord( -1 ) ) );
 
         long[] blocks = asBlocks( values );
         cursor.init( blocks, blocks.length );

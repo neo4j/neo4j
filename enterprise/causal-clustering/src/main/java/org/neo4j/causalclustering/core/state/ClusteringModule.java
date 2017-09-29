@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
@@ -53,7 +52,7 @@ public class ClusteringModule
     private final ClusterBinder clusterBinder;
 
     public ClusteringModule( DiscoveryServiceFactory discoveryServiceFactory, MemberId myself,
-            PlatformModule platformModule, File clusterStateDirectory, SslPolicy sslPolicy )
+            PlatformModule platformModule, File clusterStateDirectory )
     {
         LifeSupport life = platformModule.life;
         Config config = platformModule.config;
@@ -64,7 +63,7 @@ public class ClusteringModule
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         topologyService = discoveryServiceFactory
-                .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
+                .coreTopologyService( config, myself, platformModule.jobScheduler, logProvider,
                         userLogProvider, hostnameResolver, resolveStrategy( config ) );
 
         life.add( topologyService );

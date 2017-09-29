@@ -41,7 +41,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.function.ThrowingConsumer.noop;
@@ -119,7 +118,7 @@ public class FileVisitorsDecoratorsTest
     @Test
     public void shouldPropagateExceptionsFromPreVisitDirectory() throws IOException
     {
-        stub( wrapped.preVisitDirectory( any(), any() ) ).toThrow( new IOException() );
+        when( wrapped.preVisitDirectory( any(), any() ) ).thenThrow( new IOException() );
 
         try
         {
@@ -153,7 +152,7 @@ public class FileVisitorsDecoratorsTest
     @Test
     public void shouldPropagateExceptionsFromPostVisitDirectory() throws IOException
     {
-        stub( wrapped.postVisitDirectory( any(), any() ) ).toThrow( new IOException() );
+        when( wrapped.postVisitDirectory( any(), any() ) ).thenThrow( new IOException() );
 
         try
         {
@@ -187,7 +186,7 @@ public class FileVisitorsDecoratorsTest
     @Test
     public void shouldPropagateExceptionsFromVisitFile() throws IOException
     {
-        stub( wrapped.visitFile( any(), any() ) ).toThrow( new IOException() );
+        when( wrapped.visitFile( any(), any() ) ).thenThrow( new IOException() );
 
         try
         {
@@ -221,7 +220,7 @@ public class FileVisitorsDecoratorsTest
     @Test
     public void shouldPropagateExceptionsFromVisitFileFailed() throws IOException
     {
-        stub( wrapped.visitFileFailed( any(), any() ) ).toThrow( new IOException() );
+        when( wrapped.visitFileFailed( any(), any() ) ).thenThrow( new IOException() );
 
         try
         {

@@ -56,7 +56,6 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -64,6 +63,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -419,8 +419,8 @@ public class StateHandlingStatementOperationsTest
         StoreReadLayer storeReadLayer = mock( StoreReadLayer.class );
         when( txState.augmentSingleNodeCursor( any( Cursor.class ), anyLong() ) ).thenAnswer( invocationOnMock ->
         {
-            long nodeId = (long) invocationOnMock.getArguments()[1];
-            when( txState.augmentSinglePropertyCursor( any( Cursor.class ), any( PropertyContainerState.class ),
+            long nodeId = invocationOnMock.getArgument( 1 );
+            when( txState.augmentSinglePropertyCursor( any( Cursor.class ), isNull(),
                     eq( propertyKey ) ) )
                 .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKey, Values.of( inRange ) ) ) );
             return asNodeCursor( nodeId, nodeId + 20000 );
@@ -434,7 +434,7 @@ public class StateHandlingStatementOperationsTest
         );
         when( storageStatement.acquireSingleNodeCursor( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
-            long nodeId = (long) invocationOnMock.getArguments()[0];
+            long nodeId = invocationOnMock.getArgument( 0 );
             when( storeReadLayer.nodeGetProperty( eq( storageStatement ), any( NodeItem.class ), eq( propertyKey ),
                     any( AssertOpen.class ) ) )
                 .thenReturn( asPropertyCursor( new PropertyKeyValue( propertyKey, Values.of( inRange ) ) ) );
@@ -512,9 +512,11 @@ public class StateHandlingStatementOperationsTest
         Value value = Values.of( "The value" );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
+        DataWriteOperations dataWriteOperations = mock( DataWriteOperations.class );
         Cursor<NodeItem> ourNode = nodeCursorWithProperty( propertyKeyId );
         when( storeStatement.acquireSingleNodeCursor( nodeId ) ).thenReturn( ourNode );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        when( kernelStatement.dataWriteOperations() ).thenReturn( dataWriteOperations );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
         when( autoIndexing.nodes() ).thenReturn( autoIndexOps );
@@ -546,9 +548,11 @@ public class StateHandlingStatementOperationsTest
         Value value = Values.of( "The value" );
         KernelStatement kernelStatement = mock( KernelStatement.class );
         StoreStatement storeStatement = mock( StoreStatement.class );
+        DataWriteOperations dataWriteOperations = mock( DataWriteOperations.class );
         Cursor<RelationshipItem> ourRelationship = relationshipCursorWithProperty( propertyKeyId );
         when( storeStatement.acquireSingleRelationshipCursor( relationshipId ) ).thenReturn( ourRelationship );
         when( kernelStatement.getStoreStatement() ).thenReturn( storeStatement );
+        when( kernelStatement.dataWriteOperations() ).thenReturn( dataWriteOperations );
         InternalAutoIndexing autoIndexing = mock( InternalAutoIndexing.class );
         AutoIndexOperations autoIndexOps = mock( AutoIndexOperations.class );
         when( autoIndexing.nodes() ).thenReturn( AutoIndexOperations.UNSUPPORTED );
@@ -567,7 +571,7 @@ public class StateHandlingStatementOperationsTest
         assertFalse( kernelStatement.hasTxStateWithChanges() );
         // although auto-indexing should still be notified
         verify( autoIndexOps ).propertyChanged(
-                any( DataWriteOperations.class ), eq( relationshipId ),
+                eq( dataWriteOperations ), eq( relationshipId ),
                 eq( propertyKeyId ), eq( newValue ), eq( newValue ) );
     }
 

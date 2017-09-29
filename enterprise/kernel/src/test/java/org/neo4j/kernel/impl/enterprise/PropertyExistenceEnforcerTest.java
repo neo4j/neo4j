@@ -71,7 +71,7 @@ public class PropertyExistenceEnforcerTest
         when( storeReadLayer.getOrCreateSchemaDependantState( eq( PropertyExistenceEnforcer.class ),
                 any( Function.class) ) ).thenAnswer( invocation ->
         {
-            Function<StoreReadLayer, PropertyExistenceEnforcer> function = invocation.getArgumentAt( 1, Function.class );
+            Function<StoreReadLayer,PropertyExistenceEnforcer> function = invocation.getArgument( 1 );
             return function.apply( storeReadLayer );
         } );
         return storeReadLayer;

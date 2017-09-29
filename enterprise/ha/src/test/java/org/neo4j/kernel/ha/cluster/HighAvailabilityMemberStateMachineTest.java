@@ -20,7 +20,7 @@
 package org.neo4j.kernel.ha.cluster;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 
 import java.io.File;
 import java.io.IOException;
@@ -671,9 +671,9 @@ public class HighAvailabilityMemberStateMachineTest
         final ClusterMemberListenerContainer listenerContainer = new ClusterMemberListenerContainer();
         doAnswer( invocation ->
         {
-            listenerContainer.set( (ClusterMemberListener) invocation.getArguments()[0] );
+            listenerContainer.set( invocation.getArgument( 0 ) );
             return null;
-        } ).when( events ).addClusterMemberListener( Matchers.any() );
+        } ).when( events ).addClusterMemberListener( ArgumentMatchers.any() );
         return listenerContainer;
     }
 

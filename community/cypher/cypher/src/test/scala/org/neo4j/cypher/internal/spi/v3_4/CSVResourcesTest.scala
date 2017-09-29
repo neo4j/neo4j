@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_4
 import java.net.URL
 
 import org.apache.commons.lang3.SystemUtils
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_4.test_helpers.CreateTempFileTestSupport

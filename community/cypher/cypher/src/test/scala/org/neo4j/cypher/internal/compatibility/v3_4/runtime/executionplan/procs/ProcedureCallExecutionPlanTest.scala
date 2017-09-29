@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs
 
-import org.mockito.Matchers.any
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.NormalMode
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, symbols}
 import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, symbols}
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.values.storable.LongValue
@@ -106,7 +106,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   val procedureResult = new Answer[Iterator[Array[AnyRef]]] {
     override def answer(invocationOnMock: InvocationOnMock) = {
-      val input = invocationOnMock.getArguments()(1).asInstanceOf[Seq[AnyRef]]
+      val input: Seq[AnyRef] = invocationOnMock.getArgument(1)
       new Iterator[Array[AnyRef]] {
         override def hasNext = !iteratorExhausted
 
@@ -122,6 +122,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
-    override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArguments()(0).asInstanceOf[LongValue].value()
+    override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })
 }

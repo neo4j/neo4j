@@ -368,7 +368,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         doAnswer( invocation ->
         {
             @SuppressWarnings( "unchecked" )
-            Collection<StorageCommand> commands = invocation.getArgumentAt( 0, Collection.class );
+            Collection<StorageCommand> commands = invocation.getArgument( 0 );
             commands.add( mock( Command.class ) );
             return null;
         } ).when( storageEngine ).createCommands(
@@ -383,6 +383,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                     AUTH_DISABLED, 0L );
+            transaction.txState();
             try ( KernelStatement statement = transaction.acquireStatement() )
             {
                 statement.explicitIndexTxState(); // which will pull it from the supplier and the mocking above

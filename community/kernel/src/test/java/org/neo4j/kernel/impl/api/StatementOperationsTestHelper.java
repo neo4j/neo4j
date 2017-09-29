@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.mockito.Matchers;
-
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
@@ -44,6 +42,8 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -78,10 +78,10 @@ public abstract class StatementOperationsTestHelper
         try
         {
             IndexReader indexReader = mock( IndexReader.class );
-            when( indexReader.query( Matchers.isA( IndexQuery.ExactPredicate.class ) ) )
+            when( indexReader.query( isA( IndexQuery.ExactPredicate.class ) ) )
                     .thenReturn( PrimitiveLongCollections.emptyIterator() );
             StorageStatement storageStatement = mock( StorageStatement.class );
-            when( storageStatement.getIndexReader( Matchers.any() ) ).thenReturn( indexReader );
+            when( storageStatement.getIndexReader( any() ) ).thenReturn( indexReader );
             when( state.getStoreStatement() ).thenReturn( storageStatement );
         }
         catch ( IndexNotFoundKernelException | IndexNotApplicableKernelException e )

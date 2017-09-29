@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.time.Duration;
 
@@ -31,8 +31,8 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.cluster.ConversationSPI;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.collection.TimedRepository;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -87,10 +87,6 @@ public class ConversationManagerTest
     @Test
     public void testConversationWorkflow() throws Exception
     {
-        JobScheduler.JobHandle reaperJobHandle = mock( JobScheduler.JobHandle.class );
-        when( config.get( HaSettings.lock_read_timeout ) ).thenReturn( Duration.ofMillis( 1 ) );
-        when( conversationSPI.scheduleRecurringJob( any( JobScheduler.Group.class ), any( Long.class ),
-                any( Runnable.class ) ) ).thenReturn( reaperJobHandle );
         RequestContext requestContext = getRequestContext();
         conversationManager = getConversationManager();
         TimedRepository conversationStorage = mock( TimedRepository.class );

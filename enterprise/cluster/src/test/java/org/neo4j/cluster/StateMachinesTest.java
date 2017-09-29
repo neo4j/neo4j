@@ -20,16 +20,13 @@
 package org.neo4j.cluster;
 
 import org.junit.Test;
-import org.mockito.Matchers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Executor;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
@@ -92,13 +89,13 @@ public class StateMachinesTest
         // The sender, which adds messages outgoing to the list above.
         doAnswer( invocation ->
         {
-            sentOut.addAll( (Collection<? extends Message>) invocation.getArguments()[0] );
+            sentOut.addAll( invocation.getArgument( 0 ) );
             return null;
-        } ).when( sender ).process( Matchers.<List<Message<? extends MessageType>>>any() );
+        } ).when( sender ).process( ArgumentMatchers.<List<Message<? extends MessageType>>>any() );
 
         StateMachines stateMachines = new StateMachines( NullLogProvider.getInstance(), mock( StateMachines.Monitor.class ),
                 mock( MessageSource.class ), sender,
-                mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), command -> command.run(), me
+                mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), Runnable::run, me
         );
 
         // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
@@ -107,8 +104,8 @@ public class StateMachinesTest
         when( machine.getMessageType() ).then( (Answer<Object>) invocation -> TestMessage.class );
         doAnswer( invocation ->
         {
-            Message message = (Message) invocation.getArguments()[0];
-            MessageHolder holder = (MessageHolder) invocation.getArguments()[1];
+            Message message = invocation.getArgument( 0 );
+            MessageHolder holder = invocation.getArgument( 1 );
             message.setHeader( Message.TO, "to://neverland" );
             holder.offer( message );
             return null;

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.util.Collection;
 import java.util.Map;
@@ -63,7 +64,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -165,7 +165,7 @@ public class MasterImplTest
     private void mockEmptyResponse( SPI spi )
     {
         when( spi.packEmptyResponse( any() ) ).thenAnswer(
-                invocation -> new TransactionObligationResponse<>( invocation.getArguments()[0], StoreId.DEFAULT,
+                invocation -> new TransactionObligationResponse<>( invocation.getArgument( 0 ), StoreId.DEFAULT,
                         TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP ) );
     }
 
@@ -387,7 +387,7 @@ public class MasterImplTest
         master.acquireExclusiveLock( context, ResourceTypes.NODE, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -404,7 +404,7 @@ public class MasterImplTest
         master.acquireSharedLock( context, ResourceTypes.NODE, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -426,7 +426,7 @@ public class MasterImplTest
         master.acquireExclusiveLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -448,7 +448,7 @@ public class MasterImplTest
         master.acquireSharedLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -470,7 +470,7 @@ public class MasterImplTest
         master.acquireExclusiveLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -492,7 +492,7 @@ public class MasterImplTest
         master.acquireSharedLock( context, type, 1 );
 
         ArgumentCaptor<LockResult> captor = ArgumentCaptor.forClass( LockResult.class );
-        verify( spi ).packTransactionObligationResponse( argThat( is( context ) ), captor.capture() );
+        verify( spi ).packTransactionObligationResponse( MockitoHamcrest.argThat( is( context ) ), captor.capture() );
         assertThat( captor.getValue().getMessage(), is( not( nullValue() ) ) );
     }
 
@@ -521,7 +521,7 @@ public class MasterImplTest
         MasterImpl.SPI mock = mock( MasterImpl.SPI.class );
         when( mock.storeId() ).thenReturn( storeId );
         when( mock.packEmptyResponse( any() ) ).thenAnswer(
-                invocation -> new TransactionObligationResponse<>( invocation.getArguments()[0], storeId,
+                invocation -> new TransactionObligationResponse<>( invocation.getArgument( 0 ), storeId,
                         TransactionIdStore.BASE_TX_ID, ResourceReleaser.NO_OP ) );
         return mock;
     }

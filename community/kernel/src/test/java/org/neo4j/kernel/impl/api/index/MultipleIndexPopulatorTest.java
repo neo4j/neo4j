@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
@@ -48,6 +47,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyLong;
@@ -76,13 +76,6 @@ public class MultipleIndexPopulatorTest
     private MultipleIndexPopulator multipleIndexPopulator;
 
     private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
-
-    @Before
-    public void setUp()
-    {
-        when( indexStoreView.visitNodes( any( int[].class ), any( IntPredicate.class ), any(Visitor.class),
-                any(Visitor.class), anyBoolean() ) ).thenReturn( storeScan );
-    }
 
     @Test
     public void testMultiplePopulatorsCreation() throws Exception
@@ -143,7 +136,7 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.indexAllNodes();
 
         verify( indexStoreView ).visitNodes( any(int[].class), any( IntPredicate.class ), any( Visitor.class ),
-                any( Visitor.class ), anyBoolean() );
+                isNull(), anyBoolean() );
     }
 
     @Test
@@ -197,8 +190,6 @@ public class MultipleIndexPopulatorTest
     public void testFailByNonExistingPopulation() throws IOException
     {
         IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
-        when( nonExistingPopulation.schema() ).thenReturn( SchemaDescriptorFactory.forLabel( 1, 1 ) );
-
         IndexPopulator populator = createIndexPopulator();
 
         addPopulator( populator, 1 );

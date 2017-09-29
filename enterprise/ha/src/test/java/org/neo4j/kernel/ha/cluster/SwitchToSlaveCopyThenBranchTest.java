@@ -84,6 +84,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
@@ -229,7 +230,7 @@ public class SwitchToSlaveCopyThenBranchTest
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         doAnswer( invocation ->
         {
-            MoveAfterCopy moveAfterCopy = invocation.getArgumentAt( 2, MoveAfterCopy.class );
+            MoveAfterCopy moveAfterCopy = invocation.getArgument( 2 );
             moveAfterCopy.move( Stream.empty(), new File( "" ), new File( "" ) );
             return null;
         } ).when( storeCopyClient ).copyStore(
@@ -375,7 +376,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
         MasterClientResolver masterClientResolver = mock( MasterClientResolver.class );
         when( masterClientResolver.instantiate( anyString(), anyInt(), anyString(), any( Monitors.class ),
-                any( StoreId.class ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
+                argThat( storeId -> true ), any( LifeSupport.class ) ) ).thenReturn( masterClient );
 
         return spy( new SwitchToSlaveCopyThenBranch( new File( "" ), NullLogService.getInstance(),
                 configMock(), resolver,

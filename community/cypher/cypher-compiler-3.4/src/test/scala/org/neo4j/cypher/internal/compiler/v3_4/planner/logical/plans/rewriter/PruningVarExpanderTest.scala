@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
-  test("simples possible query that can use PruningVarExpand") {
+  test("simplest possible query that can use PruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
 
@@ -38,10 +38,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val toId = IdName("to")
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
-    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val input = Distinct(originalExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)(solved)
-    val expectedOutput = Aggregation(rewrittenExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)
   }
@@ -79,11 +79,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val predicate = HasLabels(Variable("to")(pos), Seq(LabelName("X")(pos)))(pos)
     val filter = Selection(Seq(predicate), originalExpand)(solved)
-    val input = Aggregation(filter, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val input = Distinct(filter, Map("to" -> Variable("to")(pos)))(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)(solved)
     val filterAfterRewrite = Selection(Seq(predicate), rewrittenExpand)(solved)
-    val expectedOutput = Aggregation(filterAfterRewrite, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val expectedOutput = Distinct(filterAfterRewrite, Map("to" -> Variable("to")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)
   }
@@ -100,7 +100,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val aggregate = Aggregation(originalExpand, Map.empty, Map("count" -> CountStar()(pos)))(solved)
-    val input = Aggregation(aggregate, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val input = Distinct(aggregate, Map("to" -> Variable("to")(pos)))(solved)
 
     assertNotRewritten(input)
   }
@@ -119,11 +119,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
-    val input = Aggregation(originalExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val input = Distinct(originalExpand2, Map("c" -> Variable("c")(pos)))(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)(solved)
     val rewrittenExpand2 = PruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, 1, 3)(solved)
-    val expectedOutput = Aggregation(rewrittenExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> Variable("c")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)
   }
@@ -142,11 +142,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)(solved)
-    val input = Aggregation(originalExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val input = Distinct(originalExpand2, Map("c" -> Variable("c")(pos)))(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)(solved)
     val rewrittenExpand2 = Expand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)(solved)
-    val expectedOutput = Aggregation(rewrittenExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> Variable("c")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)
   }
@@ -178,12 +178,12 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val optional1 = Optional(originalExpand, Set(aId))(solved)
     val apply1 = Apply(allNodes, optional1)(solved)
-    val distinct1 = Aggregation(apply1, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val distinct1 = Distinct(apply1, Map("c" -> Variable("c")(pos)))(solved)
 
     val rewrittenExpand = PruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)(solved)
     val optional2 = Optional(rewrittenExpand, Set(aId))(solved)
     val apply2 = Apply(allNodes, optional2)(solved)
-    val distinct2 = Aggregation(apply2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
+    val distinct2 = Distinct(apply2, Map("c" -> Variable("c")(pos)))(solved)
 
     rewrite(distinct1) should equal(distinct2)
   }
@@ -215,10 +215,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val toId = IdName("to")
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
-    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val input = Distinct(originalExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     val rewrittenExpand = FullPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)(solved)
-    val expectedOutput = Aggregation(rewrittenExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     rewrite(input) should equal(expectedOutput)
   }
@@ -234,7 +234,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val toId = IdName("to")
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
-    val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
+    val input = Distinct(originalExpand, Map("to" -> Variable("to")(pos)))(solved)
 
     assertNotRewritten(input)
   }
@@ -255,7 +255,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val function = FunctionInvocation(FunctionName("nodes")(pos), PathExpression(pathProjectior)(pos))(pos)
     val projection = Projection(originalExpand, Map("d" -> function))(solved)
-    val distinct = Aggregation(projection, Map("d" -> varFor("d")), Map.empty)(solved)
+    val distinct = Distinct(projection, Map("d" -> varFor("d")))(solved)
 
     assertNotRewritten(distinct)
   }

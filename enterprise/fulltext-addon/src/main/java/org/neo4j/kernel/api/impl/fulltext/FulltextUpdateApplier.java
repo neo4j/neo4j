@@ -185,6 +185,7 @@ class FulltextUpdateApplier
                 }
             }
             indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+            index.setPopulated();
             return Pair.of( index, completedLatch );
         };
 
@@ -295,7 +296,7 @@ class FulltextUpdateApplier
             {
                 isAvailable = availabilityGuard.isAvailable( 100 );
             }
-            while ( !isAvailable );
+            while ( !isAvailable && !availabilityGuard.isShutdown() );
         }
 
         private FulltextIndexUpdate drainQueueAndApplyUpdates(

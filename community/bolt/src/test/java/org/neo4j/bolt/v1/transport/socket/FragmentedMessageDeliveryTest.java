@@ -113,10 +113,10 @@ public class FragmentedMessageDeliveryTest
         BoltStateMachine machine = mock( BoltStateMachine.class );
 
         Channel ch = mock( Channel.class );
-        when(ch.alloc()).thenReturn( UnpooledByteBufAllocator.DEFAULT );
+        when( ch.alloc() ).thenReturn( UnpooledByteBufAllocator.DEFAULT );
 
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-        when(ctx.channel()).thenReturn( ch );
+        when( ctx.channel() ).thenReturn( ch );
 
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.channelHandlerContext() ).thenReturn( ctx );

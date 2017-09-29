@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_4.codegen.ir
 
-import org.mockito.Matchers._
+import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ProfileMode

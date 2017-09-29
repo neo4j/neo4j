@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.logging;
 
-import java.net.InetSocketAddress;
-
 import io.netty.channel.Channel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.util.Attribute;
@@ -28,7 +26,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import java.net.InetSocketAddress;
 
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -37,7 +37,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.bolt.logging.BoltMessageLoggerImpl.CORRELATION_ATTRIBUTE_KEY;
 import static org.neo4j.helpers.ValueUtils.asMapValue;
 import static org.neo4j.helpers.collection.MapUtil.map;

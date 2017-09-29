@@ -281,7 +281,7 @@ public class ClusterStateTest
         return new InstanceId( i );
     }
 
-    private static class ConfigurationResponseStateMatcher extends ArgumentMatcher<ConfigurationResponseState>
+    private static class ConfigurationResponseStateMatcher implements ArgumentMatcher<ConfigurationResponseState>
     {
         private Map<InstanceId, URI> members;
 
@@ -292,10 +292,9 @@ public class ClusterStateTest
         }
 
         @Override
-        public boolean matches( Object argument )
+        public boolean matches( ConfigurationResponseState argument )
         {
-            ConfigurationResponseState arg = (ConfigurationResponseState) argument;
-            return arg.getMembers().equals( this.members );
+            return argument.getMembers().equals( this.members );
         }
     }
 }

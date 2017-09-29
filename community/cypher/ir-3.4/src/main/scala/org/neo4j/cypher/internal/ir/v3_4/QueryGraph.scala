@@ -282,23 +282,39 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
    */
   def connectedComponents: Seq[QueryGraph] = {
     val visited = mutable.Set.empty[IdName]
-    patternNodes.toIndexedSeq.collect {
-      case patternNode if !visited(patternNode) =>
-        val qg = connectedComponentFor(patternNode, visited)
-        val coveredIds = qg.coveredIds
-        val shortestPaths = shortestPathPatterns.filter {
-          p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
-        }
-        val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
-        val allIds = coveredIds ++ argumentIds ++ shortestPathIds
-        val predicates = selections.predicates.filter(_.dependencies.subsetOf(allIds))
-        val filteredHints = hints.filter(h => h.variables.forall(variable => coveredIds.contains(IdName(variable.name))))
-        qg.
-          withSelections(Selections(predicates)).
-          withArgumentIds(argumentIds).
-          addHints(filteredHints).
-          addShortestPaths(shortestPaths.toIndexedSeq: _*)
+
+    def createComponentQueryGraphStartingFrom(patternNode: IdName) = {
+      val qg = connectedComponentFor(patternNode, visited)
+      val coveredIds = qg.coveredIds
+      val shortestPaths = shortestPathPatterns.filter {
+        p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
+      }
+      val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
+      val allIds = coveredIds ++ argumentIds ++ shortestPathIds
+      val predicates = selections.predicates.filter(_.dependencies.subsetOf(allIds))
+      val filteredHints = hints.filter(h => h.variables.forall(variable => coveredIds.contains(IdName(variable.name))))
+      qg.
+        withSelections(Selections(predicates)).
+        withArgumentIds(argumentIds).
+        addHints(filteredHints).
+        addShortestPaths(shortestPaths.toIndexedSeq: _*)
     }
+
+    /*
+    We want the components that have patterns connected to arguments to be planned first, so we do not pull in arguments
+    to other components by mistake
+     */
+    val argumentComponents = (patternNodes intersect argumentIds).toIndexedSeq.collect {
+      case patternNode if !visited(patternNode) =>
+        createComponentQueryGraphStartingFrom(patternNode)
+    }
+
+    val rest = patternNodes.toIndexedSeq.collect {
+      case patternNode if !visited(patternNode) =>
+        createComponentQueryGraphStartingFrom(patternNode)
+    }
+
+    argumentComponents ++ rest
   }
 
   def withoutPatternRelationships(patterns: Set[PatternRelationship]): QueryGraph =
@@ -332,7 +348,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
         val alreadyHaveArguments = qg.argumentIds.nonEmpty
 
-        if (!alreadyHaveArguments && (relationshipPullsInArguments(qg.coveredIds) || predicatePullsInArguments(node))) {
+        if (!alreadyHaveArguments && (argumentsOverLapsWith(qg.coveredIds) || predicatePullsInArguments(node))) {
           qg = qg.withArgumentIds(argumentIds)
           val nodesSolvedByArguments = patternNodes intersect qg.argumentIds
           queue.enqueue(nodesSolvedByArguments.toIndexedSeq: _*)
@@ -342,7 +358,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     qg
   }
 
-  private def relationshipPullsInArguments(coveredIds: Set[IdName]) = (argumentIds intersect coveredIds).nonEmpty
+  private def argumentsOverLapsWith(coveredIds: Set[IdName]) = (argumentIds intersect coveredIds).nonEmpty
 
   private def predicatePullsInArguments(node: IdName) = selections.flatPredicates.exists { p =>
       val deps = p.dependencies.map(IdName.fromVariable)

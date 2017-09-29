@@ -340,6 +340,7 @@ public class BoltFailuresIT
         catch ( ExecutionException e )
         {
             // expected
+            e.printStackTrace();
         }
     }
 

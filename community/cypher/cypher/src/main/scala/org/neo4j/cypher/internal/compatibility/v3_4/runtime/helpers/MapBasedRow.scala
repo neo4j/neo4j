@@ -24,9 +24,7 @@ import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.Map
 
-class MapBasedRow extends ResultRow {
-
-  var map: Map[String, Any] = Map.empty
+class MapBasedRow(var map: Map[String, Any] = Map.empty) extends ResultRow {
 
   override def getNode(key: String): Node = getWithType(key, classOf[Node])
 

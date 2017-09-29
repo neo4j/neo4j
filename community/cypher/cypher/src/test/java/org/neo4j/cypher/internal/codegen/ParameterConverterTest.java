@@ -77,14 +77,14 @@ public class ParameterConverterTest
         NodeManager manager = mock( NodeManager.class );
         when( manager.newNodeProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
-            long id = invocationOnMock.getArgumentAt( 0, long.class );
+            long id = invocationOnMock.getArgument( 0 );
             NodeProxy mock = mock( NodeProxy.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
         } );
         when( manager.newRelationshipProxyById( anyLong() ) ).thenAnswer( invocationOnMock ->
         {
-            long id = invocationOnMock.getArgumentAt( 0, long.class );
+            long id = invocationOnMock.getArgument( 0 );
             RelationshipProxy mock = mock( RelationshipProxy.class );
             when( mock.getId() ).thenReturn( id );
             return mock;
