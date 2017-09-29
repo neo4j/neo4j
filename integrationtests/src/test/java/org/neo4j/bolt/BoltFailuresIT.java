@@ -307,7 +307,6 @@ public class BoltFailuresIT
     private void awaitLogToContainMessage( AssertableLogProvider logProvider, LogMatcher matcher )
             throws TimeoutException
     {
-        System.err.println(logProvider.serialize());
         try
         {
             await( () -> logProvider.containsMatchingLogCall( matcher ) );
