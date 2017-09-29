@@ -36,7 +36,6 @@ import org.w3c.dom.Document;
 import java.awt.*;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Map;
 import javax.imageio.ImageIO;
@@ -58,18 +57,20 @@ public class CoverageChartWriter
 
     public void dumpSVG( Map<String,Integer> data )
     {
-        SVGGraphics2D svgGenerator = new SVGGraphics2D( getDocument() );
-
-        createBarChart( data ).draw( svgGenerator, new Rectangle( 1500, 500 ) );
-
-        try ( OutputStreamWriter writer = new OutputStreamWriter(
-                new FileOutputStream( new File( outDirectory, filename + ".svg" ) ) ) )
+        try
         {
-            svgGenerator.stream( writer, true );
+            SVGGraphics2D svgGenerator = new SVGGraphics2D( getDocument() );
+            createBarChart( data ).draw( svgGenerator, new Rectangle( 1500, 500 ) );
+            try ( OutputStreamWriter writer = new OutputStreamWriter(
+                    new FileOutputStream( new File( outDirectory, filename + ".svg" ) ) ) )
+            {
+                svgGenerator.stream( writer, true );
+            }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            throw new RuntimeException( "Unexpected error during SVG file creation", e );
+            System.err.println( "Failed to write test report chart to SVG: " + e.getMessage() );
+            e.printStackTrace( System.err );
         }
     }
 
@@ -88,13 +89,17 @@ public class CoverageChartWriter
 
     public void dumpPNG( Map<String,Integer> data )
     {
-        try ( FileOutputStream output = new FileOutputStream( new File( outDirectory, filename + ".png" ) ) )
+        try
         {
-            ImageIO.write( createBarChart( data ).createBufferedImage( 1500, 500 ), "png", output );
+            try ( FileOutputStream output = new FileOutputStream( new File( outDirectory, filename + ".png" ) ) )
+            {
+                ImageIO.write( createBarChart( data ).createBufferedImage( 1500, 500 ), "png", output );
+            }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
-            throw new RuntimeException( "Unexpected error during PNG file creation", e );
+            System.err.println( "Failed to write test report chart to PNG: " + e.getMessage() );
+            e.printStackTrace( System.err );
         }
     }
 
