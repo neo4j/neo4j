@@ -347,10 +347,18 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyOnEagerBeforeLoadCSV() throws Exception
+    public void shouldNotNotifyOnEagerBeforeLoadCSVDelete() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> shouldNotNotifyInStream( version,
                 "EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line" ) );
+    }
+
+    @Test
+    public void shouldNotNotifyOnEagerBeforeLoadCSVCreate() throws Exception
+    {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+                assertNotifications( version +"EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
+                        containsNoItem( eagerOperatorWarning ) ) );
     }
 
     @Test
@@ -495,7 +503,8 @@ public class NotificationAcceptanceTest
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
-            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
+            assertNotifications( version + "EXPLAIN MATCH (n:Person) WHERE n.name = 'Tobias' AND n['key-' + n.name] = 'value' RETURN n",
+                    containsItem( dynamicPropertyWarning ));
         } );
     }
 
@@ -511,7 +520,8 @@ public class NotificationAcceptanceTest
                 db().createNode().addLabel( label( "Foo" ) );
                 tx.success();
             }
-            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Foo) WHERE n['key-' + n.name] = 'value' RETURN n" );
+
         } );
     }
 
@@ -568,6 +578,19 @@ public class NotificationAcceptanceTest
 
     @Test
     public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels() throws Exception
+    {
+        Stream.of( "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
+            db().execute( "CREATE INDEX ON :Person(name)" );
+            db().execute( "Call db.awaitIndexes()" );
+
+            assertNotifications( version + "EXPLAIN MATCH (n:Person:Foo) WHERE n['key-' + n.name] = 'value' RETURN n",
+                    containsItem( dynamicPropertyWarning ) );
+        } );
+    }
+
+    @Test
+    public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleIndexedLabels() throws Exception
     {
         Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
         {
@@ -638,6 +661,20 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    public void shouldWarnOnMisspelledLabel() throws Exception {
+        try ( Transaction tx = db().beginTx() )
+        {
+            db().createNode().addLabel( label( "Person" ) );
+            tx.success();
+        }
+
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+            assertNotifications(version +"EXPLAIN MATCH (n:Preson) RETURN *", containsItem( unknownLabelWarning ) );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) RETURN *" );
+        });
+    }
+
+    @Test
     public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions() throws Exception
     {
         assertNotifications( "CYPHER 2.3 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( unknownLabelWarning ) );
@@ -679,19 +716,51 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnMissingRelationshipType() throws Exception
     {
-        assertNotifications( "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelatonshipWarning ) );
+        assertNotifications( "EXPLAIN MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelationshipWarning ) );
+    }
+
+    @Test
+    public void shouldWarnOnMisspelledRelationship() throws Exception {
+        try ( Transaction tx = db().beginTx() )
+        {
+            db().createNode().addLabel( label( "Person" ) );
+            tx.success();
+        }
+
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+            db().execute( "CREATE (n)-[r:R]->(m)");
+            assertNotifications(version + "EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem( unknownRelationshipWarning ) );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH ()-[r:R]->() RETURN *" );
+        });
     }
 
     @Test
     public void shouldWarnOnMissingRelationshipTypeWithComment() throws Exception
     {
-        assertNotifications( "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelatonshipWarning ) );
+        assertNotifications( "EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( unknownRelationshipWarning ) );
     }
 
     @Test
     public void shouldWarnOnMissingProperty() throws Exception
     {
         assertNotifications( "EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( unknownPropertyKeyWarning ) );
+    }
+
+    @Test
+    public void shouldWarnOnMisspelledProperty() throws Exception {
+        db().execute("CREATE (n {prop : 42})");
+
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+            db().execute( "CREATE (n)-[r:R]->(m)");
+            assertNotifications(version + "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem( unknownPropertyKeyWarning ) );
+            shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n" );
+        });
+    }
+
+    @Test
+    public void shouldWarnOnMissingPropertyWithComment() throws Exception
+    {
+        assertNotifications( "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( unknownPropertyKeyWarning ) );
     }
 
     @Test
@@ -778,9 +847,9 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMissingPropertyWithComment() throws Exception
-    {
-        assertNotifications( "EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( unknownPropertyKeyWarning ) );
+    public void version2_3ShouldWarnAboutBareNodes() throws Exception {
+        Result res = db().execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n");
+        assert res.getNotifications().iterator().hasNext();
     }
 
     private void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )
@@ -987,7 +1056,7 @@ public class NotificationAcceptanceTest
             notification( "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning", containsString( "the missing property name is" ),
                     any( InputPosition.class ), SeverityLevel.WARNING );
 
-    private Matcher<Notification> unknownRelatonshipWarning =
+    private Matcher<Notification> unknownRelationshipWarning =
             notification( "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning", containsString( "the missing relationship type is" ),
                     any( InputPosition.class ), SeverityLevel.WARNING );
 
