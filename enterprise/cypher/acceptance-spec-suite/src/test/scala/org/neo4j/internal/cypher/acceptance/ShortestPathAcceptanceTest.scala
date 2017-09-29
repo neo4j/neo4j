@@ -364,7 +364,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     ))
   }
 
-  ignore("shortest path should work with multiple expressions and predicates - relationship expander") {
+  test("shortest path should work with multiple expressions and predicates - relationship expander") {
     val nodes = shortestPathModel()
 
     val query = """PROFILE CYPHER
@@ -375,7 +375,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p1) AS nodes1, nodes(p2) as nodes2
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed, query)
+    val result = executeWith(expectedToSucceed, query, expectedDifferentResults = Configs.AllRulePlanners)
 
     result.toList should equal(List(Map("nodes1" -> List(nodes("source"), nodes("node3"), nodes("node4"), nodes("target")),
       "nodes2" -> List(nodes("source"), nodes("target")))))
@@ -398,7 +398,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
       "nodes2" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))
   }
 
-  ignore("shortest path should work with multiple expressions and predicates - relationship and node expander") {
+  test("shortest path should work with multiple expressions and predicates - relationship and node expander") {
     val nodes = largerShortestPathModel()
 
     val query = """PROFILE CYPHER
@@ -410,7 +410,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
                   |RETURN nodes(p1) AS nodes1, nodes(p2) as nodes2
                 """.stripMargin
 
-    val result = executeWith(expectedToSucceed, query)
+    val result = executeWith(expectedToSucceed, query, expectedDifferentResults = Configs.AllRulePlanners)
 
     result.toList should equal(List(Map("nodes1" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")),
       "nodes2" -> List(nodes("Donald"), nodes("Huey"), nodes("Dewey"), nodes("Louie"), nodes("Daisy")))))

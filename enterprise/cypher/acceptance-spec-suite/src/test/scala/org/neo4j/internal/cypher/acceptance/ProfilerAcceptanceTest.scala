@@ -309,16 +309,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
       }
 
-      ignore("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
+      test("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
         (0 until 100).map(i => createLabeledNode("Person"))
-        // NOTE: We cannot executeWithAllPlanners because of random result
-        val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)")
+        // NOTE: We cannot executeWith because of random result
+        val result = innerExecuteDeprecated(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)", Map.empty)
         assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
       }
 
       test("LIMIT should influence cardinality estimation by default value when expression contains timestamp()") {
         (0 until 100).map(i => createLabeledNode("Person"))
-        // NOTE: We cannot executeWithAllPlanners because of random result
         val result = executeWith(Configs.Interpreted, s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()")
         assertEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)(result)("Limit")
       }
