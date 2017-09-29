@@ -44,6 +44,7 @@ BSD - Scala License
 
 BSD License
   ASM Core
+  ASM Tree
   Scala Compiler
 
 Bouncy Castle License

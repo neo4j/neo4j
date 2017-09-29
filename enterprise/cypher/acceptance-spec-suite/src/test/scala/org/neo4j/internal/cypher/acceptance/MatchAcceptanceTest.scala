@@ -55,7 +55,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("Should not use both pruning var expand and projections that need path info") {
-
     val n1 = createLabeledNode("Neo")
     val n2 = createLabeledNode()
     createLabeledNode()
