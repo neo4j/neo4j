@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -115,37 +116,37 @@ public class LuceneFulltextTestSupport
         assertExactQueryFindsIds( reader, query, false );
     }
 
-    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
+    protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.query( matchAll, query );
+        PrimitiveLongIterator result = reader.query( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
-    protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
+    protected void assertExactQueryFindsIdsInOrder( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.query( matchAll, query );
+        PrimitiveLongIterator result = reader.query( query, matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 
     protected void assertExactQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
-        assertExactQueryFindsIds( reader, new String[]{query}, matchAll, ids );
+        assertExactQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
     }
 
     protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
-        assertFuzzyQueryFindsIds( reader, new String[]{query}, matchAll, ids );
+        assertFuzzyQueryFindsIds( reader, Arrays.asList( query ), matchAll, ids );
     }
 
-    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, String[] query, boolean matchAll, long... ids )
+    protected void assertFuzzyQueryFindsIds( ReadOnlyFulltext reader, Collection<String> query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( matchAll, query );
+        PrimitiveLongIterator result = reader.fuzzyQuery( query, matchAll );
         assertQueryResultsMatch( result, ids );
     }
 
     protected void assertFuzzyQueryFindsIdsInOrder( ReadOnlyFulltext reader, String query, boolean matchAll, long... ids )
     {
-        PrimitiveLongIterator result = reader.fuzzyQuery( matchAll, query );
+        PrimitiveLongIterator result = reader.fuzzyQuery( Arrays.asList( query ), matchAll );
         assertQueryResultsMatchInOrder( result, ids );
     }
 

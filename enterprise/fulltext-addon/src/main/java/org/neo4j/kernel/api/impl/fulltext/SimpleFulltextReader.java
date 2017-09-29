@@ -30,6 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -60,16 +61,16 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( boolean matchAll, String... terms )
+    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
     {
-        String query = stream( terms ).map( QueryParser::escape ).collect( joining( " " ) );
+        String query = terms.stream().map( QueryParser::escape ).collect( joining( " " ) );
         return innerQuery( query, matchAll );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( boolean matchAll, String... terms )
+    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
-        String query = stream( terms ).map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
+        String query = terms.stream().map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
         return innerQuery( query, matchAll );
     }
 

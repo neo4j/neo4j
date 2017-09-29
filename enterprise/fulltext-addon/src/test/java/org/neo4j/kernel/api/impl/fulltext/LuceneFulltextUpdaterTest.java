@@ -140,7 +140,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
             {
                 assertExactQueryFindsIds( reader, "live", false, firstID );
                 assertExactQueryFindsIds( reader, "27", false, secondID );
-                assertExactQueryFindsIds( reader, new String[]{"1", "2"}, false, secondID, thirdID );
+                assertExactQueryFindsIds( reader, Arrays.asList( "1", "2" ), false, secondID, thirdID );
             }
         }
     }
@@ -330,7 +330,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                assertExactQueryFindsIds( reader, new String[]{"tomtar", "karl"}, false, firstID, secondID, thirdID );
+                assertExactQueryFindsIds( reader, Arrays.asList( "tomtar", "karl" ), false, firstID, secondID, thirdID );
             }
         }
     }
@@ -367,7 +367,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                assertExactQueryFindsIdsInOrder( reader, new String[]{"Tom", "Hanks"}, false, fourthID, thirdID, firstID, secondID );
+                assertExactQueryFindsIdsInOrder( reader, Arrays.asList( "Tom", "Hanks" ), false, fourthID, thirdID, firstID, secondID );
             }
         }
     }
@@ -624,7 +624,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                assertExactQueryFindsIds( reader, new String[]{"Tom", "Hanks"}, true, thirdID, fourthID, fifthID );
+                assertExactQueryFindsIds( reader, Arrays.asList( "Tom", "Hanks" ), true, thirdID, fourthID, fifthID );
             }
         }
     }
@@ -665,7 +665,7 @@ public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 
             try ( ReadOnlyFulltext reader = provider.getReader( "nodes", NODES ) )
             {
-                assertFuzzyQueryFindsIds( reader, new String[]{"Tom", "Hanks"}, true, thirdID, fourthID, fifthID );
+                assertFuzzyQueryFindsIds( reader, Arrays.asList( "Tom", "Hanks" ), true, thirdID, fourthID, fifthID );
             }
         }
     }

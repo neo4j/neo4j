@@ -101,11 +101,11 @@ public class BloomProcedures
         PrimitiveLongIterator primitiveLongIterator;
         if ( fuzzy )
         {
-            primitiveLongIterator = indexReader.fuzzyQuery( matchAll, terms.toArray( new String[0] ) );
+            primitiveLongIterator = indexReader.fuzzyQuery( terms, matchAll );
         }
         else
         {
-            primitiveLongIterator = indexReader.query( matchAll, terms.toArray( new String[0] ) );
+            primitiveLongIterator = indexReader.query( terms, matchAll );
         }
         Iterator<EntityOutput> iterator = PrimitiveLongCollections.map( EntityOutput::new, primitiveLongIterator );
         return StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, Spliterator.ORDERED ), false );

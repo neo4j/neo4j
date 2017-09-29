@@ -120,7 +120,7 @@ public class BloomIT
     public void exactQueryShouldBeExact() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
@@ -142,7 +142,7 @@ public class BloomIT
     public void matchAllQueryShouldMatchAll() throws Exception
     {
         builder.setConfig( bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        db = getDb();
         try ( Transaction transaction = db.beginTx() )
         {
             Node node1 = db.createNode();
