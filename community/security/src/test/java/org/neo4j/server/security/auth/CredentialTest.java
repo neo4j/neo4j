@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.server.security.auth.Credential.INACCESSIBLE;
 
 public class CredentialTest
 {
@@ -43,5 +44,23 @@ public class CredentialTest
         Credential credential = Credential.forPassword( "foo" );
         Credential sameCredential = new Credential( credential.salt(), credential.passwordHash() );
         assertTrue( credential.equals( sameCredential ) );
+    }
+
+    @Test
+    public void testInaccessibleCredentials()
+    {
+        Credential credential = new Credential( INACCESSIBLE.salt(), INACCESSIBLE.passwordHash() );
+
+        //equals
+        assertTrue( INACCESSIBLE.equals( credential ) );
+        assertTrue( credential.equals( INACCESSIBLE ) );
+        assertTrue( INACCESSIBLE.equals( INACCESSIBLE ) );
+        assertFalse( INACCESSIBLE.equals( Credential.forPassword( "" ) ) );
+        assertFalse( Credential.forPassword( "" ).equals( INACCESSIBLE ) );
+
+        //matchesPassword
+        assertFalse( INACCESSIBLE.matchesPassword( new String( new byte[]{} )) );
+        assertFalse( INACCESSIBLE.matchesPassword( "foo" ) );
+        assertFalse( INACCESSIBLE.matchesPassword( "" ) );
     }
 }
