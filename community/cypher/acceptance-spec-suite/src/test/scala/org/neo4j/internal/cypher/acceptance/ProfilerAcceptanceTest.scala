@@ -185,6 +185,17 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.close() // ensure that the transaction is closed
   }
 
+  test("unfinished profiler complains [using CALL within larger query]") {
+    //GIVEN
+    createLabeledNode("Person")
+    val result = graph.execute("PROFILE CALL db.labels() YIELD label WITH label as r RETURN r")
+
+    //WHEN THEN
+    val ex = intercept[QueryExecutionException](result.getExecutionPlanDescription)
+    ex.getCause.getCause shouldBe a[ProfilerStatisticsNotReadyException]
+    result.close() // ensure that the transaction is closed
+  }
+
   test("tracks number of rows") {
     //GIVEN
     // due to the cost model, we need a bunch of nodes for the planner to pick a plan that does lookup by id

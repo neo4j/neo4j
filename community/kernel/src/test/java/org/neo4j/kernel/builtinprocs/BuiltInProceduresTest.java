@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import org.hamcrest.Matcher;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.stubbing.Answer;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.stubbing.Answer;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -52,23 +52,22 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TypeMappers;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.internal.Version;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTNode;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTPath;
@@ -211,6 +210,75 @@ public class BuiltInProceduresTest
         assertThat( call( "dbms.components" ), contains(
             record( "Neo4j Kernel", singletonList( "1.3.37" ), "enterprise" )
         ) );
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDbLabels() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.labelsGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.labels" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.propertyKeyGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.propertyKeys" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
+    }
+
+    @Test
+    public void shouldCloseStatementIfExceptionIsThrownDRelationshipTypes() throws Throwable
+    {
+        // Given
+        RuntimeException runtimeException = new RuntimeException();
+        when( read.relationshipTypesGetAllTokens() ).thenThrow( runtimeException );
+
+        // When
+        try
+        {
+            call( "db.relationshipTypes" );
+            fail( "Procedure call should have failed" );
+        }
+        catch ( ProcedureException e )
+        {
+            assertThat( e.getCause(), is( runtimeException ) );
+            // expected
+        }
+
+        // Then
+        verify( statement ).close();
     }
 
     private Matcher<Object[]> record( Object ... fields )

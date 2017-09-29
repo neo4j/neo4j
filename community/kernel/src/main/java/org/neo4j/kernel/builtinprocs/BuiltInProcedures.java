@@ -67,7 +67,8 @@ public class BuiltInProcedures
     {
         try ( Statement statement = tx.acquireStatement() )
         {
-            return TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ).stream();
+            List<LabelResult> labelResult = asList( TokenAccess.LABELS.inUse( statement ).map( LabelResult::new ) );
+            return labelResult.stream();
         }
     }
 
@@ -77,7 +78,8 @@ public class BuiltInProcedures
     {
         try ( Statement statement = tx.acquireStatement() )
         {
-            return TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ).stream();
+            List<PropertyKeyResult> propertyKeys = asList( TokenAccess.PROPERTY_KEYS.inUse( statement ).map( PropertyKeyResult::new ) );
+            return propertyKeys.stream();
         }
     }
 
@@ -87,7 +89,8 @@ public class BuiltInProcedures
     {
         try ( Statement statement = tx.acquireStatement() )
         {
-            return TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ).stream();
+            List<RelationshipTypeResult> relationshipTypes = asList( TokenAccess.RELATIONSHIP_TYPES.inUse( statement ).map( RelationshipTypeResult::new ) );
+            return relationshipTypes.stream();
         }
     }
 
