@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.internal.kernel.api;
 
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.ExistsPredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.StringContainsPredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
-import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.NumberRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringRangePredicate;
+import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.values.storable.Values;
 
 import static junit.framework.TestCase.assertFalse;
@@ -326,6 +326,6 @@ public class IndexQueryTest
 
     private boolean test( IndexQuery p, Object x )
     {
-        return p.test( Values.of( x ) );
+        return p.acceptsValue( Values.of( x ) );
     }
 }

@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_4.codegen
 
 import java.util.PrimitiveIterator
-import java.util.{Iterator => JIterator, Map => JMap, HashMap => JHashMap,
-                  Set => JSet, HashSet => JHashSet, ArrayList => JArrayList}
+import java.util.{ArrayList => JArrayList, HashMap => JHashMap, HashSet => JHashSet, Iterator => JIterator, Map => JMap, Set => JSet}
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.neo4j.codegen.Expression.{invoke, not, or, _}
@@ -45,9 +44,10 @@ import org.neo4j.cypher.internal.spi.v3_4.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_4.codegen.Templates._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
-import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.util.ValueUtils

@@ -66,7 +66,7 @@ public final class DoubleValue extends FloatingPointValue
     }
 
     @Override
-    public Object asObjectCopy()
+    public Double asObjectCopy()
     {
         return value;
     }

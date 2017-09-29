@@ -41,7 +41,6 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         extends KernelAPIReadTestBase<G>
 {
     private static long bare, start, end, sparse, dense;
-    private static int FOO, BAR, BAZ;
 
     @Override
     void createTestGraph( GraphDatabaseService graphDb )

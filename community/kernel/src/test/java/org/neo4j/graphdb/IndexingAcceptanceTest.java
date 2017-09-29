@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.api.schema.IndexQuery.stringPrefix;
+import static org.neo4j.internal.kernel.api.IndexQuery.stringPrefix;
 import static org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils.getPropertyIds;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.findNodesByLabelAndProperty;

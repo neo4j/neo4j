@@ -25,14 +25,12 @@ package org.neo4j.internal.kernel.api;
 public interface Read
 {
     /**
-     * TODO: this method needs a better definition.
-     *
-     * @param predicates
-     *         predicates describing what to look for in the index.
+     * @param index
      * @param cursor
      *         the cursor to use for consuming the results.
+     * @param query
      */
-    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexPredicate... predicates );
+    void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query );
 
     void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor );
 
@@ -73,7 +71,7 @@ public interface Read
      * @param nodeReference
      *         a reference from {@link NodeCursor#nodeReference()}.
      * @param reference
-     *         a reference from {@link NodeCursor#relationshipReference()}.
+     *         a reference from {@link NodeCursor#relationshipGroupReference()}.
      * @param cursor
      *         the cursor to use for consuming the results.
      */
@@ -116,4 +114,12 @@ public interface Read
     void futureNodePropertyReferenceRead( long reference );
 
     void futureRelationshipPropertyReferenceRead( long reference );
+
+    // TOKEN/meta operations
+
+    IndexReference index( int label, int... properties );
+
+    int nodeLabel( String name );
+
+    int propertyKey( String name );
 }

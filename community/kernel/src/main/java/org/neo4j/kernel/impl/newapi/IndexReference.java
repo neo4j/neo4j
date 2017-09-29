@@ -17,48 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.kernel.impl.newapi;
 
-public abstract class NumberValue extends ScalarValue
+class IndexReference implements org.neo4j.internal.kernel.api.IndexReference
 {
-    public abstract double doubleValue();
+    private final int label;
+    private final int[] properties;
+    private final boolean unique;
 
-    public abstract long longValue();
-
-    abstract int compareTo( IntegralValue other );
-
-    abstract int compareTo( FloatingPointValue other );
-
-    @Override
-    public abstract Number asObjectCopy();
-
-    @Override
-    public Number asObject()
+    IndexReference( boolean unique, int label, int... properties )
     {
-        return asObjectCopy();
+        this.unique = unique;
+        this.label = label;
+        this.properties = properties;
     }
 
     @Override
-    public boolean equals( boolean x )
+    public boolean isUnique()
     {
-        return false;
+        return unique;
     }
 
     @Override
-    public boolean equals( char x )
+    public int label()
     {
-        return false;
+        return label;
     }
 
     @Override
-    public boolean equals( String x )
+    public int[] properties()
     {
-        return false;
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.NUMBER;
+        return properties;
     }
 }

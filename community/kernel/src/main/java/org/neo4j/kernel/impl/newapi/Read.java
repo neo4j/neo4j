@@ -19,15 +19,19 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.IndexPredicate;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.store.PropertyUtil;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -43,9 +47,14 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageStatement;
+import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
@@ -58,9 +67,14 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     private final PropertyStore propertyStore;
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
+    private final StorageStatement statement;
+    private final StoreReadLayer read;
 
-    public Read( NeoStores stores )
+    public Read( RecordStorageEngine engine )
     {
+        read = engine.storeReadLayer();
+        statement = read.newStatement();
+        NeoStores stores = engine.testAccessNeoStores();
         this.nodeStore = stores.getNodeStore();
         this.relationshipStore = stores.getRelationshipStore();
         this.groupStore = stores.getRelationshipGroupStore();
@@ -69,17 +83,68 @@ public class Read implements org.neo4j.internal.kernel.api.Read
 
     @Override
     public void nodeIndexSeek(
-            IndexReference index,
+            org.neo4j.internal.kernel.api.IndexReference index,
             org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
-            IndexPredicate... predicates )
+            IndexQuery... query )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        CursorProgressor.Cursor<IndexState.NodeValue> target = (NodeValueIndexCursor) cursor;
+        IndexReader reader = indexReader( (IndexReference) index );
+        if ( !reader.hasFullNumberPrecision( query ) )
+        {
+            IndexQuery[] filters = new IndexQuery[query.length];
+            int j = 0;
+            for ( IndexQuery q : query )
+            {
+                switch ( q.type() )
+                {
+                case rangeNumeric:
+                    if ( !reader.hasFullNumberPrecision( q ) )
+                    {
+                        filters[j++] = q;
+                    }
+                    break;
+                case exact:
+                    Value value = ((IndexQuery.ExactPredicate) q).value();
+                    if ( value.valueGroup() == ValueGroup.NUMBER )
+                    {
+                        if ( !reader.hasFullNumberPrecision( q ) )
+                        {
+                            filters[j++] = q;
+                        }
+                    }
+                    break;
+                default:
+                }
+            }
+            if ( j > 0 )
+            {
+                filters = Arrays.copyOf( filters, j );
+                target = new IndexCursorFilter( target, new NodeCursor( this ), new PropertyCursor( this ), filters );
+            }
+        }
+        reader.query( target, query );
     }
 
     @Override
-    public void nodeIndexScan( IndexReference index, org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor )
+    public void nodeIndexScan(
+            org.neo4j.internal.kernel.api.IndexReference index,
+            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        indexReader( (IndexReference) index ).scan( (NodeValueIndexCursor)cursor );
+    }
+
+    private IndexReader indexReader( IndexReference index )
+    {
+        try
+        {
+            return statement.getIndexReader( index.isUnique()
+                    ? IndexDescriptorFactory.uniqueForLabel( index.label(), index.properties() )
+                    : IndexDescriptorFactory.forLabel( index.label(), index.properties() ) );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new IllegalStateException( e );
+        }
     }
 
     @Override
@@ -241,6 +306,25 @@ public class Read implements org.neo4j.internal.kernel.api.Read
     {
     }
 
+    @Override
+    public IndexReference index( int label, int... properties )
+    {
+        IndexDescriptor indexDescriptor = read.indexGetForSchema( new LabelSchemaDescriptor( label, properties ) );
+        return new IndexReference( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE, label, properties );
+    }
+
+    @Override
+    public int nodeLabel( String name )
+    {
+        return read.labelGetForName( name );
+    }
+
+    @Override
+    public int propertyKey( String name )
+    {
+        return read.propertyKeyGetForName( name );
+    }
+
     PageCursor nodePage( long reference )
     {
         return nodeStore.openPageCursor( reference );
@@ -338,7 +422,8 @@ public class Read implements org.neo4j.internal.kernel.api.Read
      * <p>
      * This function is its own inverse function.
      *
-     * @param reference the reference to invert.
+     * @param reference
+     *         the reference to invert.
      * @return the inverted reference.
      */
     static long invertReference( long reference )
@@ -363,7 +448,8 @@ public class Read implements org.neo4j.internal.kernel.api.Read
         return (reference & FILTER_MASK) != 0L;
     }
 
-    private static ByteBuffer readDynamic( AbstractDynamicStore store, long reference, ByteBuffer buffer,
+    private static ByteBuffer readDynamic(
+            AbstractDynamicStore store, long reference, ByteBuffer buffer,
             PageCursor page )
     {
         if ( buffer == null )

@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * This class is really a renamed org.neo4j.kernel.api.schema.IndexQuery. Describes part of an index query related to
- * one property.
- */
-public interface IndexPredicate
+import org.neo4j.values.storable.Value;
+
+public interface IndexState
 {
+    void done();
+
+    interface NodeValue extends IndexState
+    {
+        void node( long reference, int[] keys, Value[] values );
+    }
 }

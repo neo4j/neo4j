@@ -56,6 +56,17 @@ public abstract class TextValue extends ScalarValue
     }
 
     @Override
+    public boolean equals( long x )
+    {
+        return false;
+    }
+
+    @Override
+    public boolean equals( double x )
+    {
+        return false;
+    }
+
     public ValueGroup valueGroup()
     {
         return ValueGroup.TEXT;

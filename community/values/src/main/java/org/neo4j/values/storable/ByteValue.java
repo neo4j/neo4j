@@ -70,7 +70,7 @@ public final class ByteValue extends IntegralValue
     }
 
     @Override
-    public Object asObjectCopy()
+    public Byte asObjectCopy()
     {
         return value;
     }

@@ -17,48 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.storageengine.api.schema;
 
-public abstract class NumberValue extends ScalarValue
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.kernel.impl.newapi.CursorProgressor;
+import org.neo4j.kernel.impl.newapi.IndexState;
+
+class NodeIdProgressor implements CursorProgressor<IndexState.NodeValue>
 {
-    public abstract double doubleValue();
+    private final PrimitiveLongIterator ids;
 
-    public abstract long longValue();
-
-    abstract int compareTo( IntegralValue other );
-
-    abstract int compareTo( FloatingPointValue other );
-
-    @Override
-    public abstract Number asObjectCopy();
-
-    @Override
-    public Number asObject()
+    NodeIdProgressor( PrimitiveLongIterator ids )
     {
-        return asObjectCopy();
+        this.ids = ids;
     }
 
     @Override
-    public boolean equals( boolean x )
+    public boolean next( IndexState.NodeValue target )
     {
+        if ( ids.hasNext() )
+        {
+            target.node( ids.next(), null, null );
+            return true;
+        }
         return false;
     }
 
     @Override
-    public boolean equals( char x )
+    public void close()
     {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.NUMBER;
+        if ( ids instanceof Resource )
+        {
+            ((Resource) ids).close();
+        }
     }
 }

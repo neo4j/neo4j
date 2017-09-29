@@ -35,7 +35,7 @@ class TempKernel implements KernelAPI
     TempKernel( GraphDatabaseAPI db )
     {
         RecordStorageEngine engine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        this.tx = new Transaction( engine.testAccessNeoStores() );
+        this.tx = new Transaction( engine );
         this.cursors = new Cursors( tx );
     }
 
@@ -59,9 +59,9 @@ class TempKernel implements KernelAPI
 
     private static class Transaction extends Read implements org.neo4j.internal.kernel.api.Transaction
     {
-        Transaction( NeoStores stores )
+        Transaction( RecordStorageEngine engine )
         {
-            super( stores );
+            super( engine );
         }
 
         @Override

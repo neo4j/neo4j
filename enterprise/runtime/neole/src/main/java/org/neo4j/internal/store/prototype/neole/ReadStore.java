@@ -22,7 +22,8 @@ package org.neo4j.internal.store.prototype.neole;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.IndexPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
@@ -58,8 +59,8 @@ public class ReadStore extends MemoryManager implements Read
     @Override
     public void nodeIndexSeek(
             IndexReference index,
-            org.neo4j.internal.kernel.api.NodeValueIndexCursor cursor,
-            IndexPredicate... predicates )
+            NodeValueIndexCursor cursor,
+            IndexQuery... query )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -192,6 +193,24 @@ public class ReadStore extends MemoryManager implements Read
 
     @Override
     public void futureRelationshipPropertyReferenceRead( long reference )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public IndexReference index( int label, int... properties )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public int nodeLabel( String name )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public int propertyKey( String name )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.internal.kernel.api.IndexPredicate;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -116,9 +116,9 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexPredicate... predicates )
+    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexQuery... query )
     {
-        store.nodeIndexSeek( index, cursor, predicates );
+        store.nodeIndexSeek( index, cursor, query );
     }
 
     @Override
@@ -233,6 +233,24 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     public void futureRelationshipPropertyReferenceRead( long reference )
     {
         store.futureRelationshipPropertyReferenceRead( reference );
+    }
+
+    @Override
+    public IndexReference index( int label, int... properties )
+    {
+        return store.index( label, properties );
+    }
+
+    @Override
+    public int nodeLabel( String name )
+    {
+        return store.nodeLabel( name );
+    }
+
+    @Override
+    public int propertyKey( String name )
+    {
+        return store.propertyKey( name );
     }
 
     @Override

@@ -17,48 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.kernel.impl.newapi;
 
-public abstract class NumberValue extends ScalarValue
+import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
+
+public class NodeValueIndexCursorTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
 {
-    public abstract double doubleValue();
-
-    public abstract long longValue();
-
-    abstract int compareTo( IntegralValue other );
-
-    abstract int compareTo( FloatingPointValue other );
-
     @Override
-    public abstract Number asObjectCopy();
-
-    @Override
-    public Number asObject()
+    public ReadTestSupport newTestSupport()
     {
-        return asObjectCopy();
-    }
-
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.NUMBER;
+        return new ReadTestSupport();
     }
 }

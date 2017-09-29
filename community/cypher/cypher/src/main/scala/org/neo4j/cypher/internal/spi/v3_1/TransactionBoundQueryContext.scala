@@ -46,6 +46,7 @@ import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.internal.kernel.api.IndexQuery
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -55,7 +56,7 @@ import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values

@@ -22,9 +22,16 @@ package org.neo4j.kernel.impl.newapi;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.values.storable.Value;
 
-class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+
+class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueIndexCursor,
+        CursorProgressor.Cursor<IndexState.NodeValue>, IndexState.NodeValue
 {
     private final Read read;
+    private long node;
+    private int[] keys;
+    private Value[] values;
+    private CursorProgressor<IndexState.NodeValue> progressor;
 
     NodeValueIndexCursor( Read read )
     {
@@ -32,39 +39,65 @@ class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueInd
     }
 
     @Override
+    public void empty()
+    {
+        close();
+    }
+
+    @Override
+    public void initialize( CursorProgressor<IndexState.NodeValue> progressor )
+    {
+        this.progressor = progressor;
+    }
+
+    @Override
+    public void done()
+    {
+        close();
+    }
+
+    @Override
+    public void node( long reference, int[] keys, Value[] values )
+    {
+        this.node = reference;
+        this.keys = keys;
+        this.values = values;
+    }
+
+    @Override
     public void node( NodeCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        read.singleNode( node, cursor );
     }
 
     @Override
     public long nodeReference()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return node;
     }
 
     @Override
     public int numberOfProperties()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return keys == null ? 0 : keys.length;
     }
 
     @Override
     public int propertyKey( int offset )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return keys[offset];
     }
 
     @Override
     public Value propertyValue( int offset )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return values[offset];
     }
 
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return progressor != null && progressor.next( this );
     }
 
     @Override
@@ -76,6 +109,9 @@ class NodeValueIndexCursor implements org.neo4j.internal.kernel.api.NodeValueInd
     @Override
     public void close()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        this.progressor = null;
+        this.node = NO_ID;
+        this.keys = null;
+        this.values = null;
     }
 }

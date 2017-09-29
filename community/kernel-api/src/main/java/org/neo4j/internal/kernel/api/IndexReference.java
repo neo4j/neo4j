@@ -23,6 +23,11 @@ package org.neo4j.internal.kernel.api;
  * This class is really a renamed org.neo4j.kernel.api.schema.IndexDescriptor. Maybe it will compose an
  * IndexDescriptor with an offset for faster index lookup.
  */
-public class IndexReference
+public interface IndexReference
 {
+    boolean isUnique();
+
+    int label();
+
+    int[] properties();
 }

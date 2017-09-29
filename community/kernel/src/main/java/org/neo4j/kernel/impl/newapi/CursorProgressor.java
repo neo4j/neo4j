@@ -17,48 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.kernel.impl.newapi;
 
-public abstract class NumberValue extends ScalarValue
+public interface CursorProgressor<Sink>
 {
-    public abstract double doubleValue();
+    boolean next( Sink sink );
 
-    public abstract long longValue();
+    void close();
 
-    abstract int compareTo( IntegralValue other );
-
-    abstract int compareTo( FloatingPointValue other );
-
-    @Override
-    public abstract Number asObjectCopy();
-
-    @Override
-    public Number asObject()
+    interface Cursor<Sink>
     {
-        return asObjectCopy();
-    }
+        void empty();
 
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
-
-    @Override
-    public ValueGroup valueGroup()
-    {
-        return ValueGroup.NUMBER;
+        void initialize( CursorProgressor<Sink> progressor );
     }
 }

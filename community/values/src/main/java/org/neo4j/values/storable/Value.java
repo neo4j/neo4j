@@ -42,6 +42,10 @@ public abstract class Value extends AnyValue
 
     public abstract boolean equals( boolean[] x );
 
+    public abstract boolean equals( long x );
+
+    public abstract boolean equals( double x );
+
     public abstract boolean equals( char x );
 
     public abstract boolean equals( String x );

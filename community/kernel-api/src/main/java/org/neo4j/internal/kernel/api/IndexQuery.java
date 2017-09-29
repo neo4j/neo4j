@@ -17,30 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.internal.kernel.api;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import java.util.function.Predicate;
-
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
-public abstract class IndexQuery implements Predicate<Value>
+public abstract class IndexQuery
 {
     /**
      * Searches the index for all entries that has the given property.
      *
      * @param propertyKeyId the property ID to match.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static ExistsPredicate exists( int propertyKeyId )
     {
@@ -52,8 +47,7 @@ public abstract class IndexQuery implements Predicate<Value>
      *
      * @param propertyKeyId the property ID to match.
      * @param value the property value to search for.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static ExactPredicate exact( int propertyKeyId, Object value )
     {
@@ -68,8 +62,7 @@ public abstract class IndexQuery implements Predicate<Value>
      * @param fromInclusive the lower bound is inclusive if true.
      * @param to the upper bound of the property value.
      * @param toInclusive the upper bound is inclusive if true.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static NumberRangePredicate range( int propertyKeyId, Number from, boolean fromInclusive, Number to,
                                               boolean toInclusive )
@@ -85,8 +78,7 @@ public abstract class IndexQuery implements Predicate<Value>
      * @param fromInclusive the lower bound is inclusive if true.
      * @param to the upper bound of the property value.
      * @param toInclusive the upper bound is inclusive if true.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static StringRangePredicate range( int propertyKeyId, String from, boolean fromInclusive, String to,
                                               boolean toInclusive )
@@ -99,8 +91,7 @@ public abstract class IndexQuery implements Predicate<Value>
      *
      * @param propertyKeyId the property ID to match.
      * @param prefix the string prefix to search for.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static StringPrefixPredicate stringPrefix( int propertyKeyId, String prefix )
     {
@@ -112,8 +103,7 @@ public abstract class IndexQuery implements Predicate<Value>
      *
      * @param propertyKeyId the property ID to match.
      * @param contains the string to search for.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static StringContainsPredicate stringContains( int propertyKeyId, String contains )
     {
@@ -125,8 +115,7 @@ public abstract class IndexQuery implements Predicate<Value>
      *
      * @param propertyKeyId the property ID to match.
      * @param suffix the string suffix to search for.
-     * @return an {@link IndexQuery} instance to be passed to {@link ReadOperations#indexQuery(IndexDescriptor,
-     * IndexQuery...)}
+     * @return an {@link IndexQuery} instance to be used for querying an index.
      */
     public static StringSuffixPredicate stringSuffix( int propertyKeyId, String suffix )
     {
@@ -179,8 +168,12 @@ public abstract class IndexQuery implements Predicate<Value>
         return propertyKeyId;
     }
 
-    @Override
-    public abstract boolean test( Value value );
+    public abstract boolean acceptsValue( Value value );
+
+    public boolean acceptsValueAt( PropertyCursor property )
+    {
+        return acceptsValue( property.propertyValue() );
+    }
 
     public enum IndexQueryType
     {
@@ -207,9 +200,15 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             return value != null && value != Values.NO_VALUE;
+        }
+
+        @Override
+        public boolean acceptsValueAt( PropertyCursor property )
+        {
+            return true;
         }
     }
 
@@ -230,7 +229,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             return exactValue.equals( value );
         }
@@ -264,7 +263,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             if ( value == null )
             {
@@ -347,7 +346,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             if ( value == null )
             {
@@ -414,7 +413,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             return value != null && Values.isTextValue( value ) &&
                     ((TextValue)value).stringValue().startsWith( prefix );
@@ -443,7 +442,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             return value != null && Values.isTextValue( value ) && ((String)value.asObject()).contains( contains );
         }
@@ -471,7 +470,7 @@ public abstract class IndexQuery implements Predicate<Value>
         }
 
         @Override
-        public boolean test( Value value )
+        public boolean acceptsValue( Value value )
         {
             return value != null && Values.isTextValue( value ) && ((String)value.asObject()).endsWith( suffix );
         }
