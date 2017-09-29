@@ -45,7 +45,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -177,7 +176,8 @@ public class LuceneDataSource extends LifecycleAdapter
         if ( actualType != null && !actualType.equals( expectedType ) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Cannot index '%s' for key '%s', since this key has been used to index another %s.", value, key, expectedTypeName ) );
+                    String.format( "Cannot index '%s' under key '%s', since this key has been used to index %s. Raw value of the index type is %s", value, key,
+                            expectedTypeName, actualType ) );
         }
     }
 
