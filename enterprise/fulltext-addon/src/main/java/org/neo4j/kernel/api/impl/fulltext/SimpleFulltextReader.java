@@ -30,6 +30,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -60,17 +61,17 @@ class SimpleFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String... terms )
+    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
     {
-        String query = stream( terms ).map( QueryParser::escape ).collect( joining( " " ) );
-        return innerQuery( query );
+        String query = terms.stream().map( QueryParser::escape ).collect( joining( " " ) );
+        return innerQuery( query, matchAll );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( String... terms )
+    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
-        String query = stream( terms ).map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
-        return innerQuery( query );
+        String query = terms.stream().map( QueryParser::escape ).collect( joining( "~ ", "", "~" ) );
+        return innerQuery( query, matchAll );
     }
 
     @Override
@@ -98,10 +99,17 @@ class SimpleFulltextReader implements ReadOnlyFulltext
         return new FulltextIndexConfiguration( indexSearcher.doc( docs.scoreDocs[0].doc ) );
     }
 
-    private PrimitiveLongIterator innerQuery( String queryString )
+    private PrimitiveLongIterator innerQuery( String queryString, boolean matchAll )
     {
         MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
+        if ( matchAll )
+        {
+            multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.AND );
+        }
+        else
+        {
+            multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
+        }
         Query query;
         try
         {
