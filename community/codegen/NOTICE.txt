@@ -29,5 +29,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
 
 BSD License
+  ASM Analysis
   ASM Core
+  ASM Tree
+  ASM Util
 

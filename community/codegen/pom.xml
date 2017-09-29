@@ -60,15 +60,16 @@ the relevant Commercial Agreement.
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-util</artifactId>
       <version>${asm.version}</version>
-      <scope>provided</scope>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm-analysis</artifactId>
       <version>${asm.version}</version>
-      <scope>provided</scope>
-      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.ow2.asm</groupId>
+      <artifactId>asm-tree</artifactId>
+      <version>${asm.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -90,4 +91,40 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <!--
+         The ASM library is notorious for making breaking changes to their API, so
+         we shade (embed) it under an org.neo4j package root to avoid version clashes.
+        -->
+        <executions>
+          <execution>
+            <id>build-shaded-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <artifactId>maven-shade-plugin</artifactId>
+        <groupId>org.apache.maven.plugins</groupId>
+        <configuration>
+          <artifactSet>
+            <includes>
+              <include>org.ow2.asm:*</include>
+            </includes>
+          </artifactSet>
+          <relocations>
+            <relocation>
+              <pattern>org.objectweb.asm</pattern>
+              <shadedPattern>org.neo4j.codegen.asm</shadedPattern>
+            </relocation>
+          </relocations>
+          <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
