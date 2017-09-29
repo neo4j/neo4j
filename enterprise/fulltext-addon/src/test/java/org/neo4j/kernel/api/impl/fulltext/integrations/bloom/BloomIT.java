@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.After;
@@ -59,6 +60,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_indexed_properties;
 
@@ -479,6 +481,10 @@ public class BloomIT
     @Test
     public void failureToStartUpMustNotPreventShutDown() throws Exception
     {
+        // Ignore this test on Windows because the test relies on file permissions to trigger failure modes in
+        // the code. Unfortunately, file permissions are an incredible pain to work with on Windows.
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
         builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
 
         // Create the store directory and all its files, and add a bit of data to it
