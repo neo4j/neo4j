@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.sv.SwedishAnalyzer;
 import org.junit.After;
@@ -27,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
 import java.util.Date;
 
 import org.neo4j.consistency.ConsistencyCheckService;
@@ -57,6 +59,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_indexed_properties;
 
@@ -513,6 +517,60 @@ public class BloomIT
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertEquals( "ONLINE", result.next().get( "state" ) );
         assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void failureToStartUpMustNotPreventShutDown() throws Exception
+    {
+        // Ignore this test on Windows because the test relies on file permissions to trigger failure modes in
+        // the code. Unfortunately, file permissions are an incredible pain to work with on Windows.
+        assumeFalse( SystemUtils.IS_OS_WINDOWS );
+
+        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
+
+        // Create the store directory and all its files, and add a bit of data to it
+        GraphDatabaseService db = builder.newGraphDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode().setProperty( "prop", "bla bla bla" );
+            tx.success();
+        }
+        db.shutdown();
+
+        File dir = testDirectory.graphDbDir();
+        assertTrue( dir.setReadable( false ) );
+        try
+        {
+            // Making the directory not readable ought to cause problems for the database as it tries to start up
+            builder.newGraphDatabase().shutdown();
+            fail( "Should not have started up and shut down cleanly on an unreadable store directory" );
+        }
+        catch ( Exception e )
+        {
+            // Good
+        }
+        catch ( Throwable th )
+        {
+            makeReadable( dir, th );
+            throw th;
+        }
+        makeReadable( dir, null );
+    }
+
+    private void makeReadable( File dir, Throwable th )
+    {
+        if ( !dir.setReadable( true ) )
+        {
+            AssertionError error = new AssertionError( "Failed to make " + dir + " writable again!" );
+            if ( th != null )
+            {
+                th.addSuppressed( error );
+            }
+            else
+            {
+                throw error;
+            }
+        }
     }
 
     @After
