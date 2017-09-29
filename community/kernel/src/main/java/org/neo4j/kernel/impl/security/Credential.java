@@ -65,10 +65,11 @@ public class Credential
 
     /**
      * <p>Utility method that replaces Arrays.equals() to avoid timing attacks.
-     * The length of the loop executed will always be the length of the given password</p>
+     * The length of the loop executed will always be the length of the given password.
+     * Remember {@link #INACCESSIBLE} credentials should still execute loop for the length of given password.</p>
      *
      * @param actual the actual password
-     * @param given  password given by the user
+     * @param given password given by the user
      * @return whether the two byte arrays are equal
      */
     private boolean byteEquals( byte[] actual, byte[] given )
@@ -82,15 +83,26 @@ public class Credential
             return false;
         }
         boolean result = true;
+        boolean accessible = true;
         int actualLength = actual.length;
         int givenLength = given.length;
         for ( int i = 0; i < givenLength; ++i )
         {
-            result &= actual[i % actualLength] == given[i];
+            if ( actualLength == 0 )
+            {
+                accessible = false;
+            }
+            else
+            {
+                result &= actual[i % actualLength] == given[i];
+            }
         }
-        return result && actualLength == givenLength;
+        return result && actualLength == givenLength && accessible;
     }
 
+    /**
+     * <p>Equality to always check for both salt and password hash as a safeguard against timing attack.</p>
+     */
     @Override
     public boolean equals( Object o )
     {
@@ -105,7 +117,9 @@ public class Credential
 
         Credential that = (Credential) o;
 
-        return byteEquals( this.salt, that.salt ) && byteEquals( this.passwordHash, that.passwordHash );
+        boolean saltEquals = byteEquals( this.salt, that.salt );
+        boolean passwordEquals = byteEquals( this.passwordHash, that.passwordHash );
+        return saltEquals && passwordEquals;
     }
 
     @Override
