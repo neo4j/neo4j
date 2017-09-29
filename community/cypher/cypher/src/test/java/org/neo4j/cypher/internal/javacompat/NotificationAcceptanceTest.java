@@ -196,7 +196,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnWhenUsingLengthOnNonPath() throws Exception
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             // pattern
             shouldNotifyInStream( version, "explain match (a) where a.name='Alice' return length((a)-->()-->())", new InputPosition( 63, 1, 64 ),
                     LENGTH_ON_NON_PATH );
@@ -240,7 +241,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyForCostSupportedUpdateQuery() throws Exception
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             shouldNotNotifyInStream( version, "EXPLAIN CYPHER planner=cost MATCH (n:Movie) SET n:Seen" );
             shouldNotNotifyInStream( version, "EXPLAIN CYPHER planner=idp MATCH (n:Movie) SET n:Seen" );
             shouldNotNotifyInStream( version, "EXPLAIN CYPHER planner=dp MATCH (n:Movie) SET n:Seen" );
@@ -253,7 +255,8 @@ public class NotificationAcceptanceTest
         List<String> queries = Arrays.asList( "CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b",
                 "CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b" );
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             for ( String query : queries )
             {
                 assertNotifications( version + query, containsNoItem( joinHintUnsuportedWarning ) );
@@ -264,7 +267,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnPotentiallyCachedQueries() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             assertNotifications( version + "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
 
             // no warning without explain
@@ -286,7 +290,8 @@ public class NotificationAcceptanceTest
         String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
                 "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             shouldNotifyInStreamWithDetail( version, query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Person", "name" ) );
             shouldNotifyInStreamWithDetail( version, query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Party", "city" ) );
             shouldNotifyInStreamWithDetail( version, query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Animal", "species" ) );
@@ -302,7 +307,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnNonExistingLabelUsingLoadCSV() throws Exception
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             // create node
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n:Category)" );
 
@@ -317,7 +323,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnNonExistingRelTypeUsingLoadCSV() throws Exception
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             // create rel
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()" );
 
@@ -329,7 +336,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnNonExistingPropKeyIdUsingLoadCSV() throws Exception
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             // create node
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n.p = 'a'" );
 
@@ -407,7 +415,8 @@ public class NotificationAcceptanceTest
             db().createNode().addLabel( label( "A" ) );
             tx.success();
         }
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *" );
             shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *" );
         } );
@@ -445,7 +454,8 @@ public class NotificationAcceptanceTest
     public void shouldWarnOnDeprecatedProcedureCalls() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             assertNotifications( version + "explain CALL oldProc()", containsItem( deprecatedProcedureWarning ) );
             assertNotifications( version + "explain CALL oldProc() RETURN 1", containsItem( deprecatedProcedureWarning ) );
         } );
@@ -470,7 +480,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithNoLabels() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
@@ -480,7 +491,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n['key-' + n.name] = 'value' RETURN n" );
@@ -490,7 +502,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithLabelHavingNoIndex() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
             try ( Transaction tx = db().beginTx() )
@@ -531,7 +544,8 @@ public class NotificationAcceptanceTest
         // dynamic property lookup with a single label and IN
         queries.add( "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n" );
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             for ( String query : queries )
             {
                 db().execute( "CREATE INDEX ON :Person(name)" );
@@ -544,7 +558,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithSingleLabelAndNegativePredicate() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] <> 'value' RETURN n" );
@@ -554,7 +569,8 @@ public class NotificationAcceptanceTest
     @Test
     public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels() throws Exception
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
 
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "CREATE INDEX ON :Jedi(weapon)" );
@@ -598,7 +614,8 @@ public class NotificationAcceptanceTest
     public void shouldWarnOnCartesianProduct() throws Exception
     {
 
-        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             assertNotifications( version + "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
 
             assertNotifications( version + "explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
