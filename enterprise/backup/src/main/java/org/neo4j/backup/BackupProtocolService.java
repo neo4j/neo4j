@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import javax.annotation.Nullable;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.monitor.RequestMonitor;
@@ -41,7 +43,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -54,6 +56,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -84,60 +87,39 @@ import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFac
 /**
  * Client-side convenience service for doing backups from a running database instance.
  */
-class BackupService
+class BackupProtocolService
 {
-
-    class BackupOutcome
-    {
-        private final boolean consistent;
-        private final long lastCommittedTx;
-
-        BackupOutcome( long lastCommittedTx, boolean consistent )
-        {
-            this.lastCommittedTx = lastCommittedTx;
-            this.consistent = consistent;
-        }
-
-        long getLastCommittedTx()
-        {
-            return lastCommittedTx;
-        }
-
-        public boolean isConsistent()
-        {
-            return consistent;
-        }
-    }
-
     static final String TOO_OLD_BACKUP = "It's been too long since this backup was last updated, and it has " +
             "fallen too far behind the database transaction stream for incremental backup to be possible. You need to" +
             " perform a full backup at this point. You can modify this time interval by setting the '" +
             GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a higher value.";
 
-    static final String DIFFERENT_STORE = "Target directory contains full backup of a logically different store.";
+    static final String DIFFERENT_STORE_MESSAGE = "Target directory contains full backup of a logically different store.";
 
     private final Supplier<FileSystemAbstraction> fileSystemSupplier;
     private final LogProvider logProvider;
     private final Log log;
     private final Monitors monitors;
+    private final Optional<PageCache> pageCacheOptional;
 
-    BackupService()
+    BackupProtocolService()
     {
         this( System.out );
     }
 
-    BackupService( OutputStream logDestination )
+    BackupProtocolService( OutputStream logDestination )
     {
         this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ),
-                new Monitors() );
+                new Monitors(), null );
     }
 
-    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors)
+    BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors, @Nullable PageCache pageCache )
     {
         this.fileSystemSupplier = fileSystemSupplier;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
         this.monitors = monitors;
+        this.pageCacheOptional = Optional.ofNullable( pageCache );
         monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
 
@@ -160,12 +142,11 @@ class BackupService
     {
         if ( !directoryIsEmpty( fileSystem, targetDirectory ) )
         {
-            throw new RuntimeException( "Can only perform a full backup into an empty directory but " +
-                    targetDirectory + " is not empty" );
+            throw new RuntimeException( "Can only perform a full backup into an empty directory but " + targetDirectory + " is not empty" );
         }
         long timestamp = System.currentTimeMillis();
         long lastCommittedTx = -1;
-        try ( PageCache pageCache = createPageCache( fileSystem, tuningConfiguration ) )
+        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, tuningConfiguration ) ) )
         {
             StoreCopyClient storeCopier = new StoreCopyClient( targetDirectory, tuningConfiguration,
                     loadKernelExtensions(), logProvider, fileSystem, pageCache,
@@ -188,8 +169,9 @@ class BackupService
         }
     }
 
-    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory,
-            ConsistencyCheck consistencyCheck, long timeout, Config config ) throws IncrementalBackupNotPossibleException
+    BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, File targetDirectory, ConsistencyCheck consistencyCheck, long timeout,
+            Config config )
+            throws IncrementalBackupNotPossibleException
     {
         try ( FileSystemAbstraction fileSystem = fileSystemSupplier.get() )
         {
@@ -221,7 +203,7 @@ class BackupService
             value.ifPresent( s -> configParams.put( key, s ) );
         }
 
-        try ( PageCache pageCache = createPageCache( fileSystem, config ) )
+        try ( PageCache pageCache = this.pageCacheOptional.orElse( createPageCache( fileSystem, config ) ) )
         {
             GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, pageCache, configParams );
             long backupStartTime = System.currentTimeMillis();
@@ -253,7 +235,7 @@ class BackupService
         {
             consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
                             logProvider, fileSystem, pageCache, false,
-                            new CheckConsistencyConfig( tuningConfiguration ) );
+                            new ConsistencyFlags( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckFailedException e )
         {
@@ -388,7 +370,7 @@ class BackupService
         }
         catch ( MismatchingStoreIdException e )
         {
-            throw new RuntimeException( DIFFERENT_STORE, e );
+            throw new RuntimeException( DIFFERENT_STORE_MESSAGE, e );
         }
         catch ( RuntimeException | IOException e )
         {
@@ -520,7 +502,6 @@ class BackupService
         public void finishReceivingStoreFiles()
         {
             log.debug( "Finish receiving store files" );
-
         }
 
         @Override

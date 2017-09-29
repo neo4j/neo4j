@@ -38,6 +38,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
@@ -165,7 +166,7 @@ public class BackupLabelIndexIT
     private static void backupTo( LabelIndex index, File toDir )
     {
         Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.label_index.name(), index.name() ) );
-        new BackupService( DefaultFileSystemAbstraction::new, NullLogProvider.getInstance(), new Monitors() )
+        new BackupProtocolService( DefaultFileSystemAbstraction::new, NullLogProvider.getInstance(), new Monitors(), null )
                 .doIncrementalBackupOrFallbackToFull( "localhost", DEFAULT_PORT, toDir,
                         ConsistencyCheck.FULL, config, BackupClient.BIG_READ_TIMEOUT, false );
     }

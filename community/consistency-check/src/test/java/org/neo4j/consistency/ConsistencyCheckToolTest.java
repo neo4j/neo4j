@@ -31,7 +31,7 @@ import java.io.PrintStream;
 import java.util.Properties;
 
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -80,7 +80,7 @@ public class ConsistencyCheckToolTest
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean(), any( CheckConsistencyConfig.class ) );
+                anyBoolean(), any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -99,7 +99,7 @@ public class ConsistencyCheckToolTest
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean(), any( CheckConsistencyConfig.class ) );
+                anyBoolean(), any( ConsistencyFlags.class ) );
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
@@ -124,7 +124,7 @@ public class ConsistencyCheckToolTest
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
         verify( service ).runFullConsistencyCheck( eq( storeDir ), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
-                anyBoolean(), any(CheckConsistencyConfig.class) );
+                anyBoolean(), any(ConsistencyFlags.class) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
