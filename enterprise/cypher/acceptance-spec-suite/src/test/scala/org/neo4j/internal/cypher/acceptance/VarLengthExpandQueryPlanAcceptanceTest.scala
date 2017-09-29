@@ -28,56 +28,101 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
-    result should havePlanLike(
-      """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime SLOTTED
-        |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                            |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || +ProduceResults       |              0 |    1 |       0 |               0 |                 0 |               0.0000 | anon[37], a, e   |                                  |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || +Filter               |              0 |    1 |       5 |               0 |                 0 |               0.0000 | anon[37], a, e   | a:From; a.name = {  AUTOSTRING0} |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || +VarLengthExpand(All) |              0 |    4 |       8 |               0 |                 0 |               0.0000 | anon[37], a -- e | (e)<-[:*..4]-(a)                 |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || +Filter               |              0 |    1 |       1 |               0 |                 0 |               0.0000 | e                | e.name = {  AUTOSTRING1}         |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        || +NodeByLabelScan      |              1 |    1 |       2 |               0 |                 0 |               0.0000 | e                | :To                              |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
-        |""".stripMargin)
+    result.executionPlanDescription() should useOperatorWithText("VarLengthExpand(All)", "(e)<-[:*..4]-(a)")
+    result.executionPlanDescription() should useOperatorWithText("NodeByLabelScan", ":To")
   }
 
   test("Plan should have right relationship direction other direction") {
     setUp("To")
     val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    result should havePlanLike(
-      """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime SLOTTED
-        |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                          |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || +ProduceResults       |              0 |    1 |       0 |               0 |                 0 |               0.0000 | anon[37], a, e   |                                |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || +Filter               |              0 |    1 |       5 |               0 |                 0 |               0.0000 | anon[37], a, e   | e:To; e.name = {  AUTOSTRING1} |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || +VarLengthExpand(All) |              0 |    4 |       8 |               0 |                 0 |               0.0000 | anon[37], e -- a | (a)-[:*..4]->(e)               |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || +Filter               |              0 |    1 |       1 |               0 |                 0 |               0.0000 | a                | a.name = {  AUTOSTRING0}       |
-        || |                     +----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        || +NodeByLabelScan      |              1 |    1 |       2 |               0 |                 0 |               0.0000 | a                | :From                          |
-        |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
-        |""".stripMargin)
+
+    result.executionPlanDescription() should useOperatorWithText("VarLengthExpand(All)", "(a)-[:*..4]->(e)")
+    result.executionPlanDescription() should useOperatorWithText("NodeByLabelScan", ":From")
+  }
+
+  test("Plan pruning var expand on distinct var-length match") {
+    val query = "MATCH (a)-[*1..2]->(c) RETURN DISTINCT c"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("Plan pruning var expand on distinct var-length match with projection and aggregation") {
+    val query = "MATCH (a)-[*1..2]->(c) WITH DISTINCT c RETURN count(*)"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("query with distinct aggregation") {
+    val query = "MATCH (from)-[*1..3]->(to) RETURN count(DISTINCT to)"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("Simple query that filters between expand and distinct") {
+    val query = "MATCH (a)-[*1..3]->(b:X) RETURN DISTINCT b"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("Query that aggregates before making the result DISTINCT") {
+    val query = "MATCH (a)-[:R*1..3]->(b) WITH count(*) AS count RETURN DISTINCT count"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(All)")
+  }
+
+  test("Double var expand with distinct result") {
+    val query = "MATCH (a)-[:R*1..3]->(b)-[:T*1..3]->(c) RETURN DISTINCT c"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("var expand followed by normal expand") {
+    val query = "MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("optional match can be solved with PruningVarExpand") {
+    val query = "MATCH (a) OPTIONAL MATCH (a)-[:R*1..3]->(b)-[:T]->(c) RETURN DISTINCT c"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(Pruning)")
+  }
+
+  test("should not rewrite when doing non-distinct aggregation") {
+    val query = "MATCH (a)-[*1..3]->(b) RETURN b, count(*)"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(All)")
+  }
+
+  test("on longer var-lengths, we use FullPruningVarExpand") {
+    val query = "MATCH (a)-[*4..5]->(b) RETURN DISTINCT b"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(FullPruning)")
+  }
+
+  test("Do not plan pruning var expand for length=1") {
+    val query = "MATCH (a)-[*1..1]->(b) RETURN DISTINCT b"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(All)")
+  }
+
+  test("Do not plan pruning var expand when path is needed") {
+    val query = "MATCH p=(from)-[r*0..1]->(to) WITH nodes(p) AS d RETURN DISTINCT d"
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    result.executionPlanDescription() should useOperators("VarLengthExpand(All)")
   }
 
   private def setUp(startLabel: String) {
