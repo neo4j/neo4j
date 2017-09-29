@@ -23,7 +23,7 @@
   </scm>
 
   <properties>
-    <version-package>cypher.internal.logical.plans.v3.3</version-package>
+    <version-package>cypher.internal.logical.plans.v3.4</version-package>
     <scala.version>2.11.11</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
   </properties>

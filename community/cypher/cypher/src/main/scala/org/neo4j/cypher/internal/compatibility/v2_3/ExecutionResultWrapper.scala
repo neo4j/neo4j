@@ -26,7 +26,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
+import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_4, InternalPlanDescription => InternalPlanDescription3_4}
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments._
@@ -35,9 +35,8 @@ import org.neo4j.cypher.internal.compiler.v2_3.{PlannerName, _}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition}
-import org.neo4j.cypher.internal.frontend.{v2_3, v3_4}
-import org.neo4j.cypher.internal.v3_4.expressions
-import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v2_3
+import org.neo4j.cypher.internal.v3_4
 import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.cypher.result.QueryResult.Record
@@ -138,7 +137,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
-  def executionPlanDescription(): InternalPlanDescription3_3 =
+  def executionPlanDescription(): InternalPlanDescription3_4 =
     convert(inner.executionPlanDescription().
       addArgument(Version("CYPHER 2.3")).
       addArgument(Planner(planner.toTextOutput)).
@@ -146,34 +145,34 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
       addArgument(Runtime(runtime.toTextOutput)).
       addArgument(RuntimeImpl(runtime.name)))
 
-  private def convert(i: InternalPlanDescription): InternalPlanDescription3_3 = exceptionHandler.runSafely {
+  private def convert(i: InternalPlanDescription): InternalPlanDescription3_4 = exceptionHandler.runSafely {
     LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
   }
 
-  private def convert(args: Seq[Argument]): Seq[Argument3_3] = args.collect {
-    case Arguments.LabelName(label) => InternalPlanDescription3_3.Arguments.LabelName(label)
-    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_3.Arguments.ColumnsLeft(value)
-    case Arguments.DbHits(value) => InternalPlanDescription3_3.Arguments.DbHits(value)
-    case Arguments.EstimatedRows(value) => InternalPlanDescription3_3.Arguments.EstimatedRows(value)
+  private def convert(args: Seq[Argument]): Seq[Argument3_4] = args.collect {
+    case Arguments.LabelName(label) => InternalPlanDescription3_4.Arguments.LabelName(label)
+    case Arguments.ColumnsLeft(value) => InternalPlanDescription3_4.Arguments.ColumnsLeft(value)
+    case Arguments.DbHits(value) => InternalPlanDescription3_4.Arguments.DbHits(value)
+    case Arguments.EstimatedRows(value) => InternalPlanDescription3_4.Arguments.EstimatedRows(value)
     case Arguments.ExpandExpression(from, relName, relTypes, to, direction, varLength) =>
       val dir3_3 = direction match {
-        case INCOMING => SemanticDirection.INCOMING
-        case OUTGOING => expressions.SemanticDirection.OUTGOING
-        case BOTH => expressions.SemanticDirection.BOTH
+        case INCOMING => v3_4.expressions.SemanticDirection.INCOMING
+        case OUTGOING => v3_4.expressions.SemanticDirection.OUTGOING
+        case BOTH => v3_4.expressions.SemanticDirection.BOTH
       }
-      InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
+      InternalPlanDescription3_4.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
 
-    case Arguments.Index(label, propertyKey) => InternalPlanDescription3_3.Arguments.Index(label, Seq(propertyKey))
-    case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.ExplicitIndex(value)
-    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments
+    case Arguments.Index(label, propertyKey) => InternalPlanDescription3_4.Arguments.Index(label, Seq(propertyKey))
+    case Arguments.LegacyIndex(value) => InternalPlanDescription3_4.Arguments.ExplicitIndex(value)
+    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_4.Arguments
       .InequalityIndex(label, propertyKey, bounds)
-    case Arguments.Planner(value) => InternalPlanDescription3_3.Arguments.Planner(value)
-    case Arguments.PlannerImpl(value) => InternalPlanDescription3_3.Arguments.PlannerImpl(value)
-    case Arguments.Runtime(value) => InternalPlanDescription3_3.Arguments.Runtime(value)
-    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_3.Arguments.RuntimeImpl(value)
-    case Arguments.KeyNames(keys) => InternalPlanDescription3_3.Arguments.KeyNames(keys)
-    case Arguments.MergePattern(start) => InternalPlanDescription3_3.Arguments.MergePattern(start)
-    case Arguments.Version(value) => InternalPlanDescription3_3.Arguments.Version(value)
+    case Arguments.Planner(value) => InternalPlanDescription3_4.Arguments.Planner(value)
+    case Arguments.PlannerImpl(value) => InternalPlanDescription3_4.Arguments.PlannerImpl(value)
+    case Arguments.Runtime(value) => InternalPlanDescription3_4.Arguments.Runtime(value)
+    case Arguments.RuntimeImpl(value) => InternalPlanDescription3_4.Arguments.RuntimeImpl(value)
+    case Arguments.KeyNames(keys) => InternalPlanDescription3_4.Arguments.KeyNames(keys)
+    case Arguments.MergePattern(start) => InternalPlanDescription3_4.Arguments.MergePattern(start)
+    case Arguments.Version(value) => InternalPlanDescription3_4.Arguments.Version(value)
   }
 
   override def hasNext: Boolean = inner.hasNext

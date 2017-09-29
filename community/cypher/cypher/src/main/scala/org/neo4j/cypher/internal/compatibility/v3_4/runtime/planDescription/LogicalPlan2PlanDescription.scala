@@ -36,7 +36,7 @@ object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => Intern
                      plannerName: PlannerName): InternalPlanDescription = {
     val readOnly = input.solved.readOnly
     new LogicalPlan2PlanDescription(readOnly).create(input)
-      .addArgument(Version("CYPHER 3.3"))
+      .addArgument(Version("CYPHER 3.4"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
   }
