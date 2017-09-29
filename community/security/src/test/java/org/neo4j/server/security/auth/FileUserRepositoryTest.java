@@ -212,10 +212,10 @@ public class FileUserRepositoryTest
         FileUserRepository users = new FileUserRepository( authFile, NullLogProvider.getInstance() );
         User user = new User( "jake", Credential.INACCESSIBLE, true );
         users.create( user );
-        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), false );
+        User modifiedUser = new User( "jake", Credential.forPassword( "foo" ), true );
 
         // When
-        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), false );
+        User updatedUser = new User( "jake", Credential.forPassword( "bar" ), true );
         try
         {
             users.update( modifiedUser, updatedUser );
