@@ -25,7 +25,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.FullCheck;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -90,18 +90,18 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, verbose,
-                new ConsistencyFlags( tuningConfiguration ) );
+                new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
-            LogProvider logProvider, boolean verbose, ConsistencyFlags consistencyFlags )
+            LogProvider logProvider, boolean verbose, CheckConsistencyConfig checkConsistencyConfig )
             throws ConsistencyCheckIncompleteException, IOException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
         {
             return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider,
-                    fileSystem, verbose, consistencyFlags );
+                    fileSystem, verbose, checkConsistencyConfig );
         }
         finally
         {
@@ -123,15 +123,15 @@ public class ConsistencyCheckService
             boolean verbose ) throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                verbose, new ConsistencyFlags( tuningConfiguration ) );
+                verbose, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
-                verbose, defaultReportDir( config, storeDir ), consistencyFlags );
+                verbose, defaultReportDir( config, storeDir ), checkConsistencyConfig );
     }
 
     @Deprecated
@@ -140,12 +140,12 @@ public class ConsistencyCheckService
             boolean verbose, File reportDir ) throws ConsistencyCheckIncompleteException, IOException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
+                verbose, reportDir, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( File storeDir, Config config, ProgressMonitorFactory progressFactory,
             LogProvider logProvider, FileSystemAbstraction fileSystem, boolean verbose, File reportDir,
-            ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException, IOException
+            CheckConsistencyConfig checkConsistencyConfig ) throws ConsistencyCheckIncompleteException, IOException
     {
         Log log = logProvider.getLog( getClass() );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
@@ -156,7 +156,7 @@ public class ConsistencyCheckService
         try
         {
             return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem,
-                    pageCache, verbose, reportDir, consistencyFlags );
+                    pageCache, verbose, reportDir, checkConsistencyConfig );
         }
         finally
         {
@@ -178,16 +178,16 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                pageCache, verbose, new ConsistencyFlags( tuningConfiguration ) );
+                pageCache, verbose, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,
             final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, ConsistencyFlags consistencyFlags )
+            final boolean verbose, CheckConsistencyConfig checkConsistencyConfig )
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, config, progressFactory, logProvider, fileSystem, pageCache,
-                verbose, defaultReportDir( config, storeDir ), consistencyFlags );
+                verbose, defaultReportDir( config, storeDir ), checkConsistencyConfig );
     }
 
     @Deprecated
@@ -197,12 +197,12 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         return runFullConsistencyCheck( storeDir, tuningConfiguration, progressFactory, logProvider, fileSystem,
-                pageCache, verbose, reportDir, new ConsistencyFlags( tuningConfiguration ) );
+                pageCache, verbose, reportDir, new CheckConsistencyConfig( tuningConfiguration ) );
     }
 
     public Result runFullConsistencyCheck( final File storeDir, Config config, ProgressMonitorFactory progressFactory,
             final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
-            final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags )
+            final boolean verbose, File reportDir, CheckConsistencyConfig checkConsistencyConfig )
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
@@ -262,7 +262,7 @@ public class ConsistencyCheckService
             }
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, checkConsistencyConfig );
             summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );
         }
         finally
