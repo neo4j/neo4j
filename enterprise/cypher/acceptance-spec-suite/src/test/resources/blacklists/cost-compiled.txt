@@ -175,14 +175,18 @@ Handles checking properties on relationships in path - using ALL() function on p
 Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
 
 //AggregationAcceptance.feature
-Should give max of integer values
-Should give max of float values
-Should give max of numerical values
-Should give max of numerical and text values
-Should give max of text values
-Should give max of list values
-Should give max of numerical and list values
-Should give max of numerical and null values
+max() over strings
+min() over strings
+max() over mixed numeric values
+min() over mixed numeric values
+max() over mixed values
+min() over mixed values
+max() over list values
+min() over list values
+max() over integers
+min() over integers
+max() over floats
+min() over floats
 
 //MatchAcceptance.feature
 difficult to plan query number 1
