@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
@@ -36,6 +35,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;

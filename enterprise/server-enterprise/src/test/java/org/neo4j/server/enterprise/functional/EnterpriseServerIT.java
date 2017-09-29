@@ -41,7 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.mode;
+import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.mode;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 
 public class EnterpriseServerIT

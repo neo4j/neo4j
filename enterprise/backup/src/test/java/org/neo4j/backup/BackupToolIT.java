@@ -69,7 +69,7 @@ public class BackupToolIT
         backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
         fs = new DefaultFileSystemAbstraction();
         pageCache = StandalonePageCacheFactory.createPageCache( fs );
-        backupTool = new BackupTool( new BackupService(), mock( PrintStream.class ) );
+        backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
     }
 
     @After

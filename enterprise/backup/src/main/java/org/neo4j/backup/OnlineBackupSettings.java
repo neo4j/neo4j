@@ -19,26 +19,15 @@
  */
 package org.neo4j.backup;
 
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
-
-/**
- * Settings for online backup
- */
-@Description( "Online backup configuration settings" )
-public class OnlineBackupSettings implements LoadableConfig
+@Deprecated
+public class OnlineBackupSettings extends org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings
 {
-    @Description( "Enable support for running online backups" )
-    public static final Setting<Boolean> online_backup_enabled = setting( "dbms.backup.enabled", BOOLEAN, TRUE );
+    @Deprecated
+    public static final Setting<Boolean> online_backup_enabled = org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_enabled;
 
-    @Description( "Listening server for online backups" )
-    public static final Setting<HostnamePort> online_backup_server = setting( "dbms.backup.address", HOSTNAME_PORT,
-            "127.0.0.1:6362-6372" );
+    @Deprecated
+    public static final Setting<HostnamePort> online_backup_server = org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_server;
 }

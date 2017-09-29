@@ -30,33 +30,31 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.com.ports.allocation.PortAuthority;
-import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.util.TestHelpers.runBackupToolFromOtherJvmToGetExitCode;
 
 @RunWith( Parameterized.class )
-public class OnlineBackupCommandIT
+public class OnlineBackupCommandHaIT
 {
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -77,7 +75,7 @@ public class OnlineBackupCommandIT
         return Arrays.asList( Standard.LATEST_NAME, HighLimit.NAME );
     }
 
-    public static DbRepresentation createSomeData( GraphDatabaseService db )
+    private static DbRepresentation createSomeData( GraphDatabaseService db )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -93,33 +91,34 @@ public class OnlineBackupCommandIT
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
+        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
 
         int backupPort = PortAuthority.allocatePort();
         startDb( backupPort );
         assertEquals( "should not be able to do backup when noone is listening",
                 1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
+                runBackupTool( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=customport" ) );
+                        "--name=" + backupName ) );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=customport" ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
+                        "--name=" + backupName ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + backupPort,
+                runBackupTool( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=customport" ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
+                        "--name=" + backupName ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
     }
 
-    private void startDb( int backupPort )
+    private void startDb( Integer backupPort )
     {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
         db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
@@ -128,24 +127,10 @@ public class OnlineBackupCommandIT
         createSomeData( db );
     }
 
-    private static int runBackupToolFromOtherJvmToGetExitCode( String... args )
+    private static int runBackupTool( String... args )
             throws Exception
     {
         return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
-    }
-
-    public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args )
-            throws Exception
-    {
-        List<String> allArgs = new ArrayList<>( Arrays.asList(
-                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
-                AdminTool.class.getName() ) );
-        allArgs.add( "backup" );
-        allArgs.addAll( Arrays.asList( args ) );
-
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
-                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()
