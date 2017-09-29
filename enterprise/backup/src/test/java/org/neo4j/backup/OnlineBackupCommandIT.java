@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -55,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
 @RunWith( Parameterized.class )
-public class OnlineBackupCommandHaIT
+public class OnlineBackupCommandIT
 {
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -93,7 +92,6 @@ public class OnlineBackupCommandHaIT
     public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
-        String backupName = "defaultport" + recordFormat;
 
         startDb( null );
         assertEquals(
@@ -101,23 +99,22 @@ public class OnlineBackupCommandHaIT
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=" + backupName) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+                        "--name=defaultport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+                        "--name=defaultport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
     }
 
     @Test
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
-        String backupName = "customport" + recordFormat; // due to ClassRule not cleaning between tests
 
         int port = 4445;
         startDb( "" + port );
@@ -126,23 +123,23 @@ public class OnlineBackupCommandHaIT
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
+                        "--name=customport" ) );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from",
                         ip + ":" + port,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+                        "--name=customport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
         createSomeData( db );
         assertEquals(
                 0,
                 runBackupToolFromOtherJvmToGetExitCode( "--from", ip + ":" + port,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
-                        "--name=" + backupName ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( backupName ) );
+                        "--name=customport" ) );
+        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
     }
 
     private void startDb( String backupPort )
@@ -173,7 +170,7 @@ public class OnlineBackupCommandHaIT
         allArgs.addAll( Arrays.asList( args ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
-                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath(), "NEO4J_DEBUG=abc"} );
+                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
         return new ProcessStreamHandler( process, true ).waitForResult();
     }
 

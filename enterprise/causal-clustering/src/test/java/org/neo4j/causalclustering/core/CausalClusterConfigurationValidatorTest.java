@@ -19,22 +19,21 @@
  */
 package org.neo4j.causalclustering.core;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -49,12 +48,12 @@ public class CausalClusterConfigurationValidatorTest
     public ExpectedException expected = ExpectedException.none();
 
     @Parameterized.Parameter
-    public Mode mode;
+    public ClusterSettings.Mode mode;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static List<Mode> recordFormats()
+    public static List<ClusterSettings.Mode> recordFormats()
     {
-        return Arrays.asList( Mode.CORE, Mode.READ_REPLICA );
+        return Arrays.asList( ClusterSettings.Mode.CORE, ClusterSettings.Mode.READ_REPLICA );
     }
 
     @Test
@@ -62,7 +61,7 @@ public class CausalClusterConfigurationValidatorTest
     {
         // when
         Config config = Config.embeddedDefaults(
-                stringMap( mode.name(), Mode.SINGLE.name(),
+                stringMap( ClusterSettings.mode.name(), ClusterSettings.Mode.SINGLE.name(),
                         initial_discovery_members.name(), "" ),
                 Collections.singleton( new CausalClusterConfigurationValidator() ) );
 
@@ -75,7 +74,7 @@ public class CausalClusterConfigurationValidatorTest
     {
         // when
         Config config = Config.embeddedDefaults(
-                stringMap( mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         initial_discovery_members.name(), "localhost:99,remotehost:2",
                         new BoltConnector( "bolt" ).enabled.name(), "true" ),
                 Collections.singleton( new CausalClusterConfigurationValidator() ) );
@@ -95,7 +94,7 @@ public class CausalClusterConfigurationValidatorTest
 
         // when
         Config.embeddedDefaults(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name() ),
+                stringMap( ClusterSettings.mode.name(), mode.name() ),
                 Collections.singleton( new CausalClusterConfigurationValidator() ) );
     }
 
@@ -108,7 +107,7 @@ public class CausalClusterConfigurationValidatorTest
 
         // when
         Config.embeddedDefaults(
-                stringMap( EnterpriseEditionSettings.mode.name(), mode.name(),
+                stringMap( ClusterSettings.mode.name(), mode.name(),
                         initial_discovery_members.name(), "localhost:99,remotehost:2" ),
                 Collections.singleton( new CausalClusterConfigurationValidator() ) );
     }
