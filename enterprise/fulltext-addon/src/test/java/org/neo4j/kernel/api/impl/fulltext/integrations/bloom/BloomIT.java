@@ -437,6 +437,34 @@ public class BloomIT
         }
     }
 
+    @Test
+    public void shouldBeAbleToQueryForIndexedProperties() throws Exception
+    {
+        builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
+
+        db = builder.newGraphDatabase();
+
+        Result result = db.execute( "CALL db.fulltext.bloomFulltextProperties" );
+        assertEquals( "otherprop", result.next().get( "propertyKey" ) );
+        assertEquals( "prop", result.next().get( "propertyKey" ) );
+        assertEquals( "proppmatt", result.next().get( "propertyKey" ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
+    public void onlineIndexShouldBeReportedAsOnline() throws Exception
+    {
+        builder.setConfig( bloom_indexed_properties, "prop, otherprop, proppmatt" );
+
+        db = builder.newGraphDatabase();
+
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" );
+        Result result = db.execute( "CALL db.fulltext.bloomFulltextStatus" );
+        assertEquals( "ONLINE", result.next().get( "state" ) );
+        assertEquals( "ONLINE", result.next().get( "state" ) );
+        assertFalse( result.hasNext() );
+    }
+
     @After
     public void after() throws Exception
     {

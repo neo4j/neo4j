@@ -185,6 +185,7 @@ class FulltextUpdateApplier
                 }
             }
             indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+            index.setPopulated();
             return Pair.of( index, completedLatch );
         };
 
