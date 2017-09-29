@@ -156,3 +156,8 @@ Accessing a map with null should return null
 //SkipLimitAcceptance.feature
 Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
+
+//MatchAcceptance.feature
+difficult to plan query number 1
+difficult to plan query number 2
+difficult to plan query number 3
