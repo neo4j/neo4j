@@ -152,3 +152,61 @@ Feature: MatchAcceptance
       | (:User {prop: '1_val'})   |
       | (:User {prop: '11_val'})  |
     And no side effects
+
+  Scenario: difficult to plan query number 1
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {foo: 42})-[:T]->(),
+             (:C {bar: 42}),
+             (:C {bar: 665})
+      """
+    When executing query:
+      """
+      MATCH (a:A)
+      WITH a WHERE true
+      MATCH (c:C), (a)-->()
+      WHERE a.foo = c.bar
+      RETURN a.foo
+      """
+    Then the result should be:
+      | a.foo |
+      | 42    |
+    And no side effects
+
+  Scenario: difficult to plan query number 2
+    Given an empty graph
+    When executing query:
+      """
+      MATCH (ts)
+      MATCH (k)-[:M]->(sta)
+      OPTIONAL MATCH (sta)<-[:N]-(p)
+      WITH k, ts, coalesce(p, sta) AS ab
+      MATCH (d:A) WHERE d.Id = ab.OtherId
+      MATCH (ts)-[:R]->(f)
+      RETURN k, ts, f, d
+      """
+    Then the result should be empty
+    And no side effects
+
+  Scenario: difficult to plan query number 3
+    Given an empty graph
+    And having executed:
+    """
+    CREATE (:A {foo: 42})-[:T]->(),
+           (:C {bar: 42, baz: 'apa'}),
+           (:C {bar: 665})
+    """
+    When executing query:
+    """
+    MATCH (a1)-[r]->(b1)
+    WITH r WHERE true
+    MATCH (a2)-[r]->(b2), (c)
+    WHERE a2.foo = c.bar
+    RETURN c.baz
+    """
+    Then the result should be:
+      | c.baz |
+      | 'apa' |
+    And no side effects
+

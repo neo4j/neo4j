@@ -1013,7 +1013,7 @@ object LdbcQueries {
       Map("personId" -> 2, "messageId" -> 311,
         "personLastName" -> "two-ᚠさ丵פش", "messageContent" -> "C311", "personFirstName" -> "friend", "messageCreationDate" -> 4))
 
-    override def expectedToSucceedIn: TestConfiguration = Configs.Interpreted
+    override def expectedToSucceedIn: TestConfiguration = Configs.CommunityInterpreted
 
   }
 

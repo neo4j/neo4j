@@ -39,7 +39,7 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
         if (a != b) {
           // unknown planner issue failed to find plan (without regard for differences in hints)
-          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed")
+          throw new InternalException(s"Expected \n$expected \n\n\nInstead, got: \n$constructed\nPlan: $plan")
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
@@ -59,7 +59,9 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
 
           val message =
             s"""Failed to fulfil the hints of the query.
-               |$details""".stripMargin
+               |$details
+               |
+               |Plan $plan""".stripMargin
 
           throw new HintException(message)
         }
