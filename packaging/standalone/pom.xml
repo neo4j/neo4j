@@ -282,6 +282,11 @@
       <artifactId>neo4j-import-tool</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j.build</groupId>
+      <artifactId>licensecheck-config</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>
