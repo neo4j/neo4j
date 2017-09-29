@@ -127,6 +127,11 @@ object PipelineInformation {
 
     result.toString()
   }
+
+  def isLongSlot(slot: Slot) = slot match {
+    case _: LongSlot => true
+    case _ => false
+  }
 }
 
 class PipelineInformation(private var slots: Map[String, Slot],
