@@ -76,6 +76,4 @@ public class ReadTest
         assertThat( addFilteringFlag( NO_ID ), equalTo( (long) NO_ID ) );
         assertThat( addFilteringFlag( -1337L ), equalTo( -1337L ) );
     }
-
-
 }

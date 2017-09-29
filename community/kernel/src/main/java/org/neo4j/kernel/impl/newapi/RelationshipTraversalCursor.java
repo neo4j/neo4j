@@ -285,7 +285,6 @@ class RelationshipTraversalCursor extends RelationshipCursor
             }
         }
 
-
         if ( next == NO_ID )
         {
             reset();
@@ -439,7 +438,7 @@ class RelationshipTraversalCursor extends RelationshipCursor
         /*
          * Initialize the chain of records
          */
-        static Record initialize(Record first)
+        static Record initialize( Record first )
         {
             return new Record( DUMMY, first );
         }

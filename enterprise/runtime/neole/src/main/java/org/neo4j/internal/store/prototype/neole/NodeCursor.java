@@ -145,9 +145,21 @@ class NodeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.Nod
     }
 
     @Override
+    public long allRelationshipsReference()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public long propertiesReference()
     {
         return combineReference( unsignedInt( 5 ), (unsignedByte( 0 ) & 0xF0L) << 28 );
+    }
+
+    @Override
+    public boolean isDense()
+    {
+        return true;
     }
 
     // ===================
@@ -171,19 +183,7 @@ class NodeCursor extends ReadCursor implements org.neo4j.internal.kernel.api.Nod
     }
 
     @Override
-    public void outgoingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void incomingRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public void allRelationships( RelationshipGroupCursor groups, RelationshipTraversalCursor relationships )
+    public void allRelationships( RelationshipTraversalCursor relationships )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
