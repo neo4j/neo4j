@@ -37,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -55,6 +56,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -70,6 +73,7 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
@@ -522,6 +526,7 @@ public class TransactionGuardIT
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), "false" );
+            serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
             neoServer.start();
@@ -602,7 +607,9 @@ public class TransactionGuardIT
         configMap.forEach( databaseBuilder::setConfig );
         databaseBuilder.setConfig( GraphDatabaseSettings.record_id_batch_size, "1" );
 
-        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
+        GraphDatabaseAPI database = (GraphDatabaseAPI) databaseBuilder
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
         cleanupRule.add( database );
         return database;
     }
