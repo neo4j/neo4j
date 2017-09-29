@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import org.apache.lucene.analysis.Analyzer;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,27 +56,27 @@ class PartitionedFulltextReader implements ReadOnlyFulltext
     }
 
     @Override
-    public PrimitiveLongIterator query( String... terms )
+    public PrimitiveLongIterator query( Collection<String> terms, boolean matchAll )
     {
-        return partitionedOperation( reader -> innerQuery( reader, terms ) );
+        return partitionedOperation( reader -> innerQuery( reader, matchAll, terms ) );
     }
 
     @Override
-    public PrimitiveLongIterator fuzzyQuery( String... terms )
+    public PrimitiveLongIterator fuzzyQuery( Collection<String> terms, boolean matchAll )
     {
-        return partitionedOperation( reader -> innerFuzzyQuery( reader, terms ) );
+        return partitionedOperation( reader -> innerFuzzyQuery( reader, matchAll, terms ) );
     }
 
-    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, String... query )
+    private PrimitiveLongIterator innerQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
 
-        return reader.query( query );
+        return reader.query( query, matchAll );
     }
 
-    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, String... query )
+    private PrimitiveLongIterator innerFuzzyQuery( ReadOnlyFulltext reader, boolean matchAll, Collection<String> query )
     {
 
-        return reader.fuzzyQuery( query );
+        return reader.fuzzyQuery( query, matchAll );
     }
 
     public void close()
