@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import java.util.concurrent.ExecutionException;
+
 /**
  * A fulltext index operation that is possibly in-flight, and whose completion can be waited for.
  */
@@ -26,6 +28,7 @@ public interface AsyncFulltextIndexOperation
 {
     /**
      * Wait for the index operation to complete. Returns immediately if the operation has already completed.
+     * @throws ExecutionException if the asynchronous operation failed with an exception.
      */
-    void awaitCompletion();
+    void awaitCompletion() throws ExecutionException;
 }
