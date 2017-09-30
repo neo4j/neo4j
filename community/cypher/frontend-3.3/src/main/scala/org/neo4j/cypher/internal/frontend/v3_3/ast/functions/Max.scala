@@ -16,15 +16,15 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AggregatingFunction, ExpressionSignature, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AggregatingFunction
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-case object Max extends AggregatingFunction with SimpleTypedFunction {
+case object Max extends AggregatingFunction {
   override def name = "max"
 
-  override val signatures = Vector(
-    ExpressionSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    ExpressionSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
-    ExpressionSignature(argumentTypes = Vector(CTString), outputType = CTString)
-  )
+  override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
+    checkArgs(invocation, 1) chain
+      invocation.arguments.expectType(CTAny.covariant) chain
+      invocation.specifyType(invocation.arguments.leastUpperBoundsOfTypes)
 }
