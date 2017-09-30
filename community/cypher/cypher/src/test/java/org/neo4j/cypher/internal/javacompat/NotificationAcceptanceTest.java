@@ -357,7 +357,7 @@ public class NotificationAcceptanceTest
     public void shouldNotNotifyOnEagerBeforeLoadCSVCreate() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
-                assertNotifications( version +"EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
+                assertNotifications( version + "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
                         containsNoItem( eagerOperatorWarning ) ) );
     }
 
@@ -661,15 +661,17 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMisspelledLabel() throws Exception {
+    public void shouldWarnOnMisspelledLabel() throws Exception
+    {
         try ( Transaction tx = db().beginTx() )
         {
             db().createNode().addLabel( label( "Person" ) );
             tx.success();
         }
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
-            assertNotifications(version +"EXPLAIN MATCH (n:Preson) RETURN *", containsItem( unknownLabelWarning ) );
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
+            assertNotifications(version + "EXPLAIN MATCH (n:Preson) RETURN *", containsItem( unknownLabelWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) RETURN *" );
         });
     }
@@ -720,14 +722,16 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMisspelledRelationship() throws Exception {
+    public void shouldWarnOnMisspelledRelationship() throws Exception
+    {
         try ( Transaction tx = db().beginTx() )
         {
             db().createNode().addLabel( label( "Person" ) );
             tx.success();
         }
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem( unknownRelationshipWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH ()-[r:R]->() RETURN *" );
@@ -747,10 +751,12 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldWarnOnMisspelledProperty() throws Exception {
+    public void shouldWarnOnMisspelledProperty() throws Exception
+    {
         db().execute("CREATE (n {prop : 42})");
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version -> {
+        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.2", "CYPHER 3.3" ).forEach( version ->
+        {
             db().execute( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem( unknownPropertyKeyWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n" );
@@ -847,7 +853,8 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void version2_3ShouldWarnAboutBareNodes() throws Exception {
+    public void version2_3ShouldWarnAboutBareNodes() throws Exception
+    {
         Result res = db().execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n");
         assert res.getNotifications().iterator().hasNext();
     }
