@@ -319,10 +319,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 BSD License
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
   D3.js
   Easing Equations (in easing.js)
   JLine

@@ -65,10 +65,6 @@ BSD - seedrandom.js
   seedrandom.js
 
 BSD License
-  ASM Analysis
-  ASM Core
-  ASM Tree
-  ASM Util
   D3.js
   Easing Equations (in easing.js)
   JLine

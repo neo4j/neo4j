@@ -36,7 +36,7 @@ trait MinMax extends AggregationFunction {
 
   override def apply(data: ExecutionContext, state: QueryState) {
     value(data, state) match {
-      case v if v == Values.NO_VALUE =>
+      case Values.NO_VALUE =>
       case x: AnyValue => checkIfLargest(x)
     }
   }

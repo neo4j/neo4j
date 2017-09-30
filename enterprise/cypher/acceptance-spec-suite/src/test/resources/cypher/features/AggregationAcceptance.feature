@@ -39,3 +39,135 @@ Feature: AggregationAcceptance
       | aCount | zCount |
       | 1      | 1      |
     And no side effects
+
+  Scenario: max() over strings
+    When executing query:
+      """
+      UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i
+      RETURN max(i)
+      """
+    Then the result should be:
+      | max(i) |
+      | 'b'    |
+    And no side effects
+
+  Scenario: min() over strings
+    When executing query:
+      """
+      UNWIND ['a', 'b', 'B', null, 'abc', 'abc1'] AS i
+      RETURN min(i)
+      """
+    Then the result should be:
+      | min(i) |
+      | 'B'    |
+    And no side effects
+
+  Scenario: max() over integers
+    When executing query:
+      """
+      UNWIND [1, 2, 0, null, -1] AS x
+      RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 2      |
+    And no side effects
+
+  Scenario: min() over integers
+    When executing query:
+      """
+      UNWIND [1, 2, 0, null, -1] AS x
+      RETURN min(x)
+      """
+    Then the result should be:
+      | min(x) |
+      | -1     |
+    And no side effects
+
+  Scenario: max() over floats
+    When executing query:
+      """
+      UNWIND [1.0, 2.0, 0.5, null] AS x
+      RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 2.0    |
+    And no side effects
+
+  Scenario: min() over floats
+    When executing query:
+      """
+      UNWIND [1.0, 2.0, 0.5, null] AS x
+      RETURN min(x)
+      """
+    Then the result should be:
+      | min(x) |
+      | 0.5    |
+    And no side effects
+
+  Scenario: max() over mixed numeric values
+    When executing query:
+      """
+      UNWIND [1, 2.0, 5, null, 3.2, 0.1] AS x
+      RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 5      |
+    And no side effects
+
+  Scenario: min() over mixed numeric values
+    When executing query:
+      """
+      UNWIND [1, 2.0, 5, null, 3.2, 0.1] AS x
+      RETURN min(x)
+      """
+    Then the result should be:
+      | min(x) |
+      | 0.1    |
+    And no side effects
+
+  Scenario: max() over mixed values
+    When executing query:
+      """
+      UNWIND [1, 'a', null, [1, 2], 0.2, 'b'] AS x
+      RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | 1      |
+    And no side effects
+
+  Scenario: min() over mixed values
+    When executing query:
+      """
+      UNWIND [1, 'a', null, [1, 2], 0.2, 'b'] AS x
+      RETURN min(x)
+      """
+    Then the result should be:
+      | min(x) |
+      | [1, 2] |
+    And no side effects
+
+  Scenario: max() over list values
+    When executing query:
+      """
+      UNWIND [[1], [2], [2, 1]] AS x
+      RETURN max(x)
+      """
+    Then the result should be:
+      | max(x) |
+      | [2, 1] |
+    And no side effects
+
+  Scenario: min() over list values
+    When executing query:
+      """
+      UNWIND [[1], [2], [2, 1]] AS x
+      RETURN min(x)
+      """
+    Then the result should be:
+      | min(x) |
+      | [1]    |
+    And no side effects
