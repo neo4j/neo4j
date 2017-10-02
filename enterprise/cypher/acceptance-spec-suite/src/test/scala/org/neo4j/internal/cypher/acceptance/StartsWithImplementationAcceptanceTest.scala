@@ -20,10 +20,11 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekByRange
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Node, ResourceIterator}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   var aNode: Node = null
   var bNode: Node = null
@@ -51,7 +52,7 @@ class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite wit
     createLabeledNode(Map("prop" -> "www123"), "Address")
     createLabeledNode(Map("prop" -> "www"), "Address")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
+    val result = executeWith(Configs.Interpreted, "MATCH (a:Address) WHERE a.prop STARTS WITH 'www' RETURN a")
 
     result should not(use(IndexSeekByRange.name))
   }
@@ -64,15 +65,16 @@ class StartsWithImplementationAcceptanceTest extends ExecutionEngineFunSuite wit
       createLabeledNode(Map("name" -> "Stefanie"), "User")
       createLabeledNode(Map("name" -> "Craig"), "User")
     }
-    graph.inTx {
-      drain(graph.execute("MATCH (u:User {name: 'Craig'}) SET u.name = 'Steven'"))
-      drain(graph.execute("MATCH (u:User {name: 'Stephan'}) DELETE u"))
-      drain(graph.execute("MATCH (u:User {name: 'Stefanie'}) SET u.name = 'steffi'"))
+      val executeBefore = () => {
+        drain(graph.execute("MATCH (u:User {name: 'Craig'}) SET u.name = 'Steven'"))
+        drain(graph.execute("MATCH (u:User {name: 'Stephan'}) DELETE u"))
+        drain(graph.execute("MATCH (u:User {name: 'Stefanie'}) SET u.name = 'steffi'"))
+      }
 
-      val result = executeWithAllPlannersAndCompatibilityMode("MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name").columnAs("name").toList.toSet
-
-      result should equal(Set[String]("Stefan", "Steven"))
-    }
+      executeWith(Configs.Interpreted, "MATCH (u:User) WHERE u.name STARTS WITH 'Ste' RETURN u.name as name", executeBefore = executeBefore,
+        resultAssertionInTx = Some(result => {
+          result.toSet should equal(Set(Map("name" -> "Stefan"),Map("name" -> "Steven")))
+        }))
   }
 
   private def drain(iter: ResourceIterator[_]): Unit = {

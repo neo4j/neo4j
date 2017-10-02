@@ -135,9 +135,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             query: String,
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
                             planComparisonStrategy: PlanComparisonStrategy = DoNotComparePlans,
+                            resultAssertionInTx : Option[(InternalExecutionResult) => Unit] = None,
                             executeBefore: () => Unit = () => {},
-                            params: Map[String, Any] = Map.empty,
-                            rollback: Boolean = true): InternalExecutionResult = {
+                            params: Map[String, Any] = Map.empty): InternalExecutionResult = {
     val compareResults = expectSucceed -  expectedDifferentResults
     val baseScenario =
       if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults)
@@ -145,7 +145,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
       thisScenario =>
-        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params, rollback)
+        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
     }
 
     baseScenario.prepare()
@@ -180,18 +180,30 @@ trait CypherComparisonSupport extends CypherTestSupport {
       scenariosToChooseFrom.scenarios.head
   }
 
-  private def executeScenario(scenario: TestScenario, query: String, expectedToSucceed: Boolean, executeBefore: () => Unit, params: Map[String, Any], rollback: Boolean) = {
+  private def executeScenario(scenario: TestScenario,
+                              query: String,
+                              expectedToSucceed: Boolean,
+                              executeBefore: () => Unit,
+                              params: Map[String, Any],
+                              resultAssertionInTx : Option[(InternalExecutionResult) => Unit]) = {
     scenario.prepare()
-    val tryResult = if (rollback) {
+    val tryResult =
       graph.rollback(
-        {
-          executeBefore()
-          Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
-        })
-    } else {
-      executeBefore()
-      Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
-    }
+      {
+        executeBefore()
+        val tryRes = Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+        if (expectedToSucceed && resultAssertionInTx.isDefined) {
+          tryRes match {
+            case Success(thisResult) =>
+              withClue(s"result in transaction for ${scenario.name}\n") {
+                resultAssertionInTx.get.apply(thisResult)
+              }
+            case Failure(_) =>
+            // No need to do anythinge: will be handled by match below
+          }
+        }
+        tryRes
+      })
 
     if (expectedToSucceed) {
       tryResult match {
@@ -396,26 +408,6 @@ object CypherComparisonSupport {
       }
     }
   }
-  case class CompareResults(assertion: (InternalExecutionResult) => Unit,
-                                       expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
-      val comparePlans = expectSucceed - expectPlansToFail
-      if (comparePlans.containsScenario(scenario)) {
-        withClue(s"result for ${scenario.name}\n") {
-          assertion(result)
-        }
-      } else {
-        val tryResult = Try(assertion(result))
-        tryResult match {
-          case Success(_) =>
-            fail(s"result for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
-          case Failure(_) =>
-          // Expected to fail
-        }
-      }
-    }
-  }
-
 
   /**
     * A single scenario, which can be composed to configurations.

@@ -31,7 +31,7 @@ import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, CompareResults, Configs}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -612,12 +612,10 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length DESC limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
-    executeWith(Configs.CommunityInterpreted, query,
-      planComparisonStrategy = CompareResults(
-        _.toList should equal(List(Map("nodes" -> List(3, 2, 1, 11, 12, 13, 26, 27, 14)))),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
-      ),
+    val result = executeWith(Configs.CommunityInterpreted, query,
       expectedDifferentResults = Configs.AllRulePlanners + Configs.Cost2_3)
+
+    result.toList should equal(List(Map("nodes" -> List(3, 2, 1, 11, 12, 13, 26, 27, 14))))
   }
 
   test("don't forget to turn off verbose!") {
