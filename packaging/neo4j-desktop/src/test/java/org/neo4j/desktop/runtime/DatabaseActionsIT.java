@@ -60,6 +60,8 @@ public class DatabaseActionsIT
         props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
         props.setProperty( new HttpConnector( "http" ).encryption.name(), "NONE" );
         props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
+        props.setProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+        props.setProperty( new HttpConnector( "https" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
 
         props.setProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
 
