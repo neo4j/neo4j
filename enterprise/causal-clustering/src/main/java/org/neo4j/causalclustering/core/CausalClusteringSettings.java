@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.logging.Level;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
@@ -136,6 +137,10 @@ public class CausalClusteringSettings implements LoadableConfig
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "causal_clustering.disable_middleware_logging", BOOLEAN, TRUE );
+
+    @Description( "Logging level of middleware logging" )
+    public static final Setting<Integer> middleware_logging_level =
+            setting( "causal_clustering.middleware_logging.level", INTEGER, Integer.toString( Level.FINE.intValue() ) );
 
     @Internal // not supported yet
     @Description( "Hazelcast license key" )
