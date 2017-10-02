@@ -111,10 +111,7 @@ class TwoPhaseNodeForRelationshipLocking
 
     private void lockAllNodes( KernelStatement state, long[] nodeIds )
     {
-        for ( long nodeId : nodeIds )
-        {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeId );
-        }
+        state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIds );
     }
 
     private void unlockAllNodes( KernelStatement state, long[] nodeIds  )

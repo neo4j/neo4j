@@ -85,12 +85,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 49L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 3L, 40L, 41L, nodeId, 43L, 49L );
         assertEquals( set( 21L, 22L, 23L, 2L, 3L, 50L ), collector.set );
     }
 
@@ -113,18 +108,13 @@ public class TwoPhaseNodeForRelationshipLockingTest
         locking.lockAllNodesAndConsumeRelationships( nodeId, state );
 
         // then
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L, 41L, nodeId );
 
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 40L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, 41L );
         inOrder.verify( locks ).releaseExclusive( ResourceTypes.NODE, nodeId );
 
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 41L );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, nodeId );
-        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 43L );
+        inOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 40L, 41L, nodeId, 43L );
         assertEquals( set( 21L, 22L, 23L ), collector.set );
     }
 
