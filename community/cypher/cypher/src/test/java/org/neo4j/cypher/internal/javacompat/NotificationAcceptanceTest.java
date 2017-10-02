@@ -114,23 +114,6 @@ public class NotificationAcceptanceTest
     }
 
     @Test
-    public void shouldNotNotifyWhenUsingTheRulePlannerWhenCypherVersionIsNot3_2() throws Exception
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 2.3" ).forEach( version ->
-        {
-            // when
-            Result result = db().execute( version + " planner=rule RETURN 1" );
-
-            // then
-            assertThat( Iterables.asList( result.getNotifications() ), empty() );
-            Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-            assertThat( arguments.get( "version" ), equalTo( version ) );
-            assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-            result.close();
-        } );
-    }
-
-    @Test
     public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery() throws Exception
     {
         Stream.of( "CYPHER 3.1", "CYPHER 3.4" ).forEach(
@@ -187,13 +170,6 @@ public class NotificationAcceptanceTest
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();
-    }
-
-    @Test
-    public void shouldNotNotifyWhenUsingCreateUniqueWhenCypherVersionIsNot3_2() throws Exception
-    {
-        Stream.of( "CYPHER 3.1", "CYPHER 2.3" ).forEach(
-                version -> shouldNotNotifyInStream( version, " MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" ) );
     }
 
     @Test
