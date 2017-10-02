@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.pipes._
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_1.spi.{CSVResources, QueryContext}
 import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionMode, ExplainMode, _}
-import org.neo4j.cypher.internal.frontend.v3_1.CypherException
+import org.neo4j.cypher.internal.frontend.v3_1.{CypherException, ProfilerStatisticsNotReadyException}
 
 import scala.collection.mutable
 
@@ -97,7 +97,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
-        val descriptor = buildDescriptor(pipeInfo.pipe, resultIterator.wasMaterialized)
+        val verifyProfileReady = () => {
+          val isResultReady = resultIterator.wasMaterialized
+          if (!isResultReady) {
+            taskCloser.close(success = false)
+            throw new ProfilerStatisticsNotReadyException()
+          }
+        }
+        val descriptor = buildDescriptor(pipeInfo.pipe, verifyProfileReady)
         new PipeExecutionResult(resultIterator, columns, state, descriptor, planType, queryType)
       }
     }
@@ -110,7 +117,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo, columns: Lis
       resultIterator
     }
 
-    private def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean): () => InternalPlanDescription =
-      () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)
+    private def buildDescriptor(pipe: Pipe, verifyProfileReady: () => Unit): () => InternalPlanDescription =
+      () => pipeDecorator.decorate(pipe.planDescription, verifyProfileReady)
   }
 }

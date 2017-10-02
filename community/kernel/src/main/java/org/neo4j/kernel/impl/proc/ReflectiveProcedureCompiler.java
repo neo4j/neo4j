@@ -436,7 +436,11 @@ public class ReflectiveProcedureCompiler
             @Override
             public void close() throws Exception
             {
-                closeable.close();
+                if ( closeable != null )
+                {
+                    closeable.close();
+                    closeable = null;
+                }
             }
         }
     }

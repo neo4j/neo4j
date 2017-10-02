@@ -56,9 +56,8 @@ class Profiler extends PipeDecorator {
   }
 
 
-  def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription = {
-    if (!isProfileReady)
-      throw new ProfilerStatisticsNotReadyException()
+  def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription = {
+    verifyProfileReady()
 
     plan map {
       input: InternalPlanDescription =>
@@ -81,8 +80,8 @@ class Profiler extends PipeDecorator {
 
     def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = iter
 
-    def decorate(plan: InternalPlanDescription, isProfileReady: => Boolean): InternalPlanDescription =
-      outerProfiler.decorate(plan, isProfileReady)
+    def decorate(plan: InternalPlanDescription, verifyProfileReady: () => Unit): InternalPlanDescription =
+      outerProfiler.decorate(plan, verifyProfileReady)
 
   }
 }
