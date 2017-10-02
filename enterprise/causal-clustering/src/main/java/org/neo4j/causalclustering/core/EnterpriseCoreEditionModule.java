@@ -73,6 +73,7 @@ import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
@@ -201,6 +202,9 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         ClusteringModule clusteringModule = getClusteringModule( platformModule, discoveryServiceFactory,
                 clusterStateDirectory, identityModule, dependencies );
+
+        // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
         PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
         PipelineHandlerAppender pipelineHandlerAppender = appenderFactory.create( config, dependencies, logProvider );

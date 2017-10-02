@@ -167,6 +167,8 @@
             </execution>
           </executions>
           <configuration>
+            <failOnError>false</failOnError>
+
             <header>Neo4j</header>
             <doctitle>Neo4j ${project.version} API</doctitle>
             <windowtitle>Neo4j ${project.version} API</windowtitle>

@@ -64,6 +64,7 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ReadOnlyTransactionCommitProcess;
@@ -189,6 +190,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         hostnameResolver, resolveStrategy( config ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
+
+        // We need to satisfy the dependency here to keep users of it, such as BoltKernelExtension, happy.
+        dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
 
         PipelineHandlerAppenderFactory appenderFactory = appenderFactory();
         PipelineHandlerAppender handlerAppender = appenderFactory.create( config, dependencies, logProvider );
