@@ -40,6 +40,7 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.rule.SuppressOutput;
@@ -97,19 +98,18 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         relativeProperties.put( http.type.name(), "HTTP" );
-        relativeProperties.put( http.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( http.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
         relativeProperties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
         relativeProperties.put( https.type.name(), "HTTP" );
-        relativeProperties.put( https.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( https.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
         relativeProperties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
         relativeProperties.put( bolt.type.name(), "BOLT" );
         relativeProperties.put( bolt.enabled.name(), "true" );
-        relativeProperties.put( bolt.advertised_address.name(), "localhost:0" );
-        relativeProperties.put( bolt.listen_address.name(), "localhost:0" );
+        relativeProperties.put( bolt.listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
 
         relativeProperties.put( DatabaseManagementSystemSettings.database_path.name(),
                 homeDir.absolutePath().getAbsolutePath() );

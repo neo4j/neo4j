@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -81,8 +82,11 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", "dbms.connector.http.type=HTTP",
                 "-c", "dbms.connector.http.enabled=true",
-                "-c", "dbms.connector.http.listen_address=localhost:0",
-                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0",
+                "-c", "dbms.connector.http.listen_address=localhost:" + PortAuthority.allocatePort(),
+                "-c", "dbms.connector.https.type=HTTP",
+                "-c", "dbms.connector.https.enabled=true",
+                "-c", "dbms.connector.https.listen_address=localhost:" + PortAuthority.allocatePort(),
+                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:" + PortAuthority.allocatePort(),
                 "-c", "dbms.backup.enabled=false"
         );
 
