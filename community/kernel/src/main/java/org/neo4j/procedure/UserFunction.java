@@ -31,7 +31,6 @@ import java.lang.annotation.Target;
  * Functions accept input, use that input to perform work, and then return a value. The work performed usually
  * involves one or more resources, such as a {@link org.neo4j.graphdb.GraphDatabaseService}. Functions are read-only, i.e
  * can't update neither the graph nor update schema.
- * <p>
  *
  * <h2>Input declaration</h2>
  * A function can accept input arguments, which is defined in the arguments to the
@@ -115,12 +114,14 @@ public @interface UserFunction
 
     /**
      * Synonym for {@link #value()}
+     * @return the namespace and procedure name.
      */
     String name() default "";
 
     /**
      * When deprecating a function it is useful to indicate a possible
-     * replacement procedure that clients might show in warnings
+     * replacement procedure that clients might show in warnings.
+     * @return a string representation of the replacement procedure.
      */
     String deprecatedBy() default "";
 }

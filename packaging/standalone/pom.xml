@@ -33,8 +33,6 @@
   </modules>
 
   <properties>
-    <short-name>neo4j-standalone</short-name>
-
     <!-- Document substitution properties are in document.properties file -->
 
     <!-- other filter properties -->
@@ -93,15 +91,6 @@
                 <ant antfile="${project.basedir}/build.xml" inheritRefs="true"/>
               </target>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-javadocs</id>
-            <phase>none</phase>
           </execution>
         </executions>
       </plugin>
@@ -292,6 +281,14 @@
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-import-tool</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <!-- Defined to allow maven to calculate build order, it's used in the plugin above -->
+    <dependency>
+      <groupId>org.neo4j.build</groupId>
+      <artifactId>licensecheck-config</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

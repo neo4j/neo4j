@@ -15,11 +15,6 @@
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <properties>
-    <short-name>management</short-name>
-    <version-package>management.impl</version-package>
-  </properties>
-
   <packaging>jar</packaging>
 
   <scm>
@@ -50,14 +45,9 @@
 
   <build>
     <plugins>
+      <!-- This module contains public API, generate javadoc -->
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/management/*</include>
-          </includes>
-        </configuration>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

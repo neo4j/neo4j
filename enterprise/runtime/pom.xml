@@ -8,7 +8,6 @@
   </parent>
 
   <properties>
-    <short-name>kernelapi</short-name>
     <license-text.header>AGPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-agpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -51,5 +50,4 @@
       </comments>
     </license>
   </licenses>
-
 </project>

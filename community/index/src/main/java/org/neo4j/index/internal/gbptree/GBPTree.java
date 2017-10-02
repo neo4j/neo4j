@@ -43,7 +43,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
-
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
@@ -70,7 +69,7 @@ import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor
  * it's already unstable.
  * <p>
  * Every pointer to another node (child/sibling pointer) consists of two pointers, one to a stable version and
- * one to a potentially unstable version. A stable -> unstable node copy will have its parent redirect one of its
+ * one to a potentially unstable version. A stable -&gt; unstable node copy will have its parent redirect one of its
  * two pointers to the new unstable version, redirecting readers and writers to the new unstable version,
  * while at the same time keeping one pointer to the stable version, in case there's a crash or non-clean
  * shutdown, followed by recovery.
@@ -806,6 +805,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * <li>
      * A {@code fromInclusive} that is bigger than the {@code toExclusive} results in results in descending order.
      * </li>
+     * </ul>
      *
      * @param fromInclusive lower bound of the range to seek (inclusive).
      * @param toExclusive higher bound of the range to seek (exclusive).

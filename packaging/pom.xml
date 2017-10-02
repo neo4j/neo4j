@@ -18,10 +18,6 @@
   <description>Project that builds Neo4j Packages.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <properties>
-    <short-name>packaging-build</short-name>
-  </properties>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>

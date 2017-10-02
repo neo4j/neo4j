@@ -16,21 +16,6 @@
   <name>Neo4j - Metrics Kernel Extension</name>
   <packaging>jar</packaging>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>

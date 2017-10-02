@@ -15,11 +15,6 @@
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <properties>
-    <short-name>query-logging</short-name>
-    <version-package>kernel.impl.query</version-package>
-  </properties>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -168,15 +163,4 @@
     </dependency>
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <!-- Override parent to include impl package in javadocs. -->
-          <excludePackageNames>*.dummy</excludePackageNames>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

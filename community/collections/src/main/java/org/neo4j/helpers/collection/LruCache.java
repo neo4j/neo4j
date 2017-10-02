@@ -50,7 +50,7 @@ public class LruCache<K, E>
     };
 
     /**
-     * Creates a LRU cache. If <CODE>maxSize < 1</CODE> an
+     * Creates a LRU cache. If {@code maxSize < 1} an
      * IllegalArgumentException is thrown.
      *
      * @param name    name of cache

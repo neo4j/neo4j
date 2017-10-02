@@ -12,11 +12,6 @@
   <name>Neo4j - Communication Package</name>
   <packaging>jar</packaging>
 
-  <properties>
-    <short-name>com</short-name>
-    <version-package>com.impl</version-package>
-  </properties>
-
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -42,21 +37,6 @@
       </comments>
     </license>
   </licenses>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <dependencies>
     <dependency>

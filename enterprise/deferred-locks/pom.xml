@@ -111,18 +111,4 @@
 
   </dependencies>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>generate-dummy-javadocs-jar</id>
-            <phase>package</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 </project>

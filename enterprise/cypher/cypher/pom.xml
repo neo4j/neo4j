@@ -44,8 +44,6 @@
   </licenses>
 
   <properties>
-    <version-package>cypher.internal</version-package>
-    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <asm.version>5.2</asm.version>
   </properties>
 

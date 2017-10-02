@@ -18,15 +18,8 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>community-build</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
-
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
 
   <modules>
     <module>common</module>
@@ -101,29 +94,4 @@ the relevant Commercial Agreement.
       </modules>
     </profile>
   </profiles>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <!-- Integration tests spend significant time waiting, so we can run more things in parallel here-->
-          <forkCount>0.5C</forkCount>
-          <!-- Misha says it is not safe to run tests with more than one thread per JVM -->
-          <!-- He also said he'd fix that! -->
-          <threadCount>1</threadCount>
-          <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->
-          <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
-          <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
-          <!-- file system separation between forks -->
-          <workingDirectory>${project.build.directory}/FORK_DIRECTORY_${surefire.forkNumber}</workingDirectory>
-          <systemPropertyVariables>
-            <!-- coordination on ports between forks -->
-            <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

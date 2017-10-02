@@ -45,7 +45,6 @@
   </licenses>
 
   <properties>
-    <version-package>cypher.internal</version-package>
     <opencypher.version>1.0.0-M06</opencypher.version>
   </properties>
 

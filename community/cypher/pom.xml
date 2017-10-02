@@ -18,7 +18,6 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <license-text.header>GPL-3-header.txt</license-text.header>
   </properties>
@@ -52,21 +51,6 @@
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>clirr-maven-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>org/neo4j/cypher</include>
-          </includes>
-
-          <excludes>
-            <!-- Ignore all Cypher internals -->
-            <exclude>org/neo4j/cypher/internal/*</exclude>
-          </excludes>
-        </configuration>
       </plugin>
 
       <plugin>

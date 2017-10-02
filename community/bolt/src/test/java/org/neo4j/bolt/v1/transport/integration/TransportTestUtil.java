@@ -41,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.responseMessage;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 
+@SuppressWarnings( "unchecked" )
 public class TransportTestUtil
 {
     private TransportTestUtil()

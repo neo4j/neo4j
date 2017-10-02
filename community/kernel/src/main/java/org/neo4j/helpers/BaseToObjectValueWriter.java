@@ -51,7 +51,7 @@ import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
  * number types, booleans, strings, arrays and lists. It leaves to the extending
  * class to handle neo4j specific types such as nodes, edges and points.
  *
- * @param <E>
+ * @param <E> the exception thrown on error.
  */
 public abstract class BaseToObjectValueWriter<E extends Exception> implements AnyValueWriter<E>
 {

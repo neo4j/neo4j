@@ -22,12 +22,6 @@
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
 
-  <properties>
-    <version-package>cypher.internal.ir.v3_4</version-package>
-    <scala.version>2.11.11</scala.version>
-    <scala.binary.version>2.11</scala.binary.version>
-  </properties>
-
   <licenses>
     <license>
       <name>GNU General Public License, Version 3</name>
@@ -121,33 +115,6 @@
       <scope>test</scope>
     </dependency>
 
-
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>neo-full-build-with-javadoc</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-dummy-javadocs-jar</id>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>

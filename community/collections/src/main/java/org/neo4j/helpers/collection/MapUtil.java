@@ -433,6 +433,9 @@ public abstract class MapUtil
      * @param map the map to mutate.
      * @param newBackingData the backing data to retain.
      * @param keyExtractor the function to extract keys from the backing data.
+     * @param <K> type of the key in the input map.
+     * @param <V> type of the values in the input map.
+     * @param <T> type of the keys in the new baking data.
      */
     public static <K, V, T> void trimToList( Map<K,V> map, List<T> newBackingData, Function<T,K> keyExtractor )
     {
@@ -446,6 +449,9 @@ public abstract class MapUtil
      * @param map the map to mutate.
      * @param newBackingData the backing data to retain.
      * @param keyExtractor the function to extract keys from the backing data.
+     * @param <K> type of the key in the input map.
+     * @param <V> type of the values in the input map.
+     * @param <T> type of the keys in the new backing data.
      */
     public static <K, V, T> void trimToFlattenedList( Map<K,V> map, List<T> newBackingData,
             Function<T,Stream<K>> keyExtractor )
@@ -458,6 +464,8 @@ public abstract class MapUtil
      * Mutates the input map by removing entries which are not in the retained set of keys.
      * @param map the map to mutate.
      * @param retainedKeys the keys to retain.
+     * @param <K> type of the key.
+     * @param <V> type of the values.
      */
     public static <K, V> void trimToList( Map<K,V> map, Set<K> retainedKeys )
     {

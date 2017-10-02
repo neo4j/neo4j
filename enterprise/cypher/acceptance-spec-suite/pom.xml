@@ -44,10 +44,6 @@
     </license>
   </licenses>
 
-  <properties>
-    <version-package>cypher.internal</version-package>
-  </properties>
-
   <build>
     <plugins>
       <plugin>

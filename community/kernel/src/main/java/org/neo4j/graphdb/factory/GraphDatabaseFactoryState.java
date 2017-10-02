@@ -93,6 +93,7 @@ public class GraphDatabaseFactoryState
     }
 
     /**
+     * @param settings a class with all settings.
      * @deprecated This method has no side effects now since we moved to service loading instead, {@link LoadableConfig}
      * should be used.
      */

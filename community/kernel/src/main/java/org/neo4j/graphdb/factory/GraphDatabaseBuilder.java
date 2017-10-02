@@ -44,11 +44,17 @@ public class GraphDatabaseBuilder
     public interface DatabaseCreator
     {
         /**
-         * This method will go away in 4.0. See {@link #newDatabase(Config)} instead.
+         * @param config initial configuration for the database.
+         * @return an instance of {@link GraphDatabaseService}.
+         * @deprecated this method will go away in 4.0. See {@link #newDatabase(Config)} instead.
          */
         @Deprecated
         GraphDatabaseService newDatabase( Map<String,String> config );
 
+        /**
+         * @param config initial configuration for the database.
+         * @return an instance of {@link GraphDatabaseService}.
+         */
         default GraphDatabaseService newDatabase( @Nonnull Config config )
         {
             return newDatabase( config.getRaw() );

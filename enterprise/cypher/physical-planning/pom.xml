@@ -44,8 +44,6 @@
   </licenses>
 
   <properties>
-    <version-package>cypher.internal</version-package>
-    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
     <asm.version>5.2</asm.version>
   </properties>
 
@@ -344,31 +342,5 @@
     </dependency>
 
   </dependencies>
-
-  <profiles>
-    <profile>
-      <id>neo-full-build-with-javadoc</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>fullBuild</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-jar-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>generate-dummy-javadocs-jar</id>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 
 </project>

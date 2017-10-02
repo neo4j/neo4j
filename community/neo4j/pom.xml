@@ -17,11 +17,9 @@
   <description>A meta package containing the most used Neo4j libraries. Intended use: as a Maven dependency.</description>
 
   <properties>
-    <short-name>neo4j</short-name>
-    <version-package>impl.neo4j</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <javadoc.skip>false</javadoc.skip>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+    <maven.javadoc.skip>true</maven.javadoc.skip> <!-- TODO: fix -->
   </properties>
 
   <scm>
@@ -29,114 +27,6 @@
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
     <url>https://github.com/neo4j/neo4j</url>
   </scm>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-lucene-index</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-graph-algo</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-udc</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-jmx</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- For the tests specified by this package -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-core</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-library</artifactId>
-        <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-common</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-logging</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-consistency-check</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-    </dependency>
-  </dependencies>
 
   <licenses>
     <license>
@@ -234,7 +124,6 @@ the relevant Commercial Agreement.
               <detectLinks>false</detectLinks>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
-              <skip>${javadoc.skip}</skip>
               <show>public</show>
               <windowtitle>${project.name} ${project.version} API</windowtitle>
                <excludePackageNames>
@@ -276,5 +165,113 @@ the relevant Commercial Agreement.
       </plugin>
     </plugins>
   </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-lucene-index</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-graph-algo</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-udc</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-jmx</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- For the tests specified by this package -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-common</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-consistency-check</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>annotations</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

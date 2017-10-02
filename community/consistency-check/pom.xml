@@ -15,9 +15,7 @@
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <properties>
-    <version-package>consistency.checking.impl</version-package>
     <neo4j.version>${project.version}</neo4j.version>
-    <short-name>consistency-check</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>

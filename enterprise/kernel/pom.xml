@@ -39,6 +39,15 @@
     </license>
   </licenses>
 
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
   <dependencies>
     <!-- Neo4j dependencies -->
     <dependency>

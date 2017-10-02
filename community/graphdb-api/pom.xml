@@ -8,8 +8,6 @@
   </parent>
 
   <properties>
-    <short-name>graphdb-api</short-name>
-    <version-package>graphdb</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
@@ -48,6 +46,15 @@ the relevant Commercial Agreement.
       </comments>
     </license>
   </licenses>
+
+  <build>
+    <plugins>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>

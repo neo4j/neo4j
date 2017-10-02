@@ -77,7 +77,7 @@ public class FormattedLog extends AbstractLog
          * Set the zoneId for datestamps in the log
          *
          * @return this builder
-         * @param timezone
+         * @param timezone to use
          * @deprecated use {@link #withZoneId(ZoneId)}
          */
         @Deprecated
@@ -89,7 +89,7 @@ public class FormattedLog extends AbstractLog
         /**
          * Set the zoneId for datestamps in the log
          *
-         * @param zoneId
+         * @param zoneId to use
          * @return this builder
          */
         public Builder withZoneId( ZoneId zoneId )
@@ -252,8 +252,8 @@ public class FormattedLog extends AbstractLog
     /**
      * Start creating a {@link FormattedLog} with the specified zoneId from timezone for datestamps in the log
      *
+     * @param timezone to use
      * @return a builder for a {@link FormattedLog}
-     * @param timezone
      * @deprecated use {@link #withZoneId(ZoneId)}
      */
     @Deprecated
@@ -265,7 +265,7 @@ public class FormattedLog extends AbstractLog
     /**
      * Start creating a {@link FormattedLog} with the specified zoneId for datestamps in the log
      *
-     * @param zoneId
+     * @param zoneId to use
      * @return a builder for a {@link FormattedLog}
      */
     public static Builder withZoneId( ZoneId zoneId )

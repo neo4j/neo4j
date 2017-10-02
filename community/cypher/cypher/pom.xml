@@ -43,16 +43,15 @@
     </license>
   </licenses>
 
-  <properties>
-    <version-package>cypher.internal</version-package>
-    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-  </properties>
-
   <build>
     <plugins>
       <plugin>
         <groupId>org.scalastyle</groupId>
         <artifactId>scalastyle-maven-plugin</artifactId>
+      </plugin>
+      <!-- This module contains public API, generate javadoc -->
+      <plugin>
+        <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
