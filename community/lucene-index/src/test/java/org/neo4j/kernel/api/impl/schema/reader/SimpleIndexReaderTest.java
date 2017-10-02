@@ -150,12 +150,12 @@ public class SimpleIndexReaderTest
     private SimpleIndexReader getNonUniqueSimpleReader()
     {
         return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig,
-                taskCoordinator );
+                taskCoordinator, null );
     }
 
     private SimpleIndexReader getUniqueSimpleReader()
     {
         return new SimpleIndexReader( partitionSearcher, IndexDescriptorFactory.uniqueForLabel( 0, 0 ),
-                samplingConfig, taskCoordinator );
+                samplingConfig, taskCoordinator, null );
     }
 }
