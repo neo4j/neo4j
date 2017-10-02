@@ -37,7 +37,6 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.LogProvider;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -158,8 +157,8 @@ public class BackupFlowTest
         anyStrategyPasses();
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any( FileSystemAbstraction.class),
-                eq(false), any(File.class), any( ConsistencyFlags.class ) ) )
+                eq(progressMonitorFactory), any( LogProvider.class ), any(),
+                eq(false), any(), any() ) )
                 .thenReturn( consistencyCheckResult );
         when( consistencyCheckResult.isSuccessful() ).thenReturn( true );
 
@@ -167,7 +166,7 @@ public class BackupFlowTest
         subject.performBackup( onlineBackupContext );
 
         // then
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), eq( false ), any(), any( ConsistencyFlags.class ) );
+        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), eq( false ), any(), any() );
     }
 
     @Test
@@ -215,8 +214,8 @@ public class BackupFlowTest
         anyStrategyPasses();
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any( FileSystemAbstraction.class),
-                eq(false), any(File.class), any( ConsistencyFlags.class ) ) )
+                eq(progressMonitorFactory), any( LogProvider.class ), any(),
+                eq(false), any(), any() ) )
                 .thenThrow( new IOException( "Predictable message" ) );
 
         // then
@@ -235,8 +234,8 @@ public class BackupFlowTest
         when( requiredArguments.isDoConsistencyCheck() ).thenReturn( true );
         when( consistencyCheckResult.isSuccessful() ).thenReturn( false );
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(),
-                eq(progressMonitorFactory), any( LogProvider.class ), any( FileSystemAbstraction.class),
-                eq(false), any(File.class), any( ConsistencyFlags.class ) ) )
+                eq(progressMonitorFactory), any( LogProvider.class ), any(),
+                eq(false), any(), any() ) )
                 .thenReturn( consistencyCheckResult );
 
         // then
