@@ -28,14 +28,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
@@ -193,7 +193,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
-                builder.withConfig( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
+                builder.withConfig( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.CORE.name() );
                 builder.withConfig( CausalClusteringSettings.multi_dc_license.name(), "true" );
                 builder.withConfig( CausalClusteringSettings.initial_discovery_members.name(), String.join( ",", initialMembers ) );
 
@@ -238,7 +238,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( GraphDatabaseSettings.neo4j_home.name(), homePath );
                 builder.withConfig( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
 
-                builder.withConfig( ClusterSettings.mode.name(), ClusterSettings.Mode.READ_REPLICA.name() );
+                builder.withConfig( EnterpriseEditionSettings.mode.name(), EnterpriseEditionSettings.Mode.READ_REPLICA.name() );
                 builder.withConfig( CausalClusteringSettings.initial_discovery_members.name(), String.join( ",", initialMembers ) );
                 builder.withConfig( CausalClusteringSettings.transaction_listen_address.name(), specifyPortOnly( txPort ) );
 

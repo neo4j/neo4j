@@ -26,9 +26,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.OptionalHostnamePort;
 
 public class Converters
 {
@@ -110,24 +112,36 @@ public class Converters
         return Integer::new;
     }
 
-    public static Function<String, HostnamePort> toHostnamePort( HostnamePort defaultAddress )
+    public static OptionalHostnamePort toOptionalHostnamePortFromRawAddress( String rawAddress )
     {
-        return from ->
-        {
-            if ( !from.contains( ":" ) )
-            {
-                from = from + ":" + defaultAddress.getPort();
-            }
-            if ( from.endsWith( ":" ) )
-            {
-                from = from + defaultAddress.getPort();
-            }
-            if ( from.startsWith( ":" ) )
-            {
-                from = defaultAddress.getHost() + from;
-            }
-            String[] parts = from.split( ":" );
-            return new HostnamePort( parts[0], Integer.parseInt( parts[1] ) );
-        };
+        return new OptionalHostnamePort(
+                toHostnameFromRawAddress( rawAddress ),
+                toPortFromRawAddress( rawAddress ),
+                toPortUpperRangeFromRawAddress( rawAddress ) );
+    }
+
+    private static Optional<String> toHostnameFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" )[0] )
+                .filter( addr -> !"".equals( addr ) );
+    }
+
+    private static Optional<Integer> toPortFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" ) )
+                .filter( parts -> parts.length >= 2 )
+                .map( parts -> parts[1] )
+                .map( Integer::parseInt );
+    }
+
+    private static Optional<Integer> toPortUpperRangeFromRawAddress( String rawAddress )
+    {
+        return Optional.ofNullable( rawAddress )
+                .map( addr -> addr.split( ":" ) )
+                .filter( parts -> parts.length == 3 )
+                .map( parts -> parts[2] )
+                .map( Integer::parseInt );
     }
 }

@@ -20,21 +20,15 @@
 package org.neo4j.causalclustering.catchup.storecopy;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-
-import static java.lang.String.format;
 
 public class StoreCopyClient
 {
@@ -47,7 +41,7 @@ public class StoreCopyClient
         log = logProvider.getLog( getClass() );
     }
 
-    long copyStoreFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    public long copyStoreFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
         try
         {
@@ -84,7 +78,7 @@ public class StoreCopyClient
         }
     }
 
-    StoreId fetchStoreId( AdvertisedSocketAddress fromAddress ) throws StoreIdDownloadFailedException
+    public StoreId fetchStoreId( AdvertisedSocketAddress fromAddress ) throws StoreIdDownloadFailedException
     {
         try
         {

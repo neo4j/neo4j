@@ -25,14 +25,14 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.kernel.configuration.Config;
 
-public class CheckConsistencyConfig
+public class ConsistencyFlags
 {
     private final boolean checkGraph;
     private final boolean checkIndexes;
     private final boolean checkLabelScanStore;
     private final boolean checkPropertyOwners;
 
-    public CheckConsistencyConfig( Config tuningConfiguration )
+    public ConsistencyFlags( Config tuningConfiguration )
     {
         this( tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_graph ),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_indexes ),
@@ -40,7 +40,7 @@ public class CheckConsistencyConfig
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_property_owners ) );
     }
 
-    public CheckConsistencyConfig( boolean checkGraph,
+    public ConsistencyFlags( boolean checkGraph,
             boolean checkIndexes,
             boolean checkLabelScanStore,
             boolean checkPropertyOwners )

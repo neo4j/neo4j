@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
