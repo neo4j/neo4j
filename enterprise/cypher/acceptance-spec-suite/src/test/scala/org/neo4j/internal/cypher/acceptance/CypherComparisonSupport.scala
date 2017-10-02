@@ -28,10 +28,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.scalacheck.Prop.True
 import org.scalatest.Assertions
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
@@ -90,7 +93,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
-  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: String, params: (String, Any)*):
+  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: Seq[String], params: (String, Any)*):
   Unit = {
     for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
       thisScenario.prepare()
@@ -98,23 +101,27 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
       tryResult match {
-        case Success(result) =>
-          fail("Unexpectedly Succeeded in " + thisScenario.name)
+        case (Success(_))=>
+          if(expectedToFailWithSpecificMessage) {
+            fail("Unexpectedly Succeeded in " + thisScenario.name)
+          }
+          // It was not expected to fail with the specified error message, do nothing
         case Failure(e: CypherException) =>
           if (expectedToFailWithSpecificMessage) {
-            if (e.getMessage == null || !e.getMessage.contains(message)) {
-              fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
-                "' the error message was '" + e.getMessage + "'")
+            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
+              fail("Correctly failed in " + thisScenario.name + " but instead of one of the given messages, the error message was '" + e.getMessage + "'")
             }
           } else {
-            if (e.getMessage.contains(message)) {
+            if (message.exists(e.getMessage.contains(_))) {
               fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
             }
             // It failed like expected, and we did not specify any message for this config
           }
         case Failure(e: Throwable) => {
           if (expectedToFailWithSpecificMessage) {
-            fail(s"Unexpected exception in ${thisScenario.name}", e)
+            if (e.getMessage == null || !message.exists(e.getMessage.contains(_))) {
+              fail(s"Unexpected exception in ${thisScenario.name} with error message " + e.getMessage, e)
+            }
           }
         }
       }
@@ -126,7 +133,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
                             planComparisonStrategy: PlanComparisonStrategy = DoNotComparePlans,
                             executeBefore: () => Unit = () => {},
-                            params: Map[String, Any] = Map.empty): InternalExecutionResult = {
+                            params: Map[String, Any] = Map.empty,
+                            rollback: Boolean = true): InternalExecutionResult = {
     val compareResults = expectSucceed -  expectedDifferentResults
     val baseScenario =
       if (expectSucceed.scenarios.nonEmpty) extractBaseScenario(expectSucceed, compareResults)
@@ -134,7 +142,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     val positiveResults = (Configs.AbsolutelyAll.scenarios - baseScenario).flatMap {
       thisScenario =>
-        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params)
+        executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params, rollback)
     }
 
     baseScenario.prepare()
@@ -144,34 +152,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     positiveResults.foreach {
       case (scenario, result) =>
-        planComparisonStrategy match {
-          case DoNotComparePlans =>
-            // Nothing to compare
-          case ComparePlansWithPredicate(predicate, expectPlansToFailPredicate, predicateFailureMessage) =>
-            val comparePlans = expectSucceed - expectPlansToFailPredicate
-            if (comparePlans.containsScenario(scenario)) {
-              if (!predicate(result.executionPlanDescription())) {
-                fail(s"plan for ${scenario.name} did not fulfill predicate.\n$predicateFailureMessage\n${result.executionPlanString()}")
-              }
-            } else {
-              if (predicate(result.executionPlanDescription())) {
-                fail(s"plan for ${scenario.name} did unexpectedly fulfill predicate\n$predicateFailureMessage\n${result.executionPlanString()}")
-              }
-            }
-          case ComparePlansWithAssertion(assertion, expectPlansToFail) =>
-            val comparePlans = expectSucceed - expectPlansToFail
-            if (comparePlans.containsScenario(scenario)) {
-              assertion(result.executionPlanDescription())
-            } else {
-              val tryResult = Try(assertion(result.executionPlanDescription()))
-              tryResult match {
-                case Success(_) =>
-                  fail(s"plan for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
-                case Failure(_) =>
-                  // Expected to fail
-              }
-            }
-        }
+        planComparisonStrategy.compare(expectSucceed, scenario, result)
+
         if (compareResults.containsScenario(scenario)) {
           assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
         } else {
@@ -195,13 +177,18 @@ trait CypherComparisonSupport extends CypherTestSupport {
       scenariosToChooseFrom.scenarios.head
   }
 
-  private def executeScenario(scenario: TestScenario, query: String, expectedToSucceed: Boolean, executeBefore: () => Unit, params: Map[String, Any]) = {
+  private def executeScenario(scenario: TestScenario, query: String, expectedToSucceed: Boolean, executeBefore: () => Unit, params: Map[String, Any], rollback: Boolean) = {
     scenario.prepare()
-    val tryResult = graph.rollback(
-      {
-        executeBefore()
-        Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
-      })
+    val tryResult = if (rollback) {
+      graph.rollback(
+        {
+          executeBefore()
+          Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+        })
+    } else {
+      executeBefore()
+      Try(innerExecute(s"CYPHER ${scenario.preparserOptions} $query", params))
+    }
 
     if (expectedToSucceed) {
       tryResult match {
@@ -216,8 +203,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
       None
     }
   }
-
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
 
   @deprecated("Rewrite to use executeWith instead")
   protected def assertResultsSameDeprecated(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
@@ -248,11 +233,18 @@ trait CypherComparisonSupport extends CypherTestSupport {
     innerExecute(queryText, params)
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
-    val innerResult = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
+    val innerResult: Result = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
     RewindableExecutionResult(innerResult)
-
   }
 
+  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
+    override def apply(actual: InternalExecutionResult): MatchResult = {
+      MatchResult(
+        matches = actual.toComparableResult == expected.toComparableSeq(replaceNaNs = false),
+        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
+        rawNegatedFailureMessage = s"Results are equal")
+    }
+  }
 }
 
 /**
@@ -294,7 +286,7 @@ object CypherComparisonSupport {
     object v3_4 extends Version("3.4")
 
     object Default extends Version("") {
-      override  val acceptedVersionNames = Set("2.3", "3.1", "3.2", "3.3").map("CYPHER " + _)
+      override val acceptedVersionNames = Set("2.3", "3.1", "3.2", "3.3", "3.4").map("CYPHER " + _)
     }
 
   }
@@ -357,13 +349,67 @@ object CypherComparisonSupport {
   case class Runtime(acceptedRuntimeNames: Set[String], preparserOption: String)
 
 
-  sealed trait PlanComparisonStrategy
-  case object DoNotComparePlans extends PlanComparisonStrategy
+  sealed trait PlanComparisonStrategy extends Assertions {
+    def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit
+  }
+
+  case object DoNotComparePlans extends PlanComparisonStrategy {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {}
+  }
   case class ComparePlansWithPredicate(predicate: (InternalPlanDescription) => Boolean,
                                        expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
-                                       predicateFailureMessage : String = "") extends PlanComparisonStrategy
+                                       predicateFailureMessage: String = "") extends PlanComparisonStrategy {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
+      val comparePlans = expectSucceed - expectPlansToFailPredicate
+      if (comparePlans.containsScenario(scenario)) {
+        if (!predicate(result.executionPlanDescription())) {
+          fail(s"plan for ${scenario.name} did not fulfill predicate.\n$predicateFailureMessage\n${result.executionPlanString()}")
+        }
+      } else {
+        if (predicate(result.executionPlanDescription())) {
+          fail(s"plan for ${scenario.name} did unexpectedly fulfill predicate\n$predicateFailureMessage\n${result.executionPlanString()}")
+        }
+      }
+    }
+  }
   case class ComparePlansWithAssertion(assertion: (InternalPlanDescription) => Unit,
-    expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy
+                                       expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
+      val comparePlans = expectSucceed - expectPlansToFail
+      if (comparePlans.containsScenario(scenario)) {
+        withClue(s"plan for ${scenario.name}\n") {
+          assertion(result.executionPlanDescription())
+        }
+      } else {
+        val tryResult = Try(assertion(result.executionPlanDescription()))
+        tryResult match {
+          case Success(_) =>
+            fail(s"plan for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
+          case Failure(_) =>
+          // Expected to fail
+        }
+      }
+    }
+  }
+  case class CompareResults(assertion: (InternalExecutionResult) => Unit,
+                                       expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy {
+    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: InternalExecutionResult): Unit = {
+      val comparePlans = expectSucceed - expectPlansToFail
+      if (comparePlans.containsScenario(scenario)) {
+        withClue(s"result for ${scenario.name}\n") {
+          assertion(result)
+        }
+      } else {
+        val tryResult = Try(assertion(result))
+        tryResult match {
+          case Success(_) =>
+            fail(s"result for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
+          case Failure(_) =>
+          // Expected to fail
+        }
+      }
+    }
+  }
 
 
   /**
@@ -480,6 +526,8 @@ object CypherComparisonSupport {
 
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
+    def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
     def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
@@ -496,7 +544,7 @@ object CypherComparisonSupport {
 
     def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
 
-    def Version3_3: TestConfiguration =
+    def Version3_4: TestConfiguration =
       TestConfiguration(Versions.v3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)

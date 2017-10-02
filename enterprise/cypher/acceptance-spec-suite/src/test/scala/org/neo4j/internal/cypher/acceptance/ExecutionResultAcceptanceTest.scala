@@ -24,7 +24,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.SecurityContext._
 
-class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
+class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite{
 
   test("closing the result without exhausting it should not fail the transaction") {
     val query = "UNWIND [1, 2, 3] as x RETURN x"

@@ -19,16 +19,17 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 // Only put tests that assert on memory performance behaviour in this class
-class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("check for contents of collection that contains only a single null") {
     createNode()
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      "MATCH (a) WHERE 42 IN [a.prop] RETURN *", "param" -> null
+    val result = executeWith(Configs.All,
+      "MATCH (a) WHERE 42 IN [a.prop] RETURN *", params = Map("param" -> null)
     )
 
     result shouldBe empty
@@ -64,16 +65,15 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with NewPl
                   |RETURN ID(a), ID(b), type(r)""".stripMargin
 
     // when
-    executeWithAllPlannersAndCompatibilityMode(query)
+    executeWith(Configs.All - Configs.Compiled, query)
     // then it should not fail or run out of memory
   }
 
   test("should unwind a long range without going OOM") {
     val expectedResult = 20000000
 
-    val result = executeScalarWithAllPlanners[Long](s"UNWIND range(1, $expectedResult) AS i RETURN count(*) AS c")
-
-    result should equal(expectedResult)
+    val result = executeWith(Configs.All - Configs.Compiled, s"UNWIND range(1, $expectedResult) AS i RETURN count(*) AS c")
+    result.columnAs[Long]("c").toList should equal(List(expectedResult))
   }
 
 }

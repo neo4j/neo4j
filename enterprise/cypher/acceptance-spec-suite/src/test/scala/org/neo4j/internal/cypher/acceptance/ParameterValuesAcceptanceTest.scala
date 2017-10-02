@@ -19,15 +19,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport
+class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport
   with QueryStatisticsTestSupport {
 
   test("should be able to send in an array of nodes via parameter") {
     // given
     val node = createLabeledNode("Person")
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("WITH {param} as p RETURN p", "param" -> Array(node))
+    val result = executeWith(Configs.All, "WITH {param} as p RETURN p", params = Map("param" -> Array(node)))
     val outputP = result.next.get("p").get
     outputP should equal(Array(node))
   }
@@ -40,7 +41,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
       """ WITH 1 AS node, [] AS nodes1
         | RETURN ANY(n IN collect(distinct node) WHERE n IN nodes1) as exists """.stripMargin
 
-    val r = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val r = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, query)
     r.next().apply("exists") should equal(false)
   }
 
@@ -52,7 +53,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
       emptyBooleanArray, Array[String]()).foreach { array =>
 
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
-      val r = executeWithAllPlanners(q, "param" -> array)
+      val r = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, q, params = Map("param" -> array))
 
       assertStats(r, nodesCreated = 1, propertiesWritten = 1)
       val returned = r.columnAs[Array[_]]("p").next()
@@ -67,7 +68,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
       Array[Boolean](false, true), Array[String]("", " ")).foreach { array =>
 
       val q = "CREATE (n) SET n.prop = $param RETURN n.prop AS p"
-      val r = executeWithAllPlanners(q, "param" -> array)
+      val r = executeWith(Configs.CommunityInterpreted - Configs.Version2_3, q, params = Map("param" -> array))
 
       assertStats(r, nodesCreated = 1, propertiesWritten = 1)
       val returned = r.columnAs[Array[_]]("p").next()
@@ -80,7 +81,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
     // given
     val node = createLabeledNode("Person")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (b) WHERE b = {param} RETURN b", "param" -> node)
+    val result = executeWith(Configs.All, "MATCH (b) WHERE b = {param} RETURN b", params = Map("param" -> node))
     result.toList should equal(List(Map("b" -> node)))
   }
 
@@ -88,7 +89,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
     // given
     val rel = relate(createLabeledNode("Person"), createLabeledNode("Person"))
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", "param" -> rel)
+    val result = executeWith(Configs.All, "MATCH (:Person)-[r]->(:Person) WHERE r = {param} RETURN r", params = Map("param" -> rel))
     result.toList should equal(List(Map("r" -> rel)))
   }
 
@@ -100,7 +101,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
   test("removing property when not sure if it is a node or relationship should still work - NODE") {
     val n = createNode("name" -> "Anders")
 
-    updateWithBothPlannersAndCompatibilityMode("WITH {p} as p SET p.lastname = p.name REMOVE p.name", "p" -> n)
+    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> n))
 
     graph.inTx {
       n.getProperty("lastname") should equal("Anders")
@@ -111,7 +112,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
   test("removing property when not sure if it is a node or relationship should still work - REL") {
     val r = relate(createNode(), createNode(), "name" -> "Anders")
 
-    updateWithBothPlannersAndCompatibilityMode("WITH {p} as p SET p.lastname = p.name REMOVE p.name", "p" -> r)
+    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH {p} as p SET p.lastname = p.name REMOVE p.name", params = Map("p" -> r))
 
     graph.inTx {
       r.getProperty("lastname") should equal("Anders")

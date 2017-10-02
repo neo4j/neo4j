@@ -39,8 +39,7 @@ import org.neo4j.test.ImpermanentGraphDatabase
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   val VERBOSE = false
 
@@ -97,7 +96,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       println(s"\t$query")
     }
     val start = System.currentTimeMillis()
-    val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
+    val result = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
     val duration = System.currentTimeMillis() - start
     if (VERBOSE) {
       println(result.executionPlanDescription())
@@ -130,13 +129,13 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
         // measure planning time
         val startPlaning = System.currentTimeMillis()
-        val resultPlanning = innerExecute(s"EXPLAIN CYPHER planner=$planner $query")
+        val resultPlanning = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=$planner $query", Map.empty)
         val durationPlanning = System.currentTimeMillis()-startPlaning
         val plan = resultPlanning.executionPlanDescription()
 
         // measure query time
         val start = System.currentTimeMillis()
-        val result = innerExecute(s"CYPHER planner=$planner $query")
+        val result = innerExecuteDeprecated(s"CYPHER planner=$planner $query", Map.empty)
         val resultCount = result.toList.length
         val duration = System.currentTimeMillis()-start
         val expectedResultCount = Math.pow(2, pathlen % indexStep).toInt
@@ -206,10 +205,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
-          val counts = countExpandsAndJoins(result.executionPlanDescription())
-          counts("joins") should be > 1
-          counts("joins") should be < numberOfPatternRelationships / 2
+          innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
           acc(configValue) = monitor.maxStartIteration
       }
       acc

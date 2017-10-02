@@ -73,9 +73,9 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
       case (a: Double, _) if canFitInInt(a) => Some((Math.rint(a), a.toInt))
       case (a: Double, _) if canBeExactlyAnIntegerD(a) => Some((Math.floor(a), a.toLong))
       case (a: Float, _) if canBeExactlyAnIntegerF(a) => Some((Math.floor(a), a.toInt))
-      case (a: Int, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
-      case (a: Long, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
-      case (a: Long, _) if canBeExactlyAnIntegerD(a) => Some(a, a.toDouble)
+      case (a: Int, _) if canBeExactlyAnIntegerF(a) => Some((a, a.toFloat))
+      case (a: Long, _) if canBeExactlyAnIntegerF(a) => Some((a, a.toFloat))
+      case (a: Long, _) if canBeExactlyAnIntegerD(a) => Some((a, a.toDouble))
       case _ => None
     }
   }
