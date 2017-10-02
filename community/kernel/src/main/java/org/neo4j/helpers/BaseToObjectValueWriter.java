@@ -33,6 +33,7 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
@@ -232,6 +233,12 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
                 {
                     return Arrays.hashCode( relationship );
                 }
+            }
+
+            @Override
+            public String toString()
+            {
+                return Paths.defaultPathToString(this);
             }
 
             @Override

@@ -135,8 +135,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
-
-    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    graph.inTx {
+      result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    }
   }
 
   test("with named path and predicate") {
@@ -149,8 +150,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
-
-    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    graph.inTx {
+      result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    }
   }
 
   test("miniscule WHERE clause") {
@@ -163,8 +165,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
 
     val result = executeWith(expectedToSucceed, query)
-
-    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    graph.inTx {
+      result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    }
   }
 
   test("with named path and shadowed variable in predicate") {
@@ -176,7 +179,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val result = executeWith(expectedToSucceedRestricted, query)
 
-    result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    graph.inTx {
+      result.toList should equal(List(Map("list" -> List(PathImpl(n1, r, n2)))))
+    }
   }
 
   test("with named path and shadowed variable in projection") {
@@ -188,7 +193,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val result = executeWith(expectedToSucceed, query)
 
-    result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
+    graph.inTx {
+      result.toList should equal(List(Map("list" -> List(Map("path" -> PathImpl(n1, r, n2), "other" -> List(true))))))
+    }
   }
 
   test("one relationship out") {

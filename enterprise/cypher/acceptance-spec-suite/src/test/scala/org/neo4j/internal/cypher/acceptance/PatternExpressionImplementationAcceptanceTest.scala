@@ -53,7 +53,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     result.toList.head("p").asInstanceOf[Long] should equal(42)
   }
 
-  ignore("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
+  test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
     val start = createLabeledNode("A")
     val c = createLabeledNode("C")
     val rel1 = relate(start, c)
@@ -67,18 +67,16 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
       .map(_.mapValues {
         case l: Seq[Any] => l.toSet
         case x => x
-      }).toList
+      }).toSet
 
-    val head = result.head
-    val bool = head == Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))
-    print(bool)
-
-    result should equal(List(
-      Map("p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-      Map("p" -> 42),
-      Map("p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-      Map("p" -> 42)
-    ))
+    graph.inTx {
+      result should equal(Set(
+        Map("p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
+        Map("p" -> 42),
+        Map("p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
+        Map("p" -> 42)
+      ))
+    }
   }
 
   test("match (n) with case when id(n) >= 0 then (n)-->() else 42 end as p, count(n) as c return p, c") {
@@ -125,11 +123,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         case x => x
       }).toSet
 
-    result should equal(Set(
-      Map("c" -> 1, "p" -> Set(new PathImpl(start, rel2, c), new PathImpl(start, rel1, c))),
-      Map("c" -> 1, "p" -> Set(new PathImpl(start2, rel4, d), new PathImpl(start2, rel3, d))),
-      Map("c" -> 2, "p" -> 42)
-    ))
+    graph.inTx {
+      result should equal(Set(
+        Map("c" -> 1, "p" -> Set(PathImpl(start, rel2, c), PathImpl(start, rel1, c))),
+        Map("c" -> 1, "p" -> Set(PathImpl(start2, rel4, d), PathImpl(start2, rel3, d))),
+        Map("c" -> 2, "p" -> 42)
+      ))
+    }
   }
 
   test("match (n) where (case when id(n) >= 0 then length((n)-->()) else 42 end) > 0 return n") {
@@ -234,7 +234,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
     relate(start, createNode())
 
-  executeWith(Configs.CommunityInterpreted, "match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p",
+    executeWith(Configs.CommunityInterpreted, "match (n) return case when id(n) >= 0 then (n)-->() else 42 end as p",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot useOperators("Expand(All)")))
   }
 
