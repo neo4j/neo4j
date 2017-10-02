@@ -24,8 +24,8 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
-import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.ClusterSettings.Mode;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
@@ -39,7 +39,7 @@ public class CausalClusterConfigurationValidator implements ConfigurationValidat
     public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
     {
         // Make sure mode is CC
-        Mode mode = config.get( ClusterSettings.mode );
+        Mode mode = config.get( EnterpriseEditionSettings.mode );
         if ( mode.equals( Mode.CORE ) || mode.equals( Mode.READ_REPLICA ) )
         {
             validateInitialDiscoveryMembers( config );

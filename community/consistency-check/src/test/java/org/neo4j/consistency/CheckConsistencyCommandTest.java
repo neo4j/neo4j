@@ -35,7 +35,7 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -78,7 +78,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
-                        any( CheckConsistencyConfig.class ) ) )
+                        any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
@@ -86,7 +86,7 @@ public class CheckConsistencyCommandTest
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
-                        any( CheckConsistencyConfig.class ) );
+                        any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -105,7 +105,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
-                        any( CheckConsistencyConfig.class ) ) )
+                        any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--verbose"} );
@@ -113,7 +113,7 @@ public class CheckConsistencyCommandTest
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
-                        any( CheckConsistencyConfig.class ) );
+                        any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -131,7 +131,7 @@ public class CheckConsistencyCommandTest
         when( consistencyCheckService
                 .runFullConsistencyCheck( eq( databasePath ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), anyObject(),
-                        any( CheckConsistencyConfig.class ) ) )
+                        any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
 
         try
@@ -157,15 +157,21 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
+<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
+=======
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+                .toReturn( ConsistencyCheckService.Result.success( null ) );
+>>>>>>> neo4j/3.3
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyBoolean(),
-                        eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
+                        eq( new File( "." ).getCanonicalFile() ), any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -181,16 +187,22 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
+<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
+=======
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+                .toReturn( ConsistencyCheckService.Result.success( null ) );
+>>>>>>> neo4j/3.3
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
                         anyBoolean(), eq( new File( "some-dir-or-other" ).getCanonicalFile() ),
-                        any( CheckConsistencyConfig.class ) );
+                        any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -206,16 +218,22 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
+<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
+=======
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+                .toReturn( ConsistencyCheckService.Result.success( null ) );
+>>>>>>> neo4j/3.3
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(),
                         anyBoolean(), eq( new File( "../bar" ).getCanonicalFile() ),
-                        any( CheckConsistencyConfig.class ) );
+                        any( ConsistencyFlags.class ) );
     }
 
     @Test
@@ -230,16 +248,22 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
+<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
+=======
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
+                .toReturn( ConsistencyCheckService.Result.success( null ) );
+>>>>>>> neo4j/3.3
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--check-graph=false",
                 "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
 
         verify( consistencyCheckService )
                 .runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(), anyObject(), anyBoolean(),
-                        anyObject(), eq( new CheckConsistencyConfig( false, false, false, true ) ) );
+                        anyObject(), eq( new ConsistencyFlags( false, false, false, true ) ) );
     }
 
     @Test
@@ -253,9 +277,15 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
+<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), any( CheckConsistencyConfig.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
+=======
+        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
+                anyObject(), anyBoolean(), any( ConsistencyFlags.class ) ) )
+                .toReturn( ConsistencyCheckService.Result.success( null ) );
+>>>>>>> neo4j/3.3
 
         expect.expect( IncorrectUsage.class );
         expect.expectMessage( "Only one of '--database' and '--backup' can be specified." );
@@ -298,7 +328,7 @@ public class CheckConsistencyCommandTest
                 .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
-                        any( CheckConsistencyConfig.class ) ) )
+                        any( ConsistencyFlags.class ) ) )
                 .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--backup=" + backupDir} );
@@ -307,7 +337,7 @@ public class CheckConsistencyCommandTest
                 .runFullConsistencyCheck( eq( backupDir.toFile() ), any( Config.class ),
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), anyObject(),
-                        any( CheckConsistencyConfig.class ) );
+                        any( ConsistencyFlags.class ) );
     }
 
     @Test

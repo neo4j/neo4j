@@ -81,7 +81,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     /**
      * The header state includes both the reference count of the PagedFile – 15 bits – and the ID of the last page in
      * the file – 48 bits, plus an empty file marker bit. Because our pages are usually 2^13 bytes, this means that we
-     * only loose 3 bits to the reference count, in terms of keeping large files byte addressable.
+     * only lose 3 bits to the reference count, in terms of keeping large files byte addressable.
      *
      * The layout looks like this:
      *

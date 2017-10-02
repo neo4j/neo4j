@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup;
+package org.neo4j.kernel.impl.enterprise.configuration;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
@@ -39,6 +39,5 @@ public class OnlineBackupSettings implements LoadableConfig
     public static final Setting<Boolean> online_backup_enabled = setting( "dbms.backup.enabled", BOOLEAN, TRUE );
 
     @Description( "Listening server for online backups" )
-    public static final Setting<HostnamePort> online_backup_server = setting( "dbms.backup.address", HOSTNAME_PORT,
-            "127.0.0.1:6362-6372" );
+    public static final Setting<HostnamePort> online_backup_server = setting( "dbms.backup.address", HOSTNAME_PORT, "127.0.0.1:6362-6372" );
 }

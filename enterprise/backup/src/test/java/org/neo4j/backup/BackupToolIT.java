@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.ports.allocation.PortAuthority;
@@ -67,7 +68,7 @@ public class BackupToolIT
         backupDir = testDirectory.directory( "backups/graph.db" ).toPath();
         fs = new DefaultFileSystemAbstraction();
         pageCache = StandalonePageCacheFactory.createPageCache( fs );
-        backupTool = new BackupTool( new BackupService(), mock( PrintStream.class ) );
+        backupTool = new BackupTool( new BackupProtocolService(), mock( PrintStream.class ) );
     }
 
     @After

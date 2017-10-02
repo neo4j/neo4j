@@ -19,20 +19,13 @@
  */
 package org.neo4j.backup;
 
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -41,567 +34,86 @@ import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
-import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.backup.OnlineBackupCommand.MAX_OLD_BACKUPS;
-import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_ERROR;
-import static org.neo4j.backup.OnlineBackupCommand.STATUS_CC_INCONSISTENT;
-import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_planner;
 
 public class OnlineBackupCommandTest
 {
     @Rule
     public ExpectedException expected = ExpectedException.none();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private BackupService backupService = mock( BackupService.class );
+    // Dependencies
     private OutsideWorld outsideWorld = mock( OutsideWorld.class );
-    private Path configDir;
-    private ConsistencyCheckService consistencyCheckService = mock( ConsistencyCheckService.class );
-    private ConsistencyCheckService.Result ccResult = mock( ConsistencyCheckService.Result.class );
-    private PrintStream out = mock( PrintStream.class );
-    private PrintStream err = mock( PrintStream.class );
-    private FileSystemAbstraction mockFs = mock( FileSystemAbstraction.class );
+    private BackupFlowFactory backupFlowFactory = mock( BackupFlowFactory.class );
+
+    // Behaviour dependencies
+    private FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
+    private BackupFlow backupFlow = mock( BackupFlow.class );
+
+    // Parameters and helpers
+    private final Config config = mock( Config.class );
+    private final OnlineBackupRequiredArguments requiredArguments = mock( OnlineBackupRequiredArguments.class );
+    private final ConsistencyFlags consistencyFlags = mock( ConsistencyFlags.class );
+    private final OnlineBackupContext onlineBackupContext = new OnlineBackupContext( requiredArguments, config, consistencyFlags );
+
+    private Path backupDirectory = Paths.get( "backupDirectory/" );
+    private Path reportDirectory = Paths.get( "reportDirectory/" );
+    private AbstractBackupSupportingClassesFactory backupSupportingClassesFactory = mock( AbstractBackupSupportingClassesFactory.class );
+
+    private OnlineBackupCommand subject;
 
     @Before
-    public void setUp() throws Exception
+    public void setup() throws Exception
     {
-        when( outsideWorld.fileSystem() ).thenReturn( new DefaultFileSystemAbstraction() );
-        when( outsideWorld.errorStream() ).thenReturn( err );
-        when( outsideWorld.outStream() ).thenReturn( out );
-        when( ccResult.isSuccessful() ).thenReturn( true );
-        when( consistencyCheckService
-                .runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(), any(),
-                        any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ccResult );
-        configDir = testDirectory.directory( "config-dir" ).toPath();
+        OnlineBackupContextLoader onlineBackupContextLoader = mock( OnlineBackupContextLoader.class );
+        when( onlineBackupContextLoader.fromCommandLineArguments( any() ) ).thenReturn( onlineBackupContext );
+
+        when( outsideWorld.fileSystem() ).thenReturn( fileSystemAbstraction );
+
+        when( fileSystemAbstraction.isDirectory( backupDirectory.toFile() ) ).thenReturn( true );
+        when( fileSystemAbstraction.isDirectory( reportDirectory.toFile() ) ).thenReturn( true );
+
+        when( requiredArguments.getFolder() ).thenReturn( backupDirectory );
+        when( requiredArguments.getReportDir() ).thenReturn( reportDirectory );
+        when( requiredArguments.getName() ).thenReturn( "backup name" );
+        when( backupFlowFactory.backupFlow( any(), any(), any() ) ).thenReturn( backupFlow );
+
+        subject = new OnlineBackupCommand( outsideWorld, onlineBackupContextLoader, backupSupportingClassesFactory, backupFlowFactory );
     }
 
     @Test
-    public void shouldNotRequestForensics() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
+    public void nonExistingBackupDirectoryRaisesException() throws CommandFailed, IncorrectUsage
     {
-        execute( backupDir(), "--name=mybackup" );
+        // given backup directory is not a directory
+        when( fileSystemAbstraction.isDirectory( backupDirectory.toFile() ) ).thenReturn( false );
 
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), eq( false ) );
-    }
-
-    @Test
-    public void shouldDefaultFromToDefaultBackupAddress()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( eq( "localhost" ), eq( 6362 ), any(), any(), any(), anyLong(),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldDefaultPortAndPassHost() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( "--from=foo.bar.server", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 6362 ), any(), any(), any(), anyLong(),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldAcceptAHostWithATrailingColon()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( "--from=foo.bar.server:", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 6362 ), any(), any(), any(), anyLong(),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldDefaultHostAndPassPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( "--from=:1234", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( eq( "localhost" ), eq( 1234 ), any(), any(), any(), anyLong(),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldPassHostAndPort() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( "--from=foo.bar.server:1234", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( eq( "foo.bar.server" ), eq( 1234 ), any(), any(), any(), anyLong(),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldPassDestination() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        final Path dest = Paths.get( "/" );
-        execute( backupDir( path( dest.toString() ) ), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup(
-                any(), anyInt(), eq( new File( path( dest.resolve( "mybackup" ).toString() ) ) ), any(), any(),
-                anyLong(), anyBoolean() );
-    }
-
-    @Test
-    public void nonExistingBackupDirThrows() throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        final String path = path( "/Idontexist/sasdfasdfa" );
+        // then
         expected.expect( CommandFailed.class );
-        expected.expectMessage( "Directory '" + path + "' does not exist." );
-        expected.expect( exitCode( STATUS_ERROR ) );
-        execute( backupDir( path ), "--name=mybackup" );
-    }
+        expected.expectMessage( "Directory 'backupDirectory' does not exist." );
 
-    @Test
-    public void shouldTreatBackupDirArgumentAsMandatory() throws Exception
-    {
-        expected.expect( IncorrectUsage.class );
-        expected.expectMessage( "Missing argument 'backup-dir'" );
+        // when
         execute();
     }
 
     @Test
-    public void shouldTreatNameArgumentAsMandatory() throws Exception
+    public void nonExistingReportDirectoryRaisesException() throws CommandFailed, IncorrectUsage
     {
-        expected.expect( IncorrectUsage.class );
-        expected.expectMessage( "Missing argument 'name'" );
-        execute( backupDir() );
-    }
+        // given report directory is not a directory
+        when( fileSystemAbstraction.isDirectory( reportDirectory.toFile() ) ).thenReturn( false );
 
-    @Test
-    public void shouldNotAskForConsistencyCheckIfNotSpecified()
-            throws CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        execute( "--check-consistency=false", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verifyNoMoreInteractions( consistencyCheckService );
-    }
-
-    @Test
-    public void shouldAskForConsistencyCheckIfSpecified() throws Exception
-
-    {
-        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
-    }
-
-    @Test
-    public void shouldAskForConsistencyCheckIfSpecifiedIncremental() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        assertTrue( new File( dir, "afile" ).createNewFile() );
-
-        execute( "--check-consistency=true", backupDir( dir.getParent() ), "--name=" + dir.getName() );
-
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
-                anyLong(), any() );
-        verifyNoMoreInteractions( backupService );
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
-    }
-
-    @Test
-    public void shouldNotAskForConsistencyCheckIfSpecifiedIncremental() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        assertTrue( new File( dir, "afile" ).createNewFile() );
-
-        execute( "--check-consistency=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
-
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
-                anyLong(), any() );
-        verifyNoMoreInteractions( backupService );
-        verifyNoMoreInteractions( consistencyCheckService );
-    }
-
-    @Test
-    public void inconsistentCCIsReportedWithExitCode3() throws Exception
-
-    {
-        final Path path = Paths.get( "/foo/bar" );
-
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn(
-                        ConsistencyCheckService.Result.failure( path.toFile() ) );
-
+        // then
         expected.expect( CommandFailed.class );
-        expected.expectMessage( "Inconsistencies found. See '" + path + "' for details." );
-        expected.expect( exitCode( STATUS_CC_INCONSISTENT ) );
-        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
-    }
+        expected.expectMessage( "Directory 'reportDirectory' does not exist." );
 
-    @Test
-    public void errorInCCIsReportedWithExitCode2() throws Exception
-
-    {
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( new File( "." ).getCanonicalFile() ), any( CheckConsistencyConfig.class ) ) )
-                .thenThrow( new RuntimeException( "craassh" ) );
-
-        expected.expect( CommandFailed.class );
-        expected.expectMessage( "Failed to do consistency check on backup: craassh" );
-        expected.expect( exitCode( STATUS_CC_ERROR ) );
-        execute( "--check-consistency=true", backupDir(), "--name=mybackup" );
-    }
-
-    @Test
-    public void shouldPassOnCCParameters() throws Exception
-
-    {
-        execute( "--check-consistency=true", backupDir(), "--name=mybackup", "--cc-graph=false",
-                "--cc-indexes=false", "--cc-label-scan-store=false", "--cc-property-owners=true" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                eq( new File( "." ).getCanonicalFile() ),
-                eq( new CheckConsistencyConfig( false, false, false, true ) ) );
-    }
-
-    @Test
-    public void shouldDoFullIfDirectoryDoesNotExist() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccFull" );
-        assertTrue( dir.delete() );
-
-        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( outsideWorld ).stdOutLine( "Doing full backup..." );
-        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
-        verify( outsideWorld ).stdOutLine( "Backup complete." );
-        verifyNoMoreInteractions( backupService );
-    }
-
-    @Test
-    public void shouldDoFullIfDirectoryEmpty() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccFull" );
-
-        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( outsideWorld ).stdOutLine( "Doing full backup..." );
-        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
-        verifyNoMoreInteractions( backupService );
-    }
-
-    @Test
-    public void shouldDoIncrementalIfDirectoryNonEmpty() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        assertTrue( new File( dir, "afile" ).createNewFile() );
-
-        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
-
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
-                anyLong(), any() );
-        verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
-        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
-        verifyNoMoreInteractions( backupService );
-    }
-
-    @Test
-    public void shouldFallbackToFullIfIncrementalFails() throws Exception
-
-    {
-        when( outsideWorld.fileSystem() ).thenReturn( mockFs );
-        File dir = testDirectory.directory( "ccInc" );
-        when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
-        ) )
-                .thenThrow( new RuntimeException( "nah-ah" ) );
-
-        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
-                "--name=" + dir.getName() );
-
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
-                anyLong(), any() );
-        verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
-        verify( outsideWorld ).stdErrLine( "Incremental backup failed: nah-ah" );
-        verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.1'." );
-        verify( mockFs ).renameFile( eq( dir ), eq( testDirectory.directory( "ccInc.err.1" ) ) );
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( outsideWorld ).stdOutLine( "Doing full backup..." );
-        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
-        verifyNoMoreInteractions( backupService );
-    }
-
-    @Test
-    public void failToRenameIsReported() throws Exception
-    {
-        when( outsideWorld.fileSystem() ).thenReturn( mockFs );
-        File dir = testDirectory.directory( "ccInc" );
-        when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
-        ) )
-                .thenThrow( new RuntimeException( "nah-ah" ) );
-
-        doThrow( new IOException( "kaboom" ) ).when( mockFs ).renameFile( any(), any() );
-
-        expected.expectMessage( "Failed to move old backup out of the way: kaboom" );
-        expected.expect( CommandFailed.class );
-        expected.expect( exitCode( STATUS_ERROR ) );
-
-        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
-                "--name=" + dir.getName() );
-    }
-
-    private Matcher<CommandFailed> exitCode( final int expectedCode )
-    {
-        return new BaseMatcher<CommandFailed>()
-        {
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( "expected exit code " ).appendValue( expectedCode );
-            }
-
-            @Override
-            public void describeMismatch( Object o, Description description )
-            {
-                if ( o instanceof CommandFailed )
-                {
-                    CommandFailed e = (CommandFailed) o;
-                    description.appendText( "but it was " ).appendValue( e.code() );
-                }
-                else
-                {
-                    description.appendText( "but exception is not a CommandFailed exception" );
-                }
-            }
-
-            @Override
-            public boolean matches( Object o )
-            {
-                if ( o instanceof CommandFailed )
-                {
-                    CommandFailed e = (CommandFailed) o;
-                    return expectedCode == e.code();
-                }
-                return false;
-            }
-        };
-    }
-
-    @Test
-    public void shouldNotFallbackToFullIfSpecified() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        assertTrue( new File( dir, "afile" ).createNewFile() );
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
-        ) )
-                .thenThrow( new RuntimeException( "nah-ah" ) );
-
-        expected.expectMessage( "Backup failed: nah-ah" );
-        expected.expect( CommandFailed.class );
-        expected.expect( exitCode( STATUS_ERROR ) );
-
-        execute( "--fallback-to-full=false", backupDir( dir.getParent() ), "--name=" + dir.getName() );
-    }
-
-    @Test
-    public void renamingOldBackupIncrements() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        when( outsideWorld.fileSystem() ).thenReturn( mockFs );
-        when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        for ( int i = 1; i < 50; i++ )
-        {
-            when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
-        }
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
-        ) )
-                .thenThrow( new RuntimeException( "nah-ah" ) );
-
-        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ),
-                "--name=" + dir.getName() );
-
-        verify( backupService ).doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ),
-                anyLong(), any() );
-        verify( outsideWorld ).stdOutLine( "Destination is not empty, doing incremental backup..." );
-        verify( outsideWorld ).stdErrLine( "Incremental backup failed: nah-ah" );
-        verify( outsideWorld ).stdErrLine( "Old backup renamed to 'ccInc.err.50'." );
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( outsideWorld ).stdOutLine( "Doing full backup..." );
-        verify( outsideWorld ).stdOutLine( "Doing consistency check..." );
-        verifyNoMoreInteractions( backupService );
-    }
-
-    @Test
-    public void renamingOldBackupIncrementsOnlySoFar() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccInc" );
-        when( outsideWorld.fileSystem() ).thenReturn( mockFs );
-        when( mockFs.isDirectory( eq( dir.getParentFile() ) ) ).thenReturn( true );
-        when( mockFs.listFiles( eq( dir ) ) ).thenReturn( new File[]{ dir } );
-        for ( int i = 1; i < MAX_OLD_BACKUPS; i++ )
-        {
-            when( mockFs.fileExists( eq( new File( dir.getParentFile(), "ccInc.err." + i ) ) ) ).thenReturn( true );
-        }
-        when( backupService.doIncrementalBackup( any(), anyInt(), any(), eq( ConsistencyCheck.NONE ), anyLong(), any()
-        ) )
-                .thenThrow( new RuntimeException( "nah-ah" ) );
-
-        expected.expect( CommandFailed.class );
-        expected.expectMessage( "ailed to move old backup out of the way: too many old backups." );
-        expected.expect( exitCode( STATUS_ERROR ) );
-        execute( "--cc-report-dir=" + dir.getParent(), backupDir( dir.getParent() ), "--name=" + dir.getName() );
-    }
-
-    @Test
-    public void shouldSpecifyReportDirIfSpecified() throws Exception
-    {
-        File reportDir = testDirectory.directory( "ccreport" );
-        when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(), any(), anyBoolean(),
-                any( CheckConsistencyConfig.class ) ) ).thenReturn( ConsistencyCheckService.Result.success( null ) );
-
-        execute( "--check-consistency", backupDir(), "--name=mybackup",
-                "--cc-report-dir=" + reportDir );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() );
-        verify( consistencyCheckService ).runFullConsistencyCheck( any(), any(), any(), any(), any(),
-                anyBoolean(), eq( reportDir.getCanonicalFile() ), any( CheckConsistencyConfig.class ) );
-    }
-
-    @Test
-    public void fullFailureIsReported() throws Exception
-
-    {
-        File dir = testDirectory.directory( "ccFull" );
-
-        when( backupService.doFullBackup( any(), anyInt(), any(), any(), any(), anyLong(), anyBoolean() ) )
-                .thenThrow( new RuntimeException( "nope" ) );
-
-        expected.expect( CommandFailed.class );
-        expected.expectMessage( "Backup failed: nope" );
-        expected.expect( exitCode( STATUS_ERROR ) );
-        execute( backupDir( dir.getParent() ), "--name=" + dir.getName() );
-    }
-
-    @Test
-    public void reportDirMustBeAPath() throws Exception
-    {
-        expected.expect( IncorrectUsage.class );
-        expected.expectMessage( "cc-report-dir must be a path" );
-        execute( "--check-consistency", backupDir(), "--name=mybackup",
-                "--cc-report-dir" );
-    }
-
-    @Test
-    public void reportDirMustExist() throws Exception
-    {
-        final String path = path( "/aalivnmoimzlckmvPDK" );
-        expected.expect( CommandFailed.class );
-        expected.expectMessage( "Directory '" + path + "' does not exist." );
-        expected.expect( exitCode( STATUS_ERROR ) );
-        execute( "--check-consistency", backupDir(), "--name=mybackup",
-                "--cc-report-dir=" + path );
-    }
-
-    @Test
-    public void shouldReadStandardConfig() throws IOException, CommandFailed, IncorrectUsage, BackupTool
-            .ToolFailureException
-
-    {
-        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( cypher_planner.name() + "=RULE" ) );
-        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-
-        execute( backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
-                anyBoolean() );
-        assertThat( config.getValue().get( cypher_planner ), is( "RULE" ) );
-    }
-
-    @Test
-    public void shouldAugmentConfig()
-            throws IOException, CommandFailed, IncorrectUsage, BackupTool.ToolFailureException
-    {
-        Path extraConf = testDirectory.directory( "someOtherDir" ).toPath().resolve( "extra.conf" );
-        Files.write( extraConf, singletonList( cypher_planner.name() + "=RULE" ) );
-        ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-
-        execute( "--additional-config=" + extraConf, backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), config.capture(), anyLong(),
-                anyBoolean() );
-        assertThat( config.getValue().get( cypher_planner ), is( "RULE" ) );
-    }
-
-    @Test
-    public void shouldDefaultTimeoutToTwentyMinutes()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
-    {
-        execute( backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
-                eq( MINUTES.toMillis( 20 ) ),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldInterpretAUnitlessTimeoutAsSeconds()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
-    {
-        execute( "--timeout=10", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
-                eq( SECONDS.toMillis( 10 ) ),
-                anyBoolean() );
-    }
-
-    @Test
-    public void shouldParseATimeoutWithUnits()
-            throws BackupTool.ToolFailureException, CommandFailed, IncorrectUsage
-    {
-        execute( "--timeout=10h", backupDir(), "--name=mybackup" );
-
-        verify( backupService ).doFullBackup( any(), anyInt(), any(), any(), any(),
-                eq( HOURS.toMillis( 10 ) ),
-                anyBoolean() );
+        // when
+        execute();
     }
 
     @Test
@@ -679,34 +191,9 @@ public class OnlineBackupCommandTest
         }
     }
 
-    private void execute( String... args ) throws IncorrectUsage, CommandFailed
+    private void execute() throws IncorrectUsage, CommandFailed
     {
-        new OnlineBackupCommand( backupService, Paths.get( "/some/path" ), configDir, consistencyCheckService,
-                outsideWorld ).execute( args );
-    }
-
-    /**
-     * @param path to transform to platform independent absolute path
-     * @return platform independent absolute path
-     */
-    static String path( String path )
-    {
-        return Paths.get( path ).toFile().getAbsolutePath();
-    }
-
-    /**
-     * @return a backup-dir argument with a path suitable for each platform
-     */
-    static String backupDir()
-    {
-        return backupDir( "/" );
-    }
-
-    /**
-     * @return the backup-dir argument with a path suitable for each platform
-     */
-    static String backupDir( String path )
-    {
-        return "--backup-dir=" + path( path );
+        String[] implementationDoesNotUseArguments = new String[0];
+        subject.execute( implementationDoesNotUseArguments );
     }
 }

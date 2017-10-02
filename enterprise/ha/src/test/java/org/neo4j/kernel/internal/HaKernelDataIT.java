@@ -22,12 +22,15 @@ package org.neo4j.kernel.internal;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+<<<<<<< HEAD
 import org.neo4j.ports.allocation.PortAuthority;
+=======
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+>>>>>>> neo4j/3.3
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.rule.TestDirectory;
 

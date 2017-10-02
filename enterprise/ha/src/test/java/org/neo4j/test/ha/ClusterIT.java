@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.logging.Level;
 
 import org.junit.rules.TestName;
-import org.neo4j.backup.OnlineBackupSettings;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
