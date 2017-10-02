@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,6 +60,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.proc.JarBuilder;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -105,6 +107,7 @@ public class ProcedureIT
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         onCloseCalled = new boolean[2];
     }
@@ -558,6 +561,7 @@ public class ProcedureIT
                 .newImpermanentDatabaseBuilder()
                 .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
                 .setConfig( procedure_unrestricted, "org.neo4j.procedure.*" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
         // When
