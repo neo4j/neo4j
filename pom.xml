@@ -167,8 +167,6 @@
             </execution>
           </executions>
           <configuration>
-            <failOnError>false</failOnError>
-
             <header>Neo4j</header>
             <doctitle>Neo4j ${project.version} API</doctitle>
             <windowtitle>Neo4j ${project.version} API</windowtitle>
@@ -177,6 +175,7 @@
             <detectLinks>false</detectLinks>
             <detectOfflineLinks>false</detectOfflineLinks>
             <quiet>true</quiet>
+            <sourcepath>${project.build.sourceDirectory}</sourcepath>
             <reportOutputDirectory>${project.build.directory}/apidocs</reportOutputDirectory>
 
             <!-- Include the following packages... (yes, has to be one line) -->
@@ -232,7 +231,7 @@
                 <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
               </group>
               <group>
-                <title>Legacy Indexes</title>
+                <title>Explicit Indexes</title>
                 <packages>org.neo4j.index:org.neo4j.index.*</packages>
               </group>
             </groups>
