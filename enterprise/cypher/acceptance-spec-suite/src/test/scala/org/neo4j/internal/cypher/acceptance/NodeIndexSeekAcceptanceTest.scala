@@ -19,14 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
   test("should handle OR when using index") {
     // Given
@@ -36,10 +37,10 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("prop" -> 3), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = 1 OR n.prop = 2 RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     // Then
-    result should useOperationTimes("NodeIndexSeek", 1)
     result.toList should equal(List(Map("n" -> node1), Map("n" -> node2)))
   }
 
@@ -51,10 +52,10 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("prop" -> 3), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = 1 AND n.prop = 2 RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     // Then
-    result should useOperationTimes("NodeIndexSeek", 1)
     result.toList shouldBe empty
   }
 
@@ -69,11 +70,13 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |OR (c.prop1 = 11 AND c.prop2 = 11))
         |RETURN c""".stripMargin
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperatorTimes("NodeIndexSeek", 2)
+        plan should useOperators("Union")
+    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationTimes("NodeIndexSeek", 2)
-    result should use("Union")
   }
 
   test("Should allow AND and OR with index and inequality predicates") {
@@ -87,10 +90,13 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |OR (c.prop1 > 10 AND c.prop2 <= 11))
         |RETURN c""".stripMargin
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperatorTimes("NodeIndexScan", 2)
+        plan should useOperators("Union")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationTimes("NodeIndexScan", 2)
-    result should use("Union")
   }
 
   test("Should allow AND and OR with index seek and STARTS WITH predicates") {
@@ -104,11 +110,13 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
         |RETURN c""".stripMargin
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperatorTimes("NodeIndexSeekByRange", 2)
+        plan should useOperators("Union")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationTimes("NodeIndexSeekByRange", 2)
-    result should use("Union")
   }
 
   test("Should allow AND and OR with index scan and regex predicates") {
@@ -122,11 +130,13 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
         |RETURN c""".stripMargin
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperatorTimes("NodeIndexScan", 2)
+        plan should useOperators("Union")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationTimes("NodeIndexScan", 2)
-    result should use("Union")
   }
 
   test("Should allow OR with index scan and regex predicates") {
@@ -138,21 +148,24 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
         |RETURN c""".stripMargin
 
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.SlottedInterpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperatorTimes("NodeIndexScan", 2)
+        plan should useOperators("Union")
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
-    result should useOperationTimes("NodeIndexScan", 2)
-    result should use("Union")
   }
 
   test("should not forget predicates") {
     setUpDatabaseForTests()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result should (use("NodeIndexSeek") and be(empty))
+    result should be(empty)
   }
 
 
@@ -165,11 +178,14 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result = executeWith(Configs.All - Configs.Compiled, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        plan should useOperators("NodeIndexSeek")
+      }, Configs.AllRulePlanners))
 
     // Then
     val expected = List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3))
-    result should (use("NodeIndexSeek") and evaluateTo(expected))
+    result should evaluateTo(expected)
   }
 
   test("should use index selectivity when planning") {
@@ -192,8 +208,9 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("L", "l")
     graph.createIndex("R", "r")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r")
-    result should (use("NodeIndexSeek") and have size 100)
+    val result = executeWith(Configs.All, "MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+    result should have size 100
   }
 
   test("should handle nulls in index lookup") {
@@ -208,18 +225,18 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
    graph.createIndex("Place", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(Configs.All - Configs.Compiled,
       """
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName
         |OPTIONAL MATCH (p:Place)
         |WHERE p.name = placeName
         |RETURN p, placeName
-      """.stripMargin)
+      """.stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
     result should evaluateTo(List(Map("p" -> null, "placeName" -> null)))
-    //result should (use("NodeIndexSeek") and evaluateTo(List(Map("p" -> null, "placeName" -> null))))
   }
 
   test("should not use indexes when RHS of property comparison depends on the node searched for (equality)") {
@@ -237,14 +254,16 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString() shouldNot include("index")
+      }))
 
     // Then
     result.toList should equal(List(
       Map("m" -> n2),
       Map("m" -> n3)
     ))
-    result.executionPlanDescription().toString shouldNot include("Index")
   }
 
   test("should not use indexes when RHS of property comparison depends on the node searched for (range query)") {
@@ -262,14 +281,16 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
         |RETURN m""".stripMargin
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion((planDescription) => {
+        planDescription.toString() shouldNot include("index")
+      }))
 
     // Then
     result.toList should equal(List(
       Map("m" -> n1),
       Map("m" -> n4)
     ))
-    result.executionPlanDescription().toString shouldNot include("Index")
   }
 
   test("should handle array as parameter when using index") {
@@ -281,12 +302,12 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("uuid" -> "z"), "Company")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+    val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      "uuids" -> Array("a", "b", "c"))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1),
+      params = Map("uuids" -> Array("a", "b", "c")))
 
     //Then
-    result should useOperationTimes("NodeIndexSeek", 1)
     result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
   }
 
@@ -299,12 +320,12 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("uuid" -> 6), "Company")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+    val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      "uuids" -> Array(1, 2, 3))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1),
+      params = Map("uuids" -> Array(1, 2, 3)))
 
     //Then
-    result should useOperationTimes("NodeIndexSeek", 1)
     result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
   }
 
@@ -315,11 +336,11 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
-    result should useOperationTimes("NodeIndexSeek", 1)
   }
 
   test("should handle list properties in unique index") {
@@ -329,15 +350,15 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeUniqueIndexSeek", 1), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
-    result should useOperationTimes("NodeUniqueIndexSeek", 1)
   }
 
   private def setUpDatabaseForTests() {
-    updateWithBothPlannersAndCompatibilityMode(
+    executeWith(Configs.All - Configs.Compiled - Configs.Cost2_3,
       """CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),

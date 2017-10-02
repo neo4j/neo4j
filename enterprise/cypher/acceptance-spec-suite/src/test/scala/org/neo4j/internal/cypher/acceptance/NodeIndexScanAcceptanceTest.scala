@@ -19,14 +19,18 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_1, V3_2, V3_3}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
+
+  val expectedToSucceed = Configs.Interpreted
 
   test("should use index on IS NOT NULL") {
     // Given
@@ -35,11 +39,15 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("Person", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p")
+    val result = executeWith(expectedToSucceed,
+      "MATCH (p:Person) WHERE p.name IS NOT NULL RETURN p",
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexScan")
+      }, expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result should (use("NodeIndexScan") and evaluateTo(List(Map("p" -> person))))
+    result should evaluateTo(List(Map("p" -> person)))
   }
 
   test("should use index on exists") {
@@ -49,11 +57,15 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     graph.createIndex("Person", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "MATCH (p:Person) WHERE exists(p.name) RETURN p")
+    val result = executeWith(expectedToSucceed,
+      "MATCH (p:Person) WHERE exists(p.name) RETURN p",
+      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+        //THEN
+        plan should useOperators("NodeIndexScan")
+      }, expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result should (use("NodeIndexScan") and evaluateTo(List(Map("p" -> person))))
+    result should evaluateTo(List(Map("p" -> person)))
   }
 
   test("Regexp filter on top of NodeIndexScan (GH #7059)") {
@@ -73,9 +85,10 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     createLabeledNode(Map("id" -> "139dbf46f0dc8a325e27ffd118331ca2947e34f0", "label" -> "z"), "phone_type", "timed")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)")
+    val result = executeWith(expectedToSucceed, "MATCH (n:phone_type:timed) where n.label =~ 'a.' return count(n)",
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexScan"), expectPlansToFail = Configs.AllRulePlanners))
 
     // Then
-    result should (use("NodeIndexScan") and evaluateTo(List(Map("count(n)" -> 3))))
+    result should evaluateTo(List(Map("count(n)" -> 3)))
   }
 }

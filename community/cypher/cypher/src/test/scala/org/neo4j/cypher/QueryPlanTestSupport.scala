@@ -32,14 +32,12 @@ trait QueryPlanTestSupport {
   protected def replaceAnonVariables(planText: String) =
     anonPattern.replaceAllIn(planText, "$1anon[*]")
 
-  protected def havePlanLike(expectedPlan: String): Matcher[InternalExecutionResult] = new
-      Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      val plan: InternalPlanDescription = result.executionPlanDescription()
+  protected def matchPlan(expectedPlan: String): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
+    override def apply(plan: InternalPlanDescription): MatchResult = {
       val planText = replaceAnonVariables(plan.toString.trim.fixNewLines)
       val expectedText = replaceAnonVariables(expectedPlan.trim.fixNewLines)
       MatchResult(
-        matches = planText.startsWith(expectedText),
+        matches = planText.contains(expectedText),
         rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
         rawNegatedFailureMessage = s"Plan unexpected matches expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText")
     }
@@ -58,10 +56,6 @@ trait QueryPlanTestSupport {
     override def apply(result: InternalExecutionResult): MatchResult = useOperators(operators:_*)(result.executionPlanDescription())
   }
 
-  def useProjectionWith(otherText: String*): Matcher[InternalExecutionResult]  = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = useOperatorWithText("Projection", otherText: _*)(result.executionPlanDescription())
-  }
-
   def useOperatorWithText(operator: String, otherText: String*): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {
     override def apply(plan: InternalPlanDescription): MatchResult = {
       MatchResult(
@@ -69,10 +63,6 @@ trait QueryPlanTestSupport {
         rawFailureMessage = s"Plan should use $operator with ${otherText.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use $operator with ${otherText.mkString(",")}:\n$plan")
     }
-  }
-
-  def useOperationTimes(operation:String, times: Int): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = useOperatorTimes(operation, times)(result.executionPlanDescription())
   }
 
   def useOperatorTimes(operator: String, times: Int): Matcher[InternalPlanDescription] = new Matcher[InternalPlanDescription] {

@@ -19,10 +19,13 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
-class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
+
+  val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
 
   var aNode: Node = null
   var bNode: Node = null
@@ -42,42 +45,46 @@ class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QuerySta
   }
 
   test("should return null when END WITH is used on non-strings"){
-    val result = executeWithAllPlanners("""
-                                          | CREATE ({name: 1})
-                                          | WITH *
-                                          | MATCH (a)
-                                          | WHERE a.name ENDS WITH 'foo'
-                                          | RETURN a.name""".stripMargin)
+    val result = executeWith(expectedToSucceed,
+      """
+        | CREATE ({name: 1})
+        | WITH *
+        | MATCH (a)
+        | WHERE a.name ENDS WITH 'foo'
+        | RETURN a.name""".stripMargin)
     result.columnAs("a.name").toList should be (List())
   }
 
   test("should return null when CONTAINS is used on non-strings"){
-    val result = executeWithAllPlanners("""
-                                          | CREATE ({name: 1})
-                                          | WITH *
-                                          | MATCH (a)
-                                          | WHERE a.name CONTAINS 'foo'
-                                          | RETURN a.name""".stripMargin)
+    val result = executeWith(expectedToSucceed,
+      """
+        | CREATE ({name: 1})
+        | WITH *
+        | MATCH (a)
+        | WHERE a.name CONTAINS 'foo'
+        | RETURN a.name""".stripMargin)
     result.columnAs("a.name").toList should be (List())
   }
 
   test("should return null when CONTAINS is used on non-strings that contains integers") {
-    val result = executeWithAllPlanners("""
-                                          | CREATE ({name: 1})
-                                          | WITH *
-                                          | MATCH (a)
-                                          | WHERE a.name CONTAINS '1'
-                                          | RETURN a.name""".stripMargin)
+    val result = executeWith(expectedToSucceed,
+      """
+        | CREATE ({name: 1})
+        | WITH *
+        | MATCH (a)
+        | WHERE a.name CONTAINS '1'
+        | RETURN a.name""".stripMargin)
     result.columnAs("a.name").toList should be(List())
   }
 
   test("should return null when STARTS WITH is used on non-strings"){
-    val result = executeWithAllPlanners("""
-                                          | CREATE ({name: 1})
-                                          | WITH *
-                                          | MATCH (a)
-                                          | WHERE a.name STARTS WITH 'foo'
-                                          | RETURN a.name""".stripMargin)
+    val result = executeWith(expectedToSucceed,
+      """
+        | CREATE ({name: 1})
+        | WITH *
+        | MATCH (a)
+        | WHERE a.name STARTS WITH 'foo'
+        | RETURN a.name""".stripMargin)
     result.columnAs("a.name").toList should be (List())
   }
 }

@@ -134,7 +134,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     // Then
     val query = "CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY"
     val errorMessage = "Both Node(%d) and Node(%d) have the label `User` and properties `firstname` = 'Joe', `lastname` = 'Soap'".format(a, c)
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3, query, errorMessage)
+    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3, query, List(errorMessage))
   }
 
   test("trying to add duplicate node when node key constraint exists") {
@@ -147,7 +147,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A'",
-      "Node(0) already exists with label `Person` and property `name` = 'A'"
+      List("Node(0) already exists with label `Person` and property `name` = 'A'")
     )
   }
 
@@ -161,7 +161,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
-      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+      List(String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'"))
     )
   }
 
@@ -175,8 +175,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name, person.surname) IS NODE KEY",
-      ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%s" +
-        "Both Node(%d) and Node(%d) have the label `Person` and properties `name` = 'A', `surname` = 'B'").format(String.format("%n"), a, b)
+      List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.surname) IS NODE KEY:%s" +
+        "Both Node(%d) and Node(%d) have the label `Person` and properties `name` = 'A', `surname` = 'B'").format(String.format("%n"), a, b))
     )
   }
 
@@ -190,8 +190,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
-      ("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%s" +
-        "Both Node(%d) and Node(%d) have the label `Person` and property `name` = 'A'").format(String.format("%n"), a, b)
+      List(("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS NODE KEY:%s" +
+        "Both Node(%d) and Node(%d) have the label `Person` and property `name` = 'A'").format(String.format("%n"), a, b))
     )
   }
 
@@ -202,7 +202,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "DROP CONSTRAINT ON (person:Person) ASSERT (person.name) IS NODE KEY",
-      "No such constraint"
+      List("No such constraint")
     )
   }
 
@@ -216,7 +216,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
-      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+      List(String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'"))
     )
   }
 
@@ -230,7 +230,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE (n:Person) SET n.name = 'A', n.surname = 'B'",
-      String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'")
+      List(String.format("Node(0) already exists with label `Person` and properties `name` = 'A', `surname` = 'B'"))
       )
   }
 
@@ -244,8 +244,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
       TestConfiguration(V3_2, Cost, Runtimes.Default)
     failWithError(config,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS NODE KEY",
-      "There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
-                  "A constraint cannot be created until the index has been dropped.")
+      List("There already exists an index for label 'Person' on properties 'firstname' and 'lastname'. " +
+                  "A constraint cannot be created until the index has been dropped."))
   }
 
   test("should give appropriate error message when there is already a NODE KEY constraint") {
@@ -259,8 +259,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     failWithError(
       config,
       "CREATE INDEX ON :Person(firstname, lastname)",
-      "Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
-                  "so an index is already created that matches this.")
+      List("Label 'Person' and properties 'firstname' and 'lastname' have a unique constraint defined on them, " +
+                  "so an index is already created that matches this."))
   }
 
   test("Should give a nice error message when trying to remove property with node key constraint") {
@@ -274,7 +274,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
         TestConfiguration(Versions(V2_3, Versions.Default), Rule, Runtimes.Default)
     failWithError(config,
       "MATCH (p:Person {firstname: 'John', surname: 'Wood'}) REMOVE p.surname",
-      s"Node($id) with label `Person` must have the properties `firstname, surname`")
+      List(s"Node($id) with label `Person` must have the properties `firstname, surname`"))
 
   }
 

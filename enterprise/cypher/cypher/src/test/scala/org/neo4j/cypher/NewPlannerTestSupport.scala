@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
@@ -87,8 +86,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     Map(GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10")
 
   private val otherReadVersion = "2.3"
-  private val otherWriteVersion = "3.1" // because 2.3 cannot use cost planner for writes
-  private val currentVersion = "3.3"
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
@@ -119,61 +116,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     trace.collect {
       case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $query\n$stackTrace")
     }
-  }
-
-  private def unexpectedlyUsedNewPlanner(query: String)(trace: List[NewPlannerMonitorCall]) {
-    val events = trace.collectFirst {
-      case event: UnableToHandleQuery => event
-    }
-    events.orElse {
-      fail(s"Unexpectedly used the new planner on: $query")
-    }
-  }
-
-  def executeScalarWithAllPlanners[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndMaybeCompatibilityMode(false, queryText, params: _*)
-
-  def executeScalarWithAllPlannersAndCompatibilityMode[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndMaybeCompatibilityMode(true, queryText, params: _*)
-
-  private def executeScalarWithAllPlannersAndMaybeCompatibilityMode[T](enableCompatibility: Boolean, queryText: String, params: (String, Any)*): T = {
-    val compatibilityResult = if (enableCompatibility) {
-      self.executeScalar[T](s"CYPHER $otherReadVersion $queryText", params: _*)
-    } else {
-      null
-    }
-    val ruleResult = self.executeScalar[T](s"CYPHER 3.1 planner=rule $queryText", params: _*)
-    val idpResult = monitoringNewPlanner(self.executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
-
-    assert(ruleResult === idpResult, "Diverging results between rule and cost planners")
-    if (enableCompatibility) {
-      assert(compatibilityResult === idpResult, "Diverging results between compatibility mode and cost planners")
-    }
-
-    idpResult
-  }
-
-  def executeScalarWithAllPlannersAndRuntimes[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndRuntimeAndMaybeCompatibilityMode(false, queryText, params:_*)
-
-  def executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[T](queryText: String, params: (String, Any)*): T =
-    executeScalarWithAllPlannersAndRuntimeAndMaybeCompatibilityMode(true, queryText, params:_*)
-
-  private def executeScalarWithAllPlannersAndRuntimeAndMaybeCompatibilityMode[T](enableCompatibility: Boolean, queryText: String, params: (String, Any)*): T = {
-    val compatibilityResult = if (enableCompatibility) {
-      self.executeScalar[T](s"CYPHER $otherReadVersion $queryText", params: _*)
-    } else {
-      null
-    }
-    val interpretedResult = executeScalar[T](s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledResult = monitoringNewPlanner(executeScalar[T](queryText, params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-
-    assert( interpretedResult == compiledResult)
-    if (enableCompatibility) {
-      assert(compatibilityResult === compiledResult, "Diverging results between compatibility mode and cost planners")
-    }
-
-    compiledResult
   }
 
   private def executeWithAllPlannersAndMaybeCompatibilityMode(enableCompatibility: Boolean, queryText: String, params: (String, Any)*): InternalExecutionResult = {
@@ -256,26 +198,8 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   def updateWithBothPlanners(queryText: String, params: (String, Any)*): InternalExecutionResult =
     updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = true, queryText, params: _*)
 
-  def updateWithCostPlannerOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    updateWithBothPlannersAndMaybeCompatibilityMode(enableCompatibility = false, enableRule = false, queryText, params: _*)
-
-  def executeWithAllPlannersAndCompatibilityModeReplaceNaNs(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibilityResult = innerExecute(s"CYPHER $otherReadVersion $queryText", params: _*)
-    val ruleResult = innerExecute(s"CYPHER 3.1 planner=rule $queryText", params: _*)
-    val idpResult = innerExecute(s"CYPHER planner=idp $queryText", params: _*)
-
-    assertResultsAreSame(compatibilityResult, idpResult, queryText, "Diverging results between compatibility and current", replaceNaNs = true)
-    assertResultsAreSame(ruleResult, idpResult, queryText, "Diverging results between rule and cost planners", replaceNaNs = true)
-    compatibilityResult.close()
-    ruleResult.close()
-    idpResult
-  }
-
   def executeWithCostPlannerAndInterpretedRuntimeOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(unexpectedlyUsedNewRuntime(queryText))
-
-  def executeWithCostPlannerAndCompiledRuntimeOnly(queryText: String, params: (String, Any)*): InternalExecutionResult =
-    monitoringNewPlanner(innerExecute(queryText, params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
 
   def executeWithAllPlannersAndRuntimesAndCompatibilityMode(queryText: String, params: (String, Any)*): InternalExecutionResult = {
     val compatibilityResult = innerExecute(s"CYPHER $otherReadVersion $queryText", params: _*)
@@ -294,57 +218,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     compiledSourceCodeResult.close()
     compiledResult
   }
-
-  def executeWithAllPlannersAndRuntimes(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-    val compiledSourceCodeResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled debug=generate_java_source $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-    val compiledResult = monitoringNewPlanner(innerExecute(s"CYPHER runtime=compiled $queryText", params: _*))(failedToUseNewPlanner(queryText))(failedToUseNewRuntime(queryText))
-
-    assertResultsAreSame(interpretedResult, compiledResult, queryText, "Diverging results between interpreted and compiled runtime")
-    assertResultsAreSame(compiledSourceCodeResult, compiledResult, queryText, "Diverging results between compiled source code mode and current")
-    interpretedResult.close()
-    compiledSourceCodeResult.close()
-    compiledResult
-  }
-
-  protected def updateWithCompatibilityAndAssertSimilarPlans(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = otherWriteVersion
-    val ruleResult = graph.rollback(innerExecute(s"CYPHER $compatibility planner=RULE $queryText", params: _*))
-    val compatibilityResult = graph.rollback(innerExecute(s"CYPHER $compatibility $queryText", params: _*))
-    val costResult = executeWithCostPlannerAndInterpretedRuntimeOnly(queryText, params: _*)
-
-    assertPlansAreSimilar(compatibility, compatibilityResult, costResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
-
-    compatibilityResult.close()
-    costResult
-  }
-
-  protected def executeWithCompatibilityAndAssertSimilarPlans(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val compatibility = otherReadVersion
-    val compatibilityResult = innerExecute(s"CYPHER $compatibility $queryText", params: _*)
-    val interpretedResult = innerExecute(s"CYPHER runtime=interpreted $queryText", params: _*)
-
-    assertResultsAreSame(compatibilityResult, interpretedResult, queryText, s"Diverging results between $compatibility and $currentVersion")
-    assertPlansAreSimilar(compatibility, compatibilityResult, interpretedResult, queryText, s"Diverging query plan between $compatibility and $currentVersion")
-
-    compatibilityResult.close()
-    interpretedResult.close()
-    interpretedResult
-  }
-
-  protected def assertPlansAreSimilar(otherVersion: String, other: InternalExecutionResult, current: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
-    withClue(errorMsg) {
-      val currentText = current.executionPlanDescription().toString
-      val otherText = other.executionPlanDescription().toString
-      val currentOps = current.executionPlanDescription().flatten.map(simpleName)
-      val otherOps = other.executionPlanDescription().flatten.map(simpleName)
-      withClue(s"$errorMsg:\n\t$currentOps\n\t\t!=\n$otherOps\n\nOTHER $otherVersion:\n$otherText\n\nCURRENT $currentVersion:\n$currentText") {
-        currentOps should be(otherOps)
-      }
-    }
-  }
-
-  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty","SetProperty").toLowerCase
 
   protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
@@ -416,15 +289,6 @@ trait NewPlannerTestSupport extends CypherTestSupport {
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
       })
-    }
-  }
-
-  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(actual: InternalExecutionResult): MatchResult = {
-      MatchResult(
-        matches = actual.toComparableResult == expected.toCompararableSeq(replaceNaNs = false),
-        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
-        rawNegatedFailureMessage = s"Results are equal")
     }
   }
 }

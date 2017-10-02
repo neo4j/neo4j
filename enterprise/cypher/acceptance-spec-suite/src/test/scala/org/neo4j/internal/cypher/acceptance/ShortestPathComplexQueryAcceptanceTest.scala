@@ -19,13 +19,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
-class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
+  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Cost2_3
 
   test("allShortestPaths with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(Configs.CommunityInterpreted,
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -34,15 +37,17 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |MATCH pathx = allShortestPaths((charlesThompson)-[*1..5]-(joeySantiago))
         |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
         |RETURN extract(node in nodes(pathx) | id(node)) as ids
-      """.stripMargin)
+      """.stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)", "AntiConditionalApply"),
+        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3), expectedDifferentResults = Configs.Cost2_3)
+
     val results = result.columnAs("ids").toList
     results should be(List(List(0, 4, 3, 2)))
-    result should use("VarLengthExpand(Into)", "AntiConditionalApply")
   }
 
   test("shortestPath with complex LHS should be planned with exhaustive fallback and include predicate") {
     setupModel()
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(Configs.CommunityInterpreted,
       """
         |PROFILE MATCH (charles:Pixie { fname : 'Charles'}),(joey:Pixie { fname : 'Joey'}),(kim:Pixie { fname : 'Kim'})
         |WITH kim AS kimDeal, collect(charles) AS charlesT, collect(joey) AS joeyS
@@ -51,14 +56,16 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |MATCH pathx = shortestPath((charlesThompson)-[*1..5]-(joeySantiago))
         |WHERE none (n IN nodes(pathx) WHERE id(n) = id(kimDeal))
         |RETURN extract(node in nodes(pathx) | id(node)) as ids
-      """.stripMargin)
+      """.stripMargin,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("VarLengthExpand(Into)", "AntiConditionalApply"),
+        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3), expectedDifferentResults = Configs.Cost2_3)
+
     val results = result.columnAs("ids").toList
     results should be(List(List(0, 4, 3, 2)))
-    result should use("VarLengthExpand(Into)", "AntiConditionalApply")
   }
 
   private def setupModel(): Unit = {
-    executeWithCostPlannerAndInterpretedRuntimeOnly(
+    executeWith(Configs.CommunityInterpreted - Configs.Cost2_3,
       """
         |MERGE (p1:Pixie {fname:'Charles'})
         |MERGE (p2:Pixie {fname:'Kim'})
@@ -67,6 +74,6 @@ class ShortestPathComplexQueryAcceptanceTest extends ExecutionEngineFunSuite wit
         |MERGE (p5:Pixie {fname:'Paz'})
         |MERGE (p1)-[:KNOWS]->(p2)-[:KNOWS]->(p3)-[:KNOWS]->(p4)-[:KNOWS]->(p5)-[:KNOWS]->(p1)
         |RETURN p1,p2,p3,p4,p5
-      """.stripMargin)
+      """.stripMargin, rollback = false)
   }
 }

@@ -19,45 +19,33 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 import scala.language.postfixOps
 
-class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+  val configs = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema, Runtimes.Interpreted, Runtimes.Slotted)) +
+    TestConfiguration(Versions.V3_3, Planners.Cost, Runtimes(Runtimes.CompiledBytecode, Runtimes.CompiledSource))
+  val expectedException = "Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs."
 
   test("from graph") {
     val query = "FROM GRAPH AT 'graph://url' AS test MATCH (a)-->() RETURN a"
-
-    expect(query) toNotSupportMultipleGraphs
+    failWithError(configs, query, List(expectedException))
   }
 
   test("into graph") {
     val query = "MATCH (a)--() INTO GRAPH AT 'graph://url' AS test CREATE (a)-->(b:B) RETURN b"
-
-    expect(query) toNotSupportMultipleGraphs
+    failWithError(configs, query, List(expectedException))
   }
 
   test("return named graph") {
     val query = "WITH $param AS foo MATCH ()--() RETURN 1 GRAPHS foo"
-
-    expect(query) toNotSupportMultipleGraphs
+    failWithError(configs, query, List(expectedException))
   }
 
   test("project a graph") {
     val query = "WITH 1 AS a GRAPH foo RETURN 1"
-
-    expect(query) toNotSupportMultipleGraphs
-  }
-
-  private final case class expect(query: String) {
-    import scala.util.{Failure, Success, Try}
-
-    def toNotSupportMultipleGraphs: Unit = {
-      Try(executeWithCostPlannerAndInterpretedRuntimeOnly(query)) match {
-        case _: Success[_] => fail(s"Expected $query to be unsupported")
-        case Failure(exception) =>
-          exception.getMessage should include(s"Projecting and returning graphs is not available in this implementation of Cypher due to lack of support for multiple graphs.")
-      }
-    }
+    failWithError(configs, query, List(expectedException))
   }
 }

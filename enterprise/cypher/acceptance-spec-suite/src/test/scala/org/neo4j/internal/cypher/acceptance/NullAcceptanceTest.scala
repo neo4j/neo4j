@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 
-class NullAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class NullAcceptanceTest extends ExecutionEngineFunSuite {
 
   val anyNull: AnyRef = null.asInstanceOf[AnyRef]
   val expressions = Seq(

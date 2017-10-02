@@ -19,14 +19,17 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
  * If you only want to verify that plans using indexes are actually planned, please use
  * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
  */
-class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
+  val expectedToSucceed = Configs.CommunityInterpreted
+  val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("should be case sensitive for CONTAINS with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
@@ -44,9 +47,10 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(expectedToSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should evaluateTo(List(Map("l" -> london)))
   }
 
   test("should be case sensitive for CONTAINS with unique indexes") {
@@ -65,9 +69,10 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' RETURN l"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(expectedToSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should evaluateTo(List(Map("l" -> london)))
   }
 
   test("should be case sensitive for CONTAINS with multiple indexes and predicates") {
@@ -87,9 +92,10 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(expectedToSucceed, query,
+    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should evaluateTo(List(Map("l" -> london)))
   }
 
   test("should not use contains index with multiple indexes and predicates where other index is more selective") {
@@ -109,9 +115,10 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    val result = executeWith(Configs.Interpreted, query,
+    planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
-    result should (use("NodeIndexSeek") and evaluateTo(List(Map("l" -> london))))
+    result should evaluateTo(List(Map("l" -> london)))
   }
 
   test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
@@ -132,9 +139,9 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     // RULE has bug with this query
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query, expectedDifferentResults = Configs.AllRulePlanners)
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List(Map("l" -> london))))
+    result should evaluateTo(List(Map("l" -> london)))
   }
 
   test("should return nothing when invoked with a null value") {
@@ -153,9 +160,11 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
 
-    val result = executeWithAllPlannersAndCompatibilityMode(query, "param" -> null)
+    val result = executeWith(expectedToSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should useOperators("NodeIndexContainsScan"), expectPlansToFail),
+      params = Map("param" -> null))
 
-    result should (use("NodeIndexContainsScan") and evaluateTo(List.empty))
+    result should evaluateTo(List.empty)
   }
 
   test("throws appropriate type error") {
@@ -174,6 +183,10 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
 
-    intercept[CypherTypeException](executeWithAllPlannersAndCompatibilityMode(query, "param" -> 42))
+    failWithError(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema, Runtimes.Interpreted)) +
+      TestConfiguration(Versions.all, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
+      TestConfiguration(Versions.V2_3, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)),
+      query, message = List("Expected a string value, but got 42","Expected a string value, but got Long(42)","Expected two strings, but got London and 42"),
+      params = "param" -> 42)
   }
 }

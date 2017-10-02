@@ -237,10 +237,6 @@ object RewindableExecutionResult {
     override def notifications: Iterable[Notification] =
       inner.notifications.map(org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification(None))
 
-    private def lift(position: frontend.v2_3.InputPosition): InputPosition = {
-      InputPosition.apply(position.offset, position.line, position.column)
-    }
-
     override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
 
     override def next(): Map[String, Any] = inner.next()
@@ -393,6 +389,10 @@ object RewindableExecutionResult {
 
   private case class InternalExecutionResultCompatibilityWrapperFor3_2(inner: v3_2.executionplan.InternalExecutionResult)
     extends InternalExecutionResult {
+
+    private val cache = inner.toList
+
+    override def toList: List[Map[String, Any]] = cache
 
     override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
 

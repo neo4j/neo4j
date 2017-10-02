@@ -20,40 +20,44 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbiddenException, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbiddenException}
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.impl.notification.NotificationCode.EXHAUSTIVE_SHORTEST_PATH
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 import scala.collection.mutable
 
-class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.forbid_exhaustive_shortestpath -> "true")
 
+  val allPossibleConfigs = Configs.All + TestConfiguration(Versions.Default, Planners.Default,
+    Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema, Runtimes.CompiledSource, Runtimes.CompiledBytecode))
+
   test("should fail at run time when using the shortest path fallback") {
     // when
-    val exception = the[ExhaustiveShortestPathForbiddenException] thrownBy executeWithCostPlannerAndInterpretedRuntimeOnly(
+
+    failWithError(allPossibleConfigs - Configs.AllRulePlanners - Configs.Cost2_3,
       s"""MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
-         |RETURN nodes(p) AS nodes""".stripMargin)
-
-    // then
-    exception should have message InternalExhaustiveShortestPathForbiddenException.ERROR_MSG
+         |RETURN nodes(p) AS nodes""".stripMargin,
+      List(InternalExhaustiveShortestPathForbiddenException.ERROR_MSG)
+    )
   }
 
   test("should warn if shortest path fallback is planned") {
     // when
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = executeWith(Configs.CommunityInterpreted,
       s"""EXPLAIN MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
 
     // then
     result.notifications.toSeq should equal(
-      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(18, 1, 19))
+      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(47, 1, 48))
       )
     )
   }

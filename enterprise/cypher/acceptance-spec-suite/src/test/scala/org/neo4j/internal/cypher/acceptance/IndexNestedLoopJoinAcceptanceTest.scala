@@ -20,10 +20,11 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite}
 import org.neo4j.graphdb.Node
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
-class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   test("test that index seek is planned on the RHS using information from the LHS") {
     // given
 
@@ -40,13 +41,15 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)")
+    val result = executeWith(
+      Configs.All - Configs.Compiled,
+      "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)",
+      planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
+        planDescription should useOperators("Apply", "NodeIndexSeek")
+        planDescription should not(useOperators("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     result.toList should equal(List(Map("count(*)" -> 3)))
-
-    // then
-    result should use("Apply", "NodeIndexSeek")
-    result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
   }
 
   test("index seek planned in the presence of optional matches") {
@@ -65,13 +68,14 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
+    val result = executeWith(Configs.All - Configs.Compiled,
+      "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)",
+      planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
+        planDescription should useOperators("Apply", "NodeIndexSeek")
+        planDescription should not(useOperators("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
+      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
 
     result.toList should equal(List(Map("count(*)" -> 3)))
-
-    // then
-    result should use("Apply", "NodeIndexSeek")
-    result should not(use("ValueHashJoin", "CartesianProduct", "NodeByLabelScan", "Filter"))
   }
 
   test("should use index on variable defined from literal map") {
@@ -79,7 +83,6 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("Foo", "id")
     val query =
       """
-        |PROFILE
         | WITH [{id: 123}, {id: 122}] AS rows
         | UNWIND rows AS row
         | MATCH (f:Foo)
@@ -87,9 +90,11 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
         | WHERE f.id=row.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+
+    val result = executeWith(Configs.All - Configs.Compiled - Configs.Version2_3, query,
+      planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners ))
+
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122),nodes(123)))
-    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 
   test("should use index on other node property value where there is no incoming horizon") {
@@ -99,14 +104,13 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("Foo", "id")
     val query =
       """
-        |PROFILE
         | MATCH (b:Bar) WHERE b.id = 123
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
     result.columnAs[Node]("f").toList should equal(List(nodes(123)))
-    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 
   test("should use index on other node property value where there is an incoming horizon") {
@@ -116,15 +120,14 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("Foo", "id")
     val query =
       """
-        |PROFILE
         | WITH [122, 123] AS rows
         | UNWIND rows AS row
         | MATCH (b:Bar) WHERE b.id = row
         | MATCH (f:Foo) WHERE f.id = b.id
         | RETURN f
       """.stripMargin
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
+    val result = executeWith(Configs.All - Configs.Compiled, query,
+      planComparisonStrategy = ComparePlansWithAssertion( _ should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f"), expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
     result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
-    result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 }

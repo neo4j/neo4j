@@ -19,60 +19,69 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.{Label, Node, RelationshipType}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
-class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should produce compatible plans for simple MATCH node query") {
-    executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person) RETURN n")
+    val query = "MATCH (n:Person) RETURN n"
+    val expectedPlan = generateExpectedPlan(query)
+    executeWith(Configs.All, query,
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("should produce compatible plans for simple MATCH relationship query") {
-    executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-[r:KNOWS]->(m) RETURN r")
+    val query = "MATCH (n:Person)-[r:KNOWS]->(m) RETURN r"
+    executeWith(Configs.All, query)
   }
 
   test("should produce compatible plans with predicates") {
-    executeWithCompatibilityAndAssertSimilarPlans(
+    val query =
       """
         |MATCH (n:Person) WHERE n.name STARTS WITH 'Joe' AND n.age >= 42
         |RETURN count(n)
-      """.stripMargin)
+      """.stripMargin
+    val expectedPlan = generateExpectedPlan(query)
+    executeWith(Configs.Interpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
   }
 
   test("should produce compatible plans with unwind") {
-    executeWithCompatibilityAndAssertSimilarPlans(
+    val query =
       """
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
         |MATCH (n:Person) WHERE n.name STARTS WITH name AND n.age >= age
         |RETURN count(n)
-      """.stripMargin)
+      """.stripMargin
+    val expectedPlan = generateExpectedPlan(query)
+    executeWith(Configs.Interpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
   }
 
-  // Too much has changed since 2.3, but this test might make sense against a more recent version
-  ignore("should produce compatible plans for complex query") {
-    executeWithCompatibilityAndAssertSimilarPlans(
+  // Too much has changed from 2.3, only compare plans for newer versions
+  test("should produce compatible plans for complex query") {
+    val query =
       """
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
         |MATCH (n:Person) WHERE n.name STARTS WITH name AND n.age >= age
         |OPTIONAL MATCH (n)-[r:KNOWS]->(m) WHERE exists(r.since)
         |RETURN count(r)
-      """.stripMargin)
+      """.stripMargin
+    val expectedPlan = generateExpectedPlan(query)
+    executeWith(Configs.Interpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 
-  private def makeData(): Unit = {
-    var prev: Node = null
-    Range(0, 1000).foreach { i =>
-      val node = graph.createNode(Label.label("Person"))
-      node.setProperty("name", s"Joe_$i")
-      node.setProperty("age", 1 + i)
-      if (prev != null) {
-        val r = prev.createRelationshipTo(node, RelationshipType.withName("KNOWS"))
-        r.setProperty("since", 1970 + i)
-      }
-      prev = node
-    }
+  private def assertSimilarPlans(plan: InternalPlanDescription, expected: InternalPlanDescription): Unit = {
+    plan.flatten.map(simpleName).toString should equal(expected.flatten.map(simpleName).toString())
   }
+
+  private def generateExpectedPlan(query: String): InternalPlanDescription = innerExecuteDeprecated(query, Map.empty).executionPlanDescription()
+
+  private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
 }

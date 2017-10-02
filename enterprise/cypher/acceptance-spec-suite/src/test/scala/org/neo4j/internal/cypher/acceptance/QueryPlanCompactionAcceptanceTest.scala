@@ -20,10 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V2_3, V3_2}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+  with CypherComparisonSupport {
+
+  val expectedToSucceed = Configs.Interpreted - Configs.Cost2_3
 
   implicit val windowsSafe = WindowsStringSafe
 
@@ -534,23 +538,12 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |  (JessicaThompson)-[:REVIEWED {summary:'A solid romp', rating:68}]->(TheDaVinciCode),
         |  (JamesThompson)-[:REVIEWED {summary:'Fun, but a little far fetched', rating:65}]->(TheDaVinciCode),
         |  (JessicaThompson)-[:REVIEWED {summary:'You had me at Jerry', rating:92}]->(JerryMaguire)
-        |
-        |RETURN TheMatrix
         |;""".stripMargin
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
-    result should havePlanLike(
+
+
+      // Removed produceResults part of plan which differs between scenarios and isn't what we want to test
+      val expectedPlan =
       """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime SLOTTED
-        |
-        |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+
-        || Operator                | Estimated Rows | Variables                                                                                            |
-        |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+
-        || +ProduceResults         |              1 | anon[10142], anon[10200], anon[10266], anon[10333], anon[10398], anon[10464], anon[10529], ...       |
         || |                       +----------------+------------------------------------------------------------------------------------------------------+
         || +CreateRelationship(12) |              1 | anon[26936], anon[26983], anon[27029], anon[27083], anon[27172], anon[27260], anon[27364], ...       |
         || |                       +----------------+------------------------------------------------------------------------------------------------------+
@@ -712,7 +705,11 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                       +----------------+------------------------------------------------------------------------------------------------------+
         || +CreateNode(8)          |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                        |
         |+-------------------------+----------------+------------------------------------------------------------------------------------------------------+
-        |""".stripMargin)
+        |""".stripMargin
+
+    val result = executeWith(expectedToSucceed, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
+    assertStats(result, nodesCreated = 171, relationshipsCreated = 253, propertiesWritten = 564, labelsAdded = 171)
   }
 
   test("Compact smaller, but still long and compactable query"){
@@ -732,43 +729,27 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |  (AndyW)-[:DIRECTED]->(TheMatrix),
         |  (LanaW)-[:DIRECTED]->(TheMatrix),
         |  (JoelS)-[:PRODUCED]->(TheMatrix)
-        |
-        |RETURN TheMatrix
         |""".stripMargin
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
-    result should havePlanLike(
+
+    // Removed produceResults part of plan which differs between scenarios and isn't what we want to test
+    val expectedPlan =
       """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime SLOTTED
-        |
-        |+------------------------+----------------+---------------------------------------------------------------------------------------------------+
-        || Operator               | Estimated Rows | Variables                                                                                         |
-        |+------------------------+----------------+---------------------------------------------------------------------------------------------------+
-        || +ProduceResults        |              1 | anon[517], anon[570], anon[629], anon[685], anon[745], anon[781], anon[817], AndyW, Carrie, ...   |
         || |                      +----------------+---------------------------------------------------------------------------------------------------+
         || +CreateRelationship(7) |              1 | anon[517], anon[570], anon[629], anon[685], anon[745], anon[781], anon[817] -- AndyW, Carrie, ... |
         || |                      +----------------+---------------------------------------------------------------------------------------------------+
         || +CreateNode(8)         |              1 | AndyW, Carrie, Hugo, JoelS, Keanu, LanaW, Laurence, TheMatrix                                     |
         |+------------------------+----------------+---------------------------------------------------------------------------------------------------+
-        |""".stripMargin)
+        |""".stripMargin
+
+    val result = executeWith(expectedToSucceed, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
+    assertStats(result, nodesCreated = 8, relationshipsCreated = 7, propertiesWritten = 21, labelsAdded = 8)
   }
 
   test("Don't compact complex query") {
     val query = "EXPLAIN LOAD CSV WITH HEADERS FROM {csv_filename} AS line MERGE (u1:User {login: line.user1}) MERGE " +
       "(u2:User {login: line.user2}) CREATE (u1)-[:FRIEND]->(u2)"
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    result should havePlanLike(
+    val expectedPlan =
       """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime INTERPRETED
-        |
         |+-------------------------+----------------+---------------------------+-----------------------+
         || Operator                | Estimated Rows | Variables                 | Other                 |
         |+-------------------------+----------------+---------------------------+-----------------------+
@@ -810,7 +791,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                       +----------------+---------------------------+-----------------------+
         || +LoadCSV                |              1 | line                      |                       |
         |+-------------------------+----------------+---------------------------+-----------------------+
-        |""".stripMargin)
+        |""".stripMargin
+    executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = Configs.All - Configs.Cost3_3))
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {
@@ -826,15 +808,8 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
     relate(c,b)
     relate(d,b)
     val query = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
-    val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
-    result should havePlanLike(
+    val expectedPlan =
       """
-        |Compiler CYPHER 3.3
-        |
-        |Planner COST
-        |
-        |Runtime COMPILED
-        |
         |+------------------+----------------+--------------------------------------+--------------------------+
         || Operator         | Estimated Rows | Variables                            | Other                    |
         |+------------------+----------------+--------------------------------------+--------------------------+
@@ -850,7 +825,9 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         || |                +----------------+--------------------------------------+--------------------------+
         || +NodeByLabelScan |              5 | n                                    | :Actor                   |
         |+------------------+----------------+--------------------------------------+--------------------------+
-        |""".stripMargin)
+        |""".stripMargin
+    val ignoreConfiguration = TestConfiguration(V2_3 -> V3_2, Planners.all, Runtimes.all ) + Configs.AllRulePlanners + Configs.SlottedInterpreted
+    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan), expectPlansToFail = ignoreConfiguration))
   }
 
   test("plans are alike with different anon variable numbers") {

@@ -21,20 +21,23 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
-  with NewPlannerTestSupport {
+  with CypherComparisonSupport {
 
   override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
   }
+
+  val expectedSucceed: TestConfiguration = Configs.CommunityInterpreted - Configs.Cost2_3
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
@@ -47,7 +50,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -68,7 +71,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
+        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -89,7 +92,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
+        executeWith(expectedSucceed, "merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -109,7 +112,8 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      intercept[MergeConstraintConflictException](updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23}) return a"))
+      failWithError(expectedSucceed + Configs.Procs, "merge (a:Person:User {id: 23}) return a",
+        List("can not create a new node due to conflicts with existing unique nodes"))
       countNodes() should equal(2)
     }
 
@@ -120,7 +124,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
+        executeWith(expectedSucceed, "merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a", expectedDifferentResults = Configs.AbsolutelyAll)
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -140,7 +144,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
       // when
       val results =
-        updateWithCompatibilityAndAssertSimilarPlans("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
+        executeWith(expectedSucceed, "merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a", expectedDifferentResults = Configs.AbsolutelyAll)
       val result = results.columnAs("a").next().asInstanceOf[Node]
 
       // then
@@ -173,7 +177,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
     def expectMergeConstraintConflictException(query: String, messages: Seq[String]): Unit = {
       Seq("2.3", "3.1", "3.2", "3.3").foreach { version =>
         val exception = intercept[MergeConstraintConflictException] {
-          innerExecute(s"CYPHER $version $query")
+          innerExecuteDeprecated(s"CYPHER $version $query", Map.empty)
         }
         messages.foreach { message =>
           exception.getMessage should include(message)

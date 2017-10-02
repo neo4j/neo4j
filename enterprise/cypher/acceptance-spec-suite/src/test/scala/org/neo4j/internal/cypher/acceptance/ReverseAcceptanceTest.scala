@@ -19,14 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 
 
-class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class ReverseAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   test("reverse function should work on strings") {
     // When
-    val result = executeScalarWithAllPlannersAndCompatibilityMode[String]("RETURN reverse('raksO')")
+    val result = executeWith(Configs.Interpreted, "RETURN reverse('raksO')").columnAs("reverse('raksO')").next().toString
 
     // Then
     result should equal("Oskar")
