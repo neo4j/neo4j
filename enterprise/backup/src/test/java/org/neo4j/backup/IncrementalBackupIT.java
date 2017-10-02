@@ -37,11 +37,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-<<<<<<< HEAD
 import org.neo4j.ports.allocation.PortAuthority;
-=======
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
->>>>>>> neo4j/3.3
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;

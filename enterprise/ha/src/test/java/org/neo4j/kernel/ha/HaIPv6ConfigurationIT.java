@@ -32,11 +32,8 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
-<<<<<<< HEAD
 import org.neo4j.ports.allocation.PortAuthority;
-=======
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
->>>>>>> neo4j/3.3
 import org.neo4j.test.rule.TestDirectory;
 
 /**

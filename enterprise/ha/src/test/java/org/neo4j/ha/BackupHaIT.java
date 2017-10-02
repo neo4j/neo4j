@@ -27,12 +27,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-<<<<<<< HEAD
-import org.neo4j.backup.OnlineBackupSettings;
-=======
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.com.ports.allocation.PortAuthority;
->>>>>>> neo4j/3.3
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;

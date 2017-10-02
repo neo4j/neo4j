@@ -157,15 +157,9 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
-=======
-        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
-                .toReturn( ConsistencyCheckService.Result.success( null ) );
->>>>>>> neo4j/3.3
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb"} );
 
@@ -187,15 +181,9 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
-=======
-        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
-                .toReturn( ConsistencyCheckService.Result.success( null ) );
->>>>>>> neo4j/3.3
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=some-dir-or-other"} );
 
@@ -218,15 +206,9 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
-=======
-        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
-                .toReturn( ConsistencyCheckService.Result.success( null ) );
->>>>>>> neo4j/3.3
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--report-dir=" + Paths.get( "..", "bar" )} );
 
@@ -248,15 +230,9 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), anyObject(), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
-=======
-        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), anyObject(), any( ConsistencyFlags.class ) ) )
-                .toReturn( ConsistencyCheckService.Result.success( null ) );
->>>>>>> neo4j/3.3
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         checkConsistencyCommand.execute( new String[]{"--database=mydb", "--check-graph=false",
                 "--check-indexes=false", "--check-label-scan-store=false", "--check-property-owners=true"} );
@@ -277,15 +253,9 @@ public class CheckConsistencyCommandTest
                 new CheckConsistencyCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld,
                         consistencyCheckService );
 
-<<<<<<< HEAD
         when( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
-                anyObject(), anyBoolean(), any( CheckConsistencyConfig.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
-=======
-        stub( consistencyCheckService.runFullConsistencyCheck( anyObject(), anyObject(), anyObject(), anyObject(),
                 anyObject(), anyBoolean(), any( ConsistencyFlags.class ) ) )
-                .toReturn( ConsistencyCheckService.Result.success( null ) );
->>>>>>> neo4j/3.3
+                .thenReturn( ConsistencyCheckService.Result.success( null ) );
 
         expect.expect( IncorrectUsage.class );
         expect.expectMessage( "Only one of '--database' and '--backup' can be specified." );

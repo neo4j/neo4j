@@ -26,11 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 
-<<<<<<< HEAD
-import org.neo4j.backup.OnlineBackupSettings;
-=======
-import org.neo4j.com.ports.allocation.PortAuthority;
->>>>>>> neo4j/3.3
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;

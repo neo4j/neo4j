@@ -33,11 +33,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-<<<<<<< HEAD:enterprise/backup/src/test/java/org/neo4j/backup/OnlineBackupCommandIT.java
-import org.neo4j.commandline.admin.AdminTool;
-=======
-import org.neo4j.com.ports.allocation.PortAuthority;
->>>>>>> neo4j/3.3:enterprise/backup/src/test/java/org/neo4j/backup/OnlineBackupCommandHaIT.java
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;

@@ -43,11 +43,8 @@ import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
-<<<<<<< HEAD
 import org.neo4j.ports.allocation.PortAuthority;
-=======
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
->>>>>>> neo4j/3.3
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.TestDirectory;
 

@@ -23,11 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-<<<<<<< HEAD
-import org.neo4j.backup.OnlineBackupSettings;
-=======
-import org.neo4j.com.ports.allocation.PortAuthority;
->>>>>>> neo4j/3.3
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
