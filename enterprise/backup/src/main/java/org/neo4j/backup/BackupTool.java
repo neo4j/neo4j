@@ -27,7 +27,6 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.backup.BackupService.BackupOutcome;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
@@ -76,7 +75,7 @@ public class BackupTool
     {
         System.err.println("WARNING: neo4j-backup is deprecated and support for it will be removed in a future\n" +
                 "version of Neo4j; please use neo4j-admin backup instead.\n");
-        BackupTool tool = new BackupTool( new BackupService(), System.out );
+        BackupTool tool = new BackupTool( new BackupProtocolService(), System.out );
         try
         {
             BackupOutcome backupOutcome = tool.run( args );
@@ -93,12 +92,12 @@ public class BackupTool
         }
     }
 
-    private final BackupService backupService;
+    private final BackupProtocolService backupProtocolService;
     private final PrintStream systemOut;
 
-    BackupTool( BackupService backupService, PrintStream systemOut )
+    BackupTool( BackupProtocolService backupProtocolService, PrintStream systemOut )
     {
-        this.backupService = backupService;
+        this.backupProtocolService = backupProtocolService;
         this.systemOut = systemOut;
     }
 
@@ -193,8 +192,7 @@ public class BackupTool
             String host = hostnamePort.getHost();
             int port = hostnamePort.getPort();
 
-            BackupOutcome outcome = backupService.doIncrementalBackupOrFallbackToFull( host, port, to, consistencyCheck,
-                    config, timeout, forensics );
+            BackupOutcome outcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port, to, consistencyCheck, config, timeout, forensics );
             systemOut.println( "Done" );
             return outcome;
         }

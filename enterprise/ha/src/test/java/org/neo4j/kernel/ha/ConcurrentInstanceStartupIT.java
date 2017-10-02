@@ -31,13 +31,14 @@ import java.util.stream.IntStream;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.backup.OnlineBackupSettings;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.test.rule.TestDirectory;
 
 public class ConcurrentInstanceStartupIT

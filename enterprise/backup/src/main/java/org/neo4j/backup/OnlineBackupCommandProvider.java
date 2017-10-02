@@ -20,6 +20,9 @@
 package org.neo4j.backup;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.neo4j.OnlineBackupCommandSection;
@@ -27,7 +30,9 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
 
@@ -42,7 +47,7 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public Arguments allArguments()
     {
-        return OnlineBackupCommand.arguments();
+        return BackupCommandArgumentHandler.arguments();
     }
 
     @Override
@@ -77,8 +82,17 @@ public class OnlineBackupCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new OnlineBackupCommand(
-                new BackupService( outsideWorld.errorStream() ), homeDir, configDir,
-                new ConsistencyCheckService(), outsideWorld );
+        LogProvider logProvider = NullLogProvider.getInstance();
+        Monitors monitors = new Monitors();
+
+        OnlineBackupContextLoader onlineBackupContextLoader =
+                new OnlineBackupContextLoader( new BackupCommandArgumentHandler(), new OnlineBackupCommandConfigLoader( homeDir, configDir ) );
+        BackupModuleResolveAtRuntime backupModuleResolveAtRuntime = new BackupModuleResolveAtRuntime( outsideWorld, logProvider, monitors );
+
+        return new OnlineBackupCommand( outsideWorld,
+                onlineBackupContextLoader,
+                new CommunityBackupSupportingClassesFactory( backupModuleResolveAtRuntime ),
+                new BackupFlowFactory( backupModuleResolveAtRuntime )
+        );
     }
 }
