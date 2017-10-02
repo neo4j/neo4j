@@ -510,7 +510,7 @@ public class IndexStatisticsTest
     private IndexDescriptor awaitOnline( IndexDescriptor index ) throws KernelException
     {
         long start = System.currentTimeMillis();
-        long end = start + 20_000;
+        long end = start + TimeUnit.MINUTES.toMillis( 3 );
         while ( System.currentTimeMillis() < end )
         {
             try ( Transaction tx = db.beginTx() )
