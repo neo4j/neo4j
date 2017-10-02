@@ -29,7 +29,7 @@ case object normalizeGraphReturnItems extends Rewriter {
     case item: SourceGraphAs => item
     case item: TargetGraphAs => item
     case graphItem@GraphAs(ref, None, _) =>
-      graphItem.copy(as = Some(ref))(graphItem.position)
+      graphItem.copy(as = Some(Variable(ref.name)(ref.position)))(graphItem.position)
     case graphItem: SingleGraphAs if graphItem.as.isEmpty =>
       val pos = graphItem.position.bumped()
       graphItem.withNewName(Variable(FreshIdNameGenerator.name(pos))(pos)).asGenerated
