@@ -54,8 +54,7 @@ public class TransactionHookIT extends KernelIntegrationTest
         // Then
         verify( hook ).beforeCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
                 any( StoreReadLayer.class ), any( StorageStatement.class ) );
-        verify( hook ).afterCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ),
-                any( TransactionHook.Outcome.class ) );
+        verify( hook ).afterCommit( any( ReadableTransactionState.class ), any( KernelTransaction.class ), any() );
         verifyNoMoreInteractions( hook );
     }
 
