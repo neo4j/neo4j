@@ -27,6 +27,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;

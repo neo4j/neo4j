@@ -24,11 +24,16 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.test.rule.TestDirectory;
 
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
+import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
 
 public class ConvertersTest
 {
@@ -49,7 +54,75 @@ public class ConvertersTest
         File[] files = regexFiles( true ).apply( directory.file( "file.*" ).getAbsolutePath() );
 
         // THEN
-        assertArrayEquals( new File[] {file1, file2, file12, file32, file123}, files );
+        assertArrayEquals( new File[]{file1, file2, file12, file32, file123}, files );
+    }
+
+    @Test
+    public void canProcessPortFromAGivenString()
+    {
+        // given
+        String addressWithPorts = "hostname:1234";
+
+        // when
+        Optional<Integer> port = toOptionalHostnamePortFromRawAddress( addressWithPorts ).getPort();
+
+        // then
+        assertTrue( port.isPresent() );
+        assertEquals( new Integer( 1234 ), port.get() );
+    }
+
+    @Test
+    public void emptyOptionalWhenPortIsMissing()
+    {
+        //given
+        String addressWithoutPorts = "hostname";
+
+        // when
+        Optional<Integer> port = toOptionalHostnamePortFromRawAddress( addressWithoutPorts ).getPort();
+
+        // then
+        assertFalse( port.isPresent() );
+    }
+
+    @Test
+    public void canProcessHostnameFromAGivenAddress()
+    {
+        // given
+        String addressWithPorts = "hostname:1234";
+
+        // when
+        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( addressWithPorts ).getHostname();
+
+        // then
+        assertTrue( hostname.isPresent() );
+        assertEquals( "hostname", hostname.get() );
+    }
+
+    @Test
+    public void canProcessHostnameWithoutPort()
+    {
+        // given
+        String addressWithoutPort = "hostname";
+
+        // when
+        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( addressWithoutPort ).getHostname();
+
+        // then
+        assertTrue( hostname.isPresent() );
+        assertEquals( "hostname", hostname.get() );
+    }
+
+    @Test
+    public void emptyOptionalWhenOnlyPort()
+    {
+        // given
+        String portOnlyAddress = ":1234";
+
+        // when
+        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( portOnlyAddress ).getHostname();
+
+        // then
+        assertFalse( hostname.isPresent() );
     }
 
     private File existenceOfFile( String name ) throws IOException

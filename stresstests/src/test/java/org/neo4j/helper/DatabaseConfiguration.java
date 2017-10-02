@@ -21,8 +21,8 @@ package org.neo4j.helper;
 
 import java.util.Map;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 

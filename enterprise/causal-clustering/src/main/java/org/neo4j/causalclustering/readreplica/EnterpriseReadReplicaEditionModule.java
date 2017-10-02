@@ -20,13 +20,13 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.backup.OnlineBackupKernelExtension;
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.catchup.CheckpointerSupplier;
@@ -57,10 +57,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DatabaseAvailability;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.enterprise.builtinprocs.EnterpriseBuiltInDbmsProcedures;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.enterprise.EnterpriseConstraintSemantics;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.enterprise.StandardBoltConnectionTracker;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.enterprise.id.EnterpriseIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint.ConfigurableIOLimiter;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -94,7 +95,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.DefaultKernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -125,6 +125,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;
+        config.augment( backupDisabledSettings() );
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
         File storeDir = platformModule.storeDir;
@@ -236,28 +237,6 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         txPulling.add( copiedStoreRecovery );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
-        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
-        {
-            platformModule.dataSourceManager.addListener( new DataSourceManager.Listener()
-            {
-                @Override
-                public void registered( NeoStoreDataSource dataSource )
-                {
-                    servicesToStopOnStoreCopy.add( pickBackupExtension( dataSource ) );
-                }
-
-                @Override
-                public void unregistered( NeoStoreDataSource dataSource )
-                {
-                    servicesToStopOnStoreCopy.remove( pickBackupExtension( dataSource ) );
-                }
-
-                private OnlineBackupKernelExtension pickBackupExtension( NeoStoreDataSource dataSource )
-                {
-                    return dataSource.getDependencyResolver().resolveDependency( OnlineBackupKernelExtension.class );
-                }
-            } );
-        }
 
         StoreCopyProcess storeCopyProcess =
                 new StoreCopyProcess( fileSystem, pageCache, localDatabase, copiedStoreRecovery, remoteStore,
@@ -391,5 +370,12 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         int numberOfRetries =
                 pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
         return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
+    }
+
+    private static Map<String,String> backupDisabledSettings()
+    {
+        Map<String,String> overrideBackupSettings = new HashMap<>(  );
+        overrideBackupSettings.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        return overrideBackupSettings;
     }
 }
