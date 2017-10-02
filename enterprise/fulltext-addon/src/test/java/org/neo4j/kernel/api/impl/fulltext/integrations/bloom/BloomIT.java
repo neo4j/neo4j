@@ -280,6 +280,41 @@ public class BloomIT
     }
 
     @Test
+    public void shouldNotBeAbleToFindNodesAfterRemovingIndex() throws Exception
+    {
+
+        db = getDb();
+        db.execute( String.format( KEYS, "\"prop\"" ) );
+        long nodeId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode();
+            nodeId = node.getId();
+            node.setProperty( "prop", "Jyllingevej" );
+            tx.success();
+        }
+
+        // Verify it's indexed exactly once
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        Result result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        assertTrue( result.hasNext() );
+        assertEquals( nodeId, result.next().get( ENTITYID ) );
+        assertFalse( result.hasNext() );
+        db.execute( String.format( KEYS, "" ) );
+
+        db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
+        // Verify it's nowhere to be found now
+        result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        assertFalse( result.hasNext() );
+
+        db.shutdown();
+        db = getDb();
+        // Should not be found after restart
+        result = db.execute( String.format( NODES, "Jyllingevej", true, false ) );
+        assertFalse( result.hasNext() );
+    }
+
+    @Test
     public void staleDataFromEntityDeleteShouldNotBeAccessibleAfterConfigurationChange() throws Exception
     {
 

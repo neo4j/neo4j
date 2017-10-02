@@ -147,7 +147,10 @@ public class FulltextProvider implements AutoCloseable
             {
                 writableFulltext.drop();
                 writableFulltext.open();
-                applier.populateNodes( writableFulltext, db );
+                if ( !writableFulltext.getProperties().isEmpty() )
+                {
+                    applier.populateNodes( writableFulltext, db );
+                }
             }
             nodeIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
             writableNodeIndices.put( fulltextIndex.getIdentifier(), writableFulltext );
@@ -159,7 +162,10 @@ public class FulltextProvider implements AutoCloseable
             {
                 writableFulltext.drop();
                 writableFulltext.open();
-                applier.populateRelationships( writableFulltext, db );
+                if ( !writableFulltext.getProperties().isEmpty() )
+                {
+                    applier.populateRelationships( writableFulltext, db );
+                }
             }
             relationshipIndices.put( fulltextIndex.getIdentifier(), fulltextIndex );
             writableRelationshipIndices.put( fulltextIndex.getIdentifier(), writableFulltext );

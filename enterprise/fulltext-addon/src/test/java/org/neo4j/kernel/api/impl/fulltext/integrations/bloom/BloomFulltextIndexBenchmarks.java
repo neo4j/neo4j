@@ -24,16 +24,18 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
+
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomFulltextConfig.bloom_enabled;
 
 @Ignore( "These are rudimentary benchmarks, but implemented via the jUnit framework to make them easy to run " +
          "from an IDE." )
@@ -46,22 +48,19 @@ public class BloomFulltextIndexBenchmarks
              "montes nascetur ridiculus mus mauris").split( " " );
 
     @Rule
-    public final FileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private TestGraphDatabaseFactory factory;
+    private GraphDatabaseFactory factory;
     private GraphDatabaseService db;
 
     private void createTestGraphDatabaseFactory()
     {
-        factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
+        factory = new GraphDatabaseFactory();
     }
 
-    private void configureBloomExtension()
+    private void registerBloomProcedures() throws KernelException
     {
-        factory.addKernelExtensions( Collections.singletonList( new BloomKernelExtensionFactory() ) );
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Procedures.class ).registerProcedure( BloomProcedures.class );
     }
 
     private static void clearAndCreateRandomSentence( ThreadLocalRandom rng, StringBuilder sb )
@@ -75,15 +74,20 @@ public class BloomFulltextIndexBenchmarks
         sb.setLength( sb.length() - 1 );
     }
 
+    private void setupDb() throws KernelException
+    {
+        createTestGraphDatabaseFactory();
+        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
+        builder.setConfig( bloom_enabled, "true" );
+        db = builder.newGraphDatabase();
+        registerBloomProcedures();
+    }
+
     @Test
     public void fiveHundredThousandOnlineUpdates() throws Exception
     {
-        createTestGraphDatabaseFactory();
-        configureBloomExtension();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        //todo
-//        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
-        db = builder.newGraphDatabase();
+        setupDb();
+        db.execute( "call db.fulltext.bloomFulltextSetPropertyKeys([\"prop\"])" );
 
         int trials = 50;
         int threadCount = 10;
@@ -151,20 +155,22 @@ public class BloomFulltextIndexBenchmarks
         db.shutdown();
 
         // Then measure startup performance
-        configureBloomExtension();
         builder = factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
-        //todo
-//        builder.setConfig( BloomFulltextConfig.bloom_indexed_properties, "prop" );
+        builder.setConfig( bloom_enabled, "true" );
 
+        db = builder.newGraphDatabase();
+        registerBloomProcedures();
         for ( int i = 0; i < 50; i++ )
         {
             long startMillis = System.currentTimeMillis();
-            db = builder.newGraphDatabase();
+            db.execute( "call db.fulltext.bloomFulltextSetPropertyKeys([\"prop\"])" );
             db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
             long elapsedMillis = System.currentTimeMillis() - startMillis;
             System.out.printf( "startup populate elapsed: %s ms.%n", elapsedMillis );
-            db.shutdown();
+            db.execute( "call db.fulltext.bloomFulltextSetPropertyKeys([])" );
+            db.execute( "CALL db.fulltext.bloomAwaitPopulation" ).close();
         }
+        db.shutdown();
         db = null;
     }
 

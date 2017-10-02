@@ -81,9 +81,8 @@ public class BloomProcedures
     @Procedure( name = "db.fulltext.bloomFulltextSetPropertyKeys", mode = SCHEMA )
     public void bloomFulltextSetPropertyKeys( @Name( "propertyKeys" ) List<String> propertyKeys ) throws Exception
     {
-        factory.ensureIndexPropertyKeys( BLOOM_NODES, NODES, propertyKeys );
-        factory.ensureIndexPropertyKeys( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
-        provider.awaitPopulation();
+        factory.changeIndexedProperties( BLOOM_NODES, NODES, propertyKeys );
+        factory.changeIndexedProperties( BLOOM_RELATIONSHIPS, RELATIONSHIPS, propertyKeys );
     }
 
     @Description( "Queries the bloom index for nodes" )

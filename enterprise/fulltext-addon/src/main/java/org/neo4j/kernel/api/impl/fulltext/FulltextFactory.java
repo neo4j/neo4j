@@ -112,7 +112,7 @@ public class FulltextFactory
         provider.register( index );
     }
 
-    public void ensureIndexPropertyKeys( String identifier, FulltextProvider.FulltextIndexType type, List<String> propertyKeys )
+    public void changeIndexedProperties( String identifier, FulltextProvider.FulltextIndexType type, List<String> propertyKeys )
             throws IOException, InvalidArgumentsException
     {
         if ( propertyKeys.stream().anyMatch( s -> s.startsWith( FulltextProvider.LUCENE_FULLTEXT_ADDON_PREFIX ) ) )
