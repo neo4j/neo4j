@@ -332,6 +332,7 @@
             <runOrder>random</runOrder>
             <systemPropertyVariables>
               <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
+              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
             </systemPropertyVariables>
           </configuration>
         </plugin>
@@ -347,6 +348,7 @@
             <systemPropertyVariables>
               <dbms.pagecache.memory.default.override>8m</dbms.pagecache.memory.default.override>
               <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
+              <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
             </systemPropertyVariables>
           </configuration>
           <executions>
