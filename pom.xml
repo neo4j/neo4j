@@ -578,6 +578,26 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>3</version>
         </plugin>
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>3.0.2</version>
+          <dependencies>
+            <!-- https://mvnrepository.com/artifact/org.owasp/dependency-check-maven -->
+            <dependency>
+              <groupId>org.owasp</groupId>
+              <artifactId>dependency-check-maven</artifactId>
+              <version>3.0.2</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <goals>
+                <goal>aggregate</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
       </plugins>
     </pluginManagement>
 
