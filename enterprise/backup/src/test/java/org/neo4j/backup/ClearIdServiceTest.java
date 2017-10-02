@@ -31,7 +31,7 @@ import org.neo4j.util.TestHelpers;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.stub;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -106,7 +106,7 @@ public class ClearIdServiceTest
         filesystemContainsFiles( validFile );
 
         // and
-        stub( idGeneratorWrapper.readHighId( fileSystemAbstraction, validFile ) ).toReturn( expectedHighestId );
+        when( idGeneratorWrapper.readHighId( fileSystemAbstraction, validFile ) ).thenReturn( expectedHighestId );
 
         // when
         subject.clearIdFiles( fileSystemAbstraction, expectedSearchLocation );
@@ -122,7 +122,7 @@ public class ClearIdServiceTest
         filesystemContainsFiles( validFile );
 
         // and
-        stub( idGeneratorWrapper.readHighId( any(), any() ) ).toThrow( new IOException( "Message" ) );
+        when( idGeneratorWrapper.readHighId( any(), any() ) ).thenThrow( new IOException( "Message" ) );
 
         // when
         Exception exceptionThrown = TestHelpers.executionIsExpectedToFail( () -> subject.clearIdFiles( fileSystemAbstraction, expectedSearchLocation ) );
@@ -134,11 +134,11 @@ public class ClearIdServiceTest
 
     private void makeDirectory( File directory )
     {
-        stub( fileSystemAbstraction.isDirectory( directory ) ).toReturn( true );
+        when( fileSystemAbstraction.isDirectory( directory ) ).thenReturn( true );
     }
 
     private void filesystemContainsFiles( File... files )
     {
-        stub( fileSystemAbstraction.listFiles( any() ) ).toReturn( files );
+        when( fileSystemAbstraction.listFiles( any() ) ).thenReturn( files );
     }
 }
