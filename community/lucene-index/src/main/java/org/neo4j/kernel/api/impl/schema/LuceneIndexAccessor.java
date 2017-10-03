@@ -54,7 +54,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     {
         if ( luceneIndex.isReadOnly() )
         {
-            throw new UnsupportedOperationException( "Can't create updated for read only index." );
+            throw new UnsupportedOperationException( "Can't create updater for read only index." );
         }
         switch ( mode )
         {
@@ -78,7 +78,11 @@ public class LuceneIndexAccessor implements IndexAccessor
     @Override
     public void force() throws IOException
     {
-        luceneIndex.markAsOnline();
+        // We never change status of read-only indexes.
+        if ( !luceneIndex.isReadOnly() )
+        {
+            luceneIndex.markAsOnline();
+        }
         luceneIndex.maybeRefreshBlocking();
     }
 
