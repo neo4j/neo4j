@@ -280,12 +280,12 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                 );
                 times++;
             }
-            while ( hasErrors().matches( response ) && (times < 5) );
+            while ( response.get( "errors" ).iterator().hasNext() && (times < 5) );
 
             long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
 
-            assertThat( response.status(), equalTo( 200 ) );
             assertThat( "Last response is: " + response, response, containsNoErrors() );
+            assertThat( response.status(), equalTo( 200 ) );
             assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
             assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
         } );
