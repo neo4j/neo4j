@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -87,7 +86,7 @@ public class PositionToRecoverFrom implements ThrowingSupplier<LogPosition,IOExc
     public LogPosition get() throws IOException
     {
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
-        if ( !logTailInformation.commitsAfterLastCheckPoint )
+        if ( !logTailInformation.commitsAfterLastCheckpoint() )
         {
             monitor.noCommitsAfterLastCheckPoint(
                     logTailInformation.lastCheckPoint != null ? logTailInformation.lastCheckPoint.getLogPosition() : null );

@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
@@ -81,7 +80,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -93,6 +92,9 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static java.lang.Long.max;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -100,11 +102,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.Long.max;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterables.asList;
@@ -358,7 +355,7 @@ public class RecoveryIT
         Monitors monitors = new Monitors();
         AtomicReference<PageCache> pageCache = new AtomicReference<>();
         AtomicReference<EphemeralFileSystemAbstraction> reversedFs = new AtomicReference<>();
-        monitors.addMonitorListener( new Recovery.Monitor()
+        monitors.addMonitorListener( new RecoveryMonitor()
         {
             @Override
             public void reverseStoreRecoveryCompleted( long checkpointTxId )

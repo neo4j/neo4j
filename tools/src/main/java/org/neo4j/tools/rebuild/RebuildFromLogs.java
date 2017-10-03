@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
@@ -67,7 +66,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.openForVersion;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
@@ -194,8 +192,8 @@ class RebuildFromLogs
 
     private long findLastTransactionId( PhysicalLogFiles logFiles, long highestVersion ) throws IOException
     {
-        ReadableLogChannel logChannel = new ReadAheadLogChannel(
-                PhysicalLogFile.openForVersion( logFiles, fs, highestVersion, false ), NO_MORE_CHANNELS );
+        PhysicalLogVersionedStoreChannel channel = openForVersion( logFiles, fs, highestVersion, false );
+        ReadableLogChannel logChannel = new ReadAheadLogChannel( channel );
 
         long lastTransactionId = -1;
 

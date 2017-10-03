@@ -17,35 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.logging.Log;
 
-public class DeadSimpleLogVersionRepository implements LogVersionRepository
+import static java.lang.String.format;
+
+public class ReverseTransactionCursorLoggingMonitor implements ReversedTransactionCursorMonitor
 {
-    private volatile long logVersion;
+    private final Log log;
 
-    public DeadSimpleLogVersionRepository( long initialLogVersion )
+    public ReverseTransactionCursorLoggingMonitor( Log log )
     {
-        this.logVersion = initialLogVersion;
+        this.log = log;
     }
 
     @Override
-    public long incrementAndGetVersion()
+    public void transactionalLogRecordReadFailure( Throwable t, long[] transactionOffsets, int transactionIndex, long logVersion )
     {
-        logVersion++;
-        return logVersion;
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return logVersion;
-    }
-
-    @Override
-    public void setCurrentLogVersion( long version )
-    {
-        this.logVersion = version;
+        log.warn( transactionIndex > 0 ?
+               format( "Fail to read transaction log version %d. Last valid transaction start offset is: %d.",
+                       logVersion, transactionOffsets[transactionIndex - 1] ) :
+               format( "Fail to read first transaction of log version %d.", logVersion) );
     }
 }

@@ -49,7 +49,7 @@ public class LogEntryWriter
         this.serializer = new StorageCommandSerializer( channel );
     }
 
-    private void writeLogEntryHeader( byte type ) throws IOException
+    protected void writeLogEntryHeader( byte type ) throws IOException
     {
         channel.put( CURRENT.byteCode() ).put( type );
     }

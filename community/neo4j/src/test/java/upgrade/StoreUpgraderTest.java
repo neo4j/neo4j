@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -62,9 +63,10 @@ import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationPa
 import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
@@ -108,6 +110,8 @@ public class StoreUpgraderTest
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
+    private AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private SimpleLogService logService = new SimpleLogService( logProvider );
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
     public StoreUpgraderTest( String version )
@@ -334,10 +338,9 @@ public class StoreUpgraderTest
     private UpgradableDatabase getUpgradableDatabase( PageCache pageCache )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dbDirectory, fileSystem );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>() );
-        return new UpgradableDatabase(
-                new StoreVersionCheck( pageCache ),
-                getRecordFormats(), tailScanner );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fileSystem, new VersionAwareLogEntryReader<>(),
+                new Monitors() );
+        return new UpgradableDatabase( new StoreVersionCheck( pageCache ), getRecordFormats(), tailScanner );
     }
 
     private StoreMigrationParticipant participantThatWillFailWhenMoving( final String failureMessage )

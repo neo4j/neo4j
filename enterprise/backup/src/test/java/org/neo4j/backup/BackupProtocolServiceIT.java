@@ -19,6 +19,14 @@
  */
 package org.neo4j.backup;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.Mockito;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -27,14 +35,6 @@ import java.net.ConnectException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.Mockito;
 
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;

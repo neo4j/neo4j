@@ -36,6 +36,8 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationExce
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.PageCacheRule;
@@ -136,7 +138,8 @@ public class LogVersionUpgradeCheckerIT
                 PhysicalLogFile.NO_MONITOR,
                 new LogHeaderCache( 10 ) );
 
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(),
+                new Monitors() );
         LogTailScanner.LogTailInformation tailInformation = tailScanner.getTailInformation();
 
         try ( Lifespan lifespan = new Lifespan( logFile ) )

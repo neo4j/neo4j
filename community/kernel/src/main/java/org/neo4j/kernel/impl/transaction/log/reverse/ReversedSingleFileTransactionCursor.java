@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 
 /**
@@ -53,12 +61,14 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
  *
  * @see ReversedMultiFileTransactionCursor
  */
-class ReversedSingleFileTransactionCursor implements TransactionCursor
+public class ReversedSingleFileTransactionCursor implements TransactionCursor
 {
     // Should this be passed in or extracted from the read-ahead channel instead?
     private static final int CHUNK_SIZE = ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 
     private final ReadAheadLogChannel channel;
+    private final boolean failOnCorruptedLogFiles;
+    private final ReversedTransactionCursorMonitor monitor;
     private final TransactionCursor transactionCursor;
     // Should be generally large enough to hold transactions in a chunk, where one chunk is the read-ahead size of ReadAheadLogChannel
     private final Deque<CommittedTransactionRepresentation> chunkTransactions = new ArrayDeque<>( 20 );
@@ -69,10 +79,13 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     private int chunkStartOffsetIndex;
     private long totalSize;
 
-    ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel, LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
-            throws IOException
+    ReversedSingleFileTransactionCursor( ReadAheadLogChannel channel,
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, boolean failOnCorruptedLogFiles,
+            ReversedTransactionCursorMonitor monitor ) throws IOException
     {
         this.channel = channel;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
+        this.monitor = monitor;
         // There's an assumption here: that the underlying channel can move in between calls and that the
         // transaction cursor will just happily read from the new position.
         this.transactionCursor = new PhysicalTransactionCursor<>( channel, logEntryReader );
@@ -80,7 +93,6 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
     }
 
     // Also initializes offset indexes
-    // This method could use some way of reading log entries w/o creating objects. Would be great
     private long[] sketchOutTransactionStartOffsets() throws IOException
     {
         // Grows on demand. Initially sized to be able to hold all transaction start offsets for a single log file
@@ -89,14 +101,25 @@ class ReversedSingleFileTransactionCursor implements TransactionCursor
 
         long logVersion = channel.getVersion();
         long startOffset = channel.position();
-        while ( transactionCursor.next() )
+        try
         {
-            if ( offsetCursor == offsets.length )
-            {   // Grow
-                offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
+            while ( transactionCursor.next() )
+            {
+                if ( offsetCursor == offsets.length )
+                {   // Grow
+                    offsets = Arrays.copyOf( offsets, offsetCursor * 2 );
+                }
+                offsets[offsetCursor++] = startOffset;
+                startOffset = channel.position();
             }
-            offsets[offsetCursor++] = startOffset;
-            startOffset = channel.position();
+        }
+        catch ( Throwable t )
+        {
+            monitor.transactionalLogRecordReadFailure( t, offsets, offsetCursor, logVersion );
+            if ( failOnCorruptedLogFiles )
+            {
+                throw Exceptions.launderedException( t );
+            }
         }
 
         if ( channel.getVersion() != logVersion )

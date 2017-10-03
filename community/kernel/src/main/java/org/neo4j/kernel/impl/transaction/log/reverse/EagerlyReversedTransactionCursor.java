@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 
 /**
  * Eagerly exhausts a {@link TransactionCursor} and allows moving through it in reverse order.
@@ -35,13 +37,13 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
  *
  * @see ReversedMultiFileTransactionCursor
  */
-class EagerlyReversedTransactionCursor implements TransactionCursor
+public class EagerlyReversedTransactionCursor implements TransactionCursor
 {
     private final List<CommittedTransactionRepresentation> txs = new ArrayList<>();
     private final TransactionCursor cursor;
     private int indexToReturn;
 
-    EagerlyReversedTransactionCursor( TransactionCursor cursor ) throws IOException
+    public EagerlyReversedTransactionCursor( TransactionCursor cursor ) throws IOException
     {
         this.cursor = cursor;
         while ( cursor.next() )

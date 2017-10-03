@@ -106,8 +106,8 @@ public class ApplyTransactionsCommand extends ArgsCommand
         try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem ) )
         {
-            LogicalTransactionStore source = life.add(
-                    new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath, new Monitors() ) );
+            LogicalTransactionStore source = life.add( new ReadOnlyTransactionStore( pageCache, fileSystem, fromPath,
+                    new Monitors() ) );
             life.start();
             long lastAppliedTx = fromTxExclusive;
             // Some progress if there are more than a couple of transactions to apply

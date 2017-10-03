@@ -102,7 +102,6 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -132,6 +131,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruningImpl;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLoggingMonitor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
@@ -149,9 +150,14 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.kernel.recovery.DefaultRecoverySPI;
+import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
+import org.neo4j.kernel.recovery.DefaultRecoveryService;
+import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
+import org.neo4j.kernel.recovery.RecoveryService;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.Log;
@@ -164,6 +170,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -228,6 +235,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     }
 
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
+    private final boolean failOnCorruptedLogFiles = FeatureToggles.flag( NeoStoreDataSource.class,
+            "failOnCorruptedLogFiles", false );
 
     private final Monitors monitors;
     private final Tracers tracers;
@@ -427,7 +436,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // Check the tail of transaction logs and validate version
         final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, PhysicalLogFile.DEFAULT_NAME, fs );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader );
+
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, logEntryReader, monitors, failOnCorruptedLogFiles );
+        monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
@@ -460,10 +472,10 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             buildRecovery( fs,
                     transactionIdStore,
                     tailScanner,
-                    monitors.newMonitor( Recovery.Monitor.class ),
+                    monitors.newMonitor( RecoveryMonitor.class ),
                     monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
                     logFiles, startupStatistics,
-                    storageEngine, transactionLogModule.logicalTransactionStore()
+                    storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
             );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
@@ -650,7 +662,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 logFile, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader );
+                new PhysicalLogicalTransactionStore( logFile, transactionMetadataCache, logEntryReader, monitors, failOnCorruptedLogFiles );
 
         int txThreshold = config.get( GraphDatabaseSettings.check_point_interval_tx );
         final CountCommittedTransactionThreshold countCommittedTransactionThreshold =
@@ -681,25 +693,18 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             final FileSystemAbstraction fileSystemAbstraction,
             TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner,
-            Recovery.Monitor recoveryMonitor,
+            RecoveryMonitor recoveryMonitor,
             PositionToRecoverFrom.Monitor positionMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
-            LogicalTransactionStore logicalTransactionStore )
+            LogicalTransactionStore logicalTransactionStore,
+            LogVersionRepository logVersionRepository )
     {
-        Recovery.SPI spi =
-                new DefaultRecoverySPI( storageEngine, logFiles, fileSystemAbstraction, tailScanner, transactionIdStore,
-                        logicalTransactionStore, positionMonitor );
-        Recovery recovery = new Recovery( spi, recoveryMonitor );
-        monitors.addMonitorListener( new Recovery.Monitor()
-        {
-            @Override
-            public void recoveryCompleted( int numberOfRecoveredTransactions )
-            {
-                startupStatistics.setNumberOfRecoveredTransactions( numberOfRecoveredTransactions );
-            }
-        } );
+        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+                logicalTransactionStore, logVersionRepository, positionMonitor );
+        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemAbstraction );
+        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 
@@ -731,7 +736,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts statementOperationParts = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, databaseSchemaState, guard, explicitIndexStore ) );
+                        constraintIndexCreator, databaseSchemaState, explicitIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
@@ -857,10 +862,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations(
-            StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
+    private StatementOperationParts buildStatementOperations( StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
             ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
-            Guard guard, ExplicitIndexStore explicitIndexStore )
+            ExplicitIndexStore explicitIndexStore )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
         // To it we add:

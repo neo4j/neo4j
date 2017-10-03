@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
@@ -133,7 +134,8 @@ public class ConsistencyCheckTool
     {
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration ) )
         {
-            if ( new RecoveryRequiredChecker( fs, pageCache ).isRecoveryRequiredAt( storeDir ) )
+            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, new Monitors() );
+            if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new ToolFailureException( Strings.joinAsLines(
                         "Active logical log detected, this might be a source of inconsistencies.",

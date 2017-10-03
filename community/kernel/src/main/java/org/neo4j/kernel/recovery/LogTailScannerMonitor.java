@@ -17,35 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-
-public class DeadSimpleLogVersionRepository implements LogVersionRepository
+public interface LogTailScannerMonitor
 {
-    private volatile long logVersion;
-
-    public DeadSimpleLogVersionRepository( long initialLogVersion )
-    {
-        this.logVersion = initialLogVersion;
-    }
-
-    @Override
-    public long incrementAndGetVersion()
-    {
-        logVersion++;
-        return logVersion;
-    }
-
-    @Override
-    public long getCurrentLogVersion()
-    {
-        return logVersion;
-    }
-
-    @Override
-    public void setCurrentLogVersion( long version )
-    {
-        this.logVersion = version;
-    }
+    void corruptedLogFile( long version, Throwable t );
 }

@@ -17,35 +17,41 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction;
+package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
-public class DeadSimpleLogVersionRepository implements LogVersionRepository
+public interface RecoveryMonitor
 {
-    private volatile long logVersion;
-
-    public DeadSimpleLogVersionRepository( long initialLogVersion )
+    default void recoveryRequired( LogPosition recoveryPosition )
     {
-        this.logVersion = initialLogVersion;
+        // noop
     }
 
-    @Override
-    public long incrementAndGetVersion()
+    default void transactionRecovered( long txId )
     {
-        logVersion++;
-        return logVersion;
+        //noop
     }
 
-    @Override
-    public long getCurrentLogVersion()
+    default void recoveryCompleted( int numberOfRecoveredTransactions )
     {
-        return logVersion;
+        //noop
     }
 
-    @Override
-    public void setCurrentLogVersion( long version )
+    default void reverseStoreRecoveryCompleted( long lowestRecoveredTxId )
     {
-        this.logVersion = version;
+        //noop
+    }
+
+    default void failToRecoverTransactionsAfterCommit( Throwable t, LogEntryCommit commitEntry,
+            LogPosition recoveryToPosition )
+    {
+        //noop
+    }
+
+    default void failToRecoverTransactionsAfterPosition( Throwable t, LogPosition recoveryFromPosition )
+    {
+        //noop
     }
 }

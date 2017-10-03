@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressM
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
@@ -61,6 +60,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.FormattedLogProvider;
@@ -123,7 +123,8 @@ public class StoreMigration
         try ( PageCache pageCache = createPageCache( fs, config ) )
         {
             Dependencies deps = new Dependencies();
-            deps.satisfyDependencies( fs, config, explicitIndexProvider, pageCache, logService, new Monitors(),
+            Monitors monitors = new Monitors();
+            deps.satisfyDependencies( fs, config, explicitIndexProvider, pageCache, logService, monitors,
                     RecoveryCleanupWorkCollector.IMMEDIATE );
 
             KernelContext kernelContext = new SimpleKernelContext( storeDirectory, DatabaseInfo.UNKNOWN, deps );
@@ -132,7 +133,7 @@ public class StoreMigration
                     deps, ignore() ) );
 
             final PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, PhysicalLogFile.DEFAULT_NAME, fs );
-            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+            LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(), monitors );
 
             // Add the kernel store migrator
             life.start();

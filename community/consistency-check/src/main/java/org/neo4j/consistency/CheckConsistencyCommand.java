@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 
 import static java.lang.String.format;
@@ -223,7 +224,9 @@ public class CheckConsistencyCommand implements AdminCommand
               PageCache pageCache = ConfigurableStandalonePageCacheFactory
                       .createPageCache( fileSystem, additionalConfiguration ) )
         {
-            if ( new RecoveryRequiredChecker( fileSystem, pageCache ).isRecoveryRequiredAt( storeDir ) )
+            RecoveryRequiredChecker requiredChecker =
+                    new RecoveryRequiredChecker( fileSystem, pageCache, new Monitors() );
+            if ( requiredChecker.isRecoveryRequiredAt( storeDir ) )
             {
                 throw new CommandFailed(
                         Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",

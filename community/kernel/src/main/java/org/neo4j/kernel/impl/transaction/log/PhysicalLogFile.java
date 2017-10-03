@@ -31,6 +31,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -278,7 +279,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
 
         if ( !fileSystem.fileExists( fileToOpen ) )
         {
-            throw new FileNotFoundException( String.format( "File does not exist [%s]",
+            throw new FileNotFoundException( format( "File does not exist [%s]",
                     fileToOpen.getCanonicalPath() ) );
         }
 
@@ -289,12 +290,17 @@ public class PhysicalLogFile implements LogFile, Lifecycle
 
             ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
             LogHeader header = readLogHeader( buffer, rawChannel, true, fileToOpen );
-            assert header != null && header.logVersion == version;
+            if ( (header == null) || (header.logVersion != version) )
+            {
+                throw new IllegalStateException(
+                        format( "Unexpected log file header. Expected header version: %d, actual header: %s", version,
+                                header != null ? header.toString() : "null header." ) );
+            }
             return new PhysicalLogVersionedStoreChannel( rawChannel, version, header.logFormatVersion );
         }
         catch ( FileNotFoundException cause )
         {
-            throw Exceptions.withCause( new FileNotFoundException( String.format( "File could not be opened [%s]",
+            throw Exceptions.withCause( new FileNotFoundException( format( "File could not be opened [%s]",
                     fileToOpen.getCanonicalPath() ) ), cause );
         }
         catch ( Throwable unexpectedError )
@@ -374,7 +380,7 @@ public class PhysicalLogFile implements LogFile, Lifecycle
     @Override
     public File currentLogFile()
     {
-        return logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() );
+        return logFiles.getHighestLogFile();
     }
 
     @Override

@@ -30,6 +30,9 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
@@ -46,13 +49,18 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
+    private final Monitors monitors;
+    private final boolean failOnCorruptedLogFiles;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors,
+            boolean failOnCorruptedLogFiles )
     {
         this.logFile = logFile;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
+        this.monitors = monitors;
+        this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
 
     @Override
@@ -62,9 +70,12 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     }
 
     @Override
-    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws IOException
+    public TransactionCursor getTransactionsInReverseOrder( LogPosition backToPosition ) throws
+            IOException
     {
-        return ReversedMultiFileTransactionCursor.fromLogFile( logFile, backToPosition );
+        return ReversedMultiFileTransactionCursor
+                .fromLogFile( logFile, backToPosition, failOnCorruptedLogFiles,
+                        monitors.newMonitor( ReversedTransactionCursorMonitor.class ) );
     }
 
     @Override

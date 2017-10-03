@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -50,6 +52,8 @@ public class RecoveryRequiredCheckerTest
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule ).around( testDirectory );
 
+    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private final Monitors monitors = new Monitors();
     private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
 
@@ -65,7 +69,7 @@ public class RecoveryRequiredCheckerTest
     public void shouldNotWantToRecoverIntactStore() throws Exception
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystem, pageCache );
+        RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystem, pageCache );
 
         assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
     }
@@ -77,7 +81,7 @@ public class RecoveryRequiredCheckerTest
         {
 
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
         }
@@ -90,7 +94,7 @@ public class RecoveryRequiredCheckerTest
         {
             PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoverer = new RecoveryRequiredChecker( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache );
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( true ) );
 
@@ -98,6 +102,11 @@ public class RecoveryRequiredCheckerTest
 
             assertThat( recoverer.isRecoveryRequiredAt( storeDir ), is( false ) );
         }
+    }
+
+    private RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache )
+    {
+        return new RecoveryRequiredChecker( fileSystem, pageCache, monitors );
     }
 
     private FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem )

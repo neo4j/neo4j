@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFil
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.recovery.LogTailScanner;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -132,7 +132,7 @@ public class UpgradableDatabase
         // check version
         try
         {
-            if ( !tailScanner.getTailInformation().commitsAfterLastCheckPoint )
+            if ( !tailScanner.getTailInformation().commitsAfterLastCheckpoint() )
             {
                 return new Result( Result.Outcome.ok, null, null );
             }

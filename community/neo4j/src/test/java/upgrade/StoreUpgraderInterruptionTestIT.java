@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
@@ -52,9 +53,11 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -80,6 +83,8 @@ public class StoreUpgraderInterruptionTestIT
 
     @Parameterized.Parameter
     public String version;
+    private AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private SimpleLogService logService = new SimpleLogService( logProvider );
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
@@ -152,7 +157,8 @@ public class StoreUpgraderInterruptionTestIT
     private UpgradableDatabase getUpgradableDatabase( StoreVersionCheck check )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fs );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>() );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, fs, new VersionAwareLogEntryReader<>(),
+                new Monitors() );
         return new UpgradableDatabase( check, Standard.LATEST_RECORD_FORMATS, tailScanner );
     }
 

@@ -17,18 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.reverse;
 
 import java.io.IOException;
 
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogFile;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-import static org.neo4j.kernel.impl.transaction.log.EagerlyReversedTransactionCursor.eagerlyReverse;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedTransactionCursor.eagerlyReverse;
 
 /**
  * Similar to {@link PhysicalTransactionCursor} and actually uses it internally. This main difference is that transactions
@@ -42,13 +49,47 @@ import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHA
  *
  * @see ReversedSingleFileTransactionCursor
  */
-class ReversedMultiFileTransactionCursor implements TransactionCursor
+public class ReversedMultiFileTransactionCursor implements TransactionCursor
 {
     private final LogPosition backToPosition;
     private final ThrowingFunction<LogPosition,TransactionCursor,IOException> cursorFactory;
 
     private long currentVersion;
     private TransactionCursor currentLogTransactionCursor;
+
+    /**
+     * Utility method for creating a {@link ReversedMultiFileTransactionCursor} with a {@link LogFile} as the source of
+     * {@link TransactionCursor} for each log version.
+     *
+     * @param logFile {@link LogFile} to supply log entries forming transactions.
+     * @param backToPosition {@link LogPosition} to read backwards to.
+     * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
+     * @param monitor reverse transaction cursor monitor
+     * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
+     * and including transaction starting at {@link LogPosition}.
+     * @throws IOException on I/O error.
+     */
+    public static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition,
+            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor ) throws IOException
+    {
+        long highestVersion = logFile.currentLogVersion();
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        ThrowingFunction<LogPosition,TransactionCursor,IOException> factory = position ->
+        {
+            ReadableLogChannel channel = logFile.getReader( position, NO_MORE_CHANNELS );
+            if ( channel instanceof ReadAheadLogChannel )
+            {
+                // This is a channel which can be positioned explicitly and is the typical case for such channels
+                // Let's take advantage of this fact and use a bit smarter reverse implementation
+                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader,
+                        failOnCorruptedLogFiles, monitor );
+            }
+
+            // Fall back to simply eagerly reading each single log file and reversing in memory
+            return eagerlyReverse( new PhysicalTransactionCursor<>( channel, logEntryReader ) );
+        };
+        return new ReversedMultiFileTransactionCursor( factory, highestVersion, backToPosition );
+    }
 
     /**
      * @param cursorFactory creates {@link TransactionCursor} from a given {@link LogPosition}. The returned cursor must
@@ -63,36 +104,6 @@ class ReversedMultiFileTransactionCursor implements TransactionCursor
         this.cursorFactory = cursorFactory;
         this.backToPosition = backToPosition;
         this.currentVersion = highestVersion + 1;
-    }
-
-    /**
-     * Utility method for creating a {@link ReversedMultiFileTransactionCursor} with a {@link LogFile} as the source of
-     * {@link TransactionCursor} for each log version.
-     *
-     * @param logFile {@link LogFile} to supply log entries forming transactions.
-     * @param backToPosition {@link LogPosition} to read backwards to.
-     * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
-     * and including transaction starting at {@link LogPosition}.
-     * @throws IOException on I/O error.
-     */
-    static TransactionCursor fromLogFile( LogFile logFile, LogPosition backToPosition ) throws IOException
-    {
-        long highestVersion = logFile.currentLogVersion();
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        ThrowingFunction<LogPosition,TransactionCursor,IOException> factory = position ->
-        {
-            ReadableLogChannel channel = logFile.getReader( position, NO_MORE_CHANNELS );
-            if ( channel instanceof ReadAheadLogChannel )
-            {
-                // This is a channel which can be positioned explicitly and is the typical case for such channels
-                // Let's take advantage of this fact and use a bit smarter reverse implementation
-                return new ReversedSingleFileTransactionCursor( (ReadAheadLogChannel) channel, logEntryReader );
-            }
-
-            // Fall back to simply eagerly reading each single log file and reversing in memory
-            return eagerlyReverse( new PhysicalTransactionCursor<>( channel, logEntryReader ) );
-        };
-        return new ReversedMultiFileTransactionCursor( factory, highestVersion, backToPosition );
     }
 
     @Override
