@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.Condition
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals, Expression, FunctionInvocation, Property}
+import org.neo4j.cypher.internal.v3_4.functions
 
 case object normalizedEqualsArguments extends Condition {
   def apply(that: Any): Seq[String] = {

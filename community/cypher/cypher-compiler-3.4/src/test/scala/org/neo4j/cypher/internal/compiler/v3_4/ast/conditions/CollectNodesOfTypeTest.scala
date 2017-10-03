@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.aux.v3_4.ASTNode
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Match}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.collectNodesOfType
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions.{EveryPath, NodePattern, Pattern, Variable}
 
-class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport{
+class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
     private val collector: (Any => Seq[Variable]) = collectNodesOfType[Variable]()
 

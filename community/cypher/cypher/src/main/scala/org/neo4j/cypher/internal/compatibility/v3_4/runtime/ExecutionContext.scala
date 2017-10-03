@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.MutableMaps
-import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable.{Map => MutableMap}

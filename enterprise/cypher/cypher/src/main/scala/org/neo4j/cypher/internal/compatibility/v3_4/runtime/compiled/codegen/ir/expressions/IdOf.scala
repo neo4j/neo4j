@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols
+import org.neo4j.cypher.internal.aux.v3_4.symbols
 
 case class IdOf(variable: Variable) extends CodeGenExpression {
 

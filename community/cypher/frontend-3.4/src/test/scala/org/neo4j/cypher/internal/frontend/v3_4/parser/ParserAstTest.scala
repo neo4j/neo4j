@@ -16,9 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.TestName
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, ast}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.TestName
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala._
 
 trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
@@ -28,23 +28,23 @@ trait ParserAstTest[AST] extends ParserTest[AST, AST] with TestName {
 
   final def failsToParse(implicit parser: Rule1[AST]): Unit = assertFails(testName)
 
-  private type Expression = (InputPosition) => ast.Expression
+  private type Expression = (InputPosition) => exp.Expression
 
-  final def id(id: String): (InputPosition) => Variable = ast.Variable(id)(_)
+  final def id(id: String): (InputPosition) => exp.Variable = exp.Variable(id)(_)
 
-  final def lt(lhs: Expression, rhs: Expression): Expression = { pos => ast.LessThan(lhs(pos), rhs(pos))(pos) }
+  final def lt(lhs: Expression, rhs: Expression): Expression = { pos => exp.LessThan(lhs(pos), rhs(pos))(pos) }
 
-  final def lte(lhs: Expression, rhs: Expression): Expression = { pos => ast.LessThanOrEqual(lhs(pos), rhs(pos))(pos) }
+  final def lte(lhs: Expression, rhs: Expression): Expression = { pos => exp.LessThanOrEqual(lhs(pos), rhs(pos))(pos) }
 
-  final def gt(lhs: Expression, rhs: Expression): Expression = { pos => ast.GreaterThan(lhs(pos), rhs(pos))(pos) }
+  final def gt(lhs: Expression, rhs: Expression): Expression = { pos => exp.GreaterThan(lhs(pos), rhs(pos))(pos) }
 
-  final def gte(lhs: Expression, rhs: Expression): Expression = { pos => ast.GreaterThanOrEqual(lhs(pos), rhs(pos))(pos) }
+  final def gte(lhs: Expression, rhs: Expression): Expression = { pos => exp.GreaterThanOrEqual(lhs(pos), rhs(pos))(pos) }
 
-  final def eq(lhs: Expression, rhs: Expression): Expression = { pos => ast.Equals(lhs(pos), rhs(pos))(pos) }
+  final def eq(lhs: Expression, rhs: Expression): Expression = { pos => exp.Equals(lhs(pos), rhs(pos))(pos) }
 
-  final def ne(lhs: Expression, rhs: Expression): Expression = { pos => ast.NotEquals(lhs(pos), rhs(pos))(pos) }
+  final def ne(lhs: Expression, rhs: Expression): Expression = { pos => exp.NotEquals(lhs(pos), rhs(pos))(pos) }
 
-  final def and(lhs: Expression, rhs: Expression): Expression = { pos => ast.And(lhs(pos), rhs(pos))(pos) }
+  final def and(lhs: Expression, rhs: Expression): Expression = { pos => exp.And(lhs(pos), rhs(pos))(pos) }
 
-  final def ands(parts: Expression*): Expression = { pos => ast.Ands(parts.map(_(pos)).toSet)(pos) }
+  final def ands(parts: Expression*): Expression = { pos => exp.Ands(parts.map(_(pos)).toSet)(pos) }
 }

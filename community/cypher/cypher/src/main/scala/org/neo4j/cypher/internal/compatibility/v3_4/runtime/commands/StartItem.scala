@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.TypeSafe
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.ast.UnsignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.v3_4.expressions.UnsignedDecimalIntegerLiteral
 
 trait NodeStartItemVariables extends StartItem {
   def variables: Seq[(String, CypherType)] = Seq(variableName -> CTNode)

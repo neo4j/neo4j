@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.UserDefinedFunctionInvocation
 import org.neo4j.cypher.internal.v3_4.logical.plans.{QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.{CoerceTo, Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v3_4.functions.UserDefinedFunctionInvocation
 
 object ResolvedFunctionInvocation {
 
@@ -38,7 +40,7 @@ object ResolvedFunctionInvocation {
 
 /**
   * A ResolvedFunctionInvocation is a user-defined function where the signature
-  * has been resolve, i.e. verified that it exists in the database
+  * has been resolved, i.e. verified that it exists in the database
   *
   * @param qualifiedName The qualified name of the function.
   * @param fcnSignature Either `Some(signature)` if the signature was resolved, or
@@ -50,19 +52,20 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
                                       fcnSignature: Option[UserFunctionSignature],
                                       callArguments: IndexedSeq[Expression])
                                      (val position: InputPosition)
-  extends Expression with UserDefinedFunctionInvocation {
+  extends Expression with UserDefinedFunctionInvocation with SemanticCheckableExpression {
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
-    val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
-    val coercedArguments =
-      callArguments
-        .zip(optInputFields)
-        .map {
-          case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
-        }
-    copy(callArguments = coercedArguments)(position)
+      val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
+      val coercedArguments =
+        callArguments
+          .zip(optInputFields)
+          .map {
+            case (arg, optField) =>
+              optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
+          }
+      copy(callArguments = coercedArguments)(position)
+
     case None => this
   }
 
@@ -78,7 +81,8 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
           //default values are checked at load time
           signature.inputSignature.zip(callArguments).map {
             case (field, arg) =>
-              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+              SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
+                SemanticExpressionCheck.expectType(field.typ.covariant, arg)
           }.foldLeft(success)(_ chain _)
         } else {
           val msg = (if (signature.inputSignature.isEmpty) "arguments"

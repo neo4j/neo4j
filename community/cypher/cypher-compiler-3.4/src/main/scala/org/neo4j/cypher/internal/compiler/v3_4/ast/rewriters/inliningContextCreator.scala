@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, NodePattern, RelationshipPattern, Variable}
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {
 
@@ -28,13 +28,13 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
     input.treeFold(InliningContext()) {
       // We cannot inline expressions in a DISTINCT with clause, projecting the result of the expression
       // would change the result of the distinctification
-      case withClause: With if !withClause.distinct =>
+      case withClause: ast.With if !withClause.distinct =>
         context =>
           (context.enterQueryPart(aliasedReturnItems(withClause.returnItems.items)), Some(identity))
 
       // When just passing a variable through a WITH, do not count the variable as used. This case shortcuts the
       // tree folding so the variables are not tracked.
-      case AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
+      case ast.AliasedReturnItem(Variable(n1), alias@Variable(n2)) if n1 == n2 =>
         context => (context, None)
 
       case variable: Variable =>
@@ -42,7 +42,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
           (context.trackUsageOfVariable(variable), Some(identity))
 
       // When a variable is used in ORDER BY, it should never be inlined
-      case sortItem: SortItem =>
+      case sortItem: ast.SortItem =>
         context =>
           (context.spoilVariable(sortItem.expression.asInstanceOf[Variable]), Some(identity))
 
@@ -61,6 +61,6 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
     if (context.isAliasedVarible(variable)) context
     else context.spoilVariable(variable)
 
-  private def aliasedReturnItems(items: Seq[ReturnItem]): Map[Variable, Expression] =
-    items.collect { case AliasedReturnItem(expr, ident) => ident -> expr }.toMap
+  private def aliasedReturnItems(items: Seq[ast.ReturnItem]): Map[Variable, Expression] =
+    items.collect { case ast.AliasedReturnItem(expr, ident) => ident -> expr }.toMap
 }

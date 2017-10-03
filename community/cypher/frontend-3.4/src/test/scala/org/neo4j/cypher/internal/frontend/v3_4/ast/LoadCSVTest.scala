@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticError, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.{StringLiteral, Variable}
 
 class LoadCSVTest extends CypherFunSuite {
 

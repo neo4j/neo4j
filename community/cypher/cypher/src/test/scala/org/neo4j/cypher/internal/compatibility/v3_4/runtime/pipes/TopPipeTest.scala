@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.helpers.ValueUtils
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 import scala.util.Random
 

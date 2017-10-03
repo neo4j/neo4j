@@ -16,9 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.aux.v3_4.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 
-trait Statement extends ASTNode with ASTPhrase {
+trait Statement extends ASTNode {
   def semanticCheck: SemanticCheck
 
   def returnColumns: List[String]

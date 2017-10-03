@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.LabelName
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 case class NodeByLabelScan(idName: IdName, label: LabelName, argumentIds: Set[IdName])
                           (val solved: PlannerQuery with CardinalityEstimation)

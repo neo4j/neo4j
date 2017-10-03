@@ -37,10 +37,13 @@ import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSeq
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.frontend.v3_4.parser.CypherParser
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_4.rewriters.Never
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 import scala.collection.mutable
 
@@ -84,9 +87,12 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedSemanticTable: SemanticTable = {
     val m = mock[SemanticTable]
-    when(m.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
+    when(m.resolvedLabelNames).thenReturn(mutable.Map.empty[String, LabelId])
     when(m.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
     when(m.resolvedRelTypeNames).thenReturn(mutable.Map.empty[String, RelTypeId])
+    when(m.id(any[PropertyKeyName]())).thenReturn(None)
+    when(m.id(any[LabelName])).thenReturn(None)
+    when(m.id(any[RelTypeName])).thenReturn(None)
     m
   }
 

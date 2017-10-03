@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.ir.v3_4
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions.Labels
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticTable, symbols}
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions.Labels
 
 import scala.annotation.tailrec
 
@@ -158,8 +159,8 @@ trait UpdateGraph {
         case p: Property => p
       }.toSet
 
-      val maybeNode: Property => Boolean = maybeType(semanticTable, symbols.CTNode.invariant)
-      val maybeRel: Property => Boolean = maybeType(semanticTable, symbols.CTRelationship.invariant)
+      val maybeNode: Property => Boolean = maybeType(semanticTable, CTNode.invariant)
+      val maybeRel: Property => Boolean = maybeType(semanticTable, CTRelationship.invariant)
 
       setNodePropertyOverlap(propertiesReadInHorizon.filter(maybeNode).map(_.propertyKey)) ||
       setRelPropertyOverlap(propertiesReadInHorizon.filter(maybeRel).map(_.propertyKey))
@@ -312,7 +313,7 @@ trait UpdateGraph {
     semanticTable.types.get(p.map) match {
       case Some(expressionTypeInfo) =>
         val actualType = expressionTypeInfo.actual
-        actualType == typeSpec || actualType == symbols.CTAny.invariant
+        actualType == typeSpec || actualType == CTAny.invariant
 
       case None => throw new InternalException(s"Expression ${p.map} has to type from semantic analysis")
     }

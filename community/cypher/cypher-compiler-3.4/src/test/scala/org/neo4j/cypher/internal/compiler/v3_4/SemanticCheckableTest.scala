@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4
 
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.Variable
 
-class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
+class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling {
 
   test("shouldChainSemanticCheckableFunctions") {
     val state1 = SemanticState.clean
@@ -194,7 +196,11 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticChecking {
   }
 
   test("shouldScopeState") {
-    val func1: SemanticCheck = Variable("name")(DummyPosition(0)).declareVariable(CTNode)
+    val func1 =
+      (s:SemanticState) => {
+        val variable = Variable("name")(DummyPosition(0))
+        s.declareVariable(variable, CTNode)
+      }
 
     val error = SemanticError("an error", DummyPosition(0))
     val func2: SemanticCheck = s => {

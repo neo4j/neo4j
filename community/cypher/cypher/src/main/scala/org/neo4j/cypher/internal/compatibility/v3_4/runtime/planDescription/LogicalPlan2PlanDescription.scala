@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, PlannerName, ast}
 import org.neo4j.cypher.internal.ir.v3_4.IdName
-import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression}
 
 object LogicalPlan2PlanDescription extends ((LogicalPlan, PlannerName) => InternalPlanDescription) {
 
@@ -53,7 +55,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
       case _: AllNodesScan =>
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq.empty, variables)
 
-      case _: logical.plans.Argument =>
+      case _: plans.Argument =>
         PlanDescriptionImpl(id, "Argument", NoChildren, Seq.empty, variables)
 
       case NodeByLabelScan(_, label, _) =>
@@ -376,7 +378,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean)
 
   private def getDescriptions(label: LabelToken,
                               propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[ast.Expression],
+                              valueExpr: QueryExpression[ASTExpression],
                               unique: Boolean,
                               readOnly: Boolean): (String, Argument) = {
 

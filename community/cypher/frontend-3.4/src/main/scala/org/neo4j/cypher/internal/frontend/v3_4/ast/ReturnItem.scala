@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition, InternalException}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
 import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, MapProjection, Variable}
 
-sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+sealed trait ReturnItemsDef extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
   /**
     * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
     * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
@@ -44,7 +47,10 @@ final case class DiscardCardinality()(val position: InputPosition) extends Retur
   private def _success(s: SemanticState) = success(s)
 }
 
-final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItemsDef {
+final case class ReturnItems(
+                              includeExisting: Boolean,
+                              items: Seq[ReturnItem]
+                            )(val position: InputPosition) extends ReturnItemsDef with SemanticAnalysisTooling {
 
   override def withExisting(includeExisting: Boolean): ReturnItemsDef =
     copy(includeExisting = includeExisting)(position)
@@ -66,8 +72,8 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        variable.declareVariable(item.expression.types, positions)
-      case Some(variable) => variable.declareVariable(item.expression.types)
+        declareVariable(variable, types(item.expression), positions)
+      case Some(variable) => declareVariable(variable, types(item.expression))
       case None           => (state) => SemanticCheckResult(state, Seq.empty)
     })
 
@@ -83,13 +89,13 @@ final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(v
   override def containsAggregate = items.exists(_.expression.containsAggregate)
 }
 
-sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait ReturnItem extends ASTNode with SemanticCheckable {
   def expression: Expression
   def alias: Option[Variable]
   def name: String
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult
 
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
+  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
 }
 
 case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
@@ -102,6 +108,10 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult =
     throw new InternalException("Should have been aliased before this step")
+}
+
+object AliasedReturnItem {
+  def apply(v:Variable):AliasedReturnItem = AliasedReturnItem(v.copyId, v.copyId)(v.position)
 }
 
 //TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't

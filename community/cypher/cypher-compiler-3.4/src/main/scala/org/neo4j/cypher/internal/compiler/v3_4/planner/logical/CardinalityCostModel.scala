@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{HasLabels, Property}
-import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, Property}
 
 object CardinalityCostModel extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")

@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, SemanticTable}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureCall, Projection, ResolvedCall, SingleRow}
+import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 
 class PlanEventHorizonTest extends CypherFunSuite {
 

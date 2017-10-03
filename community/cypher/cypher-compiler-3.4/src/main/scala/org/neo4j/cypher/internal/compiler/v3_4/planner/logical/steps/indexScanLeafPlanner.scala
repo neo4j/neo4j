@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.notification.IndexLookupUnfulfillableNotification
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AsDynamicPropertyNonScannable, AsStringRangeNonSeekable, LogicalPlan}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
@@ -89,13 +90,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels;
          indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName);
-         labelId <- labelName.id)
+         labelId <- semanticTable.id(labelName))
       yield {
         val hint = qg.hints.collectFirst {
           case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties)
             if properties.map(_.name) == Seq(propertyKeyName) => hint
         }
-        val keyToken = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
+        val keyToken = PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head)
         val labelToken = LabelToken(labelName, labelId)
         val predicates = Seq(predicate, labelPredicate)
         planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)

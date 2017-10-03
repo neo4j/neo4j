@@ -294,6 +294,12 @@
       </exclusions>
     </dependency>
 
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-aux-3.4</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- neo4j-cypher test -->
 
     <dependency>
@@ -311,6 +317,15 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-cypher-aux-3.4</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
 
     <!-- neo4j-cypher re-include excluded (with correct version) -->
 

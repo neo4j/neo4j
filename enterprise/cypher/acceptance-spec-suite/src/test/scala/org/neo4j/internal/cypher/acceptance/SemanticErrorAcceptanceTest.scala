@@ -359,31 +359,31 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     val mess = "Can't use aggregating expressions inside of expressions executing over lists"
     executeAndEnsureError(
       "MATCH (n) RETURN ALL(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 27 (offset: 26))")
+      s"$mess (line 1, column 45 (offset: 44))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN ANY(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 27 (offset: 26))")
+      s"$mess (line 1, column 45 (offset: 44))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN NONE(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 28 (offset: 27))")
+      s"$mess (line 1, column 46 (offset: 45))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN SINGLE(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 30 (offset: 29))")
+      s"$mess (line 1, column 48 (offset: 47))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN EXTRACT(x in [1,2,3,4,5] | count(*) = 0)",
-      s"$mess (line 1, column 31 (offset: 30))")
+      s"$mess (line 1, column 45 (offset: 44))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN FILTER(x in [1,2,3,4,5] WHERE count(*) = 0)",
-      s"$mess (line 1, column 30 (offset: 29))")
+      s"$mess (line 1, column 48 (offset: 47))")
 
     executeAndEnsureError(
       "MATCH (n) RETURN REDUCE(acc = 0, x in [1,2,3,4,5] | acc + count(*))",
-      s"$mess (line 1, column 57 (offset: 56))")
+      s"$mess (line 1, column 59 (offset: 58))")
   }
 
   test("error message should contain full query") {

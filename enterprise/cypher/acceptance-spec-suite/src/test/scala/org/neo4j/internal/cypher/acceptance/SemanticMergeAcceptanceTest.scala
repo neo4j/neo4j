@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{ResourceIterator, Result}
 import org.scalacheck.{Gen, Shrink}

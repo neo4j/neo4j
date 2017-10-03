@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_4.CypherOrdering
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class ComparablePredicateTest extends CypherFunSuite {

@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
 
+import org.neo4j.cypher.internal.aux.v3_4.IncomparableValuesException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTBoolean
-import org.neo4j.cypher.internal.frontend.v3_4.{IncomparableValuesException, symbols}
+import org.neo4j.cypher.internal.aux.v3_4.symbols.CTBoolean
+import org.neo4j.cypher.internal.aux.v3_4.symbols
 
 case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 

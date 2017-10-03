@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck, SemanticCheckResult, ast => parserAst}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression}
 
-trait RuntimeExpression extends parserAst.Expression {
-  override def semanticCheck(ctx: Expression.SemanticContext): SemanticCheck = SemanticCheckResult.success
+trait RuntimeExpression extends ASTExpression with SemanticCheckableExpression {
+  override def semanticCheck(ctx: ASTExpression.SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def position: InputPosition = InputPosition.NONE
 }

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.phases
 
-import org.neo4j.cypher.internal.frontend.v3_4.InternalException
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.AssertionRunner
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.AssertionRunner.Thunk
 

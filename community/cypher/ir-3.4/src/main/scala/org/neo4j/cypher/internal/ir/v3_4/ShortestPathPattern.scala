@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_4
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.ShortestPaths
+import org.neo4j.cypher.internal.v3_4.expressions.ShortestPaths
 
 final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
                                     (val expr: ShortestPaths) {

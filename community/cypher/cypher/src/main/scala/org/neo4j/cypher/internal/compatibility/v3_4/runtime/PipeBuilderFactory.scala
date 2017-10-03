@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{NestedPipeExpression, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
-import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
 
 trait PipeBuilderFactory {
 

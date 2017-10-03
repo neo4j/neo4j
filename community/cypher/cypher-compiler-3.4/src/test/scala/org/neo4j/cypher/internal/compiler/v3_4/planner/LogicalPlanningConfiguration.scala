@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, Cost, PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
@@ -60,8 +61,8 @@ trait LogicalPlanningConfigurationAdHocSemanticTable {
 
   override def updateSemanticTableWithTokens(table: SemanticTable): SemanticTable = {
     def addLabelIfUnknown(labelName: String) =
-      if (!table.resolvedLabelIds.contains(labelName))
-        table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
+      if (!table.resolvedLabelNames.contains(labelName))
+        table.resolvedLabelNames.put(labelName, LabelId(table.resolvedLabelNames.size))
     def addPropertyKeyIfUnknown(property: String) =
       if (!table.resolvedPropertyKeyNames.contains(property))
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))

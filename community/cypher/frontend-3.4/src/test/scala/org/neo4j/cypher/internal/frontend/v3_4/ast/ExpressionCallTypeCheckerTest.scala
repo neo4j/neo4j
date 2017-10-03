@@ -16,28 +16,29 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticExpressionCheck, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, TypeSignature}
 
 class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should accept a specified type") {
-    typeCheckSuccess(Seq(ExpressionSignature(Vector(CTInteger), CTInteger)), Seq(CTInteger), CTInteger)
-    typeCheckSuccess(Seq(ExpressionSignature(Vector(CTInteger), CTString)), Seq(CTInteger), CTString)
-    typeCheckSuccess(Seq(ExpressionSignature(Vector(CTInteger), CTString),
-                         ExpressionSignature(Vector(CTFloat), CTBoolean)), Seq(CTNumber.covariant), CTBoolean | CTString)
+    typeCheckSuccess(Seq(TypeSignature(Vector(CTInteger), CTInteger)), Seq(CTInteger), CTInteger)
+    typeCheckSuccess(Seq(TypeSignature(Vector(CTInteger), CTString)), Seq(CTInteger), CTString)
+    typeCheckSuccess(Seq(TypeSignature(Vector(CTInteger), CTString),
+                         TypeSignature(Vector(CTFloat), CTBoolean)), Seq(CTNumber.covariant), CTBoolean | CTString)
   }
 
   test("any type") {
-    typeCheckSuccess(Seq(ExpressionSignature(Vector(CTInteger), CTBoolean),
-                         ExpressionSignature(Vector(CTFloat), CTFloat)), Seq(CTAny.covariant), CTBoolean | CTFloat)
+    typeCheckSuccess(Seq(TypeSignature(Vector(CTInteger), CTBoolean),
+                         TypeSignature(Vector(CTFloat), CTFloat)), Seq(CTAny.covariant), CTBoolean | CTFloat)
   }
 
   test("two ExpressionSignatures") {
-    val sig = Seq(ExpressionSignature(Vector(CTString), CTInteger),
-                  ExpressionSignature(Vector(CTNumber), CTInteger))
+    val sig = Seq(TypeSignature(Vector(CTString), CTInteger),
+                  TypeSignature(Vector(CTNumber), CTInteger))
     typeCheckSuccess(sig, Seq(CTAny.covariant), CTInteger)
     typeCheckSuccess(sig, Seq(CTNumber.covariant), CTInteger)
     typeCheckSuccess(sig, Seq(CTFloat), CTInteger)
@@ -46,24 +47,24 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
   }
 
   test("fail on mismatch with ExpressionSignature") {
-    typeCheckFail(Seq(ExpressionSignature(Vector(CTBoolean), CTRelationship)), Seq(CTNode)) { errs =>
+    typeCheckFail(Seq(TypeSignature(Vector(CTBoolean), CTRelationship)), Seq(CTNode)) { errs =>
       errs should contain("Type mismatch: expected Boolean but was Node")
     }
-    typeCheckFail(Seq(ExpressionSignature(Vector(CTBoolean), CTRelationship),
-                      ExpressionSignature(Vector(CTString), CTRelationship),
-                      ExpressionSignature(Vector(CTMap), CTRelationship)), Seq(CTNumber)) { errs =>
+    typeCheckFail(Seq(TypeSignature(Vector(CTBoolean), CTRelationship),
+                      TypeSignature(Vector(CTString), CTRelationship),
+                      TypeSignature(Vector(CTMap), CTRelationship)), Seq(CTNumber)) { errs =>
       errs should contain("Type mismatch: expected Boolean, Map, Node, Relationship or String but was Number")
     }
 
-    typeCheckFail(Seq(ExpressionSignature(Vector(CTBoolean, CTNode, CTInteger), CTRelationship)), Seq(CTBoolean, CTNode, CTFloat)) { errs =>
+    typeCheckFail(Seq(TypeSignature(Vector(CTBoolean, CTNode, CTInteger), CTRelationship)), Seq(CTBoolean, CTNode, CTFloat)) { errs =>
       errs should contain("Type mismatch: expected Integer but was Float")
     }
   }
 
   test("should pick the most specific ExpressionSignature of many applicable maps") {
-    val identityExpressionSignature = Seq(ExpressionSignature(Vector(CTMap), CTMap),
-                                          ExpressionSignature(Vector(CTRelationship), CTRelationship),
-                                          ExpressionSignature(Vector(CTNode), CTNode))
+    val identityExpressionSignature = Seq(TypeSignature(Vector(CTMap), CTMap),
+                                          TypeSignature(Vector(CTRelationship), CTRelationship),
+                                          TypeSignature(Vector(CTNode), CTNode))
     typeCheckSuccess(identityExpressionSignature, Seq(CTAny.covariant), CTMap | CTNode | CTRelationship)
     typeCheckSuccess(identityExpressionSignature, Seq(CTMap.invariant), CTMap)
     typeCheckSuccess(identityExpressionSignature, Seq(CTMap.covariant), CTMap | CTNode | CTRelationship)
@@ -72,8 +73,8 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
   }
 
   test("should pick the most specific ExpressionSignature of many applicable numbers") {
-    val identityExpressionSignature = Seq(ExpressionSignature(Vector(CTInteger), CTInteger),
-                                          ExpressionSignature(Vector(CTFloat), CTFloat))
+    val identityExpressionSignature = Seq(TypeSignature(Vector(CTInteger), CTInteger),
+                                          TypeSignature(Vector(CTFloat), CTFloat))
     typeCheckSuccess(identityExpressionSignature, Seq(CTAny.covariant), CTInteger | CTFloat)
     typeCheckSuccess(identityExpressionSignature, Seq(CTNumber.covariant), CTInteger | CTFloat)
     typeCheckSuccess(identityExpressionSignature, Seq(CTInteger), CTInteger)
@@ -81,8 +82,8 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
   }
 
   test("should handle combined typespecs") {
-    val ExpressionSignatures = Seq(ExpressionSignature(Vector(CTInteger, CTInteger), CTInteger),
-                                   ExpressionSignature(Vector(CTNumber, CTNumber), CTFloat))
+    val ExpressionSignatures = Seq(TypeSignature(Vector(CTInteger, CTInteger), CTInteger),
+                                   TypeSignature(Vector(CTNumber, CTNumber), CTFloat))
     typeCheckSuccess(ExpressionSignatures, Seq(CTInteger, CTInteger), CTFloat | CTInteger)
   }
 
@@ -90,29 +91,28 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
     TypeSpec.formatArguments(Seq(CTNumber, CTBoolean, CTString)) should equal("(Number, Boolean, String)")
   }
 
-  private def typeCheck(ExpressionSignatures: Seq[ExpressionSignature], arguments: Seq[TypeSpec]): (TypeExpr, SemanticCheckResult) = {
+  private def typeCheck(ExpressionSignatures: Seq[TypeSignature], arguments: Seq[TypeSpec]): (TypeExpr, SemanticCheckResult) = {
     val argExpressions = arguments.map(DummyExpression(_))
     val semanticState = argExpressions.foldLeft(SemanticState.clean) {
       case (state, inner) => state.specifyType(inner, inner.possibleTypes).right.get
     }
     val expr = TypeExpr(argExpressions)
-    val check = ExpressionCallTypeChecker(ExpressionSignatures).checkTypes(expr)(semanticState)
+    val check = SemanticExpressionCheck.checkTypes(expr, ExpressionSignatures)(semanticState)
     (expr, check)
   }
 
-  private def typeCheckSuccess(ExpressionSignatures: Seq[ExpressionSignature], arguments: Seq[TypeSpec], spec: TypeSpec) = {
+  private def typeCheckSuccess(ExpressionSignatures: Seq[TypeSignature], arguments: Seq[TypeSpec], spec: TypeSpec) = {
     val (expr, check) = typeCheck(ExpressionSignatures, arguments)
     check.errors shouldBe empty
     check.state.typeTable.get(expr).map(_.specified) should equal(Some(spec))
   }
 
-  private def typeCheckFail(ExpressionSignatures: Seq[ExpressionSignature], arguments: Seq[TypeSpec])(checkError: Seq[String] => Unit) = {
+  private def typeCheckFail(ExpressionSignatures: Seq[TypeSignature], arguments: Seq[TypeSpec])(checkError: Seq[String] => Unit) = {
     val (_, check) = typeCheck(ExpressionSignatures, arguments)
     checkError(check.errors.map(_.msg.replaceAll("\\s+", " ")))
   }
 
   case class TypeExpr(override val arguments: Seq[Expression]) extends Expression {
-    override def semanticCheck(ctx: SemanticContext): SemanticCheck = ???
     override def position: InputPosition = pos
   }
 }

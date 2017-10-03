@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenExpression, CodeGenType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.{CodeGenContext, Variable}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.neo4j.cypher.internal.v3_4.{functions => astFunctions}
 
 /*
 * Conversion methods for aggregation functions
@@ -36,9 +37,9 @@ object AggregationConverter {
     context.addProjectedVariable(name, variable)
     e match {
       case func: ast.FunctionInvocation => func.function match {
-        case ast.functions.Count if groupingVariables.isEmpty =>
+        case astFunctions.Count if groupingVariables.isEmpty =>
           SimpleCount(variable, createExpression(func.args(0)), func.distinct)
-        case ast.functions.Count  =>
+        case astFunctions.Count  =>
           new DynamicCount(opName, variable, createExpression(func.args(0)), groupingVariables, func.distinct)
 
         case f => throw new CantCompileQueryException(s"$f is not supported")

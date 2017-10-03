@@ -19,15 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast
 
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_4.{InequalitySeekRange, PrefixRange}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck, SemanticCheckResult}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckResult, SemanticCheckableExpression}
 
-case class PrefixSeekRangeWrapper(range: PrefixRange[Expression])(val position: InputPosition) extends Expression {
+case class PrefixSeekRangeWrapper(
+                                   range: PrefixRange[Expression]
+                                 )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }
 
-case class InequalitySeekRangeWrapper(range: InequalitySeekRange[Expression])(val position: InputPosition) extends Expression {
+
+case class InequalitySeekRangeWrapper(
+                                       range: InequalitySeekRange[Expression]
+                                     )(val position: InputPosition) extends Expression with SemanticCheckableExpression {
   override def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

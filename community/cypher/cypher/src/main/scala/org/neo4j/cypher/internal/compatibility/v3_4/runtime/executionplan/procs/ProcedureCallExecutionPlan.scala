@@ -31,12 +31,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ExternalCSVRe
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.{Argument, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_4.ProcedurePlannerName
-import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
+import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, ProcedureSignature}
+import org.neo4j.cypher.internal.v3_4.logical.plans.ProcedureSignature
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.virtual.MapValue
 

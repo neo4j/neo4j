@@ -21,10 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 
 import org.neo4j.cypher.internal.compiler.v3_4.phases._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Query, _}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.Query
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.v3_4.expressions.{LabelName, PropertyKeyName, RelTypeName}
 
 object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
@@ -49,7 +51,7 @@ object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   private def resolveLabelName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     tokenContext.getOptLabelId(name).map(LabelId) match {
       case Some(id) =>
-        semanticTable.resolvedLabelIds += name -> id
+        semanticTable.resolvedLabelNames += name -> id
       case None =>
     }
   }

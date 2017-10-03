@@ -16,58 +16,15 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, IdentityMap, SemanticDirection, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.IdentityMap
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
   val expression = DummyExpression(CTAny, DummyPosition(0))
-
-  test("shouldReturnCalculatedType") {
-    expression.types(SemanticState.clean) should equal(TypeSpec.all)
-  }
-
-  test("shouldReturnTypeSetOfAllIfTypesRequestedButNotEvaluated") {
-    expression.types(SemanticState.clean) should equal(TypeSpec.all)
-  }
-
-  test("shouldReturnSpecifiedAndConstrainedTypes") {
-    val state = (
-      expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTNumber.covariant)
-    )(SemanticState.clean).state
-
-    expression.types(state) should equal(CTInteger.invariant)
-  }
-
-  test("shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
-    val result = (
-      expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTString.covariant)
-    )(SemanticState.clean)
-
-    result.errors should have size 1
-    result.errors.head.position should equal(expression.position)
-    expression.types(result.state) shouldBe empty
-    result.errors.head.msg should equal ("Type mismatch: expected String but was Integer or Node")
-  }
-
-  test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
-    val result = (
-      expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTString.covariant, (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
-    )(SemanticState.clean)
-
-    result.errors should have size 1
-    result.errors.head.position should equal(expression.position)
-    expression.types(result.state) shouldBe empty
-
-    assert(result.errors.size === 1)
-    assert(result.errors.head.position === expression.position)
-    assert(result.errors.head.msg == "Type mismatch: lhs was String yet rhs was Integer or Node")
-    assert(expression.types(result.state).isEmpty)
-  }
 
   test("should compute dependencies of simple expressions") {
     varFor("a").dependencies should equal(Set(varFor("a")))

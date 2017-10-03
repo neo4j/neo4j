@@ -16,8 +16,25 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.TypeSpec
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.aux.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticError
+import org.neo4j.cypher.internal.aux.v3_4.symbols.TypeSpec
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
-case class DummyExpression(possibleTypes: TypeSpec, position: InputPosition = DummyPosition(0))
-  extends Expression with SimpleTyping
+case class DummyExpression(
+                            possibleTypes: TypeSpec,
+                            position: InputPosition = DummyPosition(0)
+                          ) extends Expression
+
+case class ErrorExpression(
+                            error: SemanticError,
+                            possibleTypes: TypeSpec,
+                            position: InputPosition = DummyPosition(0)
+                          ) extends Expression
+
+case class CustomExpression(
+                             semanticCheck: (SemanticContext, CustomExpression) => SemanticCheck,
+                             position: InputPosition = DummyPosition(0)
+                           ) extends Expression

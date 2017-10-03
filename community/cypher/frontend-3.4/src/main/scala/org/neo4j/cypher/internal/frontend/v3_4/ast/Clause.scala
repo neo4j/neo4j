@@ -16,38 +16,47 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
+import org.neo4j.cypher.internal.aux.v3_4.Foldable._
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.frontend.v3_4.notification.{CartesianProductNotification, DeprecatedStartNotification}
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions
 
-sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
 
   def returnColumns: List[String] =
     throw new InternalException("This clause is not allowed as a last clause and hence does not declare return columns")
 }
 
-sealed trait UpdateClause extends Clause {
+sealed trait UpdateClause extends Clause with SemanticAnalysisTooling {
   override def returnColumns: List[String] = List.empty
 }
 
-case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(
+                    withHeaders: Boolean,
+                    urlString: Expression,
+                    variable: Variable,
+                    fieldTerminator: Option[StringLiteral]
+                  )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name: String = "LOAD CSV"
 
   override def semanticCheck: SemanticCheck =
-    urlString.semanticCheck(Expression.SemanticContext.Simple) chain
-      urlString.expectType(CTString.covariant) chain
+    SemanticExpressionCheck.simple(urlString) chain
+      expectType(CTString.covariant, urlString) chain
       checkFieldTerminator chain
       typeCheck
 
   private def checkFieldTerminator: SemanticCheck = {
     fieldTerminator match {
       case Some(literal) if literal.value.length != 1 =>
-        SemanticError("CSV field terminator can only be one character wide", literal.position)
+        error("CSV field terminator can only be one character wide", literal.position)
       case _ => SemanticCheckResult.success
     }
   }
@@ -58,11 +67,11 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
     else
       CTList(CTString)
 
-    variable.declareVariable(typ)
+    declareVariable(variable, typ)
   }
 }
 
-sealed trait MultipleGraphClause extends Clause with SemanticChecking {
+sealed trait MultipleGraphClause extends Clause with SemanticAnalysisTooling {
 
   override def semanticCheck: SemanticCheck =
     requireMultigraphSupport(s"The `$name` clause", position)
@@ -78,8 +87,8 @@ sealed trait CreateGraphClause extends MultipleGraphClause with UpdateClause {
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graph.declareGraph chain
-    of.foldSemanticCheck(_.semanticCheck(Pattern.SemanticContext.Create))
+    declareGraph(graph) chain
+    of.fold(SemanticCheckResult.success)(SemanticPatternCheck.check(Pattern.SemanticContext.Create, _))
 }
 
 final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
@@ -87,22 +96,20 @@ final case class CreateRegularGraph(snapshot: Boolean, graph: Variable, of: Opti
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    recordCurrentScope
+    SemanticState.recordCurrentScope(this)
 }
 
 final case class CreateNewSourceGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
-  override def semanticCheck: SemanticCheck =
-    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
+  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
 
 }
 
 final case class CreateNewTargetGraph(snapshot: Boolean, graph: Variable, of: Option[Pattern], at: GraphUrl)(val position: InputPosition)
   extends CreateGraphClause {
 
-  override def semanticCheck: SemanticCheck =
-    (s: SemanticState) => error(s, SemanticError("Clause not rewritten as expected (see PreparatoryRewriting)", position))
+  override def semanticCheck: SemanticCheck = error("Clause not rewritten as expected (see PreparatoryRewriting)", position)
 }
 
 final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition)
@@ -112,8 +119,8 @@ final case class DeleteGraphs(graphs: Seq[Variable])(val position: InputPosition
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-    graphs.foldSemanticCheck(_.ensureGraphDefined()) chain
-    recordCurrentScope
+    SemanticExpressionCheck.semanticCheckFold(graphs)(SemanticExpressionCheck.ensureGraphDefined) chain
+    SemanticState.recordCurrentScope(this)
 }
 
 final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -124,7 +131,7 @@ final case class Persist(graph: BoundGraphAs, to: GraphUrl)(val position: InputP
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -135,7 +142,7 @@ final case class Snapshot(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: InputPosition)
@@ -146,7 +153,7 @@ final case class Relocate(graph: BoundGraphAs, to: GraphUrl)(val position: Input
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       graph.semanticCheck chain
-      recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 }
 
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
@@ -188,17 +195,22 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 
 }
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
+case class Match(
+                  optional: Boolean,
+                  pattern: Pattern,
+                  hints: Seq[UsingHint],
+                  where: Option[Where]
+                )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "MATCH"
 
   override def semanticCheck: SemanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+    SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
       hints.semanticCheck chain
       uniqueHints chain
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts chain
-    recordCurrentScope
+      SemanticState.recordCurrentScope(this)
 
   private def uniqueHints: SemanticCheck = {
     val errors = hints.groupBy(_.variables.toIndexedSeq).collect {
@@ -332,8 +344,9 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
   override def name = "MERGE"
 
   override def semanticCheck: SemanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
-      actions.semanticCheck chain checkRelTypes
+    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
+      actions.semanticCheck chain
+      checkRelTypes
 
   // Copied code from CREATE below
   private def checkRelTypes: SemanticCheck  =
@@ -347,7 +360,9 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
 case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE"
 
-  override def semanticCheck: SemanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
+  override def semanticCheck: SemanticCheck =
+    SemanticPatternCheck.check(Pattern.SemanticContext.Create, pattern) chain
+    checkRelTypes
 
   //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
   private def checkRelTypes: SemanticCheck  =
@@ -376,9 +391,9 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
   override def name = "DELETE"
 
   override def semanticCheck: SemanticCheck =
-    expressions.semanticCheck(Expression.SemanticContext.Simple) chain
+    SemanticExpressionCheck.simple(expressions) chain
       warnAboutDeletingLabels chain
-      expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
+      expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant, expressions)
 
   private def warnAboutDeletingLabels =
     expressions.filter(_.isInstanceOf[HasLabels]) map {
@@ -392,27 +407,34 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def semanticCheck: SemanticCheck = items.semanticCheck
 }
 
-case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
+case class Foreach(
+                    variable: Variable,
+                    expression: Expression,
+                    updates: Seq[Clause]
+                  )(val position: InputPosition) extends UpdateClause {
   override def name = "FOREACH"
 
   override def semanticCheck: SemanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) chain
-      expression.expectType(CTList(CTAny).covariant) chain
+    SemanticExpressionCheck.simple(expression) chain
+      expectType(CTList(CTAny).covariant, expression) chain
       updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
-        val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
-        variable.declareVariable(possibleInnerTypes) chain updates.semanticCheck
+        val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
+        declareVariable(variable, possibleInnerTypes) chain updates.semanticCheck
       }
 }
 
-case class Unwind(expression: Expression, variable: Variable)(val position: InputPosition) extends Clause {
+case class Unwind(
+                   expression: Expression,
+                   variable: Variable
+                 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
   override def name = "UNWIND"
 
   override def semanticCheck: SemanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Results) chain
-      expression.expectType(CTList(CTAny).covariant) ifOkChain {
-      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
-      variable.declareVariable(possibleInnerTypes)
+    SemanticExpressionCheck.check(SemanticContext.Results, expression) chain
+      expectType(CTList(CTAny).covariant, expression) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = types(expression)(_).unwrapLists
+      declareVariable(variable, possibleInnerTypes)
     }
 }
 
@@ -434,7 +456,8 @@ case class UnresolvedCall(procedureNamespace: Namespace,
     declaredResult.map(_.items.map(_.variable.name).toList).getOrElse(List.empty)
 
   override def semanticCheck: SemanticCheck = {
-    val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
+    val argumentCheck = declaredArguments.map(
+      SemanticExpressionCheck.check(SemanticContext.Results, _)).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments.map(_.map {
       case arg if arg.containsAggregate =>
@@ -454,12 +477,12 @@ case class UnresolvedCall(procedureNamespace: Namespace,
   override def containsNoUpdates = false
 }
 
-sealed trait HorizonClause extends Clause with SemanticChecking {
-  override def semanticCheck: SemanticCheck = recordCurrentScope
+sealed trait HorizonClause extends Clause with SemanticAnalysisTooling {
+  override def semanticCheck: SemanticCheck = SemanticState.recordCurrentScope(this)
   def semanticCheckContinuation(previousScope: Scope): SemanticCheck
 }
 
-sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
+sealed trait ProjectionClause extends HorizonClause {
   def distinct: Boolean
   def returnItems: ReturnItemsDef
   def graphReturnItems: Option[GraphReturnItems]

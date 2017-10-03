@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult._
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_4.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticExpressionCheck, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CypherType, _}
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
@@ -102,7 +105,8 @@ case class ResolvedCall(signature: ProcedureSignature,
         //default values are checked at load time
         signature.inputSignature.zip(callArguments).map {
           case (field, arg) =>
-            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+            SemanticExpressionCheck.check(SemanticContext.Results, arg) chain
+              SemanticExpressionCheck.expectType(field.typ.covariant, arg)
         }.foldLeft(success)(_ chain _)
       } else {
         val msg = (if (signature.inputSignature.isEmpty) "arguments"

@@ -24,6 +24,7 @@ import java.util
 import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
@@ -31,12 +32,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{Compl
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, SemanticTable, symbols}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.aux.v3_4.symbols
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_4.codegen.{GeneratedMethodStructure, Methods, _}
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager

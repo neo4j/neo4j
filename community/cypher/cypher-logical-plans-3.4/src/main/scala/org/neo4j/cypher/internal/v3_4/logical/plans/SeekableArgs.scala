@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait SeekableArgs {
   def expr: Expression

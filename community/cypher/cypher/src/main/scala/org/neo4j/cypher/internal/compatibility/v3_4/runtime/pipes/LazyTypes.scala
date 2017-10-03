@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_4.ast.RelTypeName
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.v3_4.expressions.RelTypeName
 
 case class LazyTypes(names:Seq[String]) {
   private var ids = Seq.empty[Int]
@@ -40,7 +40,7 @@ case class LazyTypes(names:Seq[String]) {
 object LazyTypes {
   def apply(names: Seq[RelTypeName])(implicit table:SemanticTable): LazyTypes = {
     val types = LazyTypes(names.map(_.name))
-    types.ids = names.flatMap(_.id).map(_.id)
+    types.ids = names.flatMap(table.id(_)).map(_.id)
     types
   }
   val empty = LazyTypes(Seq.empty[String])

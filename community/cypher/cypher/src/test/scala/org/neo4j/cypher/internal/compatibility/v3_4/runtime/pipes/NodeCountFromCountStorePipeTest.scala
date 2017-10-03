@@ -20,17 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, NameId, SemanticTable}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, NameId}
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
+import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 import org.neo4j.values.storable.Values.longValue
 
 class NodeCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should return a count for nodes with a label") {
     implicit val table = new SemanticTable()
-    table.resolvedLabelIds.put("A", LabelId(12))
+    table.resolvedLabelNames.put("A", LabelId(12))
 
     val pipe = NodeCountFromCountStorePipe("count(n)", List(Some(LazyLabel(LabelName("A") _))))()
 

@@ -22,9 +22,9 @@ package org.neo4j.cypher
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.ExecutionEngine
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.neo4j.cypher.internal.{ExecutionEngine}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -32,8 +32,8 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.test.TestGraphDatabaseFactory
-
 import scala.collection.JavaConverters._
+
 import scala.collection.immutable.Map
 import scala.language.implicitConversions
 

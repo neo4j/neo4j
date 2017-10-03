@@ -21,9 +21,18 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.compiler.v3_4.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_4.{ExclusiveBound, InclusiveBound}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{QueryExpression, RangeQueryExpression, SeekableArgs, WithSeekableArgs}
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.functions
+
+object WithSeekableArgs {
+  def unapply(v: Any) = v match {
+    case In(lhs, rhs) => Some(lhs -> ManySeekableArgs(rhs))
+    case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
+    case _ => None
+  }
+}
 
 object AsIdSeekable {
   def unapply(v: Any) = v match {

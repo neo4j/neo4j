@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.parboiled.errors.InvalidInputError
 import org.parboiled.scala._
 

@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{GraphUrl, SingleGraphAs}
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, InputPosition, ast}
+import org.neo4j.cypher.internal.aux.v3_4.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala.Rule1
 
 import scala.language.implicitConversions
@@ -27,7 +28,7 @@ class GraphsParserTest
   with Graphs
   with Expressions {
 
-  implicit val parser: Rule1[SingleGraphAs] = SingleGraph
+  implicit val parser: Rule1[ast.SingleGraphAs] = SingleGraph
 
   test("SOURCE GRAPH") {
     yields(ast.SourceGraphAs(None))
@@ -85,12 +86,12 @@ class GraphsParserTest
     yields(ast.GraphOfAs(nodePattern, Some(v("foo"))))
   }
 
-  private def url(addr: String): GraphUrl = ast.GraphUrl(Right(ast.StringLiteral(addr)(pos)))(pos)
+  private def url(addr: String): ast.GraphUrl = ast.GraphUrl(Right(exp.StringLiteral(addr)(pos)))(pos)
   private implicit val pos: InputPosition = DummyPosition(-1)
-  private val nodePattern = ast.Pattern(List(ast.EveryPath(ast.NodePattern(None, List(), None)(pos))))(pos)
-  private val complexPattern = ast.Pattern(List(
-    ast.NamedPatternPart(v("p"), ast.EveryPath(ast.NodePattern(None, List(), None)(pos)))(pos),
-    ast.NamedPatternPart(v("q"), ast.EveryPath(ast.NodePattern(None, List(), None)(pos)))(pos)
+  private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
+  private val complexPattern = exp.Pattern(List(
+    exp.NamedPatternPart(v("p"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos),
+    exp.NamedPatternPart(v("q"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos)
   ))(pos)
-  private implicit def v(name: String): ast.Variable = ast.Variable(name)(pos)
+  private implicit def v(name: String): exp.Variable = exp.Variable(name)(pos)
 }

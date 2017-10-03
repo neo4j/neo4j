@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
 
 // Rewrites CALL proc WHERE <p> ==> CALL proc WITH * WHERE <p>
 case object expandCallWhere extends Rewriter {

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 import java.time.Clock
 
 import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.procs.ProcedureCallOrSchemaCommandExecutionPlanBuilder
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilationContains, Logi
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{CachedMetricsFactory, QueryGraphSolver, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
@@ -92,15 +92,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   private val planCacheFactory = () => new LFUCache[Statement, ExecutionPlan_v3_4](config.queryCacheSize)
 
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
-
-  def parseQuery(preParsedQuery: PreParsedQuery, notificationLogger: InternalNotificationLogger, tracer: CompilationPhaseTracer) = {
-    compiler.parseQuery(preParsedQuery.statement,
-                        preParsedQuery.rawStatement,
-                        notificationLogger, preParsedQuery.planner.name,
-                        preParsedQuery.debugOptions,
-                        Some(preParsedQuery.offset), tracer)
-  }
-
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
     val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))

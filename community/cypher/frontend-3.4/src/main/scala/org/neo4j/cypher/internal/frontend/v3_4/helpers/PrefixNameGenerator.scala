@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 
 object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
 

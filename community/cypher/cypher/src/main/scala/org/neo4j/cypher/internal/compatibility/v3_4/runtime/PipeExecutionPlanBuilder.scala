@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
@@ -28,8 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_4.spi.{InstrumentedGraphStatistics,
 import org.neo4j.cypher.internal.frontend.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_4.PeriodicCommit
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Skip => SkipPlan}
-import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
 
 import scala.collection.mutable
 

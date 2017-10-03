@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions.Variable
 import org.neo4j.cypher.internal.v3_4.logical.plans.{Distinct, NodeByLabelScan, Projection, Union}
 
 class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

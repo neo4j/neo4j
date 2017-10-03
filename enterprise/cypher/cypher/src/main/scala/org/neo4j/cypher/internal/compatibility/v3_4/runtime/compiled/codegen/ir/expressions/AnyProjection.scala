@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.frontend.v3_4.InternalException
 
 case class AnyProjection(variable: Variable) extends CodeGenExpression {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}

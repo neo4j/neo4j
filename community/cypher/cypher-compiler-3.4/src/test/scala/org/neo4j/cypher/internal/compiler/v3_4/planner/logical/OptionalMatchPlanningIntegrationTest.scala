@@ -19,15 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
+import org.neo4j.cypher.internal.aux.v3_4.Foldable._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.unnestOptional
-import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, SimplePatternLength}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
-import org.neo4j.cypher.internal.v3_4.logical.plans.Limit
+import org.neo4j.cypher.internal.v3_4.expressions._
+import org.neo4j.cypher.internal.v3_4.logical.plans.{Limit, _}
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -135,7 +133,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should solve optional matches with arguments and predicates") {
-    val plan = planFor(
+    val plan =  new given {
+      cost = {
+        case (_: Expand, _) => 1000.0
+      }
+    }.getLogicalPlanFor (
       """MATCH (n:X)
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42

@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
 
@@ -47,7 +48,7 @@ object DbStructureLogicalPlanningConfiguration {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
         resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
-        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
+        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelNames.put(keyName, LabelId(keyId)) }
         resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
         table
       }

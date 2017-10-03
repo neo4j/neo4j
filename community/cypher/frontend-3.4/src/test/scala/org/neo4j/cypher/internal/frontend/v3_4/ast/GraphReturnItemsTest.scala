@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{Scope, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{Scope, SemanticFeature, SemanticState}
 
 class GraphReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
 

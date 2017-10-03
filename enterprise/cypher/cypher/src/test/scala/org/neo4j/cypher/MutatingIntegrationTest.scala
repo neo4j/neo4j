@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.aux.v3_4
 import org.neo4j.graphdb._
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.security.AnonymousContext
@@ -226,7 +227,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     try {
       updateWithBothPlannersAndCompatibilityMode("create (a {params1}), (b {params2})", "params1" -> maps1, "params2" -> maps2)
     } catch {
-      case e: CypherTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException]
+      case e: CypherTypeException => e.getCause shouldBe a [v3_4.CypherTypeException]
       case e: ParameterWrongTypeException => e.getCause shouldBe a [org.neo4j.cypher.internal.frontend.v2_3.ParameterWrongTypeException]
     }
   }

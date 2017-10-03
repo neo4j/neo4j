@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.EnterprisePipeBuilderFactory
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Literal, Property, Variable}
@@ -37,12 +38,13 @@ import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_4.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CTAny, CTList, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, ast}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
-import org.neo4j.cypher.internal.v3_4.logical
+import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -84,7 +86,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single allnodes scan with limit") {
     // given
-    val plan = logical.plans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
+    val plan = plans.Limit(AllNodesScan(x, Set.empty)(solved), literalInt(1), DoNotIncludeTies)(solved)
 
     // when
     val pipe = build(plan)
@@ -164,7 +166,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // given
     val label = LabelName("label")(pos)
     val leaf = NodeByLabelScan(x, label, Set.empty)(solved)
-    val filter = Selection(Seq(ast.True()(pos)), leaf)(solved)
+    val filter = Selection(Seq(True()(pos)), leaf)(solved)
 
     // when
     val pipe = build(filter)
@@ -424,7 +426,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("let's skip this one") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val skip = logical.plans.Skip(allNodesScan, literalInt(42))(solved)
+    val skip = plans.Skip(allNodesScan, literalInt(42))(solved)
 
     // when
     val pipe = build(skip)
@@ -642,7 +644,7 @@ class SlottedPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val xVarName = IdName.fromVariable(xVar)
     val leaf = SingleRow()(solved)
     val unwind = UnwindCollection(leaf, xVarName, listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
-    val sort = Sort(unwind, List(logical.plans.Ascending(xVarName)))(solved)
+    val sort = Sort(unwind, List(plans.Ascending(xVarName)))(solved)
 
     // when
     val pipe = build(sort)

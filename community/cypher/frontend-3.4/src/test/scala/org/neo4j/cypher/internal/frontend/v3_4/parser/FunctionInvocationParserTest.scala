@@ -16,10 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, ast}
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 
 class FunctionInvocationParserTest
-  extends ParserAstTest[ast.FunctionInvocation]
+  extends ParserAstTest[exp.FunctionInvocation]
     with Expressions
     with Literals
     with Base
@@ -28,27 +29,27 @@ class FunctionInvocationParserTest
   implicit val parser = FunctionInvocation
 
   test("foo()") {
-    yields(ast.FunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
+    yields(exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), distinct = false, Vector.empty))
   }
 
   test("foo('test', 1 + 2)") {
-    yields(ast.FunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
-      ast.StringLiteral("test")(pos),
-      ast.Add(
-        ast.SignedDecimalIntegerLiteral("1")(pos),
-        ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+    yields(exp.FunctionInvocation(exp.Namespace()(pos), exp.FunctionName("foo")(pos), distinct = false, Vector(
+      exp.StringLiteral("test")(pos),
+      exp.Add(
+        exp.SignedDecimalIntegerLiteral("1")(pos),
+        exp.SignedDecimalIntegerLiteral("2")(pos))(pos)
     )))
   }
   test("my.namespace.foo()") {
-    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
+    yields(exp.FunctionInvocation(exp.Namespace(List("my", "namespace"))(pos), exp.FunctionName("foo")(pos), distinct = false, Vector.empty))
   }
 
   test("my.namespace.foo('test', 1 + 2)") {
-    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
-      ast.StringLiteral("test")(pos),
-      ast.Add(
-        ast.SignedDecimalIntegerLiteral("1")(pos),
-        ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+    yields(exp.FunctionInvocation(exp.Namespace(List("my", "namespace"))(pos), exp.FunctionName("foo")(pos), distinct = false, Vector(
+      exp.StringLiteral("test")(pos),
+      exp.Add(
+        exp.SignedDecimalIntegerLiteral("1")(pos),
+        exp.SignedDecimalIntegerLiteral("2")(pos))(pos)
     )))
   }
 

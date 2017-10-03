@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 
 object SemanticTableHelper {
   implicit class RichSemanticTable(table: SemanticTable) {
     def transplantResolutionOnto(target: SemanticTable) =
       target.copy(
-        resolvedLabelIds = table.resolvedLabelIds,
+        resolvedLabelIds = table.resolvedLabelNames,
         resolvedPropertyKeyNames = table.resolvedPropertyKeyNames,
         resolvedRelTypeNames = table.resolvedRelTypeNames
       )

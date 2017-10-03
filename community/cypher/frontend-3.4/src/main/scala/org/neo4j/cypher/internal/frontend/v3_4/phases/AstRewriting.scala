@@ -16,13 +16,17 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.phases
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.NotEquals
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{ASTRewriter, LiteralExtraction}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.v3_4.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.v3_4.expressions.NotEquals
 
-case class AstRewriting(sequencer: String => RewriterStepSequencer, literalExtraction: LiteralExtraction) extends Phase[BaseContext, BaseState, BaseState] {
+case class AstRewriting(
+                         sequencer: String => RewriterStepSequencer,
+                         literalExtraction: LiteralExtraction
+                       ) extends Phase[BaseContext, BaseState, BaseState] {
 
   private val astRewriter = new ASTRewriter(sequencer, literalExtraction)
 

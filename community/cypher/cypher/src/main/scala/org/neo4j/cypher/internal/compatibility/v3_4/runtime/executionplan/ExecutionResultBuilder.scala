@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.aux.v3_4.CypherException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.PipeDecorator
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, RuntimeName}
-import org.neo4j.cypher.internal.frontend.v3_4.CypherException
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.values.virtual.MapValue

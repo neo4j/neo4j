@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
+import org.neo4j.cypher.internal.aux.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.IsList
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.SeqCombiner.combine
-import org.neo4j.cypher.internal.frontend.v3_4.{CypherTypeException, InternalException}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue

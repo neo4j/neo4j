@@ -30,7 +30,7 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
   def apply(pipe: Pipe) = {
-    import org.neo4j.cypher.internal.frontend.v3_4.Foldable._
+    import org.neo4j.cypher.internal.aux.v3_4.Foldable._
 
     sealed trait SearchState
     case object NoneFound extends SearchState

@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PatternExpression
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{AllNodesScan, LogicalPlan, OuterHashJoin}
+import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{PatternExpression, SemanticDirection}
 
 class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

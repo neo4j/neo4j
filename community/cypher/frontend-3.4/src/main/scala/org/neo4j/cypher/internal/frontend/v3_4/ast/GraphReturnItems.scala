@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckResult, SemanticState, _}
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
-sealed trait GraphReturnItem extends ASTNode with ASTParticle {
+sealed trait GraphReturnItem extends ASTNode {
   def graphs: Set[SingleGraphAs]
 
   def newSource: Option[SingleGraphAs] = None
@@ -68,7 +70,7 @@ object PassAllGraphReturnItems {
 
 final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphReturnItem])
                                  (val position: InputPosition)
-  extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+  extends ASTNode with SemanticCheckable with SemanticAnalysisTooling {
 
   def isGraphsStarOnly: Boolean = includeExisting && items.isEmpty
 
@@ -79,7 +81,9 @@ final case class GraphReturnItems(includeExisting: Boolean, items: Seq[GraphRetu
   val newTarget: Option[SingleGraphAs] = items.flatMap(_.newTarget).headOption orElse newSource
 
   override def semanticCheck: SemanticCheck =
-    unless(items.isEmpty) { requireMultigraphSupport("Projecting and returning graphs", position) } chain(
+    unless(items.isEmpty) {
+      requireMultigraphSupport("Projecting and returning graphs", position)
+    } chain (
       graphs.semanticCheck chain
       checkNoMultipleSources chain
       checkNoMultipleTargets chain

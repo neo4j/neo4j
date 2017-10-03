@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, NonEmptyList}
 import org.neo4j.cypher.internal.compiler.v3_4.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.symbols._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, LabelId, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -35,7 +37,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("Should consider parameter expressions when calculating index selectivity") {
     implicit val semanticTable = SemanticTable()
-    semanticTable.resolvedLabelIds.put("Page", index.label)
+    semanticTable.resolvedLabelNames.put("Page", index.label)
     semanticTable.resolvedPropertyKeyNames.put("title", index.property)
 
     implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Page")_))_)))
@@ -53,7 +55,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("Should peek inside sub predicates") {
     implicit val semanticTable = SemanticTable()
-    semanticTable.resolvedLabelIds.put("Page", LabelId(0))
+    semanticTable.resolvedLabelNames.put("Page", LabelId(0))
 
     implicit val selections = Selections(Set(Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Page")_))_)))
 
@@ -69,7 +71,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("Should look at range predicates that could benefit from using an index") {
     implicit val semanticTable = SemanticTable()
-    semanticTable.resolvedLabelIds.put("Person", index.label)
+    semanticTable.resolvedLabelNames.put("Person", index.label)
 
     val n_is_Person = Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
     val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop")_)_
@@ -92,7 +94,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("Should optimize selectivity with respect to prefix length for STARTS WITH predicates") {
     implicit val semanticTable = SemanticTable()
-    semanticTable.resolvedLabelIds.put("A", index.label)
+    semanticTable.resolvedLabelNames.put("A", index.label)
     semanticTable.resolvedPropertyKeyNames.put("prop", index.property)
 
     implicit val selections = mock[Selections]
@@ -119,7 +121,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
 
   test("Selectivity should never be worse than corresponding existence selectivity") {
     implicit val semanticTable = SemanticTable()
-    semanticTable.resolvedLabelIds.put("A", index.label)
+    semanticTable.resolvedLabelNames.put("A", index.label)
     semanticTable.resolvedPropertyKeyNames.put("prop", index.property)
 
     implicit val selections = mock[Selections]

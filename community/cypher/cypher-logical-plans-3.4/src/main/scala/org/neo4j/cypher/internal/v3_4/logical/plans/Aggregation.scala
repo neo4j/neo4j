@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, IdName, PlannerQuery}
 
 case class Aggregation(left: LogicalPlan,

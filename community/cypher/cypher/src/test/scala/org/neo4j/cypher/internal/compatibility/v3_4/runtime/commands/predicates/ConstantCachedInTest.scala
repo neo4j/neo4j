@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryStateHelper
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values._
 
 class ConstantCachedInTest extends CachedInTest {

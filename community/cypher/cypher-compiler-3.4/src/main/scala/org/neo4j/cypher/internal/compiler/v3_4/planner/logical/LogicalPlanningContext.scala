@@ -23,11 +23,11 @@ import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, StrictnessMode}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_4.expressions.Variable
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

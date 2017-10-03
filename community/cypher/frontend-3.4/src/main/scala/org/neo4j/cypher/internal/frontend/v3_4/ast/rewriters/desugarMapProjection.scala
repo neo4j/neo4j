@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Expression.{SemanticCheckableExpressionTraversable, SemanticContext}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.CTMap
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, Rewriter, SemanticState, topDown}
+import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, InternalException, Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 /*
 Handles rewriting map projection elements to literal entries when possible. If the user
@@ -34,11 +33,11 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    case e@MapProjection(id, items, scope) =>
+    case e@MapProjection(id, items, definitionPos) =>
 
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
         val key = PropertyKeyName(name)(propertyPosition)
-        val idPos = scope.symbolTable(id.name).definition.position
+        val idPos = definitionPos.getOrElse(throw new InternalException("MapProjection definition pos is not known"))
         val newIdentifier = Variable(id.name)(idPos)
         val value = Property(newIdentifier, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)
@@ -60,13 +59,8 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   }
 }
 
-case class DesugaredMapProjection(name: Variable, items: Seq[LiteralEntry], includeAllProps: Boolean)(val position: InputPosition)
-  extends Expression with SimpleTyping {
-  protected def possibleTypes = CTMap
-
-  override def semanticCheck(ctx: SemanticContext) =
-    items.semanticCheck(ctx) chain
-      name.ensureVariableDefined() chain
-      super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
-      recordCurrentScope
-}
+case class DesugaredMapProjection(
+                                   name: Variable,
+                                   items: Seq[LiteralEntry],
+                                   includeAllProps: Boolean
+                                 )(val position: InputPosition) extends Expression

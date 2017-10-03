@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, ast}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.expressions.{Pattern => ASTPattern, Variable}
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -62,15 +63,15 @@ trait Clauses extends Parser
     keyword("CREATE") ~~ keyword(">>")  ~~ CreatedGraph ~~>>(t => ast.CreateNewTargetGraph(t._1, t._2, t._3, t._4))
   }
 
-  private def CreatedGraph: Rule1[(Boolean, ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+  private def CreatedGraph: Rule1[(Boolean, Variable, Option[ASTPattern], ast.GraphUrl)] =
     CreatedGraphAt | CreatedGraphAs
 
-  private def CreatedGraphAt: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+  private def CreatedGraphAt: Rule1[(Boolean,  Variable, Option[ASTPattern], ast.GraphUrl)] =
     OptSnapshot ~~ keyword("GRAPH") ~~ Variable ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~> {
       (snapshot, graph, pattern, url) => (snapshot, graph, pattern, url)
     }
 
-  private def CreatedGraphAs: Rule1[(Boolean,  ast.Variable, Option[ast.Pattern], ast.GraphUrl)] =
+  private def CreatedGraphAs: Rule1[(Boolean,  Variable, Option[ASTPattern], ast.GraphUrl)] =
     OptSnapshot ~~ keyword("GRAPH") ~~ optional(keyword("OF") ~~ Pattern) ~~ keyword("AT") ~~ GraphUrl ~~ keyword("AS") ~~ Variable ~~> {
       (snapshot, pattern, url, graph) => (snapshot, graph, pattern, url)
     }
@@ -114,7 +115,8 @@ trait Clauses extends Parser
 
   def Merge: Rule1[ast.Merge] = rule("MERGE") {
     group(
-      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
+      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ASTPattern(Seq(p))) ~~ zeroOrMore(MergeAction,
+        separator = WS)
     ) ~~>> (ast.Merge(_, _))
   }
 
@@ -162,7 +164,7 @@ trait Clauses extends Parser
     keyword("_PRAGMA") ~~ (
       group(
         keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(
-          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, PassAllGraphReturnItems(InputPosition.NONE), None, _, _, _))
+          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, ast.PassAllGraphReturnItems(InputPosition.NONE), None, _, _, _))
         | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
       )
   }
@@ -198,7 +200,7 @@ trait Clauses extends Parser
       | PropertyExpression ~~> ast.RemovePropertyItem
   )
 
-  private def WithBody: Rule5[ReturnItemsDef, GraphReturnItems, Option[OrderBy], Option[Skip], Option[Limit]] = {
+  private def WithBody: Rule5[ast.ReturnItemsDef, ast.GraphReturnItems, Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       FakeMandatoryGraphReturnItems ~~
       optional(Order) ~~
@@ -206,10 +208,10 @@ trait Clauses extends Parser
       optional(Limit)
   }
 
-  private def FakeMandatoryGraphReturnItems: Rule1[GraphReturnItems] =
-    optional(GraphReturnItems) ~~>> { (optItem) => (pos: InputPosition) => optItem.getOrElse(PassAllGraphReturnItems(pos)) }
+  private def FakeMandatoryGraphReturnItems: Rule1[ast.GraphReturnItems] =
+    optional(GraphReturnItems) ~~>> { (optItem) => (pos: InputPosition) => optItem.getOrElse(ast.PassAllGraphReturnItems(pos)) }
 
-  private def ReturnBody: Rule5[ReturnItemsDef, Option[GraphReturnItems], Option[OrderBy], Option[Skip], Option[Limit]] = {
+  private def ReturnBody: Rule5[ast.ReturnItemsDef, Option[ast.GraphReturnItems], Option[ast.OrderBy], Option[ast.Skip], Option[ast.Limit]] = {
     ReturnItems ~~
       optional(GraphReturnItems) ~~
       optional(Order) ~~

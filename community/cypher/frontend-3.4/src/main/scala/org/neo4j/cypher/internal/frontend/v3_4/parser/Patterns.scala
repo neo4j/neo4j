@@ -26,7 +26,9 @@ package org.neo4j.cypher.internal.frontend.v3_4.parser
  *    p =      shortestPath(    (a)             -[r1]->           (b)            -[r2]->           (c)       )
  */
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticDirection, ast}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.parboiled.scala._
 
 trait Patterns extends Parser
@@ -71,7 +73,8 @@ trait Patterns extends Parser
       | LeftArrowHead ~~ Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.INCOMING)
       | Dash ~~ RelationshipDetail ~~ Dash ~~ RightArrowHead ~ push(SemanticDirection.OUTGOING)
       | Dash ~~ RelationshipDetail ~~ Dash ~ push(SemanticDirection.BOTH)
-    ) ~~>> ((variable, relTypes, range, props, dir) => ast.RelationshipPattern(variable, relTypes.types, range, props, dir, relTypes.legacySeparator))
+    ) ~~>> ((variable, relTypes, range, props, dir) => ast.RelationshipPattern(variable, relTypes.types, range,
+      props, dir, relTypes.legacySeparator))
   }
 
   private def RelationshipDetail: Rule4[

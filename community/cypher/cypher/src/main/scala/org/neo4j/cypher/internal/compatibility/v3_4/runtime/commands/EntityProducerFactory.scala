@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
+import org.neo4j.cypher.internal.aux.v3_4.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.GetGraphElements
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.{IndexHintException, InternalException}
 import org.neo4j.cypher.internal.v3_4.logical.plans.ScanQueryExpression
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 

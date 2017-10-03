@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_4.QueryStateHelper.withQueryState
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.helpers.ValueUtils._
 import org.neo4j.kernel.api.KernelTransaction.Type

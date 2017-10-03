@@ -16,8 +16,11 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticAnalysisTooling, SemanticError, SemanticExpressionCheck}
+import org.neo4j.cypher.internal.aux.v3_4.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 sealed trait Command extends Statement {
   override def returnColumns = List.empty
@@ -33,7 +36,7 @@ case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val po
   def semanticCheck = Seq()
 }
 
-trait PropertyConstraintCommand extends Command with SemanticChecking {
+trait PropertyConstraintCommand extends Command with SemanticAnalysisTooling {
   def variable: Variable
 
   def property: Property
@@ -41,14 +44,14 @@ trait PropertyConstraintCommand extends Command with SemanticChecking {
   def entityType: CypherType
 
   def semanticCheck =
-    variable.declareVariable(entityType) chain
-      property.semanticCheck(Expression.SemanticContext.Simple) chain
-      when(!property.map.isInstanceOf[ast.Variable]) {
-        SemanticError("Cannot index nested properties", property.position)
+    declareVariable(variable, entityType) chain
+      SemanticExpressionCheck.simple(property) chain
+      when(!property.map.isInstanceOf[Variable]) {
+        error("Cannot index nested properties", property.position)
       }
 }
 
-trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
+trait CompositePropertyConstraintCommand extends Command with SemanticAnalysisTooling {
   def variable: Variable
 
   def properties: Seq[Property]
@@ -58,28 +61,29 @@ trait CompositePropertyConstraintCommand extends Command with SemanticChecking {
   def restrictedToSingleProperty: Boolean
 
   def semanticCheck =
-    variable.declareVariable(entityType) chain
-      properties.foldSemanticCheck(_.semanticCheck(Expression.SemanticContext.Simple)) chain
-      properties.foldSemanticCheck { property =>
-        when(!property.map.isInstanceOf[ast.Variable]) {
-          SemanticError("Cannot index nested properties", property.position)
-        }
+    declareVariable(variable, entityType) chain
+      SemanticExpressionCheck.simple(properties) chain
+      semanticCheckFold(properties) {
+        property =>
+          when(!property.map.isInstanceOf[Variable]) {
+            error("Cannot index nested properties", property.position)
+          }
       } chain
       when(restrictedToSingleProperty && properties.size > 1) {
-        SemanticError("Only single property uniqueness constraints are supported", properties(1).position)
+        error("Only single property uniqueness constraints are supported", properties(1).position)
       }
 }
 
 trait NodePropertyConstraintCommand extends PropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 }
 
 trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 
@@ -88,7 +92,7 @@ trait UniquePropertyConstraintCommand extends CompositePropertyConstraintCommand
 
 trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
 
-  val entityType = symbols.CTNode
+  val entityType = CTNode
 
   def label: LabelName
 
@@ -97,7 +101,7 @@ trait NodeKeyConstraintCommand extends CompositePropertyConstraintCommand {
 
 trait RelationshipPropertyConstraintCommand extends PropertyConstraintCommand {
 
-  val entityType = symbols.CTRelationship
+  val entityType = CTRelationship
 
   def relType: RelTypeName
 }

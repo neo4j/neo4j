@@ -16,9 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.FreshIdNameGenerator
-import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
 /**
  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves

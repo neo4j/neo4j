@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.Rewriter
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, SemanticChecker}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticChecker
 
 trait RewriteTest {
   self: CypherFunSuite =>

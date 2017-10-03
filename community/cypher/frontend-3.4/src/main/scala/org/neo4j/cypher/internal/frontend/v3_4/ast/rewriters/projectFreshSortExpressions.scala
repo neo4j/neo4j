@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 /**
  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
@@ -52,8 +53,8 @@ case object projectFreshSortExpressions extends Rewriter {
             where.map(_.dependencies).getOrElse(Set.empty)
         val dependenciesFromPreviousScope = nonItemDependencies -- allAliases
 
-        val passedItems = dependenciesFromPreviousScope.map(_.asAlias)
-        val outputItems = allAliases.toIndexedSeq.map(_.asAlias)
+        val passedItems = dependenciesFromPreviousScope.map(AliasedReturnItem(_))
+        val outputItems = allAliases.toIndexedSeq.map(AliasedReturnItem(_))
 
         val result = Seq(
           clause.copy(returnItems = ri.mapItems(originalItems => originalItems ++ passedItems), orderBy = None, skip = None, limit = None, where = None)(clause.position),

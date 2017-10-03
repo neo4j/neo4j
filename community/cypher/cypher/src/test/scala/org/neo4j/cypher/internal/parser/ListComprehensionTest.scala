@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{Co
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 import org.parboiled.scala._
 

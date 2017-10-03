@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, Clause}
 import org.parboiled.scala.Rule1
 
@@ -110,10 +111,10 @@ class MultipleGraphClausesParsingTest
     yields(ast.DeleteGraphs(Seq(varFor("foo"), varFor("bar"))))
   }
 
-  private val nodePattern = ast.Pattern(List(ast.EveryPath(ast.NodePattern(None, List(), None)(pos))))(pos)
+  private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
 
-  private val complexPattern = ast.Pattern(List(
-    ast.NamedPatternPart(varFor("p"), ast.EveryPath(ast.NodePattern(None, List(), None)(pos)))(pos),
-    ast.NamedPatternPart(varFor("q"), ast.EveryPath(ast.NodePattern(None, List(), None)(pos)))(pos)
+  private val complexPattern = exp.Pattern(List(
+    exp.NamedPatternPart(varFor("p"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos),
+    exp.NamedPatternPart(varFor("q"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos)
   ))(pos)
 }

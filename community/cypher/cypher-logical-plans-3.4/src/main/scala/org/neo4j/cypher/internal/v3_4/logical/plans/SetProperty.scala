@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Expression, PropertyKeyName}
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, PropertyKeyName}
 
 case class SetProperty(source: LogicalPlan, entity: Expression, propertyKey: PropertyKeyName, value: Expression)
                       (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {

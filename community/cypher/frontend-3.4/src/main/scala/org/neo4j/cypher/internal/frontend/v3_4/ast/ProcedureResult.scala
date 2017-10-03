@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheck}
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheckResult.success
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticCheckResult.success
 
 object ProcedureResult {
   def from(items: ProcedureResultItem*)(position: InputPosition): ProcedureResult =

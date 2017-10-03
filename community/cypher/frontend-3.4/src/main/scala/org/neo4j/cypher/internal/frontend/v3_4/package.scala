@@ -16,14 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend
 
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.symbols.TypeSpec
+import org.neo4j.cypher.internal.aux.v3_4.NonEmptyList
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
+import org.neo4j.cypher.internal.aux.v3_4.symbols.TypeSpec
 
 import scala.language.implicitConversions
 
 package object v3_4 {
-  type Rewriter = (AnyRef => AnyRef)
-
   type Bounds[+V] = NonEmptyList[Bound[V]]
 
   type SemanticCheck = SemanticState => SemanticCheckResult
@@ -93,9 +92,7 @@ package object v3_4 {
 
     // Only run a check if a given feature is *not* enabled
     def unlessFeatureEnabled(feature: SemanticFeature): SemanticCheck =
-      (s: SemanticState) =>
-        if (!s.features(feature)) check(s)
-        else SemanticCheckResult.success(s)
+      (s: SemanticState) => if(!s.features(feature)) check(s) else SemanticCheckResult.success(s)
   }
 }
 

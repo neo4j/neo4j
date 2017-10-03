@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.ir.v3_4.Selections
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_4.Selections
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 object unsolvedPreds extends ((Selections, LogicalPlan) => Seq[Expression]) {
   def apply(s: Selections, l: LogicalPlan): Seq[Expression] =

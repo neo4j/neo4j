@@ -34,7 +34,8 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CompiledRuntimeName
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_4.{PlannerName, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.v3_4.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_4.executionplan.{GeneratedQuery, GeneratedQueryExecution}

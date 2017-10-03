@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_4.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Equals
 import org.neo4j.cypher.internal.ir.v3_4.{CardinalityEstimation, PlannerQuery}
-
+import org.neo4j.cypher.internal.v3_4.expressions.Equals
 /*
 Represents a common hash join on values and not node ids. The definition of a value join is an equality predicate
 between two expressions that have different, non-empty variable-dependency sets.

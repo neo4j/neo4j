@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.neo4j.cypher.internal.v3_4.{functions => astFunctions}
 
 object functionConverter {
 
@@ -30,12 +31,12 @@ object functionConverter {
            (implicit context: CodeGenContext): CodeGenExpression = fcn.function match {
 
     // id(n)
-    case ast.functions.Id =>
+    case astFunctions.Id =>
       assert(fcn.args.size == 1)
       IdCodeGenFunction(callback(fcn.args(0)))
 
     // type(r)
-    case ast.functions.Type =>
+    case astFunctions.Type =>
       assert(fcn.args.size == 1)
       TypeCodeGenFunction(callback(fcn.args(0)))
 

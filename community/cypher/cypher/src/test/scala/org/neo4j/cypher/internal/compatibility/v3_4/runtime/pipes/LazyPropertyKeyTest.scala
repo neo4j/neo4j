@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
 import org.neo4j.cypher.internal.compiler.v3_4.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast.PropertyKeyName
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, PropertyKeyId, SemanticTable}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_4.expressions.PropertyKeyName
 
 import scala.collection.mutable
 
@@ -36,7 +38,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     // GIVEN
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map(PROPERTY_KEY_NAME.name -> PROPERTY_KEY_ID))
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(Some(PROPERTY_KEY_ID))
 
     //WHEN
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
@@ -51,7 +53,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
     // WHEN
     val id = LazyPropertyKey(PROPERTY_KEY_NAME).id(context)
@@ -67,7 +69,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
     implicit val table = mock[SemanticTable]
     val context = mock[TokenContext]
     when(context.getOptPropertyKeyId(PROPERTY_KEY_NAME.name)).thenReturn(Some(PROPERTY_KEY_ID.id))
-    when(table.resolvedPropertyKeyNames).thenReturn(mutable.Map.empty[String, PropertyKeyId])
+    when(table.id(PROPERTY_KEY_NAME)).thenReturn(None)
 
     // WHEN
     val lazyPropertyKey = LazyPropertyKey(PROPERTY_KEY_NAME)

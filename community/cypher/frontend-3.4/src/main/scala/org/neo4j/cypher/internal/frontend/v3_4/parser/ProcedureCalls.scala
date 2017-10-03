@@ -16,18 +16,19 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, ast}
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala._
 
 trait ProcedureCalls {
   self: Parser with Base with Expressions with Literals =>
 
-  def Call: Rule1[UnresolvedCall] = rule("CALL") {
+  def Call: Rule1[ast.UnresolvedCall] = rule("CALL") {
     group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast.UnresolvedCall(_, _, _, _))
   }
 
-  private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
+  private def ProcedureArguments: Rule1[Option[Seq[exp.Expression]]] = rule("arguments to a procedure") {
     optional(group("(" ~~
       zeroOrMore(Expression, separator = CommaSep) ~~ ")"
     ) ~~> (_.toIndexedSeq))
@@ -62,8 +63,8 @@ trait ProcedureCalls {
       Variable ~~>> (ast.ProcedureResultItem(_))
     }
 
-  private def ProcedureOutput: Rule1[ast.ProcedureOutput] =
+  private def ProcedureOutput: Rule1[exp.ProcedureOutput] =
     rule("procedure output") {
-      SymbolicNameString ~~>> (ast.ProcedureOutput(_))
+      SymbolicNameString ~~>> (exp.ProcedureOutput(_))
     }
 }

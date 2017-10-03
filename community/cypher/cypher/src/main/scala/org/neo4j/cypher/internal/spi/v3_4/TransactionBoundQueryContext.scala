@@ -25,6 +25,7 @@ import java.util.function.Predicate
 import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
+import org.neo4j.cypher.internal.aux.v3_4.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
@@ -38,6 +39,9 @@ import org.neo4j.cypher.internal.javacompat.ValueToObjectSerializer
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.v3_4.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
+import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath

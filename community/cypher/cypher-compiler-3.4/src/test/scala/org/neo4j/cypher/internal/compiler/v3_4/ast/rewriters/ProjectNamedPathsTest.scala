@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.inSequence
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_4.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses, projectNamedPaths}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{SemanticDirection, SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport {
 

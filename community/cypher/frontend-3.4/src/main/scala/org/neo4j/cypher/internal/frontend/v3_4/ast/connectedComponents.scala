@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.v3_4.expressions.{NodePattern, PatternPart, Variable}
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 

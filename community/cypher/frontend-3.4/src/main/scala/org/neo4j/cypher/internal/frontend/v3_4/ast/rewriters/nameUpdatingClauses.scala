@@ -16,8 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Create, CreateUnique, Expression, Merge}
-import org.neo4j.cypher.internal.frontend.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_4.ast.{Create, CreateUnique, Merge}
+import org.neo4j.cypher.internal.v3_4.expressions.Expression
 
 case object nameUpdatingClauses extends Rewriter {
 

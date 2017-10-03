@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection.{INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, QueryGraph}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
 

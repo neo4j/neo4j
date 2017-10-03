@@ -25,11 +25,12 @@ import org.neo4j.cypher.internal.compiler.v3_4.helpers.SemanticTableHelper
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, PropertyKeyId, RelTypeId}
 import org.neo4j.cypher.internal.ir.v3_4.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.ir.v3_4._
+import org.neo4j.cypher.internal.v3_4.expressions.Variable
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable
@@ -216,7 +217,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         withNodesAndRels
       }
 
-      fill(semanticTable.resolvedLabelIds, labelIds, LabelId.apply)
+      fill(semanticTable.resolvedLabelNames, labelIds, LabelId.apply)
       fill(semanticTable.resolvedPropertyKeyNames, propertyIds, PropertyKeyId.apply)
       fill(semanticTable.resolvedRelTypeNames, relTypeIds, RelTypeId.apply)
 

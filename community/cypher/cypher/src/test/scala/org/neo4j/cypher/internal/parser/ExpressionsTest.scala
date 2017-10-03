@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.{Co
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Equals, True}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{predicates, expressions => legacy}
-import org.neo4j.cypher.internal.frontend.v3_4.ast
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{Expressions, ParserTest}
 
 // TODO: This should be tested without using the legacy expressions and moved to the semantics module

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expression
 
 import java.lang.Math._
 
+import org.neo4j.cypher.internal.aux.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CRS, ExecutionContext}
-import org.neo4j.cypher.internal.frontend.v3_4.CypherTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.PointValue

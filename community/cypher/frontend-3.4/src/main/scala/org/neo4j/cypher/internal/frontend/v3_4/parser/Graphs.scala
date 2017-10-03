@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.Variable
+import org.neo4j.cypher.internal.v3_4.{expressions => exp}
 import org.parboiled.scala.{Parser, Rule1, Rule2}
 
 trait Graphs
@@ -28,15 +28,15 @@ trait Graphs
     ((Parameter ~~> (Left(_))) | (StringLiteral ~~> (Right(_)))) ~~>> (ast.GraphUrl(_))
   }
 
-  def GraphRef: Rule1[ast.Variable] = !ReservedClauseStartKeyword ~~ Variable
+  def GraphRef: Rule1[exp.Variable] = !ReservedClauseStartKeyword ~~ Variable
 
-  def GraphRefList: Rule1[List[ast.Variable]] =
+  def GraphRefList: Rule1[List[exp.Variable]] =
     oneOrMore(GraphRef, separator = CommaSep)
 
-  private def AsGraph: Rule1[ast.Variable] =
+  private def AsGraph: Rule1[exp.Variable] =
     keyword("AS") ~~ GraphRef
 
-  private def GraphAlias: Rule2[Variable, Option[Variable]] = rule("<graph-ref> AS <name>") {
+  private def GraphAlias: Rule2[exp.Variable, Option[exp.Variable]] = rule("<graph-ref> AS <name>") {
     GraphRef ~~ optional(AsGraph)
   }
 
@@ -61,10 +61,12 @@ trait Graphs
   }
 
   private def GraphOfShorthand: Rule1[ast.SingleGraphAs] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: ast.Variable, of: ast.Pattern) => ast.GraphOfAs(of, Some(ref)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("OF") ~~ Pattern ~~>> { (ref: exp.Variable, of: exp.Pattern) => ast
+      .GraphOfAs(of, Some(ref)) }
 
   private def GraphAtShorthand: Rule1[ast.SingleGraphAs] =
-    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: ast.Variable, url: ast.GraphUrl) => ast.GraphAtAs(url, Some(ref)) }
+    keyword("GRAPH") ~~ GraphRef ~~ keyword("AT") ~~ GraphUrl ~~>> { (ref: exp.Variable, url: ast.GraphUrl) => ast
+      .GraphAtAs(url, Some(ref)) }
 
   private def GraphShorthand = GraphOfShorthand | GraphAtShorthand
 

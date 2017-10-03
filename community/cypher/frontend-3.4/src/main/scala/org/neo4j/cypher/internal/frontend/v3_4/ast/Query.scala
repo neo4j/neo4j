@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticChecking, SemanticError, _}
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics._
 
 case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart)(val position: InputPosition)
-  extends Statement with SemanticChecking {
+  extends Statement with SemanticAnalysisTooling {
 
   override def returnColumns = part.returnColumns
 
@@ -31,7 +33,7 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
     }
 }
 
-sealed trait QueryPart extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait QueryPart extends ASTNode with SemanticCheckable {
   def containsUpdates: Boolean
   def returnColumns: List[String]
 }
@@ -133,7 +135,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 }
 
-sealed trait Union extends QueryPart with SemanticChecking {
+sealed trait Union extends QueryPart with SemanticAnalysisTooling {
   def part: QueryPart
   def query: SingleQuery
 

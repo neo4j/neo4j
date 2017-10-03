@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, IsAggregate, containsAggregate}
+
 object hasAggregateButIsNotAggregate extends (Expression => Boolean)  {
   def apply(expression: Expression): Boolean = expression match {
     case IsAggregate(_) => false

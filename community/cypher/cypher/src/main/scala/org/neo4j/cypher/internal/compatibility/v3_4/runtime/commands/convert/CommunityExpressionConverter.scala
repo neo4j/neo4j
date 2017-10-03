@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert
 
+import org.neo4j.cypher.internal.aux.v3_4.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{InequalitySeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
@@ -26,11 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.Toke
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compiler.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.functions._
+import org.neo4j.cypher.internal.v3_4.functions._
+import org.neo4j.cypher.internal.v3_4.functions
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.DesugaredMapProjection
-import org.neo4j.cypher.internal.frontend.v3_4.helpers.NonEmptyList
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, ast}
 
 object CommunityExpressionConverter extends ExpressionConverter {
 
@@ -113,7 +113,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
       Option(result)
     }
 
-  private def toCommandExpression(expression: ast.Function, invocation: ast.FunctionInvocation, self: ExpressionConverters): CommandExpression =
+  private def toCommandExpression(expression: Function, invocation: ast.FunctionInvocation, self: ExpressionConverters): CommandExpression =
     expression match {
       case Abs => commandexpressions.AbsFunction(self.toCommandExpression(invocation.arguments.head))
       case Acos => commandexpressions.AcosFunction(self.toCommandExpression(invocation.arguments.head))
@@ -340,13 +340,13 @@ object CommunityExpressionConverter extends ExpressionConverter {
   }
 
   private def in(e: ast.In, self: ExpressionConverters) = e.rhs match {
-    case value: Parameter =>
+    case value: ast.Parameter =>
       predicates.ConstantCachedIn(self.toCommandExpression(e.lhs), self.toCommandExpression(value))
 
-    case value@ListLiteral(expressions) if expressions.isEmpty =>
+    case value@ast.ListLiteral(expressions) if expressions.isEmpty =>
       predicates.Not(predicates.True())
 
-    case value@ListLiteral(expressions) if expressions.forall(_.isInstanceOf[Literal]) =>
+    case value@ast.ListLiteral(expressions) if expressions.forall(_.isInstanceOf[ast.Literal]) =>
       predicates.ConstantCachedIn(self.toCommandExpression(e.lhs), self.toCommandExpression(value))
 
     case _ =>
@@ -368,14 +368,14 @@ object CommunityExpressionConverter extends ExpressionConverter {
     predicates.And(_, _)
   }
 
-  private def mapItems(items: Seq[(PropertyKeyName, Expression)], self: ExpressionConverters): Map[String, CommandExpression] =
+  private def mapItems(items: Seq[(ast.PropertyKeyName, ast.Expression)], self: ExpressionConverters): Map[String, CommandExpression] =
     items.map {
       case (id, ex) => id.name -> self.toCommandExpression(ex)
     }.toMap
 
-  private def mapProjectionItems(items: Seq[LiteralEntry], self: ExpressionConverters): Map[String, CommandExpression] =
+  private def mapProjectionItems(items: Seq[ast.LiteralEntry], self: ExpressionConverters): Map[String, CommandExpression] =
     items.map {
-      case LiteralEntry(id, ex) => id.name -> self.toCommandExpression(ex)
+      case ast.LiteralEntry(id, ex) => id.name -> self.toCommandExpression(ex)
     }.toMap
 
   private def listComprehension(e: ast.ListComprehension, self: ExpressionConverters): CommandExpression = {

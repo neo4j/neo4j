@@ -16,6 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
+import org.neo4j.cypher.internal.aux.v3_4.Ref
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.Scope
+
 import scala.compat.Platform.EOL
 
 object ScopeTreeVerifier {

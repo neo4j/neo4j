@@ -16,10 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.{Ref, Rewriter, bottomUp, inSequence}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.{BaseContext, BaseState, Condition, Phase}
-import org.neo4j.cypher.internal.frontend.v3_4._
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{Scope, SemanticTable, SymbolUse}
+import org.neo4j.cypher.internal.v3_4.expressions.{ProcedureOutput, Variable}
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   type VariableRenamings = Map[Ref[Variable], Variable]
@@ -82,7 +84,7 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
                                 ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
-        val symbolDefinition = variableDefinitions(i.toSymbolUse)
+        val symbolDefinition = variableDefinitions(SymbolUse(i))
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newVariable
         acc => (acc + renaming, Some(identity))

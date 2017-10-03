@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_4
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.aux.v3_4.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, _}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.v3_4.planner.{CheckForUnresolvedTokens, ResolveTokens}
-import org.neo4j.cypher.internal.frontend.v3_4.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.ASTRewriter
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_4.phases._

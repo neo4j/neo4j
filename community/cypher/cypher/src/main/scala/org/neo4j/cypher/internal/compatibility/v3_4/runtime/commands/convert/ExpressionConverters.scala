@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
-import org.neo4j.cypher.internal.frontend.v3_4.{InternalException, SemanticDirection, ast}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.{expressions => ast}
+import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.graphdb.Direction
-
 
 trait ExpressionConverter {
   def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
@@ -66,7 +66,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   def toCommandSeekArgs(seek: SeekableArgs): SeekArgs = seek match {
     case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(expr))
     case ManySeekableArgs(expr) => expr match {
-      case coll: ListLiteral =>
+      case coll: ast.ListLiteral =>
         ZeroOneOrMany(coll.expressions) match {
           case Zero => SeekArgs.empty
           case One(value) => SingleSeekArg(toCommandExpression(value))
@@ -79,30 +79,30 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   }
 
   def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath = {
-    def project(pathStep: PathStep): Projector = pathStep match {
+    def project(pathStep: ast.PathStep): Projector = pathStep match {
 
-      case NodePathStep(Variable(node), next) =>
+      case ast.NodePathStep(ast.Variable(node), next) =>
         singleNodeProjector(node, project(next))
 
-      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
+      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.INCOMING, next) =>
         singleIncomingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
+      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, next) =>
         singleOutgoingRelationshipProjector(rel, project(next))
 
-      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
+      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.BOTH, next) =>
         singleUndirectedRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
+      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.INCOMING, next) =>
         multiIncomingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
+      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, next) =>
         multiOutgoingRelationshipProjector(rel, project(next))
 
-      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
+      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.BOTH, next) =>
         multiUndirectedRelationshipProjector(rel, project(next))
 
-      case NilPathStep =>
+      case ast.NilPathStep =>
         nilProjector
     }
 

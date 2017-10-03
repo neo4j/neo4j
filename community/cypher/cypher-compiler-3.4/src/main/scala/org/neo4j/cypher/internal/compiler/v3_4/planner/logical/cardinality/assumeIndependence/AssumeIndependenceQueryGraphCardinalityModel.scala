@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_4.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{QueryGraph, _}
+import org.neo4j.cypher.internal.v3_4.expressions.LabelName
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {

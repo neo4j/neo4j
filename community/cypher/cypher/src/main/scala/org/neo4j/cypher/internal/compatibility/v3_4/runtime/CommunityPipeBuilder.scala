@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{AggregationExpression, Literal}
@@ -27,15 +28,13 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_4.phases.Monitors
-import org.neo4j.cypher.internal.frontend.v3_4.{ast => frontEndAst, _}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ASTExpression, Equals => ASTEquals, _}
 import org.neo4j.cypher.internal.ir.v3_4.{IdName, VarPatternLength}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan}
-import org.neo4j.cypher.internal.v3_4.logical
 import org.neo4j.cypher.internal.v3_4.logical.plans
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
@@ -45,7 +44,7 @@ import org.neo4j.values.virtual.{EdgeValue, NodeValue}
  */
 case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
                                 expressionConverters: ExpressionConverters,
-                                rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
+                                rewriteAstExpression: (ASTExpression) => ASTExpression)
                                (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
 
@@ -215,7 +214,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         EagerAggregationPipe(
           source,
           Eagerly.immutableMapValues(groupingExpressions, buildExpression),
-          Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
+          Eagerly.immutableMapValues[String, ASTExpression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
         )(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
@@ -309,9 +308,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private def varLengthPredicate(predicates: Seq[(Variable, Expression)]): VarLengthPredicate  = {
+  private def varLengthPredicate(predicates: Seq[(Variable, ASTExpression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
-    def asCommand(predicates: Seq[(Variable, Expression)]) = {
+    def asCommand(predicates: Seq[(Variable, ASTExpression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
 
       val commands = exprs.map(buildPredicate)
@@ -390,7 +389,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)(id = id)
 
-      case ValueHashJoin(_, _, frontEndAst.Equals(lhsExpression, rhsExpression)) =>
+      case ValueHashJoin(_, _, ASTEquals(lhsExpression, rhsExpression)) =>
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
 
       case ForeachApply(_, _, variable, expression) =>
@@ -406,13 +405,13 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
   implicit val table: SemanticTable = context.semanticTable
 
-  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
-    val rewrittenExpr: Expression = rewriteAstExpression(expr)
+  private def buildPredicate(expr: ASTExpression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+    val rewrittenExpr: ASTExpression = rewriteAstExpression(expr)
 
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
-  private def translateColumnOrder(s: logical.plans.ColumnOrder): pipes.ColumnOrder = s match {
+  private def translateColumnOrder(s: ColumnOrder): pipes.ColumnOrder = s match {
     case plans.Ascending(IdName(name)) => pipes.Ascending(name)
     case plans.Descending(IdName(name)) => pipes.Descending(name)
   }

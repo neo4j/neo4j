@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_4.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_4.spi._
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_4.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}

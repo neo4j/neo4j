@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.aux.v3_4.InternalException
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.ast.SymbolicNameWithId
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.IdName
+import org.neo4j.cypher.internal.v3_4.expressions.SymbolicName
 
 sealed trait TokenSpec[+ID <: NameId] {
   def id: Option[ID]
@@ -32,18 +34,6 @@ sealed trait TokenSpec[+ID <: NameId] {
 object TokenSpec {
   type LabelSpecs = Map[IdName, Set[TokenSpec[LabelId]]]
   type RelTypeSpecs = Map[IdName, Set[TokenSpec[RelTypeId]]]
-
-  def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(implicit semanticTable: SemanticTable): Set[TokenSpec[ID]] =
-    if (input.isEmpty)
-      Set(Unspecified())
-    else
-      input.map {
-        case label =>
-          label.
-            id.
-            map(SpecifiedAndKnown.apply).
-            getOrElse(SpecifiedButUnknown())
-      }
 }
 
 case class SpecifiedButUnknown() extends TokenSpec[Nothing] {

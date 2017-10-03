@@ -16,12 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
+import org.neo4j.cypher.internal.aux.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4._
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 
 class ASTNodeTest extends CypherFunSuite {
 
-  trait Exp extends ASTNode with ASTExpression {
+  trait Exp extends ASTNode {
     val position = DummyPosition(0)
   }
 

@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.parser
 
+import org.neo4j.cypher.internal.aux.v3_4.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.neo4j.cypher.internal.frontend.v3_4.parser.{ParserTest, Query}
-import org.neo4j.cypher.internal.frontend.v3_4.{DummyPosition, ast}
+import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.parboiled.scala._
 
 class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] with Query {
@@ -31,7 +33,7 @@ class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] wit
 
   test("tests") {
     parsing("USING PERIODIC COMMIT") shouldGive ast.PeriodicCommitHint(None)(t)
-    parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(ast.SignedDecimalIntegerLiteral("300")(t)))(t)
+    parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(SignedDecimalIntegerLiteral("300")(t)))(t)
   }
 
   override def convert(astNode: ast.PeriodicCommitHint): Any = astNode

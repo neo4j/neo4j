@@ -23,13 +23,15 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.v3_4.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, HasLabels, LabelName}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_4.{LabelId, SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_4.LabelId
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_4.{VarPatternLength, _}
+import org.neo4j.cypher.internal.v3_4.expressions.{HasLabels, LabelName, SemanticDirection}
 
 import scala.collection.mutable
 
@@ -45,7 +47,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
 
     val label = LabelName("L")(pos)
 
-    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
@@ -62,7 +64,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
 
     val label = LabelName("L")(pos)
 
-    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
@@ -79,7 +81,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
 
     val label = LabelName("L")(pos)
 
-    implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
+    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
     implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
     val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
@@ -107,7 +109,7 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite with LogicalPlanCo
     val labelNames = labels.keys.map(LabelName(_)(pos))
     val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(l))(pos))).toSet
 
-    implicit val semanticTable = new SemanticTable(resolvedLabelIds = labels)
+    implicit val semanticTable = new SemanticTable(resolvedLabelNames = labels)
     implicit val selections = Selections(predicates)
     val result = calculator.apply(relationship, Map.empty)
 

@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.replaceAliasedFunctionInvocations
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions.{FunctionInvocation, FunctionName}
 
 class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConstructionTestSupport {
 

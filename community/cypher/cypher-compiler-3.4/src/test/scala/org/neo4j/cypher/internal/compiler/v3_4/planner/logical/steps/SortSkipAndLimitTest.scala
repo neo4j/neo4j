@@ -22,16 +22,17 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{AscSortItem, PatternExpression}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast.AscSortItem
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
-  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
+  val x: Expression = UnsignedDecimalIntegerLiteral("110") _
+  val y: Expression = UnsignedDecimalIntegerLiteral("10") _
+  val variableSortItem: AscSortItem = ast.AscSortItem(Variable("n") _) _
   val columnOrder: ColumnOrder = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -113,10 +114,10 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     result should equal(limited)
   }
 
-  private def queryGraphWith(skip: Option[ast.Expression] = None,
-                             limit: Option[ast.Expression] = None,
+  private def queryGraphWith(skip: Option[Expression] = None,
+                             limit: Option[Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Variable("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
+                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos))): (PlannerQuery, LogicalPlanningContext, LogicalPlan) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
       shuffle = QueryShuffle(sortItems, skip, limit)

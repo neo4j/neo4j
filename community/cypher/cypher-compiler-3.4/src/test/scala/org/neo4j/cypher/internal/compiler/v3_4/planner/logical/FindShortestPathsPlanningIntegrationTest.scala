@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{Equals, Not, Variable}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_4._
 import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.v3_4.expressions.{Equals, Not, SemanticDirection, Variable}
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

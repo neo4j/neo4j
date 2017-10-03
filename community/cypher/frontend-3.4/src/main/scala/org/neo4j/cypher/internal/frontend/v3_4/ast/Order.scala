@@ -16,18 +16,20 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.frontend.v3_4.{InputPosition, SemanticCheckable}
+import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticCheckable, SemanticExpressionCheck}
+import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Variable}
 
-case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 
   def dependencies: Set[Variable] =
     sortItems.foldLeft(Set.empty[Variable]) { case (acc, item) => acc ++ item.expression.dependencies }
 }
 
-sealed trait SortItem extends ASTNode with ASTPhrase with SemanticCheckable {
+sealed trait SortItem extends ASTNode with SemanticCheckable {
   def expression: Expression
-  def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
+  def semanticCheck = SemanticExpressionCheck.check(Expression.SemanticContext.Results, expression)
 
   def mapExpression(f: Expression => Expression): SortItem
 }

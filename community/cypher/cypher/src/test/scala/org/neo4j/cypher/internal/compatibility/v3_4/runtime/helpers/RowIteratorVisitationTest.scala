@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{intValue, stringValue}

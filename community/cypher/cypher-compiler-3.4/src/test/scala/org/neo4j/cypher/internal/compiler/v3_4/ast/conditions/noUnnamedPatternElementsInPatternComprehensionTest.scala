@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_4.SemanticDirection
+import org.neo4j.cypher.internal.aux.v3_4.ASTNode
+import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.conditions.noUnnamedPatternElementsInPatternComprehension
-import org.neo4j.cypher.internal.frontend.v3_4.ast.{RelationshipPattern, StringLiteral, _}
-import org.neo4j.cypher.internal.frontend.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_4.expressions._
 
 class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite with AstConstructionTestSupport {
 
