@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.store;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -40,209 +42,279 @@ import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
 import static java.util.Collections.emptyIterator;
-import static java.util.Collections.newSetFromMap;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
  * Will always reflect the committed state of the schema store.
- *
- * Assume synchronization/locking is done outside, with locks.
- *
- * @author Mattias Persson
- * @author Stefan Plantikow
  */
 public class SchemaCache
 {
-    private final Map<Long,IndexRule> indexRuleById = new ConcurrentHashMap<>();
-    private final Map<Long,ConstraintRule> constraintRuleById = new ConcurrentHashMap<>();
-    private final Set<ConstraintDescriptor> constraints = newSetFromMap( new ConcurrentHashMap<>() );
-
-    private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors = new ConcurrentHashMap<>();
-    private final Map<Integer,Set<IndexDescriptor>> indexDescriptorsByLabel = new ConcurrentHashMap<>();
-    private final ConstraintSemantics constraintSemantics;
-
-    private final Map<Class<?>,Object> dependantState = new ConcurrentHashMap<>();
-    private final Map<Integer,List<IndexDescriptor>> indexByProperty = new ConcurrentHashMap<>();
+    private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
+    private volatile SchemaCacheState schemaCacheState;
 
     public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
-        this.constraintSemantics = constraintSemantics;
-        splitUpInitialRules( initialRules );
+        this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules );
     }
-
-    private void splitUpInitialRules( Iterable<SchemaRule> initialRules )
-    {
-        for ( SchemaRule rule : initialRules )
-        {
-            addSchemaRule( rule );
-        }
-    }
-
-    // SCHEMA RULES
 
     public Iterable<IndexRule> indexRules()
     {
-        return indexRuleById.values();
+        return schemaCacheState.indexRules();
     }
 
     public Iterable<ConstraintRule> constraintRules()
     {
-        return constraintRuleById.values();
+        return schemaCacheState.constraintRules();
     }
 
     public boolean hasConstraintRule( ConstraintDescriptor descriptor )
     {
-        for ( ConstraintRule rule : constraintRuleById.values() )
-        {
-            if ( rule.getConstraintDescriptor().equals( descriptor ) )
-            {
-                return true;
-            }
-        }
-        return false;
+        return schemaCacheState.hasConstraintRule( descriptor );
     }
 
     public boolean hasIndexRule( SchemaDescriptor descriptor )
     {
-        for ( IndexRule rule : indexRuleById.values() )
-        {
-            if ( rule.schema().equals( descriptor ) )
-            {
-                return true;
-            }
-        }
-        return false;
+        return schemaCacheState.hasIndexRule( descriptor );
     }
-
-    // CONSTRAINTS
 
     public Iterator<ConstraintDescriptor> constraints()
     {
-        return constraints.iterator();
+        return schemaCacheState.constraints();
     }
 
     public Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
     {
-        return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints.iterator() );
+        return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints() );
     }
 
     public Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
     {
-        return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints.iterator() );
+        return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints() );
     }
 
     public Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
     {
-        return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints.iterator() );
+        return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints() );
     }
 
     public <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
     {
-        return type.cast( dependantState.computeIfAbsent( type, key -> factory.apply( parameter ) ) );
+        return schemaCacheState.getOrCreateDependantState( type, factory, parameter );
+    }
+
+    public void load( Iterable<SchemaRule> rules )
+    {
+        cacheUpdateLock.lock();
+        try
+        {
+            ConstraintSemantics constraintSemantics = schemaCacheState.constraintSemantics;
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
+        }
+        finally
+        {
+            cacheUpdateLock.unlock();
+        }
     }
 
     public void addSchemaRule( SchemaRule rule )
     {
-        dependantState.clear();
-        if ( rule instanceof ConstraintRule )
+        cacheUpdateLock.lock();
+        try
         {
-            ConstraintRule constraintRule = (ConstraintRule) rule;
-            constraintRuleById.put( constraintRule.getId(), constraintRule );
-            constraints.add( constraintSemantics.readConstraint( constraintRule ) );
+            SchemaCacheState updatedSchemaState = new SchemaCacheState( schemaCacheState );
+            updatedSchemaState.addSchemaRule( rule );
+            this.schemaCacheState = updatedSchemaState;
         }
-        else if ( rule instanceof IndexRule )
+        finally
         {
-            IndexRule indexRule = (IndexRule) rule;
-            indexRuleById.put( indexRule.getId(), indexRule );
-            LabelSchemaDescriptor schema = indexRule.schema();
-            indexDescriptors.put( schema, indexRule.getIndexDescriptor() );
-
-            Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
-            if ( forLabel == null )
-            {
-                forLabel = new HashSet<>();
-                indexDescriptorsByLabel.put( schema.getLabelId(), forLabel );
-            }
-            forLabel.add( indexRule.getIndexDescriptor() );
-
-            for ( int propertyId : indexRule.schema().getPropertyIds() )
-            {
-                List<IndexDescriptor> indexesForProperty = indexByProperty.get( propertyId );
-                if ( indexesForProperty == null )
-                {
-                    indexesForProperty = new LinkedList<>();
-                    indexByProperty.put( propertyId, indexesForProperty );
-                }
-                indexesForProperty.add( indexRule.getIndexDescriptor() );
-            }
-        }
-    }
-
-    public void clear()
-    {
-        indexRuleById.clear();
-        constraintRuleById.clear();
-        constraints.clear();
-        indexDescriptors.clear();
-        indexByProperty.clear();
-    }
-
-    public void load( List<SchemaRule> schemaRuleIterator )
-    {
-        clear();
-        for ( SchemaRule schemaRule : schemaRuleIterator )
-        {
-            addSchemaRule( schemaRule );
+            cacheUpdateLock.unlock();
         }
     }
 
     public void removeSchemaRule( long id )
     {
-        dependantState.clear();
-        if ( constraintRuleById.containsKey( id ) )
+        cacheUpdateLock.lock();
+        try
         {
-            ConstraintRule rule = constraintRuleById.remove( id );
-            constraints.remove( rule.getConstraintDescriptor() );
+            SchemaCacheState updatedSchemaState = new SchemaCacheState( schemaCacheState );
+            updatedSchemaState.removeSchemaRule( id );
+            this.schemaCacheState = updatedSchemaState;
         }
-        else if ( indexRuleById.containsKey( id ) )
+        finally
         {
-            IndexRule rule = indexRuleById.remove( id );
-            LabelSchemaDescriptor schema = rule.schema();
-            indexDescriptors.remove( schema );
-
-            Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
-            forLabel.remove( rule.getIndexDescriptor() );
-            if ( forLabel.isEmpty() )
-            {
-                indexDescriptorsByLabel.remove( schema.getLabelId() );
-            }
-
-            for ( int propertyId : rule.schema().getPropertyIds() )
-            {
-                List<IndexDescriptor> forProperty = indexByProperty.get( propertyId );
-                forProperty.remove( rule.getIndexDescriptor() );
-                if ( forProperty.isEmpty() )
-                {
-                    indexByProperty.remove( propertyId );
-                }
-            }
+            cacheUpdateLock.unlock();
         }
     }
 
     public IndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
     {
-        return indexDescriptors.get( descriptor );
+        return schemaCacheState.indexDescriptor( descriptor );
     }
 
     public Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
     {
-        Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
-        return forLabel == null ? emptyIterator() : forLabel.iterator();
+        return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
     public Iterator<IndexDescriptor> indexesByProperty( int propertyId )
     {
-        List<IndexDescriptor> indexes = indexByProperty.get( propertyId );
-        return (indexes == null) ? emptyIterator() : indexes.iterator();
+        return schemaCacheState.indexesByProperty( propertyId );
+    }
+
+    private static class SchemaCacheState
+    {
+        private final ConstraintSemantics constraintSemantics;
+        private final Set<ConstraintDescriptor> constraints;
+        private final Map<Long,IndexRule> indexRuleById;
+        private final Map<Long,ConstraintRule> constraintRuleById;
+
+        private final Map<SchemaDescriptor,IndexDescriptor> indexDescriptors;
+        private final Map<Integer,Set<IndexDescriptor>> indexDescriptorsByLabel;
+
+        private final Map<Class<?>,Object> dependantState;
+        private final Map<Integer,List<IndexDescriptor>> indexByProperty;
+
+        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
+        {
+            this.constraintSemantics = constraintSemantics;
+            this.constraints = new HashSet<>();
+            this.indexRuleById = new HashMap<>();
+            this.constraintRuleById = new HashMap<>();
+
+            this.indexDescriptors = new HashMap<>();
+            this.indexDescriptorsByLabel = new HashMap<>();
+            this.dependantState = new HashMap<>();
+            this.indexByProperty = new HashMap<>();
+            load( rules );
+        }
+
+        SchemaCacheState( SchemaCacheState schemaCacheState )
+        {
+            this.constraintSemantics = schemaCacheState.constraintSemantics;
+            this.indexRuleById = new HashMap<>( schemaCacheState.indexRuleById );
+            this.constraintRuleById = new HashMap<>( schemaCacheState.constraintRuleById );
+            this.constraints = new HashSet<>( schemaCacheState.constraints );
+
+            this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
+            this.indexDescriptorsByLabel = new HashMap<>( schemaCacheState.indexDescriptorsByLabel );
+            this.dependantState = new HashMap<>();
+            this.indexByProperty = new HashMap<>( schemaCacheState.indexByProperty );
+        }
+
+        public void load( Iterable<SchemaRule> schemaRuleIterator )
+        {
+            for ( SchemaRule schemaRule : schemaRuleIterator )
+            {
+                addSchemaRule( schemaRule );
+            }
+        }
+
+        Iterable<IndexRule> indexRules()
+        {
+            return indexRuleById.values();
+        }
+
+        Iterable<ConstraintRule> constraintRules()
+        {
+            return constraintRuleById.values();
+        }
+
+        boolean hasConstraintRule( ConstraintDescriptor descriptor )
+        {
+            return constraints.contains( descriptor );
+        }
+
+        boolean hasIndexRule( SchemaDescriptor descriptor )
+        {
+            return indexDescriptors.containsKey( descriptor );
+        }
+
+        Iterator<ConstraintDescriptor> constraints()
+        {
+            return constraints.iterator();
+        }
+
+        IndexDescriptor indexDescriptor( LabelSchemaDescriptor descriptor )
+        {
+            return indexDescriptors.get( descriptor );
+        }
+
+        Iterator<IndexDescriptor> indexesByProperty( int propertyId )
+        {
+            List<IndexDescriptor> indexes = indexByProperty.get( propertyId );
+            return (indexes == null) ? emptyIterator() : indexes.iterator();
+        }
+
+        Iterator<IndexDescriptor> indexDescriptorsForLabel( int labelId )
+        {
+            Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
+            return forLabel == null ? emptyIterator() : forLabel.iterator();
+        }
+
+        <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
+        {
+            return type.cast( dependantState.computeIfAbsent( type, key -> factory.apply( parameter ) ) );
+        }
+
+        void addSchemaRule( SchemaRule rule )
+        {
+            if ( rule instanceof ConstraintRule )
+            {
+                ConstraintRule constraintRule = (ConstraintRule) rule;
+                constraintRuleById.put( constraintRule.getId(), constraintRule );
+                constraints.add( constraintSemantics.readConstraint( constraintRule ) );
+            }
+            else if ( rule instanceof IndexRule )
+            {
+                IndexRule indexRule = (IndexRule) rule;
+                indexRuleById.put( indexRule.getId(), indexRule );
+                LabelSchemaDescriptor schemaDescriptor = indexRule.schema();
+                IndexDescriptor indexDescriptor = indexRule.getIndexDescriptor();
+                indexDescriptors.put( schemaDescriptor, indexDescriptor );
+
+                Set<IndexDescriptor> forLabel =
+                        indexDescriptorsByLabel.computeIfAbsent( schemaDescriptor.getLabelId(), k -> new HashSet<>() );
+                forLabel.add( indexDescriptor );
+
+                for ( int propertyId : indexRule.schema().getPropertyIds() )
+                {
+                    List<IndexDescriptor> indexesForProperty =
+                            indexByProperty.computeIfAbsent( propertyId, k -> new ArrayList<>() );
+                    indexesForProperty.add( indexDescriptor );
+                }
+            }
+        }
+
+        void removeSchemaRule( long id )
+        {
+            if ( constraintRuleById.containsKey( id ) )
+            {
+                ConstraintRule rule = constraintRuleById.remove( id );
+                constraints.remove( rule.getConstraintDescriptor() );
+            }
+            else if ( indexRuleById.containsKey( id ) )
+            {
+                IndexRule rule = indexRuleById.remove( id );
+                LabelSchemaDescriptor schema = rule.schema();
+                indexDescriptors.remove( schema );
+
+                Set<IndexDescriptor> forLabel = indexDescriptorsByLabel.get( schema.getLabelId() );
+                forLabel.remove( rule.getIndexDescriptor() );
+                if ( forLabel.isEmpty() )
+                {
+                    indexDescriptorsByLabel.remove( schema.getLabelId() );
+                }
+
+                for ( int propertyId : rule.schema().getPropertyIds() )
+                {
+                    List<IndexDescriptor> forProperty = indexByProperty.get( propertyId );
+                    forProperty.remove( rule.getIndexDescriptor() );
+                    if ( forProperty.isEmpty() )
+                    {
+                        indexByProperty.remove( propertyId );
+                    }
+                }
+            }
+        }
     }
 }
