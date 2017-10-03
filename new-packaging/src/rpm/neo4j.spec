@@ -31,6 +31,24 @@ leverage not only data but also its relationships.
 
 %pre
 
+if [ "$PACKAGE_NAME" -eq "neo4j-enterprise" ]; then
+    if [ -z "$NEO4J_ACCEPT_LICENSE_AGREEMENT" ]; then
+        whiptail --title "Neo4j Enterprise License" --defaultno --yesno "© Neo4j Sweden AB.  2017.  All Rights Reserved.  Use of this Software
+without a proper commercial license with Neo4j, Inc. or its affiliates
+is prohibited.
+
+Email inquiries can be directed to: licensing@neo4j.com
+
+More information is also available at: https://neo4j.com/licensing/
+
+
+Do you agree to the license terms?" 16 78
+    else
+        # The user has programmatically accepted the license agreement.
+        exit 0
+    fi
+fi
+
 # Create neo4j user if it doesn't exist.
 if ! id neo4j > /dev/null 2>&1 ; then
   useradd --system --user-group --home %{neo4jhome} --shell /bin/bash neo4j
