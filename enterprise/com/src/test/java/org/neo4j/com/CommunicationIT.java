@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.Thread.sleep;
@@ -54,12 +55,11 @@ import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler.NO_OP_TX_HANDLER;
 
-public class TestCommunication
+public class CommunicationIT
 {
     private static final byte INTERNAL_PROTOCOL_VERSION = 0;
     private static final byte APPLICATION_PROTOCOL_VERSION = 0;
 
-    private static final int PORT = 1234;
     private final LifeSupport life = new LifeSupport();
     private StoreId storeIdToUse;
     private Builder builder;
@@ -514,7 +514,7 @@ public class TestCommunication
 
         Builder()
         {
-            this( PORT, FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
+            this( PortAuthority.allocatePort(), FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
                     ALWAYS_MATCH, storeIdToUse );
         }
 
