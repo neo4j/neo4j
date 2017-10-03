@@ -64,7 +64,8 @@ public class FulltextProvider implements AutoCloseable
      * @param log For logging errors.
      * @param availabilityGuard Used for waiting with populating the index until the database is available.
      * @param scheduler For background work.
-     * @param transactionIdStore
+     * @param transactionIdStore Used for checking if the store has had transactions applied to it, while the fulltext
+     * indexes have been disabled. If so, then the indexes will be rebuilt.
      */
     public FulltextProvider( GraphDatabaseService db, Log log, AvailabilityGuard availabilityGuard,
                              JobScheduler scheduler, TransactionIdStore transactionIdStore )
@@ -128,7 +129,7 @@ public class FulltextProvider implements AutoCloseable
      * needs to recover after an unclean shut-down, or a configuration change.
      * @throws IOException If it was not possible to wait for the population to finish, for some reason.
      */
-    public void awaitPopulation() throws IOException
+    public void awaitPopulation() throws Exception
     {
         applier.writeBarrier().awaitCompletion();
     }

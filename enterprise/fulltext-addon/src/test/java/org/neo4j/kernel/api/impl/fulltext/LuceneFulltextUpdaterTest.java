@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -33,7 +32,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexT
 
 public class LuceneFulltextUpdaterTest extends LuceneFulltextTestSupport
 {
-    public static final String ANALYZER = StandardAnalyzer.class.getCanonicalName();
     @Test
     public void shouldFindNodeWithString() throws Exception
     {

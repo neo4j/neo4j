@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext.integrations.bloom;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -54,7 +53,7 @@ public class BloomProcedures
 
     @Description( "Await the completion of any background index population or updates" )
     @Procedure( name = "db.fulltext.bloomAwaitPopulation", mode = READ )
-    public void awaitPopulation() throws IOException
+    public void awaitPopulation() throws Exception
     {
         provider.awaitPopulation();
     }
