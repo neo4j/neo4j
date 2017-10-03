@@ -62,6 +62,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.QualifiedName;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
@@ -661,6 +662,12 @@ public class QueryExecutionLocksIT
         public InternalIndexState indexGetState( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
         {
             return readOperations.indexGetState( descriptor );
+        }
+
+        @Override
+        public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        {
+            return readOperations.indexGetProviderDescriptor( descriptor );
         }
 
         @Override

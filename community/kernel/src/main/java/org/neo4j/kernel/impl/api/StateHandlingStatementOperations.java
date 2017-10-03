@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.InternalIndexState;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -753,6 +754,20 @@ public class StateHandlingStatementOperations implements
         }
 
         return storeLayer.indexGetState( descriptor );
+    }
+
+    @Override
+    public SchemaIndexProvider.Descriptor indexGetProviderDescriptor( KernelStatement state, IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( checkIndexState( descriptor,
+                    state.txState().indexDiffSetsByLabel( descriptor.schema().getLabelId() ) ) )
+            {
+                // todo if index is in our state
+            }
+        }
+        return storeLayer.indexGetProviderDescriptor( descriptor );
     }
 
     @Override
