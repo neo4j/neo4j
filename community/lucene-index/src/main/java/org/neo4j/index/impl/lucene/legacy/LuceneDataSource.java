@@ -27,9 +27,11 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
@@ -45,7 +47,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -434,16 +436,16 @@ public class LuceneDataSource extends LifecycleAdapter
         }
     }
 
-    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
-    { // Never include logical logs since they are of little importance
+    private ResourceIterator<File> listWritableStoreFiles() throws IOException
+    {
         final Collection<File> files = new ArrayList<>();
         final Collection<Pair<SnapshotDeletionPolicy,IndexCommit>> snapshots = new ArrayList<>();
         makeSureAllIndexesAreInstantiated();
-        for ( IndexReference writer : getAllIndexes() )
+        for ( IndexReference index : getAllIndexes() )
         {
-            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) writer.getWriter().getConfig()
+            SnapshotDeletionPolicy deletionPolicy = (SnapshotDeletionPolicy) index.getWriter().getConfig()
                     .getIndexDeletionPolicy();
-            File indexDirectory = getFileDirectory( baseStorePath, writer.getIdentifier() );
+            File indexDirectory = getFileDirectory( baseStorePath, index.getIdentifier() );
             IndexCommit commit;
             try
             {
@@ -459,7 +461,7 @@ public class LuceneDataSource extends LifecycleAdapter
                  *
                  * For the time being we just do a commit and try again.
                  */
-                writer.getWriter().commit();
+                index.getWriter().commit();
                 commit = deletionPolicy.snapshot();
             }
 
@@ -498,9 +500,38 @@ public class LuceneDataSource extends LifecycleAdapter
         };
     }
 
+    private ResourceIterator<File> listReadOnlyStoreFiles() throws IOException
+    {
+        // In read-only mode we don't need to take a snapshot, because the index will not be modified.
+        final Collection<File> files = new ArrayList<>();
+        makeSureAllIndexesAreInstantiated();
+        for ( IndexReference index : getAllIndexes() )
+        {
+            File indexDirectory = getFileDirectory( baseStorePath, index.getIdentifier() );
+            IndexSearcher searcher = index.getSearcher();
+            try ( IndexReader indexReader = searcher.getIndexReader() )
+            {
+                DirectoryReader directoryReader = (DirectoryReader) indexReader;
+                IndexCommit commit = directoryReader.getIndexCommit();
+                for ( String fileName : commit.getFileNames() )
+                {
+                    files.add( new File( indexDirectory, fileName ) );
+                }
+            }
+        }
+        return Iterators.asResourceIterator( files.iterator() );
+    }
+
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
-        return listStoreFiles( false );
+        if ( readOnly )
+        {
+            return listReadOnlyStoreFiles();
+        }
+        else
+        {
+            return listWritableStoreFiles();
+        }
     }
 
     private void makeSureAllIndexesAreInstantiated()
