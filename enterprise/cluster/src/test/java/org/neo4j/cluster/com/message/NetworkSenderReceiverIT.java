@@ -24,6 +24,7 @@ import org.mockito.ArgumentMatchers;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.ports.allocation.PortAuthority;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
@@ -60,20 +62,26 @@ public class NetworkSenderReceiverIT
     {
 
         // given
+        int port1 = PortAuthority.allocatePort();
+        int port2 = PortAuthority.allocatePort();
 
         CountDownLatch latch = new CountDownLatch( 1 );
 
         LifeSupport life = new LifeSupport();
 
-        Server server1 = new Server( latch, MapUtil.stringMap( ClusterSettings.cluster_server.name(),
-                "localhost:1234", ClusterSettings.server_id.name(), "1",
-                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) );
+        Server server1 = new Server( latch, MapUtil.stringMap(
+                ClusterSettings.cluster_server.name(), "localhost:" + port1,
+                ClusterSettings.server_id.name(), "1",
+                ClusterSettings.initial_hosts.name(), "localhost:" + port1 + ",localhost:" + port2 )
+        );
 
         life.add( server1 );
 
-        Server server2 = new Server( latch, MapUtil.stringMap( ClusterSettings.cluster_server.name(), "localhost:1235",
+        Server server2 = new Server( latch, MapUtil.stringMap(
+                ClusterSettings.cluster_server.name(), "localhost:" + port2,
                 ClusterSettings.server_id.name(), "2",
-                ClusterSettings.initial_hosts.name(), "localhost:1234,localhost:1235" ) );
+                ClusterSettings.initial_hosts.name(), "localhost:" + port1 + ",localhost:" + port2 )
+        );
 
         life.add( server2 );
 
@@ -81,7 +89,7 @@ public class NetworkSenderReceiverIT
 
         // when
 
-        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + (new Random().nextBoolean() ? port1 : port2 ) ),
                 "Hello World" ) );
 
         // then
@@ -151,18 +159,20 @@ public class NetworkSenderReceiverIT
                 return null;
             } ).when( logMock ).warn( anyString() );
 
+            int port = PortAuthority.allocatePort();
+
             receiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ), new NetworkReceiver.Configuration()
             {
                 @Override
                 public HostnamePort clusterServer()
                 {
-                    return new HostnamePort( "127.0.0.1:1235" );
+                    return new HostnamePort( "127.0.0.1:" + port );
                 }
 
                 @Override
                 public int defaultPort()
                 {
-                    return 5001;
+                    return -1; // never used
                 }
 
                 @Override
@@ -185,13 +195,13 @@ public class NetworkSenderReceiverIT
                 @Override
                 public int port()
                 {
-                    return 1235;
+                    return port;
                 }
 
                 @Override
                 public int defaultPort()
                 {
-                    return 5001;
+                    return -1; // never used
                 }
             }, receiver, logProviderMock );
 
@@ -231,7 +241,7 @@ public class NetworkSenderReceiverIT
 
             sem.acquire(); // wait for start from listeningAt() in the NetworkChannelsListener
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + port ),
                     "Hello World" ) );
 
             sem.acquire(); // wait for process from the MessageProcessor
@@ -250,7 +260,7 @@ public class NetworkSenderReceiverIT
              */
             while ( !senderChannelClosed.get() )
             {
-                sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+                sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + port ),
                         "Hello World2" ) );
                 /*
                  * This sleep is not necessary, it's just nice. If it's ommitted, everything will work, but we'll
@@ -267,7 +277,7 @@ public class NetworkSenderReceiverIT
 
             received.set( false );
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:" + port ),
                     "Hello World3" ) );
 
             sem.acquire(); // wait for receiver.process();
@@ -313,7 +323,7 @@ public class NetworkSenderReceiverIT
                 @Override
                 public int defaultPort()
                 {
-                    return 5001;
+                    return -1; // never used
                 }
 
                 @Override
@@ -329,7 +339,7 @@ public class NetworkSenderReceiverIT
                 @Override
                 public int defaultPort()
                 {
-                    return 5001;
+                    return -1; // never used
                 }
 
                 @Override
