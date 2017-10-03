@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -84,7 +84,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     @Override
-    public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
+    public void migrate( File storeDir, File migrationDir, ProgressReporter progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
         if ( countStoreRebuildRequired( versionToMigrateFrom ) )
@@ -147,7 +147,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void rebuildCountsFromScratch( File storeDirToReadFrom, File migrationDir, long lastTxId,
-            MigrationProgressMonitor.Section progressMonitor, String expectedStoreVersion, PageCache pageCache,
+            ProgressReporter progressMonitor, String expectedStoreVersion, PageCache pageCache,
             LogProvider logProvider )
     {
         final File storeFileBase = new File( migrationDir,

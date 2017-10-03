@@ -17,28 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.monitoring;
+package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
-public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
+public class RecoveryStartInformation
 {
+    private final long firstTxIdAfterLastCheckPoint;
+    private final LogPosition recoveryPosition;
 
-    @Override
-    public void started( int numStages )
+    public RecoveryStartInformation( LogPosition recoveryPosition, long firstTxIdAfterLastCheckPoint )
     {
+        this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
+        this.recoveryPosition = recoveryPosition;
     }
 
-    @Override
-    public ProgressReporter startSection( String name )
+    public boolean isRecoveryRequired()
     {
-        return SilentProgressReporter.INSTANCE;
+        return recoveryPosition != LogPosition.UNSPECIFIED;
     }
 
-    @Override
-    public void completed()
+    public long getFirstTxIdAfterLastCheckPoint()
     {
+        return firstTxIdAfterLastCheckPoint;
     }
 
+    public LogPosition getRecoveryPosition()
+    {
+        return recoveryPosition;
+    }
 }

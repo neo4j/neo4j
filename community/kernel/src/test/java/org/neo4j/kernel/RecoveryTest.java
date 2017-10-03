@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
@@ -81,7 +81,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
-import static org.neo4j.kernel.recovery.PositionToRecoverFrom.NO_MONITOR;
+import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
 public class RecoveryTest
 {
@@ -93,7 +93,6 @@ public class RecoveryTest
     private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
     private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L, 0,
             BASE_TX_COMMIT_TIMESTAMP, 0, 0 );
-    private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
     private final int logVersion = 0;
 
     private LogEntry lastCommittedTxStartEntry;
@@ -207,7 +206,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, false ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -271,7 +270,7 @@ public class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, false ));
+            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -413,7 +412,7 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, new StartupStatisticsProvider(), logPruner, monitor, false ) );
+            }, new StartupStatisticsProvider(), logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
         }

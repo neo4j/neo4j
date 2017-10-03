@@ -55,6 +55,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
@@ -121,10 +122,10 @@ public class StoreUpgraderInterruptionTestIT
         {
             @Override
             public void migrate( File sourceStoreDir, File targetStoreDir,
-                    MigrationProgressMonitor.Section progressMonitor,
+                    ProgressReporter progressReporter,
                     String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
             {
-                super.migrate( sourceStoreDir, targetStoreDir, progressMonitor, versionToMigrateFrom,
+                super.migrate( sourceStoreDir, targetStoreDir, progressReporter, versionToMigrateFrom,
                         versionToMigrateTo );
                 throw new RuntimeException( "This upgrade is failing" );
             }

@@ -139,6 +139,8 @@ import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.DiagnosticsPhase;
@@ -154,10 +156,10 @@ import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
-import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
+import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 import org.neo4j.logging.Log;
@@ -473,7 +475,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionIdStore,
                     tailScanner,
                     monitors.newMonitor( RecoveryMonitor.class ),
-                    monitors.newMonitor( PositionToRecoverFrom.Monitor.class ),
+                    monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ),
                     logFiles, startupStatistics,
                     storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
             );
@@ -694,7 +696,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner,
             RecoveryMonitor recoveryMonitor,
-            PositionToRecoverFrom.Monitor positionMonitor,
+            RecoveryStartInformationProvider.Monitor positionMonitor,
             final PhysicalLogFiles logFiles,
             final StartupStatisticsProvider startupStatistics,
             StorageEngine storageEngine,
@@ -704,7 +706,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                 logicalTransactionStore, logVersionRepository, positionMonitor );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( storeDir, logFiles, fileSystemAbstraction );
-        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor, failOnCorruptedLogFiles );
+        ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
+        Recovery recovery = new Recovery( recoveryService, startupStatistics, logsTruncator, recoveryMonitor,
+                progressReporter, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 

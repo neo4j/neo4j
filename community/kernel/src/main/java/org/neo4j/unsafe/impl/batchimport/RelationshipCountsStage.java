@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
@@ -38,13 +38,13 @@ public class RelationshipCountsStage extends Stage
 {
     public RelationshipCountsStage( Configuration config, NodeLabelsCache cache, RelationshipStore relationshipStore,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
-            NumberArrayFactory cacheFactory, MigrationProgressMonitor.Section progressMonitor )
+            NumberArrayFactory cacheFactory, ProgressReporter progressReporter )
     {
         super( "Relationship counts", config );
         add( new BatchFeedStep( control(), config, allIn( relationshipStore, config ),
                 relationshipStore.getRecordSize() ) );
         add( new ReadRecordsStep<>( control(), config, false, relationshipStore, null ) );
         add( new ProcessRelationshipCountsDataStep( control(), cache, config,
-                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressMonitor ) );
+                highLabelId, highRelationshipTypeId, countsUpdater, cacheFactory, progressReporter ) );
     }
 }

@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
@@ -76,7 +76,7 @@ public class NativeLabelScanStoreMigratorTest
     private File migrationDir;
     private File luceneLabelScanStore;
 
-    private final MigrationProgressMonitor.Section progressMonitor = mock( MigrationProgressMonitor.Section.class );
+    private final ProgressReporter progressReporter = mock( ProgressReporter.class );
 
     private FileSystemAbstraction fileSystem;
     private PageCache pageCache;
@@ -101,7 +101,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         ByteBuffer sourceBuffer = writeNativeIndexFile( nativeLabelIndex, new byte[]{1, 2, 3} );
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         ByteBuffer resultBuffer = readFileContent( nativeLabelIndex, 3 );
@@ -119,7 +119,7 @@ public class NativeLabelScanStoreMigratorTest
         assertTrue( fileSystem.fileExists( toBeDeleted ) );
 
         // when
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         // then
         assertNoContentInNativeLabelScanStore( migrationDir );
@@ -130,7 +130,7 @@ public class NativeLabelScanStoreMigratorTest
     {
         prepareEmpty23Database();
 
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         assertFalse( fileSystem.fileExists( luceneLabelScanStore ) );
@@ -140,7 +140,7 @@ public class NativeLabelScanStoreMigratorTest
     public void moveCreatedNativeLabelIndexBackToStoreDirectory() throws IOException
     {
         prepareEmpty23Database();
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
         File migrationNativeIndex = new File( migrationDir, NativeLabelScanStore.FILE_NAME );
         ByteBuffer migratedFileContent = writeNativeIndexFile( migrationNativeIndex, new byte[]{5, 4, 3, 2, 1} );
 
@@ -154,7 +154,7 @@ public class NativeLabelScanStoreMigratorTest
     public void populateNativeLabelScanIndexDuringMigration() throws IOException
     {
         prepare32DatabaseWithNodes();
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         try ( Lifespan lifespan = new Lifespan() )
@@ -177,11 +177,11 @@ public class NativeLabelScanStoreMigratorTest
     public void reportProgressOnNativeIndexPopulation() throws IOException
     {
         prepare32DatabaseWithNodes();
-        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        indexMigrator.migrate( storeDir, migrationDir, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
-        verify( progressMonitor ).start( 10 );
-        verify( progressMonitor, times( 10 ) ).progress( 1 );
+        verify( progressReporter ).start( 10 );
+        verify( progressReporter, times( 10 ) ).progress( 1 );
     }
 
     private NativeLabelScanStore getNativeLabelScanStore( File dir, boolean readOnly )

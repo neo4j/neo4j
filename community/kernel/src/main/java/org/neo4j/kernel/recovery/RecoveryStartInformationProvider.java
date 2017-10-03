@@ -24,13 +24,14 @@ import java.io.IOException;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
  * Utility class to find the log position to start recovery from
  */
-public class PositionToRecoverFrom implements ThrowingSupplier<LogPosition,IOException>
+public class RecoveryStartInformationProvider implements ThrowingSupplier<RecoveryStartInformation,IOException>
 {
     public interface Monitor
     {
@@ -69,7 +70,7 @@ public class PositionToRecoverFrom implements ThrowingSupplier<LogPosition,IOExc
     private final LogTailScanner logTailScanner;
     private final Monitor monitor;
 
-    public PositionToRecoverFrom( LogTailScanner logTailScanner, Monitor monitor )
+    public RecoveryStartInformationProvider( LogTailScanner logTailScanner, Monitor monitor )
     {
         this.logTailScanner = logTailScanner;
         this.monitor = monitor;
@@ -83,32 +84,38 @@ public class PositionToRecoverFrom implements ThrowingSupplier<LogPosition,IOExc
      * @throws IOException if log files cannot be read
      */
     @Override
-    public LogPosition get() throws IOException
+    public RecoveryStartInformation get() throws IOException
     {
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
+        CheckPoint lastCheckPoint = logTailInformation.lastCheckPoint;
+        long txIdAfterLastCheckPoint = logTailInformation.firstTxIdAfterLastCheckPoint;
         if ( !logTailInformation.commitsAfterLastCheckpoint() )
         {
-            monitor.noCommitsAfterLastCheckPoint(
-                    logTailInformation.lastCheckPoint != null ? logTailInformation.lastCheckPoint.getLogPosition() : null );
-            return LogPosition.UNSPECIFIED;
+            monitor.noCommitsAfterLastCheckPoint( lastCheckPoint != null ? lastCheckPoint.getLogPosition() : null );
+            return createRecoveryInformation( LogPosition.UNSPECIFIED, txIdAfterLastCheckPoint );
         }
 
-        if ( logTailInformation.lastCheckPoint != null )
+        if ( lastCheckPoint != null )
         {
-            monitor.commitsAfterLastCheckPoint( logTailInformation.lastCheckPoint.getLogPosition(),
-                    logTailInformation.firstTxIdAfterLastCheckPoint );
-            return logTailInformation.lastCheckPoint.getLogPosition();
+            monitor.commitsAfterLastCheckPoint( lastCheckPoint.getLogPosition(), txIdAfterLastCheckPoint );
+            return createRecoveryInformation( lastCheckPoint.getLogPosition(), txIdAfterLastCheckPoint );
         }
         else
         {
             if ( logTailInformation.oldestLogVersionFound != INITIAL_LOG_VERSION )
             {
                 long fromLogVersion = Math.max( INITIAL_LOG_VERSION, logTailInformation.oldestLogVersionFound );
-                throw new UnderlyingStorageException( "No check point found in any log file from version " +
-                                                      fromLogVersion + " to " + logTailInformation.currentLogVersion );
+                throw new UnderlyingStorageException(
+                        "No check point found in any log file from version " + fromLogVersion + " to " +
+                                logTailInformation.currentLogVersion );
             }
             monitor.noCheckPointFound();
-            return LogPosition.start( 0 );
+            return createRecoveryInformation( LogPosition.start( 0 ), txIdAfterLastCheckPoint );
         }
+    }
+
+    private RecoveryStartInformation createRecoveryInformation( LogPosition logPosition, long firstTxId )
+    {
+        return new RecoveryStartInformation( logPosition, firstTxId );
     }
 }

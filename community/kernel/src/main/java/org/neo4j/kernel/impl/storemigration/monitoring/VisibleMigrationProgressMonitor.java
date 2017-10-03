@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
+import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -45,11 +47,10 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     }
 
     @Override
-    public Section startSection( String name )
+    public ProgressReporter startSection( String name )
     {
         log.info( format( "Migrating %s (%d/%d):", name, ++currentStage, numStages ) );
-
-        return new ProgressSection();
+        return new LogProgressReporter( log );
     }
 
     @Override
@@ -58,49 +59,4 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         log.info( MESSAGE_COMPLETED );
     }
 
-    private class ProgressSection implements Section
-    {
-        private static final int STRIDE = 10;
-        private static final int HUNDRED = 100;
-
-        private long current;
-        private int currentPercent;
-        private long max;
-
-        @Override
-        public void progress( long add )
-        {
-            current += add;
-            int percent = max == 0 ? HUNDRED : Math.min( HUNDRED, (int) ((current * HUNDRED) / max) );
-            ensurePercentReported( percent );
-        }
-
-        private void ensurePercentReported( int percent )
-        {
-            while ( currentPercent < percent )
-            {
-                reportPercent( ++currentPercent );
-            }
-        }
-
-        private void reportPercent( int percent )
-        {
-            if ( percent % STRIDE == 0 )
-            {
-                log.info( format( "  %d%% completed", percent ) );
-            }
-        }
-
-        @Override
-        public void start( long max )
-        {
-            this.max = max;
-        }
-
-        @Override
-        public void completed()
-        {
-            ensurePercentReported( HUNDRED );
-        }
-    }
 }

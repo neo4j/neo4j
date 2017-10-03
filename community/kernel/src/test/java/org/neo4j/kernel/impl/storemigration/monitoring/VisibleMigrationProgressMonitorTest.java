@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration.monitoring;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor.Section;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
@@ -73,12 +73,12 @@ public class VisibleMigrationProgressMonitorTest
 
     private void monitorSection( VisibleMigrationProgressMonitor monitor, String name, int max, int... steps )
     {
-        Section section = monitor.startSection( name );
-        section.start( max );
+        ProgressReporter progressReporter = monitor.startSection( name );
+        progressReporter.start( max );
         for ( int step : steps )
         {
-            section.progress( step );
+            progressReporter.progress( step );
         }
-        section.completed();
+        progressReporter.completed();
     }
 }

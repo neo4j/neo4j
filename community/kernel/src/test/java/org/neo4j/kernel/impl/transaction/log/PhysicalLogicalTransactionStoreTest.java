@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryApplier;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryService;
+import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.TestDirectory;
@@ -214,9 +216,9 @@ public class PhysicalLogicalTransactionStoreTest
             }
 
             @Override
-            public LogPosition getPositionToRecoverFrom() throws IOException
+            public RecoveryStartInformation getRecoveryStartInformation() throws IOException
             {
-                return LogPosition.start( 0 );
+                return new RecoveryStartInformation( LogPosition.start( 0 ), 1 );
             }
 
             @Override
@@ -235,7 +237,8 @@ public class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction )
             {
             }
-        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ), false ) );
+        }, new StartupStatisticsProvider(), logPruner, mock( RecoveryMonitor.class ), SilentProgressReporter.INSTANCE,
+                false ) );
 
         // WHEN
         try

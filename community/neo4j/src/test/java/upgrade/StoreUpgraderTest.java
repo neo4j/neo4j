@@ -65,6 +65,7 @@ import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.AssertableLogProvider;
@@ -240,7 +241,7 @@ public class StoreUpgraderTest
 
             // THEN
             verify( observingParticipant, Mockito.times( 0 ) ).migrate( any( File.class ), any( File.class ),
-                    any( MigrationProgressMonitor.Section.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
+                    any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
             verify( observingParticipant, Mockito.times( 1 ) ).
                     moveMigratedFiles( any( File.class ), any( File.class ), eq( versionToMigrateFrom ),
                             eq( versionToMigrateTo ) );
