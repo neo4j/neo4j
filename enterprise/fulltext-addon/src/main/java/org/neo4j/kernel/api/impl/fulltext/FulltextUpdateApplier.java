@@ -37,23 +37,24 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.concurrent.BinaryLatch;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Entity;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.PropertyEntry;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
-class FulltextUpdateApplier
+class FulltextUpdateApplier extends LifecycleAdapter
 {
-    private static final FulltextIndexUpdate STOP_SIGNAL = () -> null;
+    private static final FulltextIndexUpdate STOP_SIGNAL = new FulltextIndexUpdate( null, null );
     private static final int POPULATING_BATCH_SIZE = 10_000;
     private static final JobScheduler.Group UPDATE_APPLIER = new JobScheduler.Group( "FulltextIndexUpdateApplier" );
     private static final String APPLIER_THREAD_NAME = "Fulltext Index Add-On Applier Thread";
@@ -75,8 +76,7 @@ class FulltextUpdateApplier
     <E extends Entity> AsyncFulltextIndexOperation updatePropertyData(
             Map<Long,Map<String,Object>> state, WritableFulltext index ) throws IOException
     {
-        Latch completedLatch = new Latch();
-        FulltextIndexUpdate update = () ->
+        FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->
         {
             PartitionedIndexWriter indexWriter = index.getIndexWriter();
             for ( Map.Entry<Long,Map<String,Object>> stateEntry : state.entrySet() )
@@ -97,11 +97,10 @@ class FulltextUpdateApplier
                     }
                 }
             }
-            return Pair.of( index, completedLatch );
-        };
+        } );
 
         enqueueUpdate( update );
-        return completedLatch;
+        return update;
     }
 
     private static void updateDocument(
@@ -115,8 +114,7 @@ class FulltextUpdateApplier
             Iterable<PropertyEntry<E>> propertyEntries, Map<Long,Map<String,Object>> state, WritableFulltext index )
             throws IOException
     {
-        Latch completedLatch = new Latch();
-        FulltextIndexUpdate update = () ->
+        FulltextIndexUpdate update = new FulltextIndexUpdate( index, () ->
         {
             for ( PropertyEntry<E> propertyEntry : propertyEntries )
             {
@@ -130,18 +128,17 @@ class FulltextUpdateApplier
                     }
                 }
             }
-            return Pair.of( index, completedLatch );
-        };
+        } );
 
         enqueueUpdate( update );
-        return completedLatch;
+        return update;
     }
 
     AsyncFulltextIndexOperation writeBarrier() throws IOException
     {
-        Latch barrierLatch = new Latch();
-        enqueueUpdate( () -> Pair.of( null, barrierLatch ) );
-        return barrierLatch;
+        FulltextIndexUpdate barrier = new FulltextIndexUpdate( null, ThrowingAction.noop() );
+        enqueueUpdate( barrier );
+        return barrier;
     }
 
     AsyncFulltextIndexOperation populateNodes( WritableFulltext index, GraphDatabaseService db ) throws IOException
@@ -159,38 +156,47 @@ class FulltextUpdateApplier
             WritableFulltext index, GraphDatabaseService db,
             Supplier<ResourceIterable<? extends Entity>> entitySupplier ) throws IOException
     {
-        Latch completedLatch = new Latch();
-        FulltextIndexUpdate population = () ->
+        FulltextIndexUpdate population = new FulltextIndexUpdate( index, () ->
         {
-            PartitionedIndexWriter indexWriter = index.getIndexWriter();
-            String[] indexedPropertyKeys = index.getProperties().toArray( new String[0] );
-            ArrayList<Supplier<Document>> documents = new ArrayList<>();
-            try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
+            try
             {
-                ResourceIterable<? extends Entity> entities = entitySupplier.get();
-                for ( Entity entity : entities )
+                PartitionedIndexWriter indexWriter = index.getIndexWriter();
+                String[] indexedPropertyKeys = index.getProperties().toArray( new String[0] );
+                ArrayList<Supplier<Document>> documents = new ArrayList<>();
+                try ( Transaction ignore = db.beginTx( 1, TimeUnit.DAYS ) )
                 {
-                    long entityId = entity.getId();
-                    Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
-                    if ( !properties.isEmpty() )
+                    ResourceIterable<? extends Entity> entities = entitySupplier.get();
+                    for ( Entity entity : entities )
                     {
-                        documents.add( documentBuilder( entityId, properties ) );
-                    }
+                        long entityId = entity.getId();
+                        Map<String,Object> properties = entity.getProperties( indexedPropertyKeys );
+                        if ( !properties.isEmpty() )
+                        {
+                            documents.add( documentBuilder( entityId, properties ) );
+                        }
 
-                    if ( documents.size() > POPULATING_BATCH_SIZE )
-                    {
-                        indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
-                        documents.clear();
+                        if ( documents.size() > POPULATING_BATCH_SIZE )
+                        {
+                            indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+                            documents.clear();
+                        }
                     }
                 }
+                indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
+                index.setPopulated();
             }
-            indexWriter.addDocuments( documents.size(), reifyDocuments( documents ) );
-            index.setPopulated();
-            return Pair.of( index, completedLatch );
-        };
+            catch ( Throwable th )
+            {
+                if ( index != null )
+                {
+                    index.setFailed();
+                }
+                throw th;
+            }
+        } );
 
         enqueueUpdate( population );
-        return completedLatch;
+        return population;
     }
 
     private Supplier<Document> documentBuilder( long entityId, Map<String,Object> properties )
@@ -215,7 +221,8 @@ class FulltextUpdateApplier
         }
     }
 
-    void start()
+    @Override
+    public void start()
     {
         if ( workerThread != null )
         {
@@ -224,7 +231,8 @@ class FulltextUpdateApplier
         workerThread = scheduler.schedule( UPDATE_APPLIER, new ApplierWorker( workQueue, log, availabilityGuard ) );
     }
 
-    void stop()
+    @Override
+    public void stop()
     {
         boolean enqueued;
         do
@@ -248,9 +256,40 @@ class FulltextUpdateApplier
         }
     }
 
-    private interface FulltextIndexUpdate
+    private static class FulltextIndexUpdate extends BinaryLatch implements AsyncFulltextIndexOperation
     {
-        Pair<WritableFulltext,BinaryLatch> applyUpdateAndReturnIndex() throws IOException;
+        private final WritableFulltext index;
+        private final ThrowingAction<IOException> action;
+        private volatile Throwable throwable;
+
+        private FulltextIndexUpdate( WritableFulltext index, ThrowingAction<IOException> action )
+        {
+            this.index = index;
+            this.action = action;
+        }
+
+        @Override
+        public void awaitCompletion() throws ExecutionException
+        {
+            super.await();
+            Throwable th = this.throwable;
+            if ( th != null )
+            {
+                throw new ExecutionException( th );
+            }
+        }
+
+        void applyUpdate()
+        {
+            try
+            {
+                action.apply();
+            }
+            catch ( Throwable e )
+            {
+                throwable = e;
+            }
+        }
     }
 
     private static class ApplierWorker implements Runnable
@@ -353,16 +392,9 @@ class FulltextUpdateApplier
                                   Set<WritableFulltext> refreshableSet,
                                   List<BinaryLatch> latches )
         {
-            try
-            {
-                Pair<WritableFulltext,BinaryLatch> updateProgress = update.applyUpdateAndReturnIndex();
-                refreshableSet.add( updateProgress.first() );
-                latches.add( updateProgress.other() );
-            }
-            catch ( IOException e )
-            {
-                log.error( "Failed to apply fulltext index update.", e );
-            }
+            latches.add( update );
+            update.applyUpdate();
+            refreshableSet.add( update.index );
         }
 
         private void refreshIndex( WritableFulltext index )
@@ -374,19 +406,10 @@ class FulltextUpdateApplier
                     index.maybeRefreshBlocking();
                 }
             }
-            catch ( IOException e )
+            catch ( Throwable e )
             {
                 log.error( "Failed to refresh fulltext after updates.", e );
             }
-        }
-    }
-
-    private static class Latch extends BinaryLatch implements AsyncFulltextIndexOperation
-    {
-        @Override
-        public void awaitCompletion()
-        {
-            await();
         }
     }
 }

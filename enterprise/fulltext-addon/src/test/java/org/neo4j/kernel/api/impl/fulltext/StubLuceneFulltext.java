@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.util.concurrent.ExecutionException;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
-/**
- * A fulltext index operation that is possibly in-flight, and whose completion can be waited for.
- */
-public interface AsyncFulltextIndexOperation
+import static java.util.Collections.singletonList;
+import static org.neo4j.kernel.api.impl.fulltext.FulltextProvider.FulltextIndexType.NODES;
+import static org.neo4j.kernel.api.impl.fulltext.integrations.bloom.BloomKernelExtensionFactory.BLOOM_NODES;
+
+public class StubLuceneFulltext extends LuceneFulltext
 {
-    /**
-     * Wait for the index operation to complete. Returns immediately if the operation has already completed.
-     * @throws ExecutionException if the asynchronous operation failed with an exception.
-     */
-    void awaitCompletion() throws ExecutionException;
+    StubLuceneFulltext()
+    {
+        super( null, null, singletonList( "props" ), new StandardAnalyzer(), BLOOM_NODES, NODES );
+    }
 }

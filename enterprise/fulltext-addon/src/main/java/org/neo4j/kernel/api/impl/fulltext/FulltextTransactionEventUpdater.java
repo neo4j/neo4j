@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.event.TransactionData;
@@ -61,7 +62,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
             }
         } );
         data.assignedNodeProperties().forEach(
-                propertyEntry -> nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( nodeProperties ) ) );
+                propertyEntry -> nodeMap.put( propertyEntry.entity().getId(),
+                        propertyEntry.entity().getProperties( nodeProperties ) ) );
 
         String[] relationshipProperties = fulltextProvider.getRelationshipProperties();
         Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
@@ -69,7 +71,8 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
         {
             try
             {
-                relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( relationshipProperties ) );
+                relationshipMap.put( propertyEntry.entity().getId(),
+                        propertyEntry.entity().getProperties( relationshipProperties ) );
             }
             catch ( NotFoundException e )
             {
@@ -77,16 +80,18 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
             }
         } );
         data.assignedRelationshipProperties().forEach(
-                propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( relationshipProperties ) ) );
+                propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(),
+                        propertyEntry.entity().getProperties( relationshipProperties ) ) );
         return new Map[]{nodeMap, relationshipMap};
     }
 
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
+        RuntimeException applyException = null;
+        List<AsyncFulltextIndexOperation> completions = new ArrayList<>();
         try
         {
-            List<AsyncFulltextIndexOperation> completions = new ArrayList<>();
             Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
             Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
 
@@ -100,18 +105,35 @@ class FulltextTransactionEventUpdater implements TransactionEventHandler<Object>
             //update relationship indices
             for ( WritableFulltext relationshipIndex : fulltextProvider.writableRelationshipIndices() )
             {
-                completions.add( applier.removePropertyData( data.removedRelationshipProperties(), relationshipMap, relationshipIndex ) );
+                completions.add( applier.removePropertyData( data.removedRelationshipProperties(), relationshipMap,
+                        relationshipIndex ) );
                 completions.add( applier.updatePropertyData( relationshipMap, relationshipIndex ) );
-            }
-
-            for ( AsyncFulltextIndexOperation completion : completions )
-            {
-                completion.awaitCompletion();
             }
         }
         catch ( IOException e )
         {
-            log.error( "Unable to update fulltext index", e );
+            applyException = new RuntimeException( "Failed to submit all index updates.", e );
+        }
+
+        for ( AsyncFulltextIndexOperation completion : completions )
+        {
+            try
+            {
+                completion.awaitCompletion();
+            }
+            catch ( ExecutionException e )
+            {
+                if ( applyException == null )
+                {
+                    applyException = new RuntimeException(
+                            "Failed to update fulltext index. See suppressed exceptions for details." );
+                }
+                applyException.addSuppressed( e );
+            }
+        }
+        if ( applyException != null )
+        {
+            throw applyException;
         }
     }
 

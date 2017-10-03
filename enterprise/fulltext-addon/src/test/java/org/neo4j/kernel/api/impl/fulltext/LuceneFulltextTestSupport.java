@@ -68,7 +68,7 @@ public class LuceneFulltextTestSupport
     private TransactionIdStore transactionIdStore;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp() throws Throwable
     {
         db = dbRule.getGraphDatabaseAPI();
         scheduler = dbRule.resolveDependency( JobScheduler.class );
