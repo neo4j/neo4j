@@ -69,7 +69,7 @@ public class OnlineBackupCommandConfigLoaderTest
 
     private void setupConfigInDirectory( Path configDir ) throws IOException
     {
-        String anyValidSetting = format( "dbms.backup.address = %s\n", configDir );
+        String anyValidSetting = format( "dbms.backup.address = %s\n", "localhost:1234");
         File configFile = configDir.resolve( "neo4j.conf" ).toFile();
         appendToFile( configFile, anyValidSetting );
     }
