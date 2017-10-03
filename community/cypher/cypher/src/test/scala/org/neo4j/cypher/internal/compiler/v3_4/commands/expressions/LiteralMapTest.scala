@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{CountStar, LiteralMap, Property, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.UnresolvedProperty
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class LiteralMapTest extends CypherFunSuite {
 

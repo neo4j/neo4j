@@ -23,7 +23,7 @@ import org.mockito.Mockito.{never, verify, when}
 import org.mockito.internal.stubbing.defaultanswers.ReturnsMocks
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
 class SkipPipeTest extends CypherFunSuite {
   test("skip 0 should not actually pull from the input") {

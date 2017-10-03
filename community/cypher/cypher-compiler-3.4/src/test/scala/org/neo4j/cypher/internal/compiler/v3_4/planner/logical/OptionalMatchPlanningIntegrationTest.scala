@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.aux.v3_4.Foldable._
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.v3_4.{Cardinality, IdName, SimplePatternLength}

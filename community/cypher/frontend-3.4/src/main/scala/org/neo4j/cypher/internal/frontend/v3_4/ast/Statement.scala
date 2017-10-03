@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.aux.v3_4.ASTNode
+import org.neo4j.cypher.internal.util.v3_4.ASTNode
 import org.neo4j.cypher.internal.frontend.v3_4.SemanticCheck
 
 trait Statement extends ASTNode {

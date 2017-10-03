@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.slotted
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates.{Predicate, True}

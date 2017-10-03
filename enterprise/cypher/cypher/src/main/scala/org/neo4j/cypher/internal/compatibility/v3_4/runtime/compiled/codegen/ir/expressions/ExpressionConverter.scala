@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.helpers.LiteralTypeSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 
 object ExpressionConverter {
 

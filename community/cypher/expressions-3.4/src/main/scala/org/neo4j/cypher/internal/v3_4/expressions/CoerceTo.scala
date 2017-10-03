@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v3_4.expressions
 
-import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
   def position = expr.position

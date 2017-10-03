@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.util.v3_4.{Rewriter, inSequence}
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{LabelPredicateNormalizer, MatchPredicateNormalization, PropertyPredicateNormalizer}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions.{GetDegree, GreaterThan}
 
 class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {

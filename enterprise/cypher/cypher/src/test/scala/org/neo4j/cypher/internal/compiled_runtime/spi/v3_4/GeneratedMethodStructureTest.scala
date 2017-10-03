@@ -24,7 +24,7 @@ import java.util
 import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi._
@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticTable
-import org.neo4j.cypher.internal.aux.v3_4.symbols
+import org.neo4j.cypher.internal.util.v3_4.symbols
 import org.neo4j.cypher.internal.spi.v3_4.QueryContext
 import org.neo4j.cypher.internal.spi.v3_4.codegen.GeneratedQueryStructure.typeRef
 import org.neo4j.cypher.internal.spi.v3_4.codegen.{GeneratedMethodStructure, Methods, _}

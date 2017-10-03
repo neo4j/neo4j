@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands
 
-import org.neo4j.cypher.internal.aux.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
 
 import scala.reflect.ClassTag

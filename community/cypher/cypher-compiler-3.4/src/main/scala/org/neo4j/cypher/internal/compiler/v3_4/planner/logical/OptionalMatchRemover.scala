@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.aux.v3_4.Rewritable._
-import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.util.v3_4.Rewritable._
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v3_4.phases.{CompilerContext, LogicalPlanState}
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_4.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compiler.v3_4.planner._
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.{PatternExpressionSolver, aggregation, projection, sortSkipAndLimit}
 import org.neo4j.cypher.internal.ir.v3_4._

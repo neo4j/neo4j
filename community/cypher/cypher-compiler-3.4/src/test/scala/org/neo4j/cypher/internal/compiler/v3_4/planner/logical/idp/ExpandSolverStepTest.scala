@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.idp
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v3_4.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.LogicalPlanProducer

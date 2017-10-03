@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue, intValue, longValue}
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {

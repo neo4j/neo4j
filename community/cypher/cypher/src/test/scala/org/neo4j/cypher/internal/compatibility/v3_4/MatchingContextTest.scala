@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.matching.Match
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_4.QueryStateTestSupport
 import org.neo4j.helpers.ValueUtils
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.values.AnyValue
 

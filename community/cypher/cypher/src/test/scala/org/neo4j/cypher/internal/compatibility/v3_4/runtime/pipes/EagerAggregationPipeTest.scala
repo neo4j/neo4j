@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.TokenType.PropertyKey
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{intValue, longValue, stringValue}

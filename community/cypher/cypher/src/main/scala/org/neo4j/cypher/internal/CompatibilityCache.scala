@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.aux.v3_4.InvalidArgumentException
+import org.neo4j.cypher.internal.util.v3_4.InvalidArgumentException
 import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContextCreator}

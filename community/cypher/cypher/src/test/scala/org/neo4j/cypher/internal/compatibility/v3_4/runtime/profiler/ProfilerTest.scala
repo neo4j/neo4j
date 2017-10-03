@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription._
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlanId
 import org.neo4j.cypher.internal.compiler.v3_4.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_4.{QueryContext, QueryTransactionalContext}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE

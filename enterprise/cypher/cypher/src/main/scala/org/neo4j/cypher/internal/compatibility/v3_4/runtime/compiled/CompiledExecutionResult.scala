@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled
 
-import org.neo4j.cypher.internal.aux.v3_4.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.internal.util.v3_4.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.{InternalQueryType, Provider, READ_ONLY, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}

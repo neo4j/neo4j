@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen
 
-import org.neo4j.cypher.internal.aux.v3_4.{InternalException, symbols}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, symbols}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.aggregation.Distinct
@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.compiled.codegen.spi.SortItem
 import org.neo4j.cypher.internal.compiler.v3_4.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.aux.v3_4.Foldable._
+import org.neo4j.cypher.internal.util.v3_4.Foldable._
 import org.neo4j.cypher.internal.v3_4.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}

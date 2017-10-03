@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.aux.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes.QueryState

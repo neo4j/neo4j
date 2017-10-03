@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.parser
 
-import org.neo4j.cypher.internal.aux.v3_4.{InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition, SyntaxException}
 import org.neo4j.cypher.internal.frontend.v3_4.ast
 import org.parboiled.scala._
 

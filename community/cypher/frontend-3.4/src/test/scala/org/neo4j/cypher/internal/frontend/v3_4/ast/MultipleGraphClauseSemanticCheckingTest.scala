@@ -16,8 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.aux.v3_4.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.aux.v3_4.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper
 import org.neo4j.cypher.internal.frontend.v3_4.parser.ParserTest
 import org.neo4j.cypher.internal.frontend.v3_4.phases._

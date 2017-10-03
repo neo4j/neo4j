@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.symbols.SymbolTable
-import org.neo4j.cypher.internal.aux.v3_4.symbols._
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 
 case class Effects(effectsSet: Set[Effect] = Set.empty) {
 

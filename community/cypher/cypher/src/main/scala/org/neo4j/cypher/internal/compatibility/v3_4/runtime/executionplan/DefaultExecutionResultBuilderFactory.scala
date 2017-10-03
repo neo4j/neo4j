@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.aux.v3_4.{CypherException, ProfilerStatisticsNotReadyException}
+import org.neo4j.cypher.internal.util.v3_4.{CypherException, ProfilerStatisticsNotReadyException}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes._

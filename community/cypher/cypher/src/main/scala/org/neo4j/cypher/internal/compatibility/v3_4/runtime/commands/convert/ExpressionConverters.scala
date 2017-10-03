@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.convert
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ProjectedPath, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.predicates

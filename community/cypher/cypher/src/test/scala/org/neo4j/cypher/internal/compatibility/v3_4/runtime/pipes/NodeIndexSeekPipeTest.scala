@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.pipes
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.aux.v3_4.CypherTypeException
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compiler.v3_4._

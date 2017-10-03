@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription
 
 import java.util
 
-import org.neo4j.cypher.internal.aux.v3_4.InternalException
+import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_4.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlanId, QualifiedName, SeekableArgs}
-import org.neo4j.cypher.internal.aux.v3_4.symbols.CypherType
+import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.v3_4.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v3_4.{expressions => ast}
 import org.neo4j.graphdb.ExecutionPlanDescription

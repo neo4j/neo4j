@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
-import org.neo4j.cypher.internal.aux.v3_4.{HintException, IndexHintException, InternalException, JoinHintException}
+import org.neo4j.cypher.internal.util.v3_4.{HintException, IndexHintException, InternalException, JoinHintException}
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_4.ast._

@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.helpers.rewriting
 
-import org.neo4j.cypher.internal.aux.v3_4.{InternalException, Rewriter}
+import org.neo4j.cypher.internal.util.v3_4.{InternalException, Rewriter}
 
 trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String

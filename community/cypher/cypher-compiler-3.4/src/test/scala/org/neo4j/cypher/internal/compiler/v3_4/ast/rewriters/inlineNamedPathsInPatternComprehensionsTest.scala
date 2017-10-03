@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 
-import org.neo4j.cypher.internal.aux.v3_4.ASTNode
+import org.neo4j.cypher.internal.util.v3_4.ASTNode
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.projection
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{inlineNamedPathsInPatternComprehensions, projectNamedPaths}
-import org.neo4j.cypher.internal.aux.v3_4.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_4.expressions._
 
 class inlineNamedPathsInPatternComprehensionsTest extends CypherFunSuite with AstConstructionTestSupport {

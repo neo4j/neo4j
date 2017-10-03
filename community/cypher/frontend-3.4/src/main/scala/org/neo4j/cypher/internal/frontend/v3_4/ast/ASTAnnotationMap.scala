@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4.ast
 
-import org.neo4j.cypher.internal.aux.v3_4.{ASTNode, InputPosition}
+import org.neo4j.cypher.internal.util.v3_4.{ASTNode, InputPosition}
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.Eagerly
 
 object ASTAnnotationMap {
