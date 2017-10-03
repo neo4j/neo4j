@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -72,10 +73,10 @@ public class FulltextProvider implements AutoCloseable
         applier = new FulltextUpdateApplier( log, availabilityGuard, scheduler );
         applier.start();
         fulltextTransactionEventUpdater = new FulltextTransactionEventUpdater( this, log, applier );
-        nodeProperties = new HashSet<>();
-        relationshipProperties = new HashSet<>();
-        writableNodeIndices = new HashMap<>();
-        writableRelationshipIndices = new HashMap<>();
+        nodeProperties = ConcurrentHashMap.newKeySet();
+        relationshipProperties = ConcurrentHashMap.newKeySet();
+        writableNodeIndices = new ConcurrentHashMap<>();
+        writableRelationshipIndices = new ConcurrentHashMap<>();
     }
 
     public void init() throws IOException
