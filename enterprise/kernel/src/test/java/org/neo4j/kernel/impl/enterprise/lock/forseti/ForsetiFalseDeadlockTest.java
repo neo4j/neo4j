@@ -297,6 +297,33 @@ public class ForsetiFalseDeadlockTest
 
     private void loopRunTest( int testRuns ) throws InterruptedException, java.util.concurrent.ExecutionException
     {
+        List<Throwable> exceptionList = new ArrayList<>();
+        loopRun( testRuns, exceptionList );
+
+        if ( !exceptionList.isEmpty() )
+        {
+            // We saw exceptions. Run it 99 more times, and then verify that our false deadlock rate is less than 2%.
+            int additionalRuns = testRuns * 99;
+            loopRun( additionalRuns, exceptionList );
+            double totalRuns = additionalRuns + testRuns;
+            double failures = exceptionList.size();
+            double failureRate = failures / totalRuns;
+            if ( failureRate > 0.02 )
+            {
+                // We have more than 2% failures. Report it!
+                AssertionError error = new AssertionError(
+                        "False deadlock failure rate of " + failureRate + " is greater than 2%" );
+                for ( Throwable th : exceptionList )
+                {
+                    error.addSuppressed( th );
+                }
+                throw error;
+            }
+        }
+    }
+
+    private void loopRun( int testRuns, List<Throwable> exceptionList )
+    {
         for ( int i = 0; i < testRuns; i++ )
         {
             try
@@ -306,7 +333,7 @@ public class ForsetiFalseDeadlockTest
             catch ( Throwable th )
             {
                 th.addSuppressed( new Exception( "Failed at iteration " + i ) );
-                throw th;
+                exceptionList.add( th );
             }
         }
     }
