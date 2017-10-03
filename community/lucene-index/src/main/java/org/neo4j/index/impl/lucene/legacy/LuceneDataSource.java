@@ -45,6 +45,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -484,17 +485,30 @@ public class LuceneDataSource extends LifecycleAdapter
             @Override
             public void close()
             {
+                RuntimeException exception = null;
                 for ( Pair<SnapshotDeletionPolicy,IndexCommit> policyAndCommit : snapshots )
                 {
                     try
                     {
                         policyAndCommit.first().release( policyAndCommit.other() );
                     }
-                    catch ( IOException e )
+                    catch ( IOException | RuntimeException e )
                     {
-                        // TODO What to do?
-                        e.printStackTrace();
+                        if ( exception == null )
+                        {
+                            exception = e instanceof IOException?
+                                        new UncheckedIOException( (IOException) e ) :
+                                        (RuntimeException) e;
+                        }
+                        else
+                        {
+                            exception.addSuppressed( e );
+                        }
                     }
+                }
+                if ( exception != null )
+                {
+                    throw exception;
                 }
             }
         };
