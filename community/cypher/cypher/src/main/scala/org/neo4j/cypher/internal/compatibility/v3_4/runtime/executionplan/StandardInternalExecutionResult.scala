@@ -113,7 +113,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
      * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
      * where you can call both toList and dumpToString
      */
-  def toEagerResultForTestingOnly(planner: PlannerName): InternalExecutionResult = {
+  def toEagerResultForTestingOnly(): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
     val result = new util.ArrayList[util.Map[String, Any]]()
     if (isOpen)
@@ -126,12 +126,16 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
 
       override protected def createInner: util.Iterator[util.Map[String, Any]] = result.iterator()
 
-      override def executionPlanDescription(): InternalPlanDescription =
-        self.executionPlanDescription()
-          .addArgument(Planner(planner.toTextOutput))
-          .addArgument(PlannerImpl(planner.name))
-          .addArgument(Runtime(runtime.toTextOutput))
-          .addArgument(RuntimeImpl(runtime.name))
+      override def executionPlanDescription(): InternalPlanDescription = {
+        val description = self.executionPlanDescription()
+        if (!description.arguments.exists(_.isInstanceOf[Runtime])) {
+          description.addArgument(Runtime(runtime.toTextOutput))
+        }
+        if (!description.arguments.exists(_.isInstanceOf[RuntimeImpl])) {
+          description.addArgument(RuntimeImpl(runtime.name))
+        }
+        description
+      }
 
       override def toList: List[Predef.Map[String, Any]] = result.asScala
         .map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue)).toList

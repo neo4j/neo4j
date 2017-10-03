@@ -53,7 +53,7 @@ object RewindableExecutionResult {
         }
       case other: StandardInternalExecutionResult =>
         exceptionHandler.runSafely {
-          other.toEagerResultForTestingOnly(CostBasedPlannerName.default)
+          other.toEagerResultForTestingOnly()
         }
 
       case _ =>
