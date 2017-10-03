@@ -99,12 +99,7 @@ public class BackupCoreIT
 
     static String backupAddress( GraphDatabaseFacade db )
     {
-        InetSocketAddress inetSocketAddress = db.getDependencyResolver()
-                .resolveDependency( Config.class )
-                .get( CausalClusteringSettings.transaction_advertised_address )
-                .socketAddress();
-
-        return inetSocketAddress.getHostName() + ":" + inetSocketAddress.getPort();
+        return ":" + PortAuthority.allocatePort();
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )

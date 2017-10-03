@@ -50,7 +50,7 @@ import org.neo4j.ssl.SslPolicy;
  */
 abstract class AbstractBackupSupportingClassesFactory
 {
-    private static final long INACTIVITY_TIMEOUT_MILLIS = 60*1000;
+    private static final long INACTIVITY_TIMEOUT_MILLIS = 60 * 1000;
 
     private final LogProvider logProvider;
     private final Clock clock;
