@@ -76,8 +76,8 @@ public class BloomProcedures
 
     @Description( "Queries the bloom index for nodes" )
     @Procedure( name = "db.fulltext.bloomFulltextNodes", mode = READ )
-    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( "fuzzy" ) boolean fuzzy,
-            @Name( "Require that all terms are matched" ) boolean matchAll ) throws Exception
+    public Stream<EntityOutput> bloomFulltextNodes( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_NODES, NODES ) )
         {
@@ -87,8 +87,8 @@ public class BloomProcedures
 
     @Description( "Queries the bloom index for relationships" )
     @Procedure( name = "db.fulltext.bloomFulltextRelationships", mode = READ )
-    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( "fuzzy" ) boolean fuzzy,
-            @Name( "Require that all terms are matched" ) boolean matchAll ) throws Exception
+    public Stream<EntityOutput> bloomFulltextRelationships( @Name( "terms" ) List<String> terms, @Name( value = "fuzzy", defaultValue = "true" ) boolean fuzzy,
+            @Name( value = "matchAll", defaultValue = "false" ) boolean matchAll ) throws Exception
     {
         try ( ReadOnlyFulltext indexReader = provider.getReader( BLOOM_RELATIONSHIPS, RELATIONSHIPS ) )
         {
