@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
+import org.neo4j.kernel.api.index.InternalIndexState;
 
 class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
 {
@@ -85,8 +86,13 @@ class WritableFulltext extends WritableAbstractDatabaseIndex<LuceneFulltext>
         return luceneIndex.getAnalyzerName();
     }
 
-    public void saveConfiguration( long lastCommittedTransactionId ) throws IOException
+    void saveConfiguration( long lastCommittedTransactionId ) throws IOException
     {
         luceneIndex.saveConfiguration( lastCommittedTransactionId );
+    }
+
+    InternalIndexState getState()
+    {
+        return luceneIndex.getState();
     }
 }

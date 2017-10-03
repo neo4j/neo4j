@@ -603,7 +603,6 @@ public class BloomIT
         // the code. Unfortunately, file permissions are an incredible pain to work with on Windows.
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
-
         // Create the store directory and all its files, and add a bit of data to it
         GraphDatabaseService db = getDb();
         db.execute( String.format( KEYS, "\"prop\"" ) );
