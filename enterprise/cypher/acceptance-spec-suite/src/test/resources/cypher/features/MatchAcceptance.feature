@@ -116,3 +116,19 @@ Feature: MatchAcceptance
       | 'apa' |
     And no side effects
 
+  Scenario: Match on multiple labels
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A:B)
+      """
+    When executing query:
+      """
+      MATCH (a)
+      WHERE (a:A:B OR a:A:C)
+      RETURN a
+      """
+    Then the result should be:
+      | a      |
+      | (:A:B) |
+    And no side effects
