@@ -136,22 +136,22 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
 
-  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[Relationship] = {
     val relationships = types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
       case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds.toArray)
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
     }
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
     types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
       case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds.toArray)
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds)
     }
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipProxy = try {

@@ -39,7 +39,7 @@ import scala.collection.immutable.IndexedSeq
 import scala.util.Random
 
 class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
-  val types = LazyTypes(Seq.empty[String])
+  val types = new LazyTypes(Array.empty[String])
 
   test("node without any relationships produces empty result") {
     val n1 = createNode()

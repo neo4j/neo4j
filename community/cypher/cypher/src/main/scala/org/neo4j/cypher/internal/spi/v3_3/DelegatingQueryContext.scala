@@ -76,10 +76,10 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[Relationship] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =

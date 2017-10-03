@@ -69,7 +69,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         NodeCountFromCountStorePipe(ident, labels.map(l => l.map(LazyLabel.apply)))(id = id)
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
-        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply), LazyTypes(typeNames.map(_.name)), endLabel.map(LazyLabel.apply))(id = id)
+        RelationshipCountFromCountStorePipe(ident, startLabel.map(LazyLabel.apply),
+                                            new LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(IdName(ident), label, _) =>
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
@@ -112,7 +113,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         ProjectEndpointsPipe(source, rel.name,
           start.name, startInScope,
           end.name, endInScope,
-          types.map(LazyTypes.apply), directed, length.isSimple)()
+          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)()
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -121,21 +122,21 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         FilterPipe(source, predicates.map(buildPredicate).reduce(_ andWith _))(id = id)
 
       case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandAll) =>
-        ExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types))(id = id)
+        ExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case Expand(_, IdName(fromName), dir, types: Seq[RelTypeName], IdName(toName), IdName(relName), ExpandInto) =>
-        ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types))(id = id)
+        ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
         LockNodesPipe(source, nodesToLock.map(_.name))()
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
+        OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
+        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
 
       case VarExpand(_,
                      IdName(fromName),
@@ -155,18 +156,18 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         }
 
         VarLengthExpandPipe(source, fromName, relName, toName, dir, projectedDir,
-          LazyTypes(types), min, max, nodeInScope, predicate)(id = id)
+          LazyTypes(types.toArray), min, max, nodeInScope, predicate)(id = id)
 
       case Optional(inner, protectedSymbols) =>
         OptionalPipe((inner.availableSymbols -- protectedSymbols).map(_.name), source)(id = id)
 
       case PruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
-        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
+        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)()
 
       case FullPruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
-        FullPruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
+        FullPruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)()
 
       case Sort(_, sortItems) =>
         SortPipe(source, sortItems.map(translateColumnOrder))(id = id)

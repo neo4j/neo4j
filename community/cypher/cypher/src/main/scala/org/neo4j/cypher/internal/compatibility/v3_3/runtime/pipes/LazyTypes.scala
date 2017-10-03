@@ -23,25 +23,32 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
-case class LazyTypes(names:Seq[String]) {
-  private var ids = Seq.empty[Int]
+final class LazyTypes(val names: Array[String]) {
 
-  def types(context: QueryContext): Option[Seq[Int]] = names match {
-      case Seq() => None
-      case _     => {
-        if (ids.size != names.size) {
-          ids = names.flatMap(context.getOptRelTypeId)
-        }
-        Some(ids)
-      }
+  private var ids = Array.empty[Int]
+
+  def types(context: QueryContext): Option[Array[Int]] = if (names.isEmpty) None else {
+    if (ids.length != names.length) {
+      ids = names.flatMap(context.getOptRelTypeId)
     }
+    Some(ids)
+  }
+
+  override def hashCode(): Int = scala.util.hashing.MurmurHash3.seqHash(names)
+
+  override def equals(obj: scala.Any): Boolean = {
+    obj match {
+      case lazyTypes: LazyTypes => names.sameElements(lazyTypes.names)
+      case _ => false
+    }
+  }
 }
 
 object LazyTypes {
-  def apply(names: Seq[RelTypeName])(implicit table:SemanticTable): LazyTypes = {
-    val types = LazyTypes(names.map(_.name))
+  def apply(names: Array[RelTypeName])(implicit table:SemanticTable): LazyTypes = {
+    val types = new LazyTypes(names.map(_.name))
     types.ids = names.flatMap(_.id).map(_.id)
     types
   }
-  val empty = LazyTypes(Seq.empty[String])
+  val empty = new LazyTypes(Array.empty[String])
 }
