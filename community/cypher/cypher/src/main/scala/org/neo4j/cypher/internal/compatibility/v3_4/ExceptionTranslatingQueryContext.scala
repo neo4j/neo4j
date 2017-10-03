@@ -202,10 +202,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateRelTypeId(relTypeName: String) =
     translateException(inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]) =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]) =
     translateException(inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
     translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =

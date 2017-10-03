@@ -59,17 +59,19 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should return no relationships for types that have not been defined yet") {
     // given
-    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq.empty)))).thenAnswer(
-      new Answer[Iterator[Relationship]] {
-        override def answer(invocationOnMock: InvocationOnMock) = Iterator.empty
-      })
-    when(query.getRelationshipsForIds(any(), any(), mockEq(Some(Seq(1, 2))))).thenAnswer(
-      new Answer[Iterator[Relationship]] {
-        override def answer(invocationOnMock: InvocationOnMock) = Iterator(relationship1, relationship2)
-      })
+    when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[Relationship]]{
+      override def answer(invocationOnMock: InvocationOnMock): Iterator[Relationship] = {
+        val arg = invocationOnMock.getArgument[Option[Array[Int]]](2)
+        arg match {
+          case None => Iterator.empty
+          case Some(array) if array.isEmpty => Iterator.empty
+          case _ => Iterator(relationship1, relationship2)
+        }
+      }
+    })
     when(query.nodeGetDegree(any(), any(), any())).thenReturn(1)
 
-    val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes(Seq("FOO", "BAR")))()
+    val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", SemanticDirection.OUTGOING, new LazyTypes(Array("FOO", "BAR")))()
 
     // when
     when(query.getOptRelTypeId("FOO")).thenReturn(None)
