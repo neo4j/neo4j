@@ -47,6 +47,17 @@
 
   <repositories>
     <repository>
+      <id>neo4j-release-repository</id>
+      <name>Neo4j Maven 2 release repository</name>
+      <url>http://m2.neo4j.org/content/repositories/releases</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
       <id>neo4j-snapshot-repository</id>
       <name>Neo4j Maven 2 snapshot repository</name>
       <url>http://m2.neo4j.org/content/repositories/snapshots/</url>
@@ -389,6 +400,7 @@
             </execution>
             <!-- Create test jar -->
             <execution>
+              <id>create-test-jar</id>
               <goals>
                 <goal>test-jar</goal>
               </goals>
@@ -591,11 +603,6 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
           <version>1.4.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>properties-maven-plugin</artifactId>
-          <version>1.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.neo4j.build.plugins</groupId>

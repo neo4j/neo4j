@@ -18,6 +18,8 @@
   <name>Neo4j Desktop</name>
   <description>Easy-to-use Neo4j database in an .exe</description>
 
+  <!-- TODO: This only generates an uber jar, should be moved to internal packaging since it's not used here -->
+
   <properties>
     <neo4j.version>${project.version}</neo4j.version>
   </properties>

@@ -1,14 +1,14 @@
-#{product.fullname} #{neo4j.version}
+Neo4j #{neo4j.version}
 =======================================
 
-Welcome to #{product.fullname} release #{neo4j.version}, a high-performance graph database.
-This is the community distribution of #{product.fullname}, including everything you need to
+Welcome to Neo4j release #{neo4j.version}, a high-performance graph database.
+This is the community distribution of Neo4j, including everything you need to
 start building applications that can model, persist and explore graph-like data.
 
 In the box
 ----------
 
-#{product.fullname} runs as a server application, exposing a Web-based management
+Neo4j runs as a server application, exposing a Web-based management
 interface and RESTful endpoints for data access.
 
 Here in the installation directory, you'll find:
@@ -24,9 +24,9 @@ Here in the installation directory, you'll find:
 Make it go
 ----------
 
-For full instructions, see #{getting-started-server.url}
+For full instructions, see https://neo4j.com/docs/operations-manual/current/installation/
 
-To get started with #{product.fullname}, let's start the server and take a
+To get started with Neo4j, let's start the server and take a
 look at the web interface ...
 
 1. Open a console and navigate to the install directory.
@@ -42,9 +42,9 @@ look at the web interface ...
 Learn more
 ----------
 
-* #{neo4j-home.url.title}: #{neo4j-home.url}
-* #{getting-started.url.title}: #{getting-started.url}
-* #{neo4j-manual.title}: #{neo4j-manual.url}
+* Neo4j Home: https://neo4j.com/
+* Getting Started: https://neo4j.com/docs/developer-manual/current/introduction/
+* Neo4j Documentation: https://neo4j.com/docs/
 
 License(s)
 ----------

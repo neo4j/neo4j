@@ -53,29 +53,11 @@ terms of the relevant Commercial Agreement.
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>properties-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>initialize</phase>
-            <goals>
-              <goal>read-project-properties</goal>
-            </goals>
-            <configuration>
-              <files>
-                <file>${project.parent.basedir}/document.properties</file>
-                <file>${project.parent.basedir}/permalinks.properties</file>
-              </files>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>
         <configuration>
           <attach>false</attach>
-          <finalName>${product.shortname}-community-${project.version}</finalName>
+          <finalName>neo4j-community-${project.version}</finalName>
           <appendAssemblyId>true</appendAssemblyId>
           <outputDirectory>${project.parent.build.directory}</outputDirectory>
           <delimiters>
@@ -114,15 +96,6 @@ terms of the relevant Commercial Agreement.
                 <filter>${project.parent.basedir}/zip.properties</filter>
               </filters>
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>get-javadoc-sources</id>
-            <phase>none</phase>
           </execution>
         </executions>
       </plugin>
