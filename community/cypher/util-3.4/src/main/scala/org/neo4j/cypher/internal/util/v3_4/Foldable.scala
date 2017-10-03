@@ -53,38 +53,50 @@ object Foldable {
       foldAcc(mutable.ArrayStack(that), init, f.lift)
 
     /**
-      * Fold of a tree structure
-      *
-      * This treefold will traverse the tree structure with a BFS strategy which can be customized as follows.
-      *
-      * The treefold behaviour is controlled by the given partial function: when the partial function is undefined on a
-      * given node of the tree, that node is simply ignored and the tree traversal will continue.  If the partial
-      * function is defined on the node than it will visited in different ways, depending on the output of the function
-      * returned, as explained below.
-      *
-      * This function will be called with the current accumulator and it is expected to produce a pair compound of the
-      * next accumulator and an optional function that given an accumulator will produce a new accumulator.
-      *
-      * If the optional function is undefined then the children of the current node are skipped and not traversed. Then
-      * the new accumulator is used as initial value for traversing the siblings of the node.
-      *
-      * If the optional function is defined then the children are traversed and the new accumulator is used as initial
-      * accumulator for this "inner treefold". After this computation the function is used for creating the accumulator
-      * for traversing the siblings of the node by applying it to the output accumulator from the traversal of the
-      * children.
-      *
-      * @param init the initial value of the accumulator
-      * @param f    partial function that given a node in the tree might return a function that takes the current
-      *             accumulator, and return a pair compound by the new accumulator for continuing the fold and an
-      *             optional function that takes an accumulator and returns an accumulator
-      * @tparam R the type of the accumulator/result
-      * @return the accumulated result
-      */
+     * Fold of a tree structure
+     *
+     * This treefold will traverse the tree structure with a BFS strategy which can be customized as follows.
+     *
+     * The treefold behaviour is controlled by the given partial function: when the partial function is undefined on a
+     * given node of the tree, that node is simply ignored and the tree traversal will continue.  If the partial
+     * function is defined on the node than it will visited in different ways, depending on the output of the function
+     * returned, as explained below.
+     *
+     * This function will be called with the current accumulator and it is expected to produce a pair compound of the
+     * next accumulator and an optional function that given an accumulator will produce a new accumulator.
+     *
+     * If the optional function is undefined then the children of the current node are skipped and not traversed. Then
+     * the new accumulator is used as initial value for traversing the siblings of the node.
+     *
+     * If the optional function is defined then the children are traversed and the new accumulator is used as initial
+     * accumulator for this "inner treefold". After this computation the function is used for creating the accumulator
+     * for traversing the siblings of the node by applying it to the output accumulator from the traversal of the
+     * children.
+     *
+     * @param init the initial value of the accumulator
+     * @param f    partial function that given a node in the tree might return a function that takes the current
+     *             accumulator, and return a pair compound by the new accumulator for continuing the fold and an
+     *             optional function that takes an accumulator and returns an accumulator
+     * @tparam R the type of the accumulator/result
+     * @return the accumulated result
+     */
     def treeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
-      treeFoldAcc(mutable.ArrayStack(that), init, f.lift, new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](), reverse = false)
+      treeFoldAcc(
+        mutable.ArrayStack(that),
+        init,
+        f.lift,
+        new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
+        reverse = false
+      )
 
     def reverseTreeFold[R](init: R)(f: PartialFunction[Any, R => (R, Option[R => R])]): R =
-      treeFoldAcc(mutable.ArrayStack(that), init, f.lift, new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](), reverse = true)
+      treeFoldAcc(
+        mutable.ArrayStack(that),
+        init,
+        f.lift,
+        new mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)](),
+        reverse = true
+      )
 
     /*
     Allows searching through object tree and object collections
@@ -95,7 +107,7 @@ object Foldable {
     /*
     Allows searching through object tree and object collections
      */
-    def treeFind[A : ClassTag](f: PartialFunction[A, Boolean]): Option[A] =
+    def treeFind[A: ClassTag](f: PartialFunction[A, Boolean]): Option[A] =
       findAcc[A](mutable.ArrayStack(that), f.lift)
 
     /*
@@ -105,7 +117,7 @@ object Foldable {
       countAcc(mutable.ArrayStack(that), f.lift, 0)
     }
 
-    def findByClass[A : ClassTag]: A =
+    def findByClass[A: ClassTag]: A =
       findAcc[A](mutable.ArrayStack(that))
 
     def findByAllClass[A: ClassTag]: Seq[A] = {
@@ -135,8 +147,13 @@ object Foldable {
     }
 
   @tailrec
-  private def treeFoldAcc[R](remaining: mutable.ArrayStack[Any], acc: R, f: Any => Option[R => (R, Option[R => R])],
-                             continuation: mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)], reverse: Boolean): R =
+  private def treeFoldAcc[R](
+      remaining: mutable.ArrayStack[Any],
+      acc: R,
+      f: Any => Option[R => (R, Option[R => R])],
+      continuation: mutable.ArrayStack[(mutable.ArrayStack[Any], R => R)],
+      reverse: Boolean
+  ): R =
     if (remaining.isEmpty) {
       if (continuation.isEmpty) {
         acc
@@ -157,7 +174,7 @@ object Foldable {
               val children = if (reverse) that.children else that.reverseChildren
               treeFoldAcc(mutable.ArrayStack() ++= children, newAcc, f, continuation, reverse)
             case (newAcc, None) =>
-              treeFoldAcc(remaining, newAcc, f, continuation,reverse)
+              treeFoldAcc(remaining, newAcc, f, continuation, reverse)
           }
       }
     }
@@ -177,7 +194,11 @@ object Foldable {
     }
 
   @tailrec
-  private def countAcc(remaining: mutable.ArrayStack[Any], f: Any => Option[Boolean], acc: Int): Int =
+  private def countAcc(
+      remaining: mutable.ArrayStack[Any],
+      f: Any => Option[Boolean],
+      acc: Int
+  ): Int =
     if (remaining.isEmpty) {
       acc
     } else {
@@ -193,7 +214,7 @@ object Foldable {
     }
 
   @tailrec
-  private def findAcc[A : ClassTag](remaining: mutable.ArrayStack[Any]): A =
+  private def findAcc[A: ClassTag](remaining: mutable.ArrayStack[Any]): A =
     if (remaining.isEmpty) {
       throw new NoSuchElementException
     } else {
@@ -205,7 +226,10 @@ object Foldable {
     }
 
   @tailrec
-  private def findAcc[A : ClassTag](remaining: mutable.ArrayStack[Any], predicate: A => Option[Boolean]): Option[A] =
+  private def findAcc[A: ClassTag](
+      remaining: mutable.ArrayStack[Any],
+      predicate: A => Option[Boolean]
+  ): Option[A] =
     if (remaining.isEmpty) {
       None
     } else {

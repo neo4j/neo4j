@@ -21,7 +21,6 @@ object NodeType {
     val parentType = CTMap
     override val toString = "Node"
     override val toNeoTypeString = "NODE?"
-
   }
 }
 

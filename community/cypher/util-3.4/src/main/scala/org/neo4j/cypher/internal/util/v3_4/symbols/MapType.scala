@@ -21,7 +21,6 @@ object MapType {
     val parentType = CTAny
     override val toString = "Map"
     override val toNeoTypeString = "MAP?"
-
   }
 }
 

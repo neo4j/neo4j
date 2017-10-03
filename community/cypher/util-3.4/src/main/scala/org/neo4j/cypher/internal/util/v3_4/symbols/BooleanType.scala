@@ -21,7 +21,6 @@ object BooleanType {
     val parentType = CTAny
     override val toString = "Boolean"
     override val toNeoTypeString = "BOOLEAN?"
-
   }
 }
 

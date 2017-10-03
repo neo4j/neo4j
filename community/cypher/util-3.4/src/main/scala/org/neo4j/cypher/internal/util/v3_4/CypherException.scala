@@ -18,7 +18,8 @@ package org.neo4j.cypher.internal.util.v3_4
 
 import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
 
-abstract class CypherException(protected val message: String, cause: Throwable) extends RuntimeException(message, cause) {
+abstract class CypherException(protected val message: String, cause: Throwable)
+    extends RuntimeException(message, cause) {
   def this() = this(null, null)
 
   def this(message: String) = this(message, null)
@@ -29,77 +30,105 @@ abstract class CypherException(protected val message: String, cause: Throwable) 
 }
 
 class UniquePathNotUniqueException(message: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.uniquePathNotUniqueException(message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.uniquePathNotUniqueException(message, this)
 }
 
 class FailedIndexException(indexName: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.failedIndexException(indexName, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.failedIndexException(indexName, this)
 }
 
-class EntityNotFoundException(message: String, cause: Throwable = null) extends CypherException(cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.entityNotFoundException(message, this)
+class EntityNotFoundException(message: String, cause: Throwable = null)
+    extends CypherException(cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.entityNotFoundException(message, this)
 }
 
-class CypherTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.cypherTypeException(message, this)
+class CypherTypeException(message: String, cause: Throwable = null)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.cypherTypeException(message, this)
 }
 
 class ParameterNotFoundException(message: String, cause: Throwable) extends CypherException(cause) {
   def this(message: String) = this(message, null)
 
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.parameterNotFoundException(message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.parameterNotFoundException(message, this)
 }
 
-class ParameterWrongTypeException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.parameterWrongTypeException(message, this)
+class ParameterWrongTypeException(message: String, cause: Throwable = null)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.parameterWrongTypeException(message, this)
 }
 
-class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidArgumentException(message, this)
+class InvalidArgumentException(message: String, cause: Throwable = null)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.invalidArgumentException(message, this)
 }
 
 class PatternException(message: String) extends CypherException(message) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.patternException(message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.patternException(message, this)
 }
 
-class InternalException(message: String, inner: Exception = null) extends CypherException(message, inner) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.internalException(message, this)
+class InternalException(message: String, inner: Exception = null)
+    extends CypherException(message, inner) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.internalException(message, this)
 }
 
-class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable) extends CypherException(cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.nodeStillHasRelationshipsException(nodeId, this)
+class NodeStillHasRelationshipsException(val nodeId: Long, cause: Throwable)
+    extends CypherException(cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.nodeStillHasRelationshipsException(nodeId, this)
 }
 
 class ProfilerStatisticsNotReadyException extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.profilerStatisticsNotReadyException(this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.profilerStatisticsNotReadyException(this)
 }
 
-class IndexHintException(variable: String, label: String, properties: Seq[String], message: String) extends CypherException {
-  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.indexHintException(variable, label, properties, message, this)
+class IndexHintException(variable: String, label: String, properties: Seq[String], message: String)
+    extends CypherException {
+  def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.indexHintException(variable, label, properties, message, this)
 }
 
 class JoinHintException(variable: String, message: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.joinHintException(variable, message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.joinHintException(variable, message, this)
 }
 
-class HintException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.hintException(message, cause)
+class HintException(message: String, cause: Throwable = null)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.hintException(message, cause)
 }
 
 class InvalidSemanticsException(message: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.invalidSemanticException(message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.invalidSemanticException(message, this)
 }
 
-class MergeConstraintConflictException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.mergeConstraintConflictException(message, this)
+class MergeConstraintConflictException(message: String, cause: Throwable = null)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.mergeConstraintConflictException(message, this)
 }
 
 class ArithmeticException(message: String, cause: Throwable = null) extends CypherException(cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.arithmeticException(message, this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.arithmeticException(message, this)
 }
 
-class IncomparableValuesException(details: Option[String], lhs: String, rhs: String) extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.incomparableValuesException(details, lhs, rhs, this)
+class IncomparableValuesException(details: Option[String], lhs: String, rhs: String)
+    extends CypherException {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.incomparableValuesException(details, lhs, rhs, this)
   def this(operator: String, lhs: String, rhs: String) = this(Some(operator), lhs, rhs)
   def this(lhs: String, rhs: String) = this(None, lhs, rhs)
 }
@@ -110,21 +139,27 @@ class UnorderableValueException(value: String) extends CypherException {
 }
 
 class PeriodicCommitInOpenTransactionException extends CypherException {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.periodicCommitInOpenTransactionException(this)
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.periodicCommitInOpenTransactionException(this)
 }
 
-class LoadExternalResourceException(message: String, cause: Throwable = null) extends CypherException(cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) = mapper.loadExternalResourceException(message, this)
+class LoadExternalResourceException(message: String, cause: Throwable = null)
+    extends CypherException(cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
+    mapper.loadExternalResourceException(message, this)
 }
 
-class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(cause) {
+class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException)
+    extends CypherException(cause) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
     // the mapper will map the cause here, so we cannot pass 'this' in as the cause...
     mapper.loadCsvStatusWrapCypherException(extraInfo, cause)
 }
 
-class SyntaxException(message: String, val query: String, val pos: Option[InputPosition]) extends CypherException(message) {
-  def this(message: String, query: String, offset: InputPosition) = this(message, query, Some(offset))
+class SyntaxException(message: String, val query: String, val pos: Option[InputPosition])
+    extends CypherException(message) {
+  def this(message: String, query: String, offset: InputPosition) =
+    this(message, query, Some(offset))
 
   def this(message: String) = this(message, "", None)
 
@@ -132,8 +167,10 @@ class SyntaxException(message: String, val query: String, val pos: Option[InputP
     mapper.syntaxException(message, query, pos.map(_.offset), this)
 }
 
-class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T = mapper.cypherExecutionException(message, this)
+class CypherExecutionException(message: String, cause: Throwable)
+    extends CypherException(message, cause) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.cypherExecutionException(message, this)
 }
 
 object ExhaustiveShortestPathForbiddenException {
@@ -149,10 +186,10 @@ object ExhaustiveShortestPathForbiddenException {
        |start filtering.""".stripMargin
 }
 
-class ExhaustiveShortestPathForbiddenException extends CypherExecutionException(
-  ExhaustiveShortestPathForbiddenException.ERROR_MSG, null) {
-override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
-mapper.shortestPathFallbackDisableRuntimeException(message, this)
+class ExhaustiveShortestPathForbiddenException
+    extends CypherExecutionException(ExhaustiveShortestPathForbiddenException.ERROR_MSG, null) {
+  override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
+    mapper.shortestPathFallbackDisableRuntimeException(message, this)
 }
 
 object ShortestPathCommonEndNodesForbiddenException {
@@ -166,8 +203,8 @@ object ShortestPathCommonEndNodesForbiddenException {
        |expression followed by ordering by path length and limiting to one result.""".stripMargin
 }
 
-class ShortestPathCommonEndNodesForbiddenException extends CypherExecutionException(
-  ShortestPathCommonEndNodesForbiddenException.ERROR_MSG, null) {
+class ShortestPathCommonEndNodesForbiddenException
+    extends CypherExecutionException(ShortestPathCommonEndNodesForbiddenException.ERROR_MSG, null) {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]): T =
     mapper.shortestPathCommonEndNodesForbiddenException(message, this)
 }

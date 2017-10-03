@@ -21,7 +21,6 @@ object FloatType {
     val parentType = CTNumber
     override val toString = "Float"
     override val toNeoTypeString = "FLOAT?"
-
   }
 }
 

@@ -18,10 +18,7 @@ package org.neo4j.cypher.internal.util.v3_4
 
 import org.neo4j.cypher.internal.util.v3_4.Rewritable._
 
-trait ASTNode
-  extends Product
-  with Foldable
-  with Rewritable {
+trait ASTNode extends Product with Foldable with Rewritable {
 
   self =>
 

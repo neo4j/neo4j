@@ -25,7 +25,6 @@ object AnyType {
 
     override val toString = "Any"
     override val toNeoTypeString = "ANY?"
-
   }
 }
 
