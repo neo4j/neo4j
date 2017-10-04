@@ -97,7 +97,6 @@
     </test.runner.jvm.settings>
     <jetty.version>9.2.22.v20170606</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
-    <clirr.comparisonVersion>3.0.0</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
     <forkCounts>0</forkCounts>
     <maven.build.timestamp.format>yyMMddHHmmssSSS</maven.build.timestamp.format>
