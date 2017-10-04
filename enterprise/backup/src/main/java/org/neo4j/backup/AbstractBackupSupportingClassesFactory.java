@@ -31,15 +31,22 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.handlers.NoOpPipelineHandlerAppenderFactory;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppender;
 import org.neo4j.causalclustering.handlers.PipelineHandlerAppenderFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
 
@@ -77,8 +84,11 @@ abstract class AbstractBackupSupportingClassesFactory
      */
     BackupSupportingClasses createSupportingClassesForBackupStrategies( Config config )
     {
-        PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
-        return new BackupSupportingClasses( backupDelegatorFormConfig( pageCache, config ), haFromConfig( pageCache ) );
+        PageCache pageCache = createPageCache( fileSystemAbstraction, config );
+        return new BackupSupportingClasses(
+                backupDelegatorFormConfig( pageCache, config ),
+                haFromConfig( pageCache ),
+                pageCache );
     }
 
     private BackupProtocolService haFromConfig( PageCache pageCache )
@@ -104,6 +114,11 @@ abstract class AbstractBackupSupportingClassesFactory
     private static BackupDelegator backupDelegator( RemoteStore remoteStore, CatchUpClient catchUpClient, StoreCopyClient storeCopyClient )
     {
         return new BackupDelegator( remoteStore, catchUpClient, storeCopyClient, new ClearIdService( new IdGeneratorWrapper() ) );
+    }
+
+    private static PageCache createPageCache( FileSystemAbstraction fileSystemAbstraction, Config config )
+    {
+        return ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemAbstraction, config );
     }
 
     abstract Dependencies getDependencies();

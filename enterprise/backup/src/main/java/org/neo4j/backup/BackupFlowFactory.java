@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.LogProvider;
 
 /*
@@ -50,7 +51,8 @@ class BackupFlowFactory
         this.addressResolutionHelper = new AddressResolutionHelper();
     }
 
-    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService, BackupDelegator backupDelegator )
+    BackupFlow backupFlow( OnlineBackupContext onlineBackupContext, BackupProtocolService backupProtocolService, BackupDelegator backupDelegator,
+            PageCache pageCache )
     {
         ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.textual( outsideWorld.errorStream() );
 
@@ -58,7 +60,8 @@ class BackupFlowFactory
             .of(
                 new CausalClusteringBackupStrategy( backupDelegator, addressResolutionHelper ),
                 new HaBackupStrategy( backupProtocolService, addressResolutionHelper, onlineBackupContext.getRequiredArguments().getTimeout() ) )
-            .map( strategy -> new BackupStrategyWrapper( strategy, backupCopyService ) )
+            .map( strategy -> new BackupStrategyWrapper( strategy, backupCopyService, pageCache, onlineBackupContext.getConfig(),
+                    new BackupRecoveryService() ) )
             .collect( Collectors.toList() );
 
         return new BackupFlow( consistencyCheckService, outsideWorld, logProvider, progressMonitorFactory, strategies );

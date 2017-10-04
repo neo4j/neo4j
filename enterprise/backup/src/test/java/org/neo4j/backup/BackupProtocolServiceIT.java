@@ -966,7 +966,7 @@ public class BackupProtocolServiceIT
         catch ( RuntimeException e )
         {
             // Then
-            assertThat( e.getMessage(), equalTo( BackupProtocolService.DIFFERENT_STORE_MESSAGE ) );
+            assertThat( e.getMessage(), equalTo( ExistingBackupWithDifferentStoreException.DIFFERENT_STORE_MESSAGE ) );
             assertThat( e.getCause(), instanceOf( MismatchingStoreIdException.class ) );
         }
     }

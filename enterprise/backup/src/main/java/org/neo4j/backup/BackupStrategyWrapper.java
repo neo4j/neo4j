@@ -20,21 +20,34 @@
 package org.neo4j.backup;
 
 import java.io.File;
+import java.util.Map;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.helpers.OptionalHostnamePort;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static org.neo4j.backup.BackupProtocolService.startTemporaryDb;
 
 class BackupStrategyWrapper
 {
     private final BackupStrategy backupStrategy;
     private final BackupCopyService backupCopyService;
+    private final BackupRecoveryService backupRecoveryService;
 
-    BackupStrategyWrapper( BackupStrategy backupStrategy, BackupCopyService backupCopyService )
+    private final PageCache pageCache;
+    private final Config config;
+
+    BackupStrategyWrapper( BackupStrategy backupStrategy, BackupCopyService backupCopyService, PageCache pageCache, Config config,
+            BackupRecoveryService backupRecoveryService )
     {
         this.backupStrategy = backupStrategy;
         this.backupCopyService = backupCopyService;
+        this.pageCache = pageCache;
+        this.config = config;
+        this.backupRecoveryService = backupRecoveryService;
     }
 
     /**
@@ -100,6 +113,7 @@ class BackupStrategyWrapper
                 return new PotentiallyErroneousState<>( BackupStageOutcome.UNRECOVERABLE_FAILURE, commandFailed );
             }
         }
+        backupRecoveryService.recoverWithDatabase( userSpecifiedBackupLocation, pageCache, config );
         return state;
     }
 

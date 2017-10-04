@@ -83,7 +83,7 @@ public class OnlineBackupCommandTest
         when( requiredArguments.getFolder() ).thenReturn( backupDirectory );
         when( requiredArguments.getReportDir() ).thenReturn( reportDirectory );
         when( requiredArguments.getName() ).thenReturn( "backup name" );
-        when( backupFlowFactory.backupFlow( any(), any(), any() ) ).thenReturn( backupFlow );
+        when( backupFlowFactory.backupFlow( any(), any(), any(), any() ) ).thenReturn( backupFlow );
 
         subject = new OnlineBackupCommand( outsideWorld, onlineBackupContextLoader, backupSupportingClassesFactory, backupFlowFactory );
     }
